@@ -505,16 +505,30 @@ async function loadCatalogFromBackend() {
     if (pRes.ok) {
       const pData = await pRes.json();
       if (Array.isArray(pData)) {
-        PRODUCTS = pData;
-        localStorage.setItem('sikar_admin_products', JSON.stringify(pData));
+        // Merge with locally created custom products so newly added products are NEVER wiped out
+        const localProds = JSON.parse(localStorage.getItem('sikar_admin_products') || '[]');
+        const customProds = localProds.filter(lp => lp && lp.id && !pData.some(sp => sp.id === lp.id));
+        const mergedProds = [...customProds, ...pData];
+        mergedProds.sort((a, b) => {
+          const ordA = a.display_order !== undefined ? a.display_order : 50;
+          const ordB = b.display_order !== undefined ? b.display_order : 50;
+          if (ordA !== ordB) return ordA - ordB;
+          return (b.created_at || '').localeCompare(a.created_at || '');
+        });
+        PRODUCTS = mergedProds;
+        localStorage.setItem('sikar_admin_products', JSON.stringify(mergedProds));
       }
     }
 
     if (cRes.ok) {
       const cData = await cRes.json();
       if (Array.isArray(cData)) {
-        CATEGORIES = cData;
-        localStorage.setItem('sikar_admin_categories', JSON.stringify(cData));
+        // Merge with locally created categories
+        const localCats = JSON.parse(localStorage.getItem('sikar_admin_categories') || '[]');
+        const customCats = localCats.filter(lc => lc && lc.id && !cData.some(sc => sc.id === lc.id));
+        const mergedCats = [...cData, ...customCats];
+        CATEGORIES = mergedCats;
+        localStorage.setItem('sikar_admin_categories', JSON.stringify(mergedCats));
       }
     }
   } catch (err) {

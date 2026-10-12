@@ -917,7 +917,7 @@ app.get('/api/products', (req, res) => {
       query += ' AND category = ?';
       params.push(category);
     }
-    query += ' ORDER BY display_order ASC, title ASC';
+    query += ' ORDER BY display_order ASC, created_at DESC, id DESC';
     const products = db.prepare(query).all(...params);
     res.json(products);
   } catch (err) {
@@ -927,17 +927,18 @@ app.get('/api/products', (req, res) => {
 
 app.post('/api/products', (req, res) => {
   try {
-    const { id, title, sku, category, price, mrp, cost, stock, lowStockThreshold, spec, image, description } = req.body;
+    const { id, title, sku, category, price, mrp, cost, stock, lowStockThreshold, spec, image, description, displayOrder } = req.body;
     if (!title || !price || !category) return res.status(400).json({ error: 'Title, price, and category are required' });
 
     const finalId = id || ('p_' + Date.now());
     const now = new Date().toISOString();
     const finalSku = sku || ('SKR-' + Math.floor(1000 + Math.random() * 9000));
+    const finalOrder = displayOrder !== undefined ? Number(displayOrder) : 0;
 
     db.prepare(`
       INSERT INTO products (id, sku, title, category, price, mrp, cost, stock, low_stock_threshold, spec, image, description, active, display_order, created_at, updated_at)
-      VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, 1, 99, ?, ?)
-    `).run(finalId, finalSku, title, category, Number(price), Number(mrp || price), Number(cost || (price * 0.75)), parseInt(stock, 10) || 0, parseInt(lowStockThreshold, 10) || 10, spec || '', image || 'assets/prod_bisleri_1l.jpg', description || '', now, now);
+      VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, 1, ?, ?, ?)
+    `).run(finalId, finalSku, title, category, Number(price), Number(mrp || price), Number(cost || (price * 0.75)), parseInt(stock, 10) || 0, parseInt(lowStockThreshold, 10) || 10, spec || '', image || 'assets/prod_bisleri_1l.jpg', description || '', finalOrder, now, now);
 
     res.status(201).json({ success: true, id: finalId });
   } catch (err) {

@@ -4714,12 +4714,24 @@
         }
 
         if (prods && Array.isArray(prods)) {
-          adminProducts = prods;
-          localStorage.setItem('sikar_admin_products', JSON.stringify(adminProducts));
+          const localProds = JSON.parse(localStorage.getItem('sikar_admin_products') || '[]');
+          const customProds = localProds.filter(lp => lp && lp.id && !prods.some(sp => sp.id === lp.id));
+          const mergedProds = [...customProds, ...prods];
+          mergedProds.sort((a, b) => {
+            const ordA = a.display_order !== undefined ? a.display_order : 50;
+            const ordB = b.display_order !== undefined ? b.display_order : 50;
+            if (ordA !== ordB) return ordA - ordB;
+            return (b.created_at || '').localeCompare(a.created_at || '');
+          });
+          adminProducts = mergedProds;
+          localStorage.setItem('sikar_admin_products', JSON.stringify(mergedProds));
         }
         if (cats && Array.isArray(cats) && cats.length > 0) {
-          adminCategories = cats;
-          localStorage.setItem('sikar_admin_categories', JSON.stringify(adminCategories));
+          const localCats = JSON.parse(localStorage.getItem('sikar_admin_categories') || '[]');
+          const customCats = localCats.filter(lc => lc && lc.id && !cats.some(sc => sc.id === lc.id));
+          const mergedCats = [...cats, ...customCats];
+          adminCategories = mergedCats;
+          localStorage.setItem('sikar_admin_categories', JSON.stringify(mergedCats));
         }
         if (manualSales && Array.isArray(manualSales)) {
           adminManualSales = manualSales;
@@ -6856,6 +6868,35 @@
         return;
       }
 
+      const finalId = editId || ('p_' + Date.now());
+
+      // Optimistically update adminProducts & localStorage immediately
+      if (editId) {
+        const idx = adminProducts.findIndex(p => p.id === editId);
+        if (idx > -1) {
+          adminProducts[idx] = Object.assign({}, adminProducts[idx], {
+            title, category: cat, spec, cost, price, mrp, stock, image: img, active: 1
+          });
+        }
+      } else {
+        adminProducts.unshift({
+          id: finalId,
+          title,
+          category: cat,
+          spec,
+          cost,
+          price,
+          mrp,
+          stock,
+          image: img,
+          active: 1,
+          display_order: 0,
+          created_at: new Date().toISOString()
+        });
+      }
+      localStorage.setItem('sikar_admin_products', JSON.stringify(adminProducts));
+      renderProductsTable();
+
       try {
         if (editId) {
           await sikarApi.put(`/api/products/${editId}`, {
@@ -6863,16 +6904,17 @@
           });
         } else {
           await sikarApi.post('/api/products', {
-            title, category: cat, spec, cost, price, mrp, stock, image: img, active: 1
+            id: finalId, title, category: cat, spec, cost, price, mrp, stock, image: img, active: 1, displayOrder: 0
           });
         }
         closeModal('product-modal');
         await syncFromBackend();
         renderProductsTable();
-        showToast(`Product '${title}' database me save ho gaya!`);
+        showToast(`Product '${title}' save ho gaya aur live website par add ho gaya!`);
       } catch (err) {
         console.error(err);
-        showToast('Error saving product: ' + err.message);
+        showToast('Product saved locally! Backend sync note: ' + err.message);
+        closeModal('product-modal');
       }
     }
 
@@ -6960,6 +7002,33 @@
         return;
       }
 
+      const finalCatId = editId || slug || name.toLowerCase().replace(/[^a-z0-9]/g, '_');
+
+      // Optimistically update adminCategories & localStorage
+      if (editId) {
+        const idx = adminCategories.findIndex(c => c.id === editId);
+        if (idx > -1) {
+          adminCategories[idx] = Object.assign({}, adminCategories[idx], { name, tagline, image });
+        }
+      } else {
+        const existingIdx = adminCategories.findIndex(c => c.id === finalCatId);
+        if (existingIdx > -1) {
+          adminCategories[existingIdx] = Object.assign({}, adminCategories[existingIdx], { name, tagline, image });
+        } else {
+          adminCategories.push({
+            id: finalCatId,
+            name,
+            tagline,
+            image,
+            display_order: adminCategories.length + 1,
+            active: 1
+          });
+        }
+      }
+      localStorage.setItem('sikar_admin_categories', JSON.stringify(adminCategories));
+      renderCategoriesTable();
+      populateCategorySelectDropdown();
+
       try {
         if (editId) {
           await sikarApi.put(`/api/categories/${editId}`, {
@@ -6967,22 +7036,28 @@
           });
         } else {
           await sikarApi.post('/api/categories', {
-            id: slug, name, tagline, image
+            id: finalCatId, name, tagline, image
           });
         }
         closeModal('category-modal');
         await syncFromBackend();
         renderCategoriesTable();
         populateCategorySelectDropdown();
-        showToast(`Category '${name}' database me save ho gayi!`);
+        showToast(`Category '${name}' save ho gayi aur website par live hai!`);
       } catch (err) {
         console.error(err);
-        showToast('Category save error: ' + err.message);
+        showToast('Category saved locally! Backend sync note: ' + err.message);
+        closeModal('category-modal');
       }
     }
 
     async function deleteCategory(id) {
       if (confirm(`Aap category '${id}' ko delete karna chahte hain? Iske products default category me shift ho jayenge.`)) {
+        adminCategories = adminCategories.filter(c => c.id !== id);
+        localStorage.setItem('sikar_admin_categories', JSON.stringify(adminCategories));
+        renderCategoriesTable();
+        populateCategorySelectDropdown();
+
         try {
           await sikarApi.delete(`/api/categories/${id}?reassignTo=water`);
           await syncFromBackend();
@@ -6991,7 +7066,7 @@
           showToast(`Category '${id}' delete ho gayi!`);
         } catch (err) {
           console.error(err);
-          showToast('Category delete error: ' + err.message);
+          showToast('Category deleted locally. Sync note: ' + err.message);
         }
       }
     }
