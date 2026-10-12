@@ -1,10 +1,10 @@
 <!DOCTYPE html>
-<html lang="hi">
+<html lang="en">
 <head>
   <meta charset="UTF-8">
   <meta name="viewport" content="width=device-width, initial-scale=1.0">
   <title>Sikar Drop — Pure Water & Beverages Delivery in Sikar</title>
-  <meta name="description" content="Quality drinking water and beverages delivered across Sikar. Factory-sealed water bottles, cold drinks, juices and cans. Hum 20L water jar supply nahi karte.">
+  <meta name="description" content="Quality drinking water and beverages delivered across Sikar. Factory-sealed water bottles, cold drinks, juices and cans. We strictly do not supply 20L water jar refills.">
   <script>
     // Direct /admin and #admin URL listener (zero public UI exposure)
     (function() {
@@ -1405,7 +1405,8 @@
       inset: 0;
       background: rgba(11, 25, 44, 0.7);
       backdrop-filter: blur(4px);
-      z-index: 1000;
+      -webkit-backdrop-filter: blur(4px);
+      z-index: 9990;
       display: none;
       align-items: center;
       justify-content: center;
@@ -2883,7 +2884,81 @@
       .footer-cols-grid { grid-template-columns: 1fr !important; gap: 24px !important; }
       .dual-banners-grid { grid-template-columns: 1fr !important; }
       .bulk-calc-grid { grid-template-columns: minmax(0, 1fr) !important; }
-      .floating-whatsapp-widget { bottom: 76px !important; right: 14px !important; }
+
+      /* FLOATING WHATSAPP FAB MOBILE */
+      .floating-whatsapp-widget {
+        bottom: calc(74px + env(safe-area-inset-bottom, 0px)) !important;
+        right: 14px !important;
+        z-index: 990 !important;
+      }
+      .btn-floating-whatsapp {
+        width: 48px !important;
+        height: 48px !important;
+        padding: 0 !important;
+        border-radius: 50% !important;
+        justify-content: center !important;
+        box-shadow: 0 4px 14px rgba(21, 128, 61, 0.45) !important;
+      }
+      .btn-floating-whatsapp span {
+        display: none !important;
+      }
+      .btn-floating-whatsapp svg {
+        width: 24px !important;
+        height: 24px !important;
+      }
+
+      /* MODALS & QUICK VIEW RESPONSIVE */
+      .quick-view-dialog {
+        padding: 20px 16px 24px !important;
+        max-height: 85vh !important;
+        max-height: 85dvh !important;
+        overflow-y: auto !important;
+        -webkit-overflow-scrolling: touch !important;
+        border-radius: 18px !important;
+        margin: 10px !important;
+        width: calc(100% - 20px) !important;
+      }
+      .qv-layout-grid {
+        grid-template-columns: 1fr !important;
+        gap: 14px !important;
+      }
+      .qv-photo-box {
+        height: 180px !important;
+        padding: 10px !important;
+      }
+      .qv-photo-box img {
+        height: 160px !important;
+        max-width: 100% !important;
+      }
+      .qv-info-box h3 {
+        font-size: 1.15rem !important;
+        line-height: 1.3 !important;
+      }
+
+      .auth-modal-dialog,
+      .order-confirm-dialog,
+      .admin-modal-box {
+        max-height: 85vh !important;
+        max-height: 85dvh !important;
+        overflow-y: auto !important;
+        -webkit-overflow-scrolling: touch !important;
+        border-radius: 18px !important;
+        padding: 22px 16px 28px !important;
+        margin: 10px !important;
+        width: calc(100% - 20px) !important;
+      }
+
+      .stepper-btn-pill {
+        width: 28px !important;
+        height: 28px !important;
+        font-size: 0.95rem !important;
+      }
+    }
+
+    body:has(.modal-backdrop.active) .floating-whatsapp-widget,
+    body:has(.cart-drawer-panel.open) .floating-whatsapp-widget,
+    body:has(.cart-drawer-side.open) .floating-whatsapp-widget {
+      display: none !important;
     }
 
     @media (max-width: 480px) {
@@ -3879,19 +3954,20 @@
         bottom: 0;
         left: 0;
         right: 0;
-        height: 64px;
+        height: calc(62px + env(safe-area-inset-bottom, 0px));
         background: rgba(255, 255, 255, 0.96);
         backdrop-filter: blur(12px);
+        -webkit-backdrop-filter: blur(12px);
         border-top: 1px solid var(--border-subtle);
         box-shadow: 0 -4px 16px rgba(0, 0, 0, 0.08);
-        z-index: 1000;
+        z-index: 995;
         align-items: center;
         justify-content: space-around;
-        padding: 4px 6px;
+        padding: 4px 6px env(safe-area-inset-bottom, 4px);
       }
 
       body {
-        padding-bottom: 70px;
+        padding-bottom: calc(76px + env(safe-area-inset-bottom, 0px)) !important;
       }
 
       .dock-tab-btn {
@@ -3910,6 +3986,13 @@
         padding: 6px 0;
         position: relative;
         text-decoration: none;
+        touch-action: manipulation;
+        -webkit-tap-highlight-color: transparent;
+        transition: transform 0.12s ease, color 0.12s ease;
+      }
+
+      .dock-tab-btn:active {
+        transform: scale(0.92);
       }
 
       .dock-tab-btn svg {
@@ -8179,9 +8262,16 @@
       const chipsWrap = document.getElementById('site-delivery-quick-chips');
       if (!chipsWrap) return;
       const activeZones = (SERVICEABLE_DELIVERY_ZONES || []).filter(z => Number(z.serviceable) === 1);
+      const seen = new Set();
+      const uniqueZones = activeZones.filter(z => {
+        const name = (z.corridor || z.area_name || '').trim();
+        if (!name || seen.has(name)) return false;
+        seen.add(name);
+        return true;
+      });
       chipsWrap.innerHTML = `<span style="font-size: 0.74rem; font-weight: 800; color: #0369A1;">Serviceable Areas:</span>` +
-        activeZones.map(z => `
-          <button type="button" onclick="checkWebsiteDeliveryAvailability('${escapeHTML(z.corridor || z.area_name)}')" style="background: #FFFFFF; border: 1px solid #7DD3FC; color: #0284C7; border-radius: 999px; padding: 3px 10px; font-size: 0.74rem; font-weight: 700; cursor: pointer;">
+        uniqueZones.map(z => `
+          <button type="button" onclick="checkWebsiteDeliveryAvailability('${escapeHTML(z.corridor || z.area_name)}')" style="background: #FFFFFF; border: 1px solid #7DD3FC; color: #0284C7; border-radius: 999px; padding: 3px 10px; font-size: 0.74rem; font-weight: 700; cursor: pointer; touch-action: manipulation;">
             ${escapeHTML(z.corridor || z.area_name)}
           </button>
         `).join('');
@@ -8256,9 +8346,16 @@
       }
 
       if (tagsBox) {
+        const seenTags = new Set();
+        const uniqueTags = activeZones.filter(z => {
+          const name = (z.corridor || z.area_name || '').trim();
+          if (!name || seenTags.has(name)) return false;
+          seenTags.add(name);
+          return true;
+        });
         tagsBox.innerHTML = `<span style="font-size: 0.72rem; color: var(--text-muted); font-weight: 700; width: 100%;">Admin Approved Areas (Click to fill in address):</span>` +
-          activeZones.map(z => `
-            <button type="button" onclick="selectCheckoutQuickArea('${escapeHTML(z.area_name)}', '${escapeHTML(z.corridor || z.area_name)}')" style="background: #F0F9FF; border: 1px solid #BAE6FD; color: #0284C7; border-radius: 999px; padding: 2px 8px; font-size: 0.72rem; font-weight: 700; cursor: pointer;">
+          uniqueTags.map(z => `
+            <button type="button" onclick="selectCheckoutQuickArea('${escapeHTML(z.area_name)}', '${escapeHTML(z.corridor || z.area_name)}')" style="background: #F0F9FF; border: 1px solid #BAE6FD; color: #0284C7; border-radius: 999px; padding: 2px 8px; font-size: 0.72rem; font-weight: 700; cursor: pointer; touch-action: manipulation;">
               + ${escapeHTML(z.corridor || z.area_name)}
             </button>
           `).join('');

@@ -1,5 +1,5 @@
 <!DOCTYPE html>
-<html lang="hi">
+<html lang="en">
 <head>
   <meta charset="UTF-8">
   <meta name="viewport" content="width=device-width, initial-scale=1.0">
@@ -47,6 +47,46 @@
   <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
   <link href="https://fonts.googleapis.com/css2?family=Be+Vietnam+Pro:wght@400;500;600;700;800&family=Outfit:wght@500;600;700;800;900&display=swap" rel="stylesheet">
   <link rel="stylesheet" href="assets/site.css">
+  <style>
+    .catalog-chips-bar {
+      display: flex;
+      align-items: center;
+      gap: 8px;
+      overflow-x: auto;
+      flex-wrap: nowrap;
+      -webkit-overflow-scrolling: touch;
+      scrollbar-width: none;
+      -ms-overflow-style: none;
+      padding: 4px 2px 8px;
+    }
+    .catalog-chips-bar::-webkit-scrollbar {
+      display: none;
+    }
+    .catalog-chips-bar .chip-filter-btn {
+      flex-shrink: 0;
+      white-space: nowrap;
+      touch-action: manipulation;
+    }
+    @media (max-width: 768px) {
+      .catalog-page-hero {
+        padding: 14px 16px !important;
+        margin-bottom: 12px !important;
+      }
+      #catalog-page-title {
+        font-size: 1.25rem !important;
+        line-height: 1.25 !important;
+        margin-bottom: 4px !important;
+      }
+      #catalog-page-subtitle {
+        font-size: 0.8rem !important;
+        line-height: 1.35 !important;
+      }
+      .catalog-filter-card {
+        padding: 10px 14px !important;
+        margin-bottom: 14px !important;
+      }
+    }
+  </style>
 </head>
 <body>
 
@@ -134,7 +174,7 @@
       </div>
 
       <!-- FILTER CHIPS & SORT BAR -->
-      <div style="background: #FFFFFF; border: 1.5px solid var(--border-subtle); border-radius: var(--radius-md); padding: 14px 18px; margin-bottom: 24px; box-shadow: var(--shadow-card);">
+      <div class="catalog-filter-card" style="background: #FFFFFF; border: 1.5px solid var(--border-subtle); border-radius: var(--radius-md); padding: 14px 18px; margin-bottom: 24px; box-shadow: var(--shadow-card);">
         <div style="display: flex; justify-content: space-between; align-items: center; flex-wrap: wrap; gap: 10px; margin-bottom: 12px;">
           <div class="cat-filter-label-bar" style="margin-bottom: 0;">
             <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.4" width="16" height="16"><rect x="3" y="3" width="7" height="7"></rect><rect x="14" y="3" width="7" height="7"></rect><rect x="14" y="14" width="7" height="7"></rect><rect x="3" y="14" width="7" height="7"></rect></svg>
@@ -153,7 +193,7 @@
           </div>
         </div>
 
-        <div style="display: flex; gap: 8px; flex-wrap: wrap;" id="catalog-category-chips">
+        <div class="catalog-chips-bar" id="catalog-category-chips">
           <button type="button" class="chip-filter-btn active" data-cat="all" onclick="filterCatalogCategory('all', this)">All Categories</button>
           <button type="button" class="chip-filter-btn" data-cat="water" onclick="filterCatalogCategory('water', this)">Drinking Water Bottles</button>
           <button type="button" class="chip-filter-btn" data-cat="cases" onclick="filterCatalogCategory('cases', this)">Packaged Water (Cases)</button>
