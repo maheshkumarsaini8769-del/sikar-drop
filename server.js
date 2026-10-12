@@ -1837,6 +1837,7 @@ app.post('/api/media/upload', (req, res) => {
 // 19. STATIC ASSETS & HTML SERVING
 // ==========================================
 // Multi-page dedicated routes
+app.get(['/cart', '/cart.html'], (req, res) => res.sendFile(path.join(__dirname, 'cart.html')));
 app.get(['/products', '/products.html'], (req, res) => res.sendFile(path.join(__dirname, 'products.html')));
 app.get(['/categories', '/categories.html'], (req, res) => res.sendFile(path.join(__dirname, 'categories.html')));
 app.get(['/bulk', '/bulk.html', '/corporate', '/corporate.html'], (req, res) => res.sendFile(path.join(__dirname, 'bulk.html')));

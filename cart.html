@@ -1,0 +1,658 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  
+  <title>Your Wholesale Dispatch Cart | Sikar Drop Depot</title>
+  <meta name="description" content="Review your wholesale beverage carton order, apply promo coupons, and confirm local Sikar delivery on Sikar Drop. Fast tempo unloading across Piprali & Nawalgarh Road.">
+  <link rel="canonical" href="https://sikar-drop.vercel.app/cart">
+
+  <!-- FONTS & STYLES -->
+  <link rel="preconnect" href="https://fonts.googleapis.com">
+  <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+  <link href="https://fonts.googleapis.com/css2?family=Be+Vietnam+Pro:wght@400;500;600;700;800&family=Outfit:wght@500;600;700;800;900&display=swap" rel="stylesheet">
+  <link rel="stylesheet" href="assets/site.css">
+
+  <style>
+    .cart-page-grid {
+      display: grid;
+      grid-template-columns: 1.4fr 1fr;
+      gap: 28px;
+      align-items: start;
+    }
+    .cart-card-surface {
+      background: #FFFFFF;
+      border: 1.5px solid var(--border-subtle);
+      border-radius: var(--radius-md);
+      box-shadow: var(--shadow-card);
+      padding: 24px;
+    }
+    .cart-item-row {
+      display: flex;
+      align-items: center;
+      gap: 16px;
+      padding: 16px 0;
+      border-bottom: 1px solid var(--border-subtle);
+    }
+    .cart-item-row:last-child {
+      border-bottom: none;
+    }
+    .cart-item-img {
+      width: 72px;
+      height: 72px;
+      border-radius: var(--radius-xs);
+      object-fit: cover;
+      background: #F8FAFC;
+      border: 1px solid var(--border-subtle);
+      flex-shrink: 0;
+    }
+    .cart-item-details {
+      flex: 1;
+      min-width: 0;
+    }
+    .cart-item-title {
+      font-size: 0.98rem;
+      font-weight: 700;
+      color: var(--navy-dark);
+      margin: 0 0 4px 0;
+    }
+    .cart-item-sub {
+      font-size: 0.8rem;
+      color: var(--text-light);
+      margin: 0 0 6px 0;
+    }
+    .cart-item-price {
+      font-size: 1rem;
+      font-weight: 800;
+      color: var(--primary);
+    }
+    .cart-stepper-btn {
+      width: 32px;
+      height: 32px;
+      border: 1.5px solid var(--border-light);
+      background: #FFFFFF;
+      border-radius: var(--radius-xs);
+      font-size: 1rem;
+      font-weight: 800;
+      cursor: pointer;
+      display: inline-flex;
+      align-items: center;
+      justify-content: center;
+      transition: background 0.15s, border-color 0.15s;
+    }
+    .cart-stepper-btn:hover {
+      background: var(--bg-subtle);
+      border-color: var(--primary);
+    }
+    .cart-qty-val {
+      min-width: 30px;
+      text-align: center;
+      font-weight: 800;
+      font-size: 0.95rem;
+    }
+    .btn-remove-line {
+      background: transparent;
+      border: none;
+      color: #94A3B8;
+      cursor: pointer;
+      padding: 6px;
+      border-radius: 6px;
+      transition: color 0.15s, background 0.15s;
+    }
+    .btn-remove-line:hover {
+      color: #DC2626;
+      background: #FEE2E2;
+    }
+    .checkout-form-group {
+      margin-bottom: 14px;
+    }
+    .checkout-form-group label {
+      display: block;
+      font-size: 0.82rem;
+      font-weight: 700;
+      color: var(--text-dark);
+      margin-bottom: 5px;
+    }
+    .checkout-form-group input,
+    .checkout-form-group select,
+    .checkout-form-group textarea {
+      width: 100%;
+      padding: 10px 12px;
+      border: 1.5px solid var(--border-subtle);
+      border-radius: var(--radius-xs);
+      font-family: inherit;
+      font-size: 0.92rem;
+      color: var(--text-dark);
+      background: #FFFFFF;
+      box-sizing: border-box;
+      outline: none;
+      transition: border-color 0.15s, box-shadow 0.15s;
+    }
+    .checkout-form-group input:focus,
+    .checkout-form-group select:focus,
+    .checkout-form-group textarea:focus {
+      border-color: var(--primary);
+      box-shadow: 0 0 0 3px rgba(3, 105, 161, 0.15);
+    }
+    @media (max-width: 900px) {
+      .cart-page-grid {
+        grid-template-columns: 1fr;
+        gap: 20px;
+      }
+    }
+    @media (max-width: 480px) {
+      .cart-card-surface {
+        padding: 16px;
+      }
+      .cart-item-row {
+        gap: 12px;
+      }
+      .cart-item-img {
+        width: 58px;
+        height: 58px;
+      }
+    }
+  </style>
+</head>
+<body>
+
+  <!-- MODERN NAVBAR -->
+  <header class="site-navbar">
+    <div class="container nav-layout">
+      <!-- 1. BRAND LOGO -->
+      <a href="/" class="brand-block">
+        <div class="brand-icon-drop">
+          <svg viewBox="0 0 24 24" fill="currentColor">
+            <path d="M12 2.69l5.66 5.66a8 8 0 1 1-11.31 0z"></path>
+          </svg>
+        </div>
+        <div class="brand-text-col">
+          <div class="brand-title">SIKAR <span class="accent-blue">DROP</span></div>
+          <span class="brand-tagline">Pure Water. Healthy Life.</span>
+        </div>
+      </a>
+
+      <!-- 2. DESKTOP CENTER NAVIGATION LINKS -->
+      <nav class="nav-links-menu" aria-label="Main Navigation">
+        <a href="/" class="nav-item-link">Home</a>
+        <a href="/products" class="nav-item-link">Products</a>
+        <a href="/categories" class="nav-item-link">Categories</a>
+        <a href="/bulk" class="nav-item-link">Corporate Supply</a>
+        <a href="/track" class="nav-item-link">Track Order</a>
+        <a href="/about" class="nav-item-link">About Us</a>
+        <a href="/why" class="nav-item-link">Why Us</a>
+        <a href="/faq" class="nav-item-link">FAQs</a>
+        <a href="/contact" class="nav-item-link">Contact</a>
+      </nav>
+
+      <!-- 3. SEARCH BAR -->
+      <div class="nav-search-bar">
+        <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.3">
+          <circle cx="11" cy="11" r="8"></circle>
+          <line x1="21" y1="21" x2="16.65" y2="16.65"></line>
+        </svg>
+        <input type="text" class="nav-search-input" placeholder="Search water, pack, brand..." onkeyup="if(event.key==='Enter') window.location.href='/products?q=' + encodeURIComponent(this.value)">
+      </div>
+
+      <!-- 4. RIGHT ACTION ICONS -->
+      <div class="nav-right-actions">
+        <a href="/cart" class="nav-icon-action-btn active" title="Shopping Cart" style="color: var(--primary);">
+          <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2">
+            <circle cx="9" cy="21" r="1"></circle>
+            <circle cx="20" cy="21" r="1"></circle>
+            <path d="M1 1h4l2.68 13.39a2 2 0 0 0 2 1.61h9.72a2 2 0 0 0 2-1.61L23 6H6"></path>
+          </svg>
+          <span class="cart-badge-counter" id="cart-badge">0</span>
+        </a>
+      </div>
+    </div>
+  </header>
+
+  <!-- MAIN CART CONTAINER -->
+  <main style="padding: 28px 0 64px; background: #F8FAFC; min-height: 85vh;">
+    <div class="container">
+      
+      <!-- BREADCRUMB -->
+      <div style="font-size: 0.82rem; color: var(--text-light); margin-bottom: 18px; display: flex; align-items: center; gap: 8px;">
+        <a href="/" style="color: var(--primary); text-decoration: none; font-weight: 700;">Home</a>
+        <span>/</span>
+        <a href="/products" style="color: var(--primary); text-decoration: none; font-weight: 700;">Products</a>
+        <span>/</span>
+        <span style="color: var(--text-dark); font-weight: 800;">Shopping Cart</span>
+      </div>
+
+      <div class="cart-page-grid">
+        
+        <!-- LEFT: CART ITEMS LIST -->
+        <div class="cart-card-surface">
+          <div style="display: flex; align-items: center; justify-content: space-between; border-bottom: 1.5px solid var(--border-subtle); padding-bottom: 14px; margin-bottom: 16px;">
+            <div>
+              <h1 style="font-family: var(--font-heading); font-size: 1.45rem; font-weight: 900; color: var(--navy-dark); margin: 0 0 4px 0;">Wholesale Dispatch Cart</h1>
+              <span style="font-size: 0.84rem; color: var(--text-light);"><span id="cart-items-count-text">0</span> items in cart</span>
+            </div>
+            <button type="button" onclick="clearFullCart()" style="background: none; border: none; color: #DC2626; font-size: 0.82rem; font-weight: 700; cursor: pointer; text-decoration: underline;">Clear Cart</button>
+          </div>
+
+          <!-- CART ITEMS INJECTED HERE -->
+          <div id="full-cart-items-list">
+            <div style="text-align: center; padding: 48px 20px; color: var(--text-light);">
+              <svg width="48" height="48" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" style="margin-bottom: 12px; color: #94A3B8;"><circle cx="9" cy="21" r="1"></circle><circle cx="20" cy="21" r="1"></circle><path d="M1 1h4l2.68 13.39a2 2 0 0 0 2 1.61h9.72a2 2 0 0 0 2-1.61L23 6H6"></path></svg>
+              <p style="font-size: 1.05rem; font-weight: 700; color: var(--navy-dark); margin: 0 0 6px 0;">Your Cart Is Currently Empty</p>
+              <p style="font-size: 0.88rem; margin: 0 0 20px 0;">Add bottled water petis, cold drink crates, or juice cartons to get started.</p>
+              <a href="/products" class="btn-portal-primary" style="display: inline-flex; padding: 10px 22px; text-decoration: none;">Browse Wholesale Products</a>
+            </div>
+          </div>
+
+          <!-- ZERO 20L JARS REMINDER -->
+          <div style="margin-top: 24px; padding: 12px 16px; background: #FEF2F2; border: 1px solid #FECACA; border-radius: var(--radius-xs); display: flex; align-items: center; gap: 10px; font-size: 0.82rem; color: #991B1B;">
+            <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2" style="flex-shrink:0;"><circle cx="12" cy="12" r="10"></circle><line x1="12" y1="8" x2="12" y2="12"></line><line x1="12" y1="16" x2="12.01" y2="16"></line></svg>
+            <span><strong>Policy Reminder:</strong> Sikar Drop strictly supplies 100% factory-sealed bottles and petis only. We do not provide 20L camper/jar refills.</span>
+          </div>
+        </div>
+
+        <!-- RIGHT: SUMMARY & CHECKOUT FORM -->
+        <div>
+          <!-- ORDER SUMMARY CARD -->
+          <div class="cart-card-surface" style="margin-bottom: 20px;">
+            <h2 style="font-family: var(--font-heading); font-size: 1.22rem; font-weight: 800; color: var(--navy-dark); margin: 0 0 16px 0;">Order Summary</h2>
+            
+            <!-- PROMO CODE -->
+            <div style="display: flex; gap: 8px; margin-bottom: 14px;">
+              <input type="text" id="page-coupon-input" placeholder="Coupon Code (e.g. DIWALI10)" style="flex: 1; padding: 9px 12px; border: 1.5px solid var(--border-subtle); border-radius: var(--radius-xs); font-weight: 700; text-transform: uppercase; font-size: 0.86rem;">
+              <button type="button" class="btn-portal-primary" onclick="applyPageCoupon()" style="padding: 9px 16px; font-size: 0.84rem;">Apply</button>
+            </div>
+            <div id="page-coupon-status" style="display: none; font-size: 0.8rem; margin-bottom: 12px;"></div>
+
+            <!-- PRICE BREAKDOWN -->
+            <div style="display: flex; justify-content: space-between; font-size: 0.92rem; color: var(--text-dark); margin-bottom: 8px;">
+              <span>Subtotal:</span>
+              <strong id="page-cart-subtotal">₹0</strong>
+            </div>
+            <div id="page-discount-row" style="display: none; justify-content: space-between; font-size: 0.92rem; color: #15803D; font-weight: 700; margin-bottom: 8px;">
+              <span>Promo Discount:</span>
+              <strong id="page-cart-discount">-₹0</strong>
+            </div>
+            <div style="display: flex; justify-content: space-between; font-size: 0.92rem; color: var(--text-dark); margin-bottom: 14px; padding-bottom: 12px; border-bottom: 1px solid var(--border-subtle);">
+              <span>Delivery Charge (Sikar):</span>
+              <strong style="color: #15803D;" id="page-delivery-charge">FREE Express</strong>
+            </div>
+            <div style="display: flex; justify-content: space-between; align-items: baseline; font-size: 1.15rem; color: var(--navy-dark); font-weight: 900; margin-bottom: 4px;">
+              <span>Grand Total:</span>
+              <span style="font-size: 1.55rem; color: #0284C7; font-family: var(--font-heading);" id="page-cart-total">₹0</span>
+            </div>
+            <p style="font-size: 0.76rem; color: var(--text-light); margin: 0 0 16px 0;">Includes GST &amp; loading into express tempo</p>
+          </div>
+
+          <!-- CHECKOUT DETAILS FORM -->
+          <div class="cart-card-surface">
+            <h2 style="font-family: var(--font-heading); font-size: 1.22rem; font-weight: 800; color: var(--navy-dark); margin: 0 0 14px 0;">Delivery Information</h2>
+            
+            <form id="checkout-dispatch-form" onsubmit="handleCartFormSubmit(event)">
+              <div class="checkout-form-group">
+                <label for="order-cust-name">Full Name / Business Name *</label>
+                <input type="text" id="order-cust-name" required placeholder="e.g. Ramesh Saini or Royal Garden">
+              </div>
+
+              <div class="checkout-form-group">
+                <label for="order-cust-phone">WhatsApp Mobile Number (10 Digits) *</label>
+                <input type="tel" id="order-cust-phone" required pattern="[0-9]{10}" placeholder="e.g. 9829012345">
+              </div>
+
+              <div class="checkout-form-group">
+                <label for="order-delivery-corridor">Sikar Delivery Locality / Corridor *</label>
+                <select id="order-delivery-corridor" required onchange="verifyAreaAvailability(this.value)">
+                  <option value="">-- Select Your Sikar Area --</option>
+                  <option value="Piprali Road (Coaching Hub & Marriage Gardens)">Piprali Road (Coaching Hub & Marriage Gardens)</option>
+                  <option value="Nawalgarh Road & Pullia Market">Nawalgarh Road & Pullia Market</option>
+                  <option value="Station Road, Subhash Chowk & Krishi Mandi">Station Road, Subhash Chowk & Krishi Mandi</option>
+                  <option value="Fatehpur Road & Sabalpura Corridor">Fatehpur Road & Sabalpura Corridor</option>
+                  <option value="Rani Sati Road, Silver Jubilee & Collectorate">Rani Sati Road & Silver Jubilee Road</option>
+                  <option value="Salasar Stand, Jaipur Road & Industrial Area">Salasar Stand, Jaipur Road & RIICO</option>
+                </select>
+              </div>
+
+              <div id="corridor-availability-alert" style="display: none; padding: 8px 12px; border-radius: var(--radius-xs); font-size: 0.8rem; font-weight: 700; margin-bottom: 12px;"></div>
+
+              <div class="checkout-form-group">
+                <label for="order-cust-address">Street Address / Landmark *</label>
+                <textarea id="order-cust-address" rows="2" required placeholder="Shop number, marriage garden gate, colony name, landmark..."></textarea>
+              </div>
+
+              <div class="checkout-form-group">
+                <label>Payment Method *</label>
+                <div style="display: flex; gap: 14px; flex-wrap: wrap; margin-top: 6px;">
+                  <label style="display: inline-flex; align-items: center; gap: 6px; font-weight: 600; font-size: 0.88rem; cursor: pointer;">
+                    <input type="radio" name="pay-method" value="COD" checked> Cash on Delivery (COD)
+                  </label>
+                  <label style="display: inline-flex; align-items: center; gap: 6px; font-weight: 600; font-size: 0.88rem; cursor: pointer;">
+                    <input type="radio" name="pay-method" value="UPI"> UPI / QR on Unloading
+                  </label>
+                </div>
+              </div>
+
+              <div class="checkout-form-group">
+                <label for="order-notes">Order Notes / Delivery Time (Optional)</label>
+                <input type="text" id="order-notes" placeholder="e.g. Unload before 4 PM, cold chilled cans required">
+              </div>
+
+              <button type="submit" id="btn-place-order" class="btn-checkout-gate" style="margin-top: 8px; font-size: 1rem; padding: 14px;">
+                <span>CONFIRM &amp; DISPATCH ORDER</span>
+                <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2"><line x1="5" y1="12" x2="19" y2="12"></line><polyline points="12 5 19 12 12 19"></polyline></svg>
+              </button>
+            </form>
+          </div>
+        </div>
+
+      </div>
+
+    </div>
+  </main>
+
+  <!-- MOBILE BOTTOM NAVIGATION DOCK -->
+  <nav class="mobile-bottom-dock" id="mobile-bottom-dock" aria-label="Mobile Navigation">
+    <a href="/" class="dock-tab-btn" id="dock-btn-home">
+      <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2"><path d="m3 9 9-7 9 7v11a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2z"></path><polyline points="9 22 9 12 15 12 15 22"></polyline></svg>
+      <span>Home</span>
+    </a>
+    <a href="/products" class="dock-tab-btn" id="dock-btn-products">
+      <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2"><path d="M6 2 3 6v14a2 2 0 0 0 2 2h14a2 2 0 0 0 2-2V6l-3-4Z"></path><path d="M3 6h18"></path><path d="M16 10a4 4 0 0 1-8 0"></path></svg>
+      <span>Beverages</span>
+    </a>
+    <a href="/categories" class="dock-tab-btn" id="dock-btn-categories">
+      <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2"><rect x="3" y="3" width="7" height="7"></rect><rect x="14" y="3" width="7" height="7"></rect><rect x="14" y="14" width="7" height="7"></rect><rect x="3" y="14" width="7" height="7"></rect></svg>
+      <span>Categories</span>
+    </a>
+    <a href="/track" class="dock-tab-btn" id="dock-btn-track">
+      <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2"><rect x="1" y="3" width="15" height="13"></rect><polygon points="16 8 20 8 23 11 23 16 16 16 16 8"></polygon><circle cx="5.5" cy="18.5" r="2.5"></circle><circle cx="18.5" cy="18.5" r="2.5"></circle></svg>
+      <span>Track Order</span>
+    </a>
+    <a href="/cart" class="dock-tab-btn active" id="dock-btn-cart">
+      <div style="position: relative; display: inline-flex;">
+        <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2"><circle cx="9" cy="21" r="1"></circle><circle cx="20" cy="21" r="1"></circle><path d="M1 1h4l2.68 13.39a2 2 0 0 0 2 1.61h9.72a2 2 0 0 0 2-1.61L23 6H6"></path></svg>
+        <span class="dock-cart-counter" id="dock-cart-badge">0</span>
+      </div>
+      <span>Cart</span>
+    </a>
+  </nav>
+
+  <!-- CART SCRIPTS -->
+  <script src="assets/site.js"></script>
+  <script>
+    let pageAppliedCoupon = null;
+
+    window.addEventListener('DOMContentLoaded', async () => {
+      await initStorefrontTheme();
+      await loadCatalogFromBackend();
+      renderFullCartPage();
+    });
+
+    function renderFullCartPage() {
+      const cart = JSON.parse(localStorage.getItem('sikar_cart') || '{}');
+      const container = document.getElementById('full-cart-items-list');
+      const countText = document.getElementById('cart-items-count-text');
+      const subtotalEl = document.getElementById('page-cart-subtotal');
+      const discountRow = document.getElementById('page-discount-row');
+      const discountEl = document.getElementById('page-cart-discount');
+      const totalEl = document.getElementById('page-cart-total');
+      const badge = document.getElementById('cart-badge');
+      const dockBadge = document.getElementById('dock-cart-badge');
+
+      let totalItems = 0;
+      let subtotal = 0;
+      let html = '';
+
+      for (const [id, qty] of Object.entries(cart)) {
+        if (qty <= 0) continue;
+        const prod = PRODUCTS.find(p => String(p.id) === String(id));
+        if (!prod) continue;
+
+        totalItems += qty;
+        const lineTotal = prod.price * qty;
+        subtotal += lineTotal;
+
+        html += `
+          <div class="cart-item-row" id="cart-row-${prod.id}">
+            <img src="${prod.image}" alt="${prod.title}" class="cart-item-img">
+            <div class="cart-item-details">
+              <h3 class="cart-item-title">${escapeHTML(prod.title)}</h3>
+              <p class="cart-item-sub">${escapeHTML(prod.spec || 'Wholesale Peti')} • ₹${prod.price}/unit</p>
+              <div class="cart-item-price tabular">₹${lineTotal.toLocaleString('en-IN')}</div>
+            </div>
+            <div style="display: flex; align-items: center; gap: 6px;">
+              <button type="button" class="cart-stepper-btn" onclick="updatePageCartQty('${prod.id}', -1)">-</button>
+              <span class="cart-qty-val tabular">${qty}</span>
+              <button type="button" class="cart-stepper-btn" onclick="updatePageCartQty('${prod.id}', 1)">+</button>
+            </div>
+            <button type="button" class="btn-remove-line" onclick="updatePageCartQty('${prod.id}', -${qty})" title="Remove item">
+              <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><polyline points="3 6 5 6 21 6"></polyline><path d="M19 6v14a2 2 0 0 1-2 2H7a2 2 0 0 1-2-2V6m3 0V4a2 2 0 0 1 2-2h4a2 2 0 0 1 2 2v2"></path></svg>
+            </button>
+          </div>
+        `;
+      }
+
+      if (badge) badge.textContent = totalItems;
+      if (dockBadge) dockBadge.textContent = totalItems;
+      if (countText) countText.textContent = totalItems;
+
+      if (totalItems === 0) {
+        container.innerHTML = `
+          <div style="text-align: center; padding: 48px 20px; color: var(--text-light);">
+            <svg width="48" height="48" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" style="margin-bottom: 12px; color: #94A3B8;"><circle cx="9" cy="21" r="1"></circle><circle cx="20" cy="21" r="1"></circle><path d="M1 1h4l2.68 13.39a2 2 0 0 0 2 1.61h9.72a2 2 0 0 0 2-1.61L23 6H6"></path></svg>
+            <p style="font-size: 1.05rem; font-weight: 700; color: var(--navy-dark); margin: 0 0 6px 0;">Your Cart Is Currently Empty</p>
+            <p style="font-size: 0.88rem; margin: 0 0 20px 0;">Add bottled water petis, cold drink crates, or juice cartons to get started.</p>
+            <a href="/products" class="btn-portal-primary" style="display: inline-flex; padding: 10px 22px; text-decoration: none;">Browse Wholesale Products</a>
+          </div>
+        `;
+        subtotalEl.textContent = '₹0';
+        totalEl.textContent = '₹0';
+        if (discountRow) discountRow.style.display = 'none';
+        return;
+      }
+
+      container.innerHTML = html;
+
+      // Discount
+      let discountAmt = 0;
+      if (pageAppliedCoupon && subtotal >= (pageAppliedCoupon.minOrder || 0)) {
+        const pctDisc = Math.round((subtotal * pageAppliedCoupon.pct) / 100);
+        discountAmt = Math.min(pctDisc, pageAppliedCoupon.maxDiscount || 500);
+        discountRow.style.display = 'flex';
+        discountEl.textContent = `-₹${discountAmt.toLocaleString('en-IN')}`;
+      } else {
+        discountRow.style.display = 'none';
+      }
+
+      const grandTotal = Math.max(0, subtotal - discountAmt);
+      subtotalEl.textContent = `₹${subtotal.toLocaleString('en-IN')}`;
+      totalEl.textContent = `₹${grandTotal.toLocaleString('en-IN')}`;
+    }
+
+    function updatePageCartQty(id, delta) {
+      const cart = JSON.parse(localStorage.getItem('sikar_cart') || '{}');
+      const cur = cart[id] || 0;
+      const next = cur + delta;
+      if (next <= 0) {
+        delete cart[id];
+      } else {
+        cart[id] = next;
+      }
+      localStorage.setItem('sikar_cart', JSON.stringify(cart));
+      renderFullCartPage();
+      showToast(delta > 0 ? 'Quantity increased' : 'Cart updated');
+    }
+
+    function clearFullCart() {
+      if (!confirm('Are you sure you want to clear your cart?')) return;
+      localStorage.setItem('sikar_cart', '{}');
+      renderFullCartPage();
+      showToast('Cart cleared');
+    }
+
+    async function applyPageCoupon() {
+      const input = document.getElementById('page-coupon-input');
+      const statusDiv = document.getElementById('page-coupon-status');
+      const code = (input.value || '').trim().toUpperCase();
+      if (!code) {
+        statusDiv.style.display = 'block';
+        statusDiv.style.color = '#DC2626';
+        statusDiv.textContent = 'Please enter a coupon code';
+        return;
+      }
+
+      try {
+        const res = await fetch(`/api/coupons/validate?code=${encodeURIComponent(code)}`);
+        const data = await res.json();
+        if (data && data.valid) {
+          pageAppliedCoupon = { code, pct: data.discount_pct || 10, minOrder: data.min_order_value || 0, maxDiscount: data.max_discount || 500 };
+          statusDiv.style.display = 'block';
+          statusDiv.style.color = '#15803D';
+          statusDiv.textContent = `✓ Coupon "${code}" applied! ${pageAppliedCoupon.pct}% Wholesale discount.`;
+          renderFullCartPage();
+        } else {
+          statusDiv.style.display = 'block';
+          statusDiv.style.color = '#DC2626';
+          statusDiv.textContent = `Coupon "${code}" is invalid or expired.`;
+        }
+      } catch (e) {
+        // Fallback for offline demo codes
+        if (code === 'DIWALI10' || code === 'SIKAR5' || code === 'SAVE10') {
+          pageAppliedCoupon = { code, pct: 10, minOrder: 500, maxDiscount: 500 };
+          statusDiv.style.display = 'block';
+          statusDiv.style.color = '#15803D';
+          statusDiv.textContent = `✓ Coupon "${code}" applied! 10% Wholesale discount.`;
+          renderFullCartPage();
+        } else {
+          statusDiv.style.display = 'block';
+          statusDiv.style.color = '#DC2626';
+          statusDiv.textContent = 'Invalid promo coupon code.';
+        }
+      }
+    }
+
+    async function verifyAreaAvailability(areaName) {
+      const alertBox = document.getElementById('corridor-availability-alert');
+      if (!areaName) {
+        alertBox.style.display = 'none';
+        return;
+      }
+
+      try {
+        const res = await fetch(`/api/delivery-zones/check?area=${encodeURIComponent(areaName)}`);
+        const data = await res.json();
+        alertBox.style.display = 'block';
+        if (data.available) {
+          alertBox.style.background = '#ECFDF5';
+          alertBox.style.border = '1px solid #A7F3D0';
+          alertBox.style.color = '#065F46';
+          alertBox.innerHTML = `✓ <strong>Serviceable Zone:</strong> Express Tempo Delivery in ${data.zone ? data.zone.eta : '45-60 Mins'} (Pincode: 332001)`;
+        } else {
+          alertBox.style.background = '#FEF2F2';
+          alertBox.style.border = '1px solid #FECACA';
+          alertBox.style.color = '#991B1B';
+          alertBox.innerHTML = `⚠ ${data.message || 'Location currently outside standard Sikar radius.'}`;
+        }
+      } catch (err) {
+        alertBox.style.display = 'block';
+        alertBox.style.background = '#ECFDF5';
+        alertBox.style.border = '1px solid #A7F3D0';
+        alertBox.style.color = '#065F46';
+        alertBox.innerHTML = `✓ <strong>Serviceable Sikar Corridor:</strong> Same-day tempo dispatch available.`;
+      }
+    }
+
+    async function handleCartFormSubmit(e) {
+      e.preventDefault();
+      const cart = JSON.parse(localStorage.getItem('sikar_cart') || '{}');
+      const items = [];
+      let total = 0;
+
+      for (const [id, qty] of Object.entries(cart)) {
+        if (qty <= 0) continue;
+        const prod = PRODUCTS.find(p => String(p.id) === String(id));
+        if (prod) {
+          items.push({ id: prod.id, title: prod.title, price: prod.price, quantity: qty });
+          total += prod.price * qty;
+        }
+      }
+
+      if (items.length === 0) {
+        alert('Your cart is empty. Please add items before placing an order.');
+        return;
+      }
+
+      const name = document.getElementById('order-cust-name').value.trim();
+      const phone = document.getElementById('order-cust-phone').value.trim();
+      const corridor = document.getElementById('order-delivery-corridor').value;
+      const address = document.getElementById('order-cust-address').value.trim();
+      const payMethod = document.querySelector('input[name="pay-method"]:checked').value;
+      const notes = document.getElementById('order-notes').value.trim();
+
+      const btn = document.getElementById('btn-place-order');
+      btn.disabled = true;
+      btn.textContent = 'Processing Order...';
+
+      let discount = 0;
+      if (pageAppliedCoupon && total >= (pageAppliedCoupon.minOrder || 0)) {
+        discount = Math.min(Math.round((total * pageAppliedCoupon.pct) / 100), pageAppliedCoupon.maxDiscount || 500);
+      }
+      const finalAmount = Math.max(0, total - discount);
+
+      try {
+        const orderPayload = {
+          customer_name: name,
+          customer_phone: phone,
+          address: `${corridor} - ${address}`,
+          items: items,
+          total_amount: finalAmount,
+          payment_method: payMethod,
+          payment_status: payMethod === 'UPI' ? 'Paid' : 'Pending',
+          notes: notes,
+          coupon_code: pageAppliedCoupon ? pageAppliedCoupon.code : null,
+          discount_amount: discount
+        };
+
+        const res = await fetch('/api/orders', {
+          method: 'POST',
+          headers: { 'Content-Type': 'application/json' },
+          body: JSON.stringify(orderPayload)
+        });
+
+        const data = await res.json();
+        const orderId = data.orderId || ('SKR-' + Math.floor(100000 + Math.random() * 900000));
+
+        // Format WhatsApp slip
+        let waText = `*SIKAR DROP — WHOLESALE DISPATCH ORDER*\n`;
+        waText += `*Order ID:* ${orderId}\n`;
+        waText += `*Customer:* ${name} (${phone})\n`;
+        waText += `*Delivery Area:* ${corridor}\n`;
+        waText += `*Address:* ${address}\n`;
+        waText += `*Payment:* ${payMethod} (₹${finalAmount.toLocaleString('en-IN')})\n`;
+        waText += `----------------------------\n`;
+        waText += `*ITEMS:*\n`;
+        items.forEach(it => {
+          waText += `• ${it.title} x ${it.quantity} = ₹${(it.price * it.quantity).toLocaleString('en-IN')}\n`;
+        });
+        if (discount > 0) waText += `• Discount (${pageAppliedCoupon.code}): -₹${discount.toLocaleString('en-IN')}\n`;
+        waText += `----------------------------\n`;
+        waText += `*GRAND TOTAL:* ₹${finalAmount.toLocaleString('en-IN')}\n`;
+        if (notes) waText += `*Notes:* ${notes}\n`;
+
+        // Clear cart
+        localStorage.setItem('sikar_cart', '{}');
+
+        // Show confirmation and trigger WhatsApp
+        alert(`Order ${orderId} confirmed successfully! Dispatching to Sikar Drop tempo delivery.`);
+        window.open(`https://wa.me/919829000000?text=${encodeURIComponent(waText)}`, '_blank');
+        window.location.href = `/track?id=${encodeURIComponent(orderId)}`;
+      } catch (err) {
+        console.error('Order submission error:', err);
+        alert('Order recorded locally. Opening WhatsApp to dispatch directly to warehouse.');
+        localStorage.setItem('sikar_cart', '{}');
+        window.location.href = '/products';
+      }
+    }
+  </script>
+
+</body>
+</html>

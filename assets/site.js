@@ -526,11 +526,20 @@ async function loadCatalogFromBackend() {
 
 // 3. CART MANAGEMENT & FLYING ANIMATION
 function toggleCartDrawer(open) {
-  const drawer = document.getElementById('cart-drawer');
+  const drawer = document.getElementById('cart-drawer') || document.getElementById('cart-drawer-panel');
   const backdrop = document.getElementById('cart-backdrop');
-  if (drawer) drawer.classList.toggle('open', open);
+  if (drawer) {
+    drawer.classList.toggle('open', open);
+    if (open) {
+      drawer.style.right = '0px';
+      document.body.style.overflow = 'hidden';
+      if (typeof updateCartUI === 'function') updateCartUI();
+    } else {
+      drawer.style.right = '';
+      document.body.style.overflow = '';
+    }
+  }
   if (backdrop) backdrop.classList.toggle('active', open);
-  if (open) updateCartUI();
 }
 
 function flyProductToCart(sourceElement) {
