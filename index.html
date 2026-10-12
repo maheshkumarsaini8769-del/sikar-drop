@@ -4191,16 +4191,16 @@
               <svg viewBox="0 0 24 24" fill="currentColor">
                 <path d="M12 2C8.13 2 5 5.13 5 9c0 5.25 7 13 7 13s7-7.75 7-13c0-3.87-3.13-7-7-7zm0 9.5c-1.38 0-2.5-1.12-2.5-2.5s1.12-2.5 2.5-2.5 2.5 1.12 2.5 2.5-1.12 2.5-2.5 2.5z"></path>
               </svg>
-              <span>Trusted by 10,000+ Families in Sikar</span>
+              <span id="live-hero-pill-text">Trusted by 10,000+ Families in Sikar</span>
             </div>
 
-            <h1 class="hero-main-title">
+            <h1 class="hero-main-title" id="live-hero-main-title">
               Pure Water<br>
               For A <span class="blue-highlight">Healthier</span><br>
               Tomorrow
             </h1>
 
-            <p class="hero-desc-lead">
+            <p class="hero-desc-lead" id="live-hero-desc-lead">
               Quality drinking water and beverages delivered to your home, office and business across Sikar.
             </p>
 
@@ -6090,6 +6090,33 @@
               </button>
             </div>
 
+            <!-- SECTION 0: STOREFRONT MAIN HERO BANNER -->
+            <div style="background: #F8FAFC; border: 1px solid #E2E8F0; border-radius: var(--radius-sm); padding: 20px; margin-bottom: 24px;">
+              <h4 style="font-family: var(--font-heading); font-size: 1.1rem; color: #0B192C; margin-bottom: 6px;">0. Storefront Main Hero Banner (Headline, Pill Badge &amp; Description)</h4>
+              <p style="font-size: 0.82rem; color: #64748B; margin-bottom: 16px;">Edit the primary hero headline, trust badge, lead paragraph, and hero image visible on the homepage.</p>
+
+              <div style="background: #FFFFFF; border: 1px solid #BAE6FD; border-radius: var(--radius-xs); padding: 16px;">
+                <div class="admin-form-grid-2">
+                  <div class="admin-field-group">
+                    <label for="adm-txt-hero-pill">Hero Trust Pill Text</label>
+                    <input type="text" id="adm-txt-hero-pill" class="admin-input" placeholder="e.g. Trusted by 10,000+ Families in Sikar">
+                  </div>
+                  <div class="admin-field-group">
+                    <label for="adm-txt-hero-img">Hero Stage Image URL</label>
+                    <input type="text" id="adm-txt-hero-img" class="admin-input" placeholder="assets/hero_bottles_blended.png">
+                  </div>
+                  <div class="admin-field-group" style="grid-column: span 2;">
+                    <label for="adm-txt-hero-title">Hero Main Headline (Use enter for new line)</label>
+                    <textarea id="adm-txt-hero-title" class="admin-input" rows="2" style="resize: vertical; min-height: 56px;" placeholder="Pure Water&#10;For A Healthier&#10;Tomorrow"></textarea>
+                  </div>
+                  <div class="admin-field-group" style="grid-column: span 2;">
+                    <label for="adm-txt-hero-desc">Hero Lead Description Paragraph</label>
+                    <textarea id="adm-txt-hero-desc" class="admin-input" rows="2" style="resize: vertical; min-height: 56px;" placeholder="Quality drinking water and beverages delivered to your home, office and business across Sikar."></textarea>
+                  </div>
+                </div>
+              </div>
+            </div>
+
             <!-- SECTION 1: HEADER SECTION SLIDER (SLIDES 1, 2, 3) -->
             <div style="background: #F8FAFC; border: 1px solid #E2E8F0; border-radius: var(--radius-sm); padding: 20px; margin-bottom: 24px;">
               <h4 style="font-family: var(--font-heading); font-size: 1.1rem; color: #0B192C; margin-bottom: 6px;">1. Header Section: Hero Slider (3 Slides with Zooming &amp; Scrolling Animation)</h4>
@@ -7736,8 +7763,7 @@
     let PRODUCTS = adminProducts;
     let adminCategories = JSON.parse(localStorage.getItem('sikar_admin_categories')) || DEFAULT_CATEGORIES;
     let CATEGORIES = adminCategories;
-    let adminTexts = DEFAULT_TEXTS;
-    localStorage.setItem('sikar_admin_texts', JSON.stringify(DEFAULT_TEXTS));
+    let adminTexts = JSON.parse(localStorage.getItem('sikar_admin_texts')) || DEFAULT_TEXTS;
     let adminRates = JSON.parse(localStorage.getItem('sikar_admin_rates')) || DEFAULT_BULK_RATES;
     let adminOrders = JSON.parse(localStorage.getItem('sikar_admin_orders')) || DEFAULT_ORDERS;
     let adminCustomers = JSON.parse(localStorage.getItem('sikar_admin_customers')) || DEFAULT_CUSTOMERS;
@@ -9380,6 +9406,18 @@
     function applyLiveSiteTexts() {
       const t = adminTexts || DEFAULT_TEXTS;
       if (!t) return;
+
+      // 0. Hero Section
+      const elHeroPill = document.getElementById('live-hero-pill-text');
+      if (elHeroPill && (t.heroPill || t.hero_pill)) elHeroPill.textContent = t.heroPill || t.hero_pill;
+      const elHeroTitle = document.getElementById('live-hero-main-title');
+      if (elHeroTitle && (t.heroTitle || t.hero_title)) {
+        elHeroTitle.innerHTML = escapeHTML(t.heroTitle || t.hero_title).split('\n').join('<br>');
+      }
+      const elHeroDesc = document.getElementById('live-hero-desc-lead');
+      if (elHeroDesc && (t.heroDesc || t.hero_desc)) elHeroDesc.textContent = t.heroDesc || t.hero_desc;
+      const elHeroImg = document.getElementById('live-hero-bottles-img');
+      if (elHeroImg && (t.heroImg || t.hero_img)) elHeroImg.src = t.heroImg || t.hero_img;
 
       // 1. Slider Slides
       const s1Img = document.getElementById('live-slide-1-img');
@@ -11270,6 +11308,12 @@
         if (el) el.value = val || '';
       };
 
+      // Hero Banner
+      setVal('adm-txt-hero-pill', t.heroPill || 'Trusted by 10,000+ Families in Sikar');
+      setVal('adm-txt-hero-title', t.heroTitle || 'Pure Water\nFor A Healthier\nTomorrow');
+      setVal('adm-txt-hero-desc', t.heroDesc || 'Quality drinking water and beverages delivered to your home, office and business across Sikar.');
+      setVal('adm-txt-hero-img', t.heroImg || 'assets/hero_bottles_blended.png');
+
       // Slide 1
       setVal('adm-slide1-img', t.slide1Image || 'assets/hero_bottles.jpg');
       setVal('adm-slide1-tag', t.slide1Tag || 'SIKAR MANDI WHOLESALE PETI DEPOT');
@@ -11337,6 +11381,12 @@
         slide3BtnText: getVal('adm-slide3-btn', adminTexts.slide3BtnText || 'Explore Cold Drinks'),
         slide3BtnLink: adminTexts.slide3BtnLink || 'products',
 
+        // Hero Section
+        heroPill: getVal('adm-txt-hero-pill', adminTexts.heroPill || 'Trusted by 10,000+ Families in Sikar'),
+        heroTitle: getVal('adm-txt-hero-title', adminTexts.heroTitle || 'Pure Water\nFor A Healthier\nTomorrow'),
+        heroDesc: getVal('adm-txt-hero-desc', adminTexts.heroDesc || 'Quality drinking water and beverages delivered to your home, office and business across Sikar.'),
+        heroImg: getVal('adm-txt-hero-img', adminTexts.heroImg || 'assets/hero_bottles_blended.png'),
+
         // General texts
         topPolicy: getVal('adm-txt-top-policy', adminTexts.topPolicy),
         helpline: getVal('adm-txt-helpline', adminTexts.helpline),
@@ -11354,6 +11404,12 @@
 
       localStorage.setItem('sikar_admin_texts', JSON.stringify(adminTexts));
       applyLiveSiteTexts();
+      applyLanguage();
+      fetch('/api/site-texts', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify(adminTexts)
+      }).catch(e => console.warn('Sync site texts error:', e));
       showToast('Live site words, banners & slides saved successfully!');
     }
 
@@ -11548,6 +11604,11 @@
 
       localStorage.setItem('sikar_admin_rates', JSON.stringify(adminRates));
       recalcBulk();
+      fetch('/api/bulk-rates', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify(adminRates)
+      }).catch(e => console.warn('Sync bulk rates error:', e));
       showToast('Bulk mandi rates & discounts updated!');
     }
 
@@ -12006,26 +12067,26 @@
     };
 
     function applyLanguage() {
-      const t = I18N.en;
       const langBtn = document.getElementById('lang-switcher-btn');
       if (langBtn) {
-        langBtn.textContent = t.langBtn;
+        langBtn.textContent = 'EN';
         langBtn.style.display = 'none';
       }
 
       const heroPill = document.getElementById('live-hero-pill-text');
-      if (heroPill) heroPill.textContent = t.heroPill;
+      if (heroPill) heroPill.textContent = (adminTexts && adminTexts.heroPill) ? adminTexts.heroPill : I18N.en.heroPill;
 
       const heroTitle = document.getElementById('live-hero-main-title');
       if (heroTitle) {
-        heroTitle.innerHTML = t.heroTitle.split('\n').join('<br>');
+        const titleStr = (adminTexts && adminTexts.heroTitle) ? adminTexts.heroTitle : I18N.en.heroTitle;
+        heroTitle.innerHTML = escapeHTML(titleStr).split('\n').join('<br>');
       }
 
       const heroDesc = document.getElementById('live-hero-desc-lead');
-      if (heroDesc) heroDesc.textContent = t.heroDesc;
+      if (heroDesc) heroDesc.textContent = (adminTexts && adminTexts.heroDesc) ? adminTexts.heroDesc : I18N.en.heroDesc;
 
       const topPolicy = document.getElementById('live-top-policy-text');
-      if (topPolicy) topPolicy.textContent = t.topPolicy;
+      if (topPolicy) topPolicy.textContent = (adminTexts && adminTexts.topPolicy) ? adminTexts.topPolicy : I18N.en.topPolicy;
     }
 
     function toggleLanguage() {
@@ -12183,6 +12244,43 @@
         } catch (bErr) {
           console.warn('Bundles sync failed:', bErr);
         }
+
+        try {
+          const txtRes = await fetch('/api/site-texts');
+          if (txtRes.ok) {
+            const serverTexts = await txtRes.json();
+            if (serverTexts && typeof serverTexts === 'object') {
+              adminTexts = { ...DEFAULT_TEXTS, ...serverTexts };
+              localStorage.setItem('sikar_admin_texts', JSON.stringify(adminTexts));
+              applyLiveSiteTexts();
+              applyLanguage();
+              if (typeof populateAdminTextsForm === 'function') populateAdminTextsForm();
+            }
+          }
+        } catch (tErr) {}
+
+        try {
+          const ratesRes = await fetch('/api/bulk-rates');
+          if (ratesRes.ok) {
+            const serverRates = await ratesRes.json();
+            if (serverRates && typeof serverRates === 'object') {
+              adminRates = serverRates;
+              localStorage.setItem('sikar_admin_rates', JSON.stringify(adminRates));
+              if (typeof populateAdminBulkRatesForm === 'function') populateAdminBulkRatesForm();
+            }
+          }
+        } catch (rtErr) {}
+
+        try {
+          const seoRes = await fetch('/api/seo-settings');
+          if (seoRes.ok) {
+            const serverSeo = await seoRes.json();
+            if (serverSeo && typeof serverSeo === 'object') {
+              adminSeo = serverSeo;
+              localStorage.setItem('sikar_admin_seo', JSON.stringify(adminSeo));
+            }
+          }
+        } catch (sErr) {}
       } catch (err) {
         console.warn('Backend storefront sync failed, using cached catalog:', err);
       }

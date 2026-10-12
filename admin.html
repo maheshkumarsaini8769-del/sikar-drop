@@ -3559,6 +3559,33 @@
             <button type="button" class="btn-portal-success" onclick="saveSiteTextsFromPortal()">Save All Content Live</button>
           </div>
 
+          <!-- HERO SECTION BANNER -->
+          <div style="background: #F8FAFC; border: 1px solid var(--border-subtle); border-radius: var(--radius-sm); padding: 20px; margin-bottom: 24px;">
+            <h3 style="font-family: var(--font-heading); font-size: 1.1rem; font-weight: 800; margin-bottom: 4px;">0. Storefront Main Hero Banner (Split Screen Headline, Pill &amp; Description)</h3>
+            <p style="font-size: 0.82rem; color: var(--text-muted); margin-bottom: 16px;">Edit the primary hero headline, trust badge, lead paragraph, and hero image visible on the homepage.</p>
+
+            <div style="background: #FFFFFF; border: 1px solid #BAE6FD; border-radius: var(--radius-xs); padding: 16px;">
+              <div class="portal-form-grid-2">
+                <div class="portal-field-group">
+                  <label for="cms-hero-pill">Hero Trust Pill Text</label>
+                  <input type="text" id="cms-hero-pill" class="portal-input" placeholder="e.g. Trusted by 10,000+ Families in Sikar">
+                </div>
+                <div class="portal-field-group">
+                  <label for="cms-hero-img">Hero Stage Image URL</label>
+                  <input type="text" id="cms-hero-img" class="portal-input" placeholder="assets/hero_bottles_blended.png">
+                </div>
+                <div class="portal-field-group" style="grid-column: span 2;">
+                  <label for="cms-hero-title">Hero Main Headline (Use enter for new line)</label>
+                  <textarea id="cms-hero-title" class="portal-textarea" rows="2" placeholder="Pure Water&#10;For A Healthier&#10;Tomorrow"></textarea>
+                </div>
+                <div class="portal-field-group" style="grid-column: span 2;">
+                  <label for="cms-hero-desc">Hero Description / Lead Subtitle</label>
+                  <textarea id="cms-hero-desc" class="portal-textarea" rows="2" placeholder="Quality drinking water and beverages delivered to your home, office and business across Sikar."></textarea>
+                </div>
+              </div>
+            </div>
+          </div>
+
           <!-- SLIDER SLIDES 1, 2, 3 -->
           <div style="background: #F8FAFC; border: 1px solid var(--border-subtle); border-radius: var(--radius-sm); padding: 20px; margin-bottom: 24px;">
             <h3 style="font-family: var(--font-heading); font-size: 1.1rem; font-weight: 800; margin-bottom: 4px;">1. Header Section: Hero Slider (3 Slides with Ken Burns Zoom &amp; Slide)</h3>
@@ -5103,6 +5130,33 @@
           adminSocialClicks = soc.clicks;
           localStorage.setItem('sikar_admin_social_clicks', JSON.stringify(adminSocialClicks));
         }
+
+        try {
+          const sTexts = await sikarApi.get('/api/site-texts');
+          if (sTexts && typeof sTexts === 'object') {
+            adminTexts = { ...DEFAULT_TEXTS, ...sTexts };
+            localStorage.setItem('sikar_admin_texts', JSON.stringify(adminTexts));
+            if (typeof populateCmsForm === 'function') populateCmsForm();
+          }
+        } catch (stErr) {}
+
+        try {
+          const sRates = await sikarApi.get('/api/bulk-rates');
+          if (sRates && typeof sRates === 'object') {
+            adminRates = sRates;
+            localStorage.setItem('sikar_admin_rates', JSON.stringify(adminRates));
+            if (typeof populateBulkRatesForm === 'function') populateBulkRatesForm();
+          }
+        } catch (srErr) {}
+
+        try {
+          const sSeo = await sikarApi.get('/api/seo-settings');
+          if (sSeo && typeof sSeo === 'object') {
+            adminSeo = sSeo;
+            localStorage.setItem('sikar_admin_seo', JSON.stringify(adminSeo));
+            if (typeof renderSeoForm === 'function') renderSeoForm();
+          }
+        } catch (ssErr) {}
 
         if (stats) {
           renderDashboard(stats);
@@ -7455,7 +7509,12 @@
         disc20: parseFloat(document.getElementById('adm-disc-20').value) || 10
       };
       localStorage.setItem('sikar_admin_rates', JSON.stringify(adminRates));
-      showToast('Bulk Mandi base rates saved successfully!');
+      fetch('/api/bulk-rates', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify(adminRates)
+      }).catch(e => console.warn('Sync bulk rates error:', e));
+      showToast('Bulk Mandi base rates saved successfully to database!');
     }
 
     // =========================================================
@@ -8538,6 +8597,12 @@
       setV('cms-slide2-sub', t.slide2Sub || '');
       setV('cms-slide2-btn', t.slide2BtnText || 'Book Marriage Bulk');
 
+      // Hero Banner
+      setV('cms-hero-pill', t.heroPill || 'Trusted by 10,000+ Families in Sikar');
+      setV('cms-hero-title', t.heroTitle || 'Pure Water\nFor A Healthier\nTomorrow');
+      setV('cms-hero-desc', t.heroDesc || 'Quality drinking water and beverages delivered to your home, office and business across Sikar.');
+      setV('cms-hero-img', t.heroImg || 'assets/hero_bottles_blended.png');
+
       // Slide 3
       setV('cms-slide3-img', t.slide3Image || 'assets/cat_soft_drinks.jpg');
       setV('cms-slide3-tag', t.slide3Tag || 'EXPRESS CHILLED LOGISTICS');
@@ -8567,6 +8632,11 @@
       };
 
       adminTexts = {
+        heroPill: getV('cms-hero-pill', adminTexts.heroPill || 'Trusted by 10,000+ Families in Sikar'),
+        heroTitle: getV('cms-hero-title', adminTexts.heroTitle || 'Pure Water\nFor A Healthier\nTomorrow'),
+        heroDesc: getV('cms-hero-desc', adminTexts.heroDesc || 'Quality drinking water and beverages delivered to your home, office and business across Sikar.'),
+        heroImg: getV('cms-hero-img', adminTexts.heroImg || 'assets/hero_bottles_blended.png'),
+
         slide1Image: getV('cms-slide1-img', adminTexts.slide1Image || 'assets/hero_bottles.jpg'),
         slide1Tag: getV('cms-slide1-tag', adminTexts.slide1Tag || 'SIKAR MANDI WHOLESALE PETI DEPOT'),
         slide1Title: getV('cms-slide1-title', adminTexts.slide1Title || '100% Factory-Sealed Mineral Water Petis'),
@@ -8603,7 +8673,12 @@
       };
 
       localStorage.setItem('sikar_admin_texts', JSON.stringify(adminTexts));
-      showToast('All Homepage slides, about and contact copy saved live!');
+      fetch('/api/site-texts', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify(adminTexts)
+      }).catch(e => console.warn('Sync site texts error:', e));
+      showToast('All Homepage slides, about and contact copy saved live to database!');
     }
 
     // =========================================================
@@ -8737,7 +8812,12 @@
         keywords: document.getElementById('seo-meta-keywords').value.trim()
       };
       localStorage.setItem('sikar_admin_seo', JSON.stringify(adminSeo));
-      showToast('Branding & Google SEO metadata updated live!');
+      fetch('/api/seo-settings', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify(adminSeo)
+      }).catch(e => console.warn('Sync seo error:', e));
+      showToast('Branding & Google SEO metadata updated live to database!');
     }
 
     // =========================================================

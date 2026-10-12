@@ -1867,6 +1867,157 @@ app.post('/api/settings', (req, res) => {
 });
 
 // ==========================================
+// 18.55 HOMEPAGE CMS TEXTS, RATES & SEO SETTINGS
+// ==========================================
+const DEFAULT_FALLBACK_TEXTS = {
+  heroPill: 'Trusted by 10,000+ Families in Sikar',
+  heroTitle: 'Pure Water\nFor A Healthier\nTomorrow',
+  heroDesc: 'Quality drinking water and beverages delivered to your home, office and business across Sikar.',
+  heroImg: 'assets/hero_bottles_blended.png',
+  slide1Image: 'assets/hero_bottles.jpg',
+  slide1Tag: 'SIKAR MANDI WHOLESALE PETI DEPOT',
+  slide1Title: '100% Factory-Sealed Mineral Water Petis',
+  slide1Sub: 'Bisleri & Kinley Direct Factory Wholesale Rates • Free Tempo Delivery on 5+ Boxes • Zero Camper Policy',
+  slide1BtnText: 'Order Sealed Water',
+  slide1BtnLink: 'products',
+  slide2Image: 'assets/cat_wedding_supply.jpg',
+  slide2Tag: 'WEDDING & FUNCTION SPECIAL',
+  slide2Title: 'Shaadi & Bulk Function Drinks & Water Combo',
+  slide2Sub: 'Save up to 20% on Marriage Bulk Orders • 200ml Mini Water Bottles + Chilled Cold Drink Crates',
+  slide2BtnText: 'Book Marriage Bulk',
+  slide2BtnLink: 'bulk',
+  slide3Image: 'assets/cat_soft_drinks.jpg',
+  slide3Tag: 'EXPRESS CHILLED LOGISTICS',
+  slide3Title: 'Chilled Soft Drinks & Energy Soda Cans',
+  slide3Sub: 'Coca-Cola, Thums Up, Sprite & Sting • 40-Min Express Unloading Across All Sikar Corridors',
+  slide3BtnText: 'Explore Cold Drinks',
+  slide3BtnLink: 'products',
+  topPolicy: '100% Factory-Sealed Bottles & Cases Only • We Do Not Supply 20L Water Jars (Campers)',
+  helpline: '+91 98290 00000',
+  brandTagline: 'Pure Water. Healthy Life.',
+  truckTitle: 'Free Delivery in Sikar',
+  truckSub: 'On orders above 5 Petis / Marriage Garden Bookings',
+  bulkTitle: 'Need Bulk Supply?',
+  bulkSub: 'For Offices, Hotels, Schools & Marriage Gardens',
+  aboutStory: 'Sikar Drop was established in 2024 with a singular objective: eliminating contaminated 20L camper jars completely and providing 100% genuine factory-sealed bottled water and chilled beverages across Sikar Mandi.',
+  contactAddress: 'Plot 14-B, Near Krishi Upaj Mandi, Station Road Bypass, Sikar (Raj.) 332001',
+  contactPhone: '+91 98290 00000 / +91 98290 84210',
+  footerCamper: 'We do not supply 20L plastic water jars (campers) in Sikar. Only 100% factory-sealed branded bottles and crates are supplied.',
+  footerAbout: 'Sikar\'s premier wholesale beverage depot. Providing 100% factory-sealed mineral water bottle cases, chilled cold drink crates, fruit juices, and soda can trays directly to wedding gardens, kirana stores, coaching canteens, and residences.'
+};
+
+app.get('/api/site-texts', (req, res) => {
+  try {
+    const row = db.prepare("SELECT value FROM website_settings WHERE key = 'site_texts'").get();
+    if (row && row.value) {
+      try {
+        const parsed = JSON.parse(row.value);
+        return res.json({ ...DEFAULT_FALLBACK_TEXTS, ...parsed });
+      } catch (e) {}
+    }
+    res.json(DEFAULT_FALLBACK_TEXTS);
+  } catch (err) {
+    res.status(500).json({ error: err.message });
+  }
+});
+
+app.post('/api/site-texts', (req, res) => {
+  try {
+    const texts = req.body;
+    if (!texts || typeof texts !== 'object') return res.status(400).json({ error: 'Valid site texts object required' });
+    const merged = { ...DEFAULT_FALLBACK_TEXTS, ...texts };
+    const now = new Date().toISOString();
+
+    db.prepare(`
+      INSERT INTO website_settings (key, value, updated_at)
+      VALUES ('site_texts', ?, ?)
+      ON CONFLICT(key) DO UPDATE SET value = excluded.value, updated_at = excluded.updated_at
+    `).run(JSON.stringify(merged), now);
+
+    try {
+      db.prepare(`
+        INSERT INTO audit_logs (id, actor, action, module, details, created_at)
+        VALUES (?, 'Admin', 'CMS_TEXTS_UPDATED', 'cms', 'Updated homepage slides, hero banner and site text copy', ?)
+      `).run('AUD-' + Math.floor(100000 + Math.random() * 900000), now);
+    } catch (e) {}
+
+    res.json({ success: true, site_texts: merged, message: 'Homepage texts saved and applied live' });
+  } catch (err) {
+    res.status(500).json({ error: err.message });
+  }
+});
+
+app.get('/api/bulk-rates', (req, res) => {
+  try {
+    const row = db.prepare("SELECT value FROM website_settings WHERE key = 'bulk_mandi_rates'").get();
+    if (row && row.value) {
+      try {
+        return res.json(JSON.parse(row.value));
+      } catch (e) {}
+    }
+    res.json({ w250: 290, w1000: 180, cold: 890, juice: 1180, disc10: 5, disc20: 10 });
+  } catch (err) {
+    res.status(500).json({ error: err.message });
+  }
+});
+
+app.post('/api/bulk-rates', (req, res) => {
+  try {
+    const rates = req.body;
+    if (!rates || typeof rates !== 'object') return res.status(400).json({ error: 'Valid rates object required' });
+    const now = new Date().toISOString();
+
+    db.prepare(`
+      INSERT INTO website_settings (key, value, updated_at)
+      VALUES ('bulk_mandi_rates', ?, ?)
+      ON CONFLICT(key) DO UPDATE SET value = excluded.value, updated_at = excluded.updated_at
+    `).run(JSON.stringify(rates), now);
+
+    res.json({ success: true, bulk_rates: rates, message: 'Bulk Mandi rates updated successfully' });
+  } catch (err) {
+    res.status(500).json({ error: err.message });
+  }
+});
+
+app.get('/api/seo-settings', (req, res) => {
+  try {
+    const row = db.prepare("SELECT value FROM website_settings WHERE key = 'seo_settings'").get();
+    if (row && row.value) {
+      try {
+        return res.json(JSON.parse(row.value));
+      } catch (e) {}
+    }
+    res.json({
+      brandName: 'Sikar Drop',
+      tagline: 'Pure Water. Healthy Life.',
+      title: 'Sikar Drop - 100% Factory-Sealed Water Petis & Wholesale Beverages',
+      desc: 'Sikar wholesale packaged drinking water and cold drink crates delivery.',
+      keywords: 'sikar water delivery, factory-sealed petis, mandi rates'
+    });
+  } catch (err) {
+    res.status(500).json({ error: err.message });
+  }
+});
+
+app.post('/api/seo-settings', (req, res) => {
+  try {
+    const seo = req.body;
+    if (!seo || typeof seo !== 'object') return res.status(400).json({ error: 'Valid SEO object required' });
+    const now = new Date().toISOString();
+
+    db.prepare(`
+      INSERT INTO website_settings (key, value, updated_at)
+      VALUES ('seo_settings', ?, ?)
+      ON CONFLICT(key) DO UPDATE SET value = excluded.value, updated_at = excluded.updated_at
+    `).run(JSON.stringify(seo), now);
+
+    res.json({ success: true, seo_settings: seo, message: 'SEO & Branding metadata saved successfully' });
+  } catch (err) {
+    res.status(500).json({ error: err.message });
+  }
+});
+
+// ==========================================
 // 18.6 SERVICEABLE DELIVERY ZONES & LOCATION CHECKER
 // ==========================================
 function evaluateDeliveryZoneMatch(rawQuery) {
