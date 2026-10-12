@@ -12,17 +12,31 @@ try {
   }
 }
 
-let DB_PATH = path.join(__dirname, 'data', 'sikar_drop.db');
+const candidatePaths = [
+  path.join(__dirname, 'data', 'sikar_drop.db'),
+  path.join(process.cwd(), 'data', 'sikar_drop.db'),
+  path.join(__dirname, '..', 'data', 'sikar_drop.db')
+];
+let sourceDbPath = candidatePaths.find(p => fs.existsSync(p)) || candidatePaths[0];
+
+let DB_PATH = sourceDbPath;
 if (process.env.VERCEL) {
   const tmpDbPath = '/tmp/sikar_drop.db';
-  if (!fs.existsSync(tmpDbPath) && fs.existsSync(DB_PATH)) {
-    fs.copyFileSync(DB_PATH, tmpDbPath);
+  if (!fs.existsSync(tmpDbPath) && fs.existsSync(sourceDbPath)) {
+    try {
+      fs.copyFileSync(sourceDbPath, tmpDbPath);
+    } catch (e) {
+      console.warn('Failed to copy DB to /tmp, using source path:', e.message);
+    }
   }
-  DB_PATH = tmpDbPath;
+  if (fs.existsSync(tmpDbPath)) {
+    DB_PATH = tmpDbPath;
+  }
 } else {
-  const dataDir = path.join(__dirname, 'data');
+  const dataDir = path.dirname(DB_PATH);
   if (!fs.existsSync(dataDir)) fs.mkdirSync(dataDir, { recursive: true });
 }
+
 
 const db = new Database(DB_PATH);
 
