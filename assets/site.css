@@ -2679,22 +2679,96 @@
       .btn-nav-cart .nav-cart-label { display: none !important; }
       .btn-nav-cart { padding: 7px 10px; }
 
-      /* HERO WATER SECTION MOBILE (CLEAN STACKING & ZERO OVERFLOW) */
-      .hero-water-section { padding: 32px 0 40px; }
-      .hero-split-grid { grid-template-columns: 1fr !important; gap: 28px; }
-      .hero-info-side { max-width: 100%; text-align: left; }
-      .hero-main-title { font-size: 2.2rem !important; line-height: 1.18; margin-bottom: 14px; }
-      .hero-desc-lead { font-size: 0.94rem; margin-bottom: 22px; }
-      .hero-buttons-row { gap: 12px; margin-bottom: 24px; }
-      .btn-hero-shop, .btn-hero-bulk { padding: 11px 20px; font-size: 0.92rem; }
-      .hero-features-bar { grid-template-columns: repeat(2, 1fr) !important; gap: 14px !important; padding-top: 18px; }
-      .hero-visual-side { width: 100%; }
-      .hero-product-stage { max-width: 100%; margin: 0 auto; }
-      .hero-product-stage img { height: 260px !important; }
-      .floating-quality-tag { top: 12px; right: 12px; padding: 8px 12px; }
-      .floating-quality-tag svg { width: 18px; height: 18px; }
-      .floating-quality-tag strong { font-size: 0.8rem; }
-      .floating-quality-tag span { font-size: 0.72rem; }
+      /* HERO WATER SECTION MOBILE: IMAGE ON TOP FIRST, THEN CLEAN CONTENT */
+      .hero-water-section { padding: 14px 0 24px; }
+      .hero-split-grid {
+        display: flex !important;
+        flex-direction: column !important;
+        gap: 14px !important;
+      }
+      .hero-visual-side {
+        order: -1 !important;
+        width: 100% !important;
+        margin-bottom: 2px !important;
+      }
+      .hero-product-stage {
+        max-width: 100%;
+        margin: 0 auto;
+        text-align: center;
+        position: relative;
+      }
+      .hero-product-stage img {
+        height: 215px !important;
+        max-width: 100% !important;
+        object-fit: contain !important;
+        margin: 0 auto !important;
+        display: block !important;
+      }
+      .floating-quality-tag {
+        top: 4px !important;
+        right: 8px !important;
+        padding: 6px 10px !important;
+        border-radius: 10px !important;
+      }
+      .floating-quality-tag svg { width: 14px !important; height: 14px !important; }
+      .floating-quality-tag strong { font-size: 0.76rem !important; }
+      .floating-quality-tag span { font-size: 0.68rem !important; }
+
+      .hero-info-side {
+        max-width: 100%;
+        text-align: center !important;
+      }
+      .hero-trust-pill {
+        margin: 0 auto 10px auto !important;
+        font-size: 0.78rem !important;
+        padding: 4px 12px !important;
+      }
+      .hero-main-title {
+        font-size: 1.95rem !important;
+        line-height: 1.15 !important;
+        margin-bottom: 8px !important;
+        text-align: center !important;
+      }
+      .hero-desc-lead {
+        font-size: 0.88rem !important;
+        margin: 0 auto 16px auto !important;
+        max-width: 330px !important;
+        text-align: center !important;
+        line-height: 1.45 !important;
+      }
+      .hero-buttons-row {
+        display: flex !important;
+        flex-direction: row !important;
+        gap: 10px !important;
+        justify-content: center !important;
+        margin-bottom: 18px !important;
+      }
+      .btn-hero-shop, .btn-hero-bulk {
+        flex: 1 !important;
+        max-width: 165px !important;
+        padding: 11px 12px !important;
+        font-size: 0.88rem !important;
+        justify-content: center !important;
+        border-radius: 10px !important;
+      }
+      .hero-features-bar {
+        display: grid !important;
+        grid-template-columns: repeat(2, 1fr) !important;
+        gap: 10px !important;
+        padding-top: 14px !important;
+        border-top: 1px solid rgba(2, 132, 199, 0.12) !important;
+        text-align: left !important;
+      }
+      .hero-feature-item {
+        padding: 8px 10px !important;
+        background: rgba(255, 255, 255, 0.85) !important;
+        border-radius: 12px !important;
+        border: 1px solid rgba(2, 132, 199, 0.12) !important;
+        box-shadow: 0 2px 6px rgba(15, 23, 42, 0.03) !important;
+      }
+      .feature-icon-circle { width: 34px !important; height: 34px !important; }
+      .feature-text-block strong { font-size: 0.82rem !important; }
+      .feature-text-block span { font-size: 0.72rem !important; }
 
       /* GRIDS 0 OVERFLOW */
       .reviews-4-grid { grid-template-columns: 1fr !important; gap: 14px !important; }
@@ -2711,9 +2785,8 @@
 
     @media (max-width: 480px) {
       .hero-main-title { font-size: 1.85rem !important; }
-      .hero-desc-lead { font-size: 0.88rem; }
-      .btn-hero-shop, .btn-hero-bulk { width: 100%; justify-content: center; }
-      .hero-features-bar { grid-template-columns: 1fr !important; gap: 10px !important; }
+      .hero-desc-lead { font-size: 0.86rem !important; }
+      .hero-features-bar { grid-template-columns: repeat(2, 1fr) !important; gap: 8px !important; }
 
       .cat-card-clean { padding: 10px 8px; }
       .cat-thumb-box { height: 85px; margin-bottom: 6px; }
