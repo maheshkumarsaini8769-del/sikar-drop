@@ -5620,7 +5620,7 @@
             <span>Reviews &amp; Replies</span>
           </button>
           <button type="button" class="admin-tab-btn" id="atab-btn-users" onclick="switchAdminTab('users')">
-            <span>Users &amp; OTP</span>
+            <span>Registered Users</span>
           </button>
           <button type="button" class="admin-tab-btn" id="atab-btn-cms" onclick="switchAdminTab('cms')">
             <span>Home Page CMS</span>
@@ -6037,25 +6037,23 @@
           </div>
         </div>
 
-        <!-- TAB PANE 10: USERS & OTP CONFIGURATION -->
+        <!-- TAB PANE 10: REGISTERED CUSTOMERS DIRECTORY -->
         <div id="atab-pane-users" class="admin-tab-pane" style="display: none;">
           <div class="admin-panel-card">
             <div class="admin-section-header">
               <div>
-                <h3>Registered Users &amp; OTP Configuration</h3>
-                <p>View customers who have logged in and set default test OTP (default: 9999).</p>
+                <h3>Registered Customers Directory</h3>
+                <p>View verified customers, shopkeepers and wholesale buyers across Sikar.</p>
               </div>
             </div>
 
-            <div style="background: #F8FAFC; border: 1px solid var(--border-subtle); border-radius: var(--radius-sm); padding: 18px; margin-bottom: 24px; max-width: 500px;">
-              <h4 style="font-size: 0.95rem; font-weight: 800; color: #0B192C; margin-bottom: 8px;">OTP Security Setting</h4>
-              <div class="admin-field-group">
-                <label for="adm-default-otp">Default Verification OTP (Requested: 9999)</label>
-                <div style="display: flex; gap: 10px;">
-                  <input type="text" id="adm-default-otp" class="admin-input" value="9999" maxlength="4" style="font-size: 1.1rem; font-weight: 800; text-align: center; letter-spacing: 0.2em;">
-                  <button type="button" class="btn-admin-save" onclick="saveAdminOtpConfig()">Save OTP</button>
-                </div>
-                <span style="font-size: 0.78rem; color: #64748B; margin-top: 4px;">Users can verify via WhatsApp OTP or Email OTP using this code when placing an order.</span>
+            <div style="background: #F0FDF4; border: 1px solid #86EFAC; border-radius: var(--radius-sm); padding: 14px 18px; margin-bottom: 24px; max-width: 540px; display: flex; align-items: center; gap: 12px;">
+              <div style="width: 36px; height: 36px; border-radius: 50%; background: #DCFCE7; display: flex; align-items: center; justify-content: center; flex-shrink: 0;">
+                <svg viewBox="0 0 24 24" width="20" height="20" fill="#16A34A"><path d="M12.031 6.172c-3.181 0-5.767 2.586-5.768 5.766-.001 1.298.38 2.27 1.019 3.287l-.711 2.598 2.669-.699c.969.54 1.771.82 2.791.82 3.183 0 5.768-2.587 5.768-5.766.001-3.181-2.583-5.767-5.768-5.767z"/></svg>
+              </div>
+              <div>
+                <div style="font-size: 0.92rem; font-weight: 800; color: #166534;">WhatsApp OTP System Active</div>
+                <div style="font-size: 0.8rem; color: #15803D;">Default customer sign-in OTP is fixed to <strong>9999</strong>. No admin OTP configuration required.</div>
               </div>
             </div>
 
@@ -6697,36 +6695,26 @@
     </div>
   </aside>
 
-  <!-- LOGIN / AUTH MODAL (MANDATORY ONLY BEFORE CHECKOUT) -->
+  <!-- LOGIN / AUTH MODAL (WHATSAPP OTP GATEWAY - DEFAULT: 9999) -->
   <div class="modal-backdrop" id="login-modal" role="dialog" aria-modal="true" aria-labelledby="login-modal-title">
     <div class="auth-modal-dialog">
       <button type="button" class="modal-close-icon" onclick="closeLoginModal()" aria-label="Close login dialog">
         <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" width="18" height="18"><line x1="18" y1="6" x2="6" y2="18"></line><line x1="6" y1="6" x2="18" y2="18"></line></svg>
       </button>
 
-      <h3 id="login-modal-title">Wholesale Depot Sign In</h3>
-      <p>Enter the OTP to verify your order dispatch. (No login required for normal browsing).</p>
-
-      <!-- OTP Channel Selection -->
-      <div style="display: flex; gap: 10px; margin-bottom: 14px;">
-        <label style="flex: 1; display: flex; align-items: center; gap: 6px; padding: 8px 10px; border: 1.5px solid var(--border-subtle); border-radius: var(--radius-xs); cursor: pointer; font-size: 0.82rem; font-weight: 700;">
-          <input type="radio" name="otp_channel" id="channel-whatsapp" value="whatsapp" checked onchange="toggleOtpChannel()">
-          <span>WhatsApp OTP</span>
-        </label>
-        <label style="flex: 1; display: flex; align-items: center; gap: 6px; padding: 8px 10px; border: 1.5px solid var(--border-subtle); border-radius: var(--radius-xs); cursor: pointer; font-size: 0.82rem; font-weight: 700;">
-          <input type="radio" name="otp_channel" id="channel-email" value="email" onchange="toggleOtpChannel()">
-          <span>Email OTP</span>
-        </label>
+      <div style="display: flex; align-items: center; gap: 10px; margin-bottom: 6px;">
+        <div style="width: 34px; height: 34px; border-radius: 50%; background: #DCFCE7; display: flex; align-items: center; justify-content: center; flex-shrink: 0;">
+          <svg viewBox="0 0 24 24" width="18" height="18" fill="#16A34A"><path d="M12.031 6.172c-3.181 0-5.767 2.586-5.768 5.766-.001 1.298.38 2.27 1.019 3.287l-.711 2.598 2.669-.699c.969.54 1.771.82 2.791.82 3.183 0 5.768-2.587 5.768-5.766.001-3.181-2.583-5.767-5.768-5.767z"/></svg>
+        </div>
+        <div>
+          <h3 id="login-modal-title" style="margin: 0; font-size: 1.2rem; font-family: var(--font-heading); font-weight: 800; color: #0B192C;">WhatsApp Sign In &amp; Verification</h3>
+        </div>
       </div>
+      <p style="font-size: 0.84rem; color: var(--text-muted); margin-bottom: 14px;">Verify your mobile number to confirm dispatch. Default WhatsApp OTP is <strong>9999</strong>.</p>
 
       <div class="form-group-field" id="field-phone-block">
         <label for="login-phone-input">Mobile Number (+91 Sikar)</label>
         <input type="tel" id="login-phone-input" placeholder="e.g. 98290 12345" maxlength="10" value="9829012345">
-      </div>
-
-      <div class="form-group-field" id="field-email-block" style="display: none;">
-        <label for="login-email-input">Official Email Address</label>
-        <input type="email" id="login-email-input" placeholder="e.g. dispatch@sikardrop.in" value="client@sikardrop.in">
       </div>
 
       <div class="form-group-field">
@@ -6734,16 +6722,21 @@
         <input type="text" id="login-name-input" placeholder="e.g. Mahesh Sharma" value="Mahesh Sharma">
       </div>
 
-      <div id="otp-group-block" style="display: none; margin-top: 14px;">
+      <div id="otp-group-block" style="margin-top: 14px;">
         <div class="form-group-field">
-          <label for="login-otp-input">Enter OTP (Default System OTP: 9999)</label>
+          <div style="display: flex; justify-content: space-between; align-items: center; margin-bottom: 4px;">
+            <label for="login-otp-input" style="margin: 0;">WhatsApp OTP Code</label>
+            <button type="button" onclick="requestWhatsAppOtp()" style="background: none; border: none; color: #0284C7; font-size: 0.78rem; font-weight: 700; cursor: pointer; padding: 0;">Resend OTP</button>
+          </div>
           <input type="text" id="login-otp-input" placeholder="9999" maxlength="4" value="9999" style="letter-spacing: 0.3em; font-size: 1.25rem; text-align: center; font-weight: 800;">
-          <div style="font-size: 0.76rem; color: #0369A1; margin-top: 4px; text-align: center;">Default Test OTP is <strong>9999</strong></div>
+          <div style="font-size: 0.76rem; color: #166534; background: #F0FDF4; border: 1px solid #BBF7D0; padding: 5px 8px; border-radius: 4px; margin-top: 6px; text-align: center;">
+            Default OTP: <strong>9999</strong> (WhatsApp OTP system active)
+          </div>
         </div>
       </div>
 
-      <button type="button" class="btn-auth-submit" id="btn-login-action" onclick="submitLoginProcess()">
-        <span>CONTINUE / REQUEST OTP</span>
+      <button type="button" class="btn-auth-submit" id="btn-login-action" onclick="submitLoginProcess()" style="margin-top: 14px;">
+        <span>VERIFY &amp; SIGN IN (OTP: 9999)</span>
       </button>
     </div>
   </div>
@@ -8420,11 +8413,15 @@
 
     function openLoginModal(purpose = 'nav') {
       loginPurpose = purpose;
-      otpSent = false;
       const otpGroup = document.getElementById('otp-group-block');
       const actionBtn = document.getElementById('btn-login-action');
-      if (otpGroup) otpGroup.style.display = 'none';
-      if (actionBtn) actionBtn.textContent = 'CONTINUE / REQUEST OTP';
+      const otpInput = document.getElementById('login-otp-input');
+      if (otpInput) otpInput.value = '9999';
+      if (otpGroup) otpGroup.style.display = 'block';
+      if (actionBtn) {
+        actionBtn.disabled = false;
+        actionBtn.textContent = 'VERIFY & SIGN IN (OTP: 9999)';
+      }
       const modal = document.getElementById('login-modal');
       if (modal) modal.classList.add('active');
     }
@@ -8434,131 +8431,125 @@
       if (modal) modal.classList.remove('active');
     }
 
+    async function requestWhatsAppOtp() {
+      const phoneInput = document.getElementById('login-phone-input');
+      const otpInput = document.getElementById('login-otp-input');
+      const phone = phoneInput ? phoneInput.value.trim() : '';
+      if (!phone || phone.replace(/[^0-9]/g, '').length < 10) {
+        showToast('Please enter a valid 10-digit mobile number');
+        if (phoneInput) phoneInput.focus();
+        return;
+      }
+      try {
+        const res = await fetch('/api/otp/send', {
+          method: 'POST',
+          headers: { 'Content-Type': 'application/json' },
+          body: JSON.stringify({ phone, channel: 'whatsapp', name: document.getElementById('login-name-input')?.value || '' })
+        });
+        const data = await res.json();
+        const code = data?.otp || '9999';
+        if (otpInput) otpInput.value = code;
+        showToast(`WhatsApp OTP: ${code} (Default system OTP)`);
+      } catch (e) {
+        if (otpInput) otpInput.value = '9999';
+        showToast('WhatsApp OTP: 9999 (Default system OTP)');
+      }
+    }
+
     async function submitLoginProcess() {
       const phoneInput = document.getElementById('login-phone-input');
-      const emailInput = document.getElementById('login-email-input');
       const nameInput = document.getElementById('login-name-input');
       const otpInput = document.getElementById('login-otp-input');
-      const otpGroup = document.getElementById('otp-group-block');
       const btn = document.getElementById('btn-login-action');
 
       const phone = phoneInput ? phoneInput.value.trim() : '';
-      const email = emailInput ? emailInput.value.trim() : '';
       const name = (nameInput && nameInput.value.trim()) ? nameInput.value.trim() : 'Mahesh Sharma';
 
-      if (selectedOtpChannel === 'whatsapp' && (!phone || phone.replace(/[^0-9]/g, '').length < 10)) {
+      if (!phone || phone.replace(/[^0-9]/g, '').length < 10) {
         showToast('Please enter a valid 10-digit mobile number');
+        if (phoneInput) phoneInput.focus();
         return;
       }
 
-      if (selectedOtpChannel === 'email' && (!email || !email.includes('@'))) {
-        showToast('Please enter a valid email address');
-        return;
+      let otpVal = otpInput ? otpInput.value.trim() : '';
+      if (!otpVal) {
+        otpVal = '9999';
+        if (otpInput) otpInput.value = '9999';
       }
 
-      const defaultDemoOtp = adminOtp || '9999';
-
-      if (!otpSent) {
-        // Step 1: Send OTP
-        try {
-          if (btn) btn.textContent = 'REQUESTING OTP...';
-          const res = await fetch('/api/otp/send', {
-            method: 'POST',
-            headers: { 'Content-Type': 'application/json' },
-            body: JSON.stringify({ phone: selectedOtpChannel === 'whatsapp' ? phone : (phone || '9829012345'), channel: selectedOtpChannel, name })
-          });
-          const data = await res.json();
-          otpSent = true;
-          if (otpGroup) otpGroup.style.display = 'block';
-          if (btn) btn.textContent = 'VERIFY OTP & LOGIN';
-          const validOtp = (data && (data.otp || data.testOtp || data.defaultOtp)) || defaultDemoOtp;
-          if (otpInput) {
-            otpInput.value = validOtp;
-            otpInput.focus();
-          }
-          showToast(`OTP sent via ${selectedOtpChannel.toUpperCase()}: ${validOtp}`);
-        } catch (e) {
-          console.warn('Network send OTP fallback:', e);
-          otpSent = true;
-          if (otpGroup) otpGroup.style.display = 'block';
-          if (btn) btn.textContent = 'VERIFY OTP & LOGIN';
-          if (otpInput) otpInput.value = defaultDemoOtp;
-          showToast(`OTP sent via ${selectedOtpChannel.toUpperCase()}: ${defaultDemoOtp}`);
+      try {
+        if (btn) {
+          btn.disabled = true;
+          btn.textContent = 'VERIFYING...';
         }
-      } else {
-        // Step 2: Verify OTP
-        const otpVal = otpInput ? otpInput.value.trim() : '';
-        if (!otpVal) {
-          showToast(`Please enter the 4-digit OTP (${defaultDemoOtp})`);
-          return;
+        const res = await fetch('/api/otp/verify', {
+          method: 'POST',
+          headers: { 'Content-Type': 'application/json' },
+          body: JSON.stringify({ phone, otp: otpVal, name })
+        });
+        const data = await res.json();
+
+        if (res.ok && data.verified) {
+          currentUser = {
+            id: data.user?.id || ('CUST-' + Math.floor(1000 + Math.random() * 9000)),
+            name: data.user?.name || name,
+            phone: phone,
+            email: data.user?.email || 'client@sikardrop.in',
+            channel: 'whatsapp',
+            verified: true
+          };
+          localStorage.setItem('sikar_user', JSON.stringify(currentUser));
+
+          const existingIdx = adminUsers.findIndex(u => (u.phone && u.phone === currentUser.phone));
+          if (existingIdx === -1) {
+            adminUsers.unshift({
+              name: currentUser.name,
+              phone: currentUser.phone,
+              email: currentUser.email,
+              channel: 'whatsapp',
+              loginTime: new Date().toLocaleDateString('en-IN') + ' ' + new Date().toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' }),
+              orders: 0
+            });
+            localStorage.setItem('sikar_admin_users', JSON.stringify(adminUsers));
+          }
+
+          updateAuthNav();
+          closeLoginModal();
+          showToast(`Welcome ${currentUser.name}! Signed in via WhatsApp OTP.`);
+
+          if (loginPurpose === 'checkout') {
+            openOrderConfirmModal();
+          }
+        } else {
+          if (btn) {
+            btn.disabled = false;
+            btn.textContent = 'VERIFY & SIGN IN (OTP: 9999)';
+          }
+          showToast(data.error || 'Invalid OTP. Default WhatsApp OTP is 9999.');
         }
-
-        try {
-          if (btn) btn.textContent = 'VERIFYING...';
-          const res = await fetch('/api/otp/verify', {
-            method: 'POST',
-            headers: { 'Content-Type': 'application/json' },
-            body: JSON.stringify({ phone: selectedOtpChannel === 'whatsapp' ? phone : (phone || '9829012345'), otp: otpVal, name })
-          });
-          const data = await res.json();
-
-          if (res.ok && data.verified) {
-            currentUser = {
-              id: data.user?.id || ('CUST-' + Math.floor(1000 + Math.random() * 9000)),
-              name: data.user?.name || name,
-              phone: selectedOtpChannel === 'whatsapp' ? phone : (phone || '98290 XXXXX'),
-              email: selectedOtpChannel === 'email' ? email : 'client@sikardrop.in',
-              channel: selectedOtpChannel,
-              verified: true
-            };
-            localStorage.setItem('sikar_user', JSON.stringify(currentUser));
-
-            // Sync with local adminUsers
-            const existingIdx = adminUsers.findIndex(u => (u.phone && u.phone === currentUser.phone) || (u.email && u.email === currentUser.email));
-            if (existingIdx === -1) {
-              adminUsers.unshift({
-                name: currentUser.name,
-                phone: currentUser.phone,
-                email: currentUser.email,
-                channel: selectedOtpChannel,
-                loginTime: new Date().toLocaleDateString('en-IN') + ' ' + new Date().toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' }),
-                orders: 0
-              });
-              localStorage.setItem('sikar_admin_users', JSON.stringify(adminUsers));
-            }
-
-            updateAuthNav();
-            closeLoginModal();
-            showToast(`Welcome ${currentUser.name}! Login verified.`);
-
-            if (loginPurpose === 'checkout') {
-              openOrderConfirmModal();
-            }
-          } else {
-            if (btn) btn.textContent = 'VERIFY OTP & LOGIN';
-            showToast(data.error || `Invalid OTP. Use default OTP: ${defaultDemoOtp}`);
+      } catch (e) {
+        console.warn('Network verify OTP fallback:', e);
+        if (otpVal === '9999' || otpVal === '1234') {
+          currentUser = {
+            name,
+            phone: phone,
+            email: 'client@sikardrop.in',
+            channel: 'whatsapp',
+            verified: true
+          };
+          localStorage.setItem('sikar_user', JSON.stringify(currentUser));
+          updateAuthNav();
+          closeLoginModal();
+          showToast(`Welcome ${name}! Signed in via WhatsApp OTP.`);
+          if (loginPurpose === 'checkout') {
+            openOrderConfirmModal();
           }
-        } catch (e) {
-          console.warn('Network verify OTP fallback:', e);
-          if (otpVal === defaultDemoOtp || otpVal === '9999' || otpVal === '1234') {
-            currentUser = {
-              name,
-              phone: selectedOtpChannel === 'whatsapp' ? phone : (phone || '98290 XXXXX'),
-              email: selectedOtpChannel === 'email' ? email : 'client@sikardrop.in',
-              channel: selectedOtpChannel,
-              verified: true
-            };
-            localStorage.setItem('sikar_user', JSON.stringify(currentUser));
-            updateAuthNav();
-            closeLoginModal();
-            showToast(`Welcome ${name}! Login verified.`);
-            if (loginPurpose === 'checkout') {
-              openOrderConfirmModal();
-            }
-          } else {
-            if (btn) btn.textContent = 'VERIFY OTP & LOGIN';
-            showToast(`Invalid OTP. Use default OTP: ${defaultDemoOtp}`);
+        } else {
+          if (btn) {
+            btn.disabled = false;
+            btn.textContent = 'VERIFY & SIGN IN (OTP: 9999)';
           }
+          showToast('Invalid OTP. Use default OTP: 9999');
         }
       }
     }

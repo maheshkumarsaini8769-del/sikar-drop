@@ -3519,13 +3519,12 @@
         <div class="portal-card">
           <div class="portal-card-header">
             <div>
-              <h2>Registered Users &amp; OTP Configuration</h2>
-              <p>Track logged-in accounts and configure default demo OTP.</p>
+              <h2>Registered Customers &amp; User Directory</h2>
+              <p>Directory of verified customers, shopkeepers and wholesale buyers across Sikar.</p>
             </div>
-            <div style="display: flex; align-items: center; gap: 8px;">
-              <span style="font-size: 0.84rem; font-weight: 700;">Default OTP:</span>
-              <input type="text" id="cfg-default-otp" class="portal-input tabular" style="width: 100px; text-align: center; font-weight: 800;" value="9999">
-              <button type="button" class="btn-portal-primary" onclick="saveDefaultOtp()">Save OTP</button>
+            <div style="background: #F0FDF4; border: 1px solid #86EFAC; padding: 6px 14px; border-radius: var(--radius-xs); display: flex; align-items: center; gap: 8px;">
+              <span style="display: inline-block; width: 8px; height: 8px; border-radius: 50%; background: #16A34A;"></span>
+              <span style="font-size: 0.82rem; font-weight: 700; color: #166534;">WhatsApp OTP Active (Default: 9999)</span>
             </div>
           </div>
           <div class="portal-table-wrapper">
@@ -8499,24 +8498,10 @@
     }
 
     // =========================================================
-    // 12. USERS & OTP HUB
+    // 12. USERS & CUSTOMERS DIRECTORY
     // =========================================================
     async function renderUsersTable() {
       const tbody = document.getElementById('users-table-tbody');
-      const otpInput = document.getElementById('cfg-default-otp');
-
-      try {
-        const otpRes = await fetch('/api/settings/otp');
-        if (otpRes.ok) {
-          const otpData = await otpRes.json();
-          if (otpData && otpData.default_otp) {
-            adminOtp = String(otpData.default_otp);
-            localStorage.setItem('sikar_admin_otp', adminOtp);
-          }
-        }
-      } catch (e) {}
-
-      if (otpInput) otpInput.value = adminOtp || '9999';
       if (!tbody) return;
 
       try {

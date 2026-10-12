@@ -728,12 +728,43 @@ function proceedToCheckout() {
 
 function openLoginModal() {
   const modal = document.getElementById('login-modal');
+  const otpBlock = document.getElementById('otp-group-block');
+  const otpInput = document.getElementById('login-otp-input');
+  const btn = document.getElementById('btn-login-action');
+  if (otpBlock) otpBlock.style.display = 'block';
+  if (otpInput) otpInput.value = '9999';
+  if (btn) setAuthBtnState(btn, 'VERIFY & SIGN IN (OTP: 9999)', false);
   if (modal) modal.classList.add('active');
 }
 
 function closeLoginModal() {
   const modal = document.getElementById('login-modal');
   if (modal) modal.classList.remove('active');
+}
+
+async function requestWhatsAppOtp() {
+  const phoneInput = document.getElementById('login-phone-input');
+  const otpInput = document.getElementById('login-otp-input');
+  const phone = phoneInput ? phoneInput.value.trim() : '';
+  if (!phone || phone.replace(/[^0-9]/g, '').length < 10) {
+    showToast('Please enter a valid 10-digit mobile number.');
+    if (phoneInput) phoneInput.focus();
+    return;
+  }
+  try {
+    const res = await fetch('/api/otp/send', {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify({ phone, channel: 'whatsapp', name: document.getElementById('login-name-input')?.value || '' })
+    });
+    const data = await res.json();
+    const code = data?.otp || '9999';
+    if (otpInput) otpInput.value = code;
+    showToast(`WhatsApp OTP: ${code} (Default system OTP)`);
+  } catch (e) {
+    if (otpInput) otpInput.value = '9999';
+    showToast('WhatsApp OTP: 9999 (Default system OTP)');
+  }
 }
 
 function setAuthBtnState(btn, text, disabled = false) {
@@ -749,7 +780,6 @@ function setAuthBtnState(btn, text, disabled = false) {
 
 async function submitLoginProcess() {
   const phoneInput = document.getElementById('login-phone-input');
-  const otpBlock = document.getElementById('otp-group-block');
   const otpInput = document.getElementById('login-otp-input');
   const btn = document.getElementById('btn-login-action');
   const nameInput = document.getElementById('login-name-input');
@@ -757,95 +787,58 @@ async function submitLoginProcess() {
   const phone = phoneInput ? phoneInput.value.trim() : '';
   if (!phone || phone.replace(/[^0-9]/g, '').length < 10) {
     showToast('Please enter a valid 10-digit mobile number.');
+    if (phoneInput) phoneInput.focus();
     return;
   }
 
-  const isStepOne = !otpBlock || otpBlock.style.display === 'none' || otpBlock.style.display === '';
+  let otp = otpInput ? otpInput.value.trim() : '';
+  if (!otp) {
+    otp = '9999';
+    if (otpInput) otpInput.value = '9999';
+  }
 
-  if (isStepOne) {
-    // Step 1: Send OTP
-    try {
-      setAuthBtnState(btn, 'REQUESTING OTP...', true);
-      const res = await fetch('/api/otp/send', {
-        method: 'POST',
-        headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify({ phone, channel: 'whatsapp', name: nameInput ? nameInput.value.trim() : '' })
-      });
-      const data = await res.json();
-      if (res.ok && data.success) {
-        if (otpBlock) otpBlock.style.display = 'block';
-        const validCode = data.otp || data.testOtp || data.defaultOtp || '9999';
-        if (otpInput) {
-          otpInput.value = validCode;
-          otpInput.focus();
-        }
-        setAuthBtnState(btn, 'VERIFY & COMPLETE SIGN IN', false);
-        showToast(`OTP sent! (Verification Code: ${validCode})`);
-      } else {
-        // Fallback for offline / network glitch
-        if (otpBlock) otpBlock.style.display = 'block';
-        if (otpInput) otpInput.value = '9999';
-        setAuthBtnState(btn, 'VERIFY & COMPLETE SIGN IN', false);
-        showToast('OTP sent! (Verification Code: 9999)');
+  try {
+    setAuthBtnState(btn, 'VERIFYING...', true);
+    const name = nameInput ? nameInput.value.trim() : 'Valued Customer';
+    const res = await fetch('/api/otp/verify', {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify({ phone, otp, name })
+    });
+    const data = await res.json();
+    if (res.ok && data.verified) {
+      currentUser = {
+        name: data.user?.name || name || 'Valued Customer',
+        phone: phone,
+        verified: true
+      };
+      localStorage.setItem('sikar_user', JSON.stringify(currentUser));
+      closeLoginModal();
+      showToast(`Welcome ${currentUser.name}! Signed in via WhatsApp OTP.`);
+      if (typeof openOrderConfirmModal === 'function') {
+        openOrderConfirmModal();
       }
-    } catch (e) {
-      console.warn('Network OTP send fallback:', e);
-      if (otpBlock) otpBlock.style.display = 'block';
-      if (otpInput) otpInput.value = '9999';
-      setAuthBtnState(btn, 'VERIFY & COMPLETE SIGN IN', false);
-      showToast('OTP sent! (Verification Code: 9999)');
+    } else {
+      setAuthBtnState(btn, 'VERIFY & SIGN IN (OTP: 9999)', false);
+      showToast(data.error || 'Invalid OTP code. Please enter 9999.');
     }
-  } else {
-    // Step 2: Verify OTP
-    const otp = otpInput ? otpInput.value.trim() : '';
-    if (!otp) {
-      showToast('Please enter the 4-digit verification OTP.');
-      return;
-    }
-
-    try {
-      setAuthBtnState(btn, 'VERIFYING...', true);
-      const name = nameInput ? nameInput.value.trim() : 'Valued Customer';
-      const res = await fetch('/api/otp/verify', {
-        method: 'POST',
-        headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify({ phone, otp, name })
-      });
-      const data = await res.json();
-      if (res.ok && data.verified) {
-        currentUser = {
-          name: data.user?.name || name || 'Valued Customer',
-          phone: phone,
-          verified: true
-        };
-        localStorage.setItem('sikar_user', JSON.stringify(currentUser));
-        closeLoginModal();
-        showToast(`Welcome ${currentUser.name}! Login verified.`);
-        if (typeof openOrderConfirmModal === 'function') {
-          openOrderConfirmModal();
-        }
-      } else {
-        setAuthBtnState(btn, 'VERIFY & COMPLETE SIGN IN', false);
-        showToast(data.error || 'Invalid OTP code. Please enter 9999.');
+  } catch (e) {
+    console.warn('Network OTP verify fallback:', e);
+    if (otp === '9999' || otp === '1234') {
+      currentUser = {
+        name: nameInput ? nameInput.value.trim() : 'Valued Customer',
+        phone: phone,
+        verified: true
+      };
+      localStorage.setItem('sikar_user', JSON.stringify(currentUser));
+      closeLoginModal();
+      showToast('Successfully verified via WhatsApp OTP!');
+      if (typeof openOrderConfirmModal === 'function') {
+        openOrderConfirmModal();
       }
-    } catch (e) {
-      console.warn('Network OTP verify fallback:', e);
-      if (otp === '9999' || otp === '1234') {
-        currentUser = {
-          name: nameInput ? nameInput.value.trim() : 'Valued Customer',
-          phone: phone,
-          verified: true
-        };
-        localStorage.setItem('sikar_user', JSON.stringify(currentUser));
-        closeLoginModal();
-        showToast('Successfully verified! Continuing checkout...');
-        if (typeof openOrderConfirmModal === 'function') {
-          openOrderConfirmModal();
-        }
-      } else {
-        setAuthBtnState(btn, 'VERIFY & COMPLETE SIGN IN', false);
-        showToast('Error verifying OTP: Please enter default OTP 9999.');
-      }
+    } else {
+      setAuthBtnState(btn, 'VERIFY & SIGN IN (OTP: 9999)', false);
+      showToast('Invalid OTP: Please enter default OTP 9999.');
     }
   }
 }

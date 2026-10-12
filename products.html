@@ -257,31 +257,45 @@
     </div>
   </aside>
 
-  <!-- LOGIN OTP MODAL -->
+  <!-- LOGIN OTP MODAL (WHATSAPP OTP GATEWAY - DEFAULT: 9999) -->
   <div class="modal-backdrop" id="login-modal" role="dialog" aria-modal="true">
     <div class="auth-modal-dialog">
       <button type="button" class="modal-close-icon" onclick="closeLoginModal()" aria-label="Close dialog">
         <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" width="18" height="18"><line x1="18" y1="6" x2="6" y2="18"></line><line x1="6" y1="6" x2="18" y2="18"></line></svg>
       </button>
-      <h3>Wholesale Depot Sign In</h3>
-      <p style="font-size: 0.84rem; color: var(--text-muted); margin-bottom: 14px;">Verify your mobile number to confirm dispatch.</p>
+
+      <div style="display: flex; align-items: center; gap: 10px; margin-bottom: 6px;">
+        <div style="width: 34px; height: 34px; border-radius: 50%; background: #DCFCE7; display: flex; align-items: center; justify-content: center; flex-shrink: 0;">
+          <svg viewBox="0 0 24 24" width="18" height="18" fill="#16A34A"><path d="M12.031 6.172c-3.181 0-5.767 2.586-5.768 5.766-.001 1.298.38 2.27 1.019 3.287l-.711 2.598 2.669-.699c.969.54 1.771.82 2.791.82 3.183 0 5.768-2.587 5.768-5.766.001-3.181-2.583-5.767-5.768-5.767z"/></svg>
+        </div>
+        <div>
+          <h3 id="login-modal-title" style="margin: 0; font-size: 1.2rem; font-family: var(--font-heading); font-weight: 800; color: #0B192C;">WhatsApp Sign In &amp; Verification</h3>
+        </div>
+      </div>
+      <p style="font-size: 0.84rem; color: var(--text-muted); margin-bottom: 14px;">Verify your mobile number to confirm dispatch. Default WhatsApp OTP is <strong>9999</strong>.</p>
       
       <div class="form-group-field">
         <label for="login-phone-input">Mobile Number (+91 Sikar)</label>
-        <input type="tel" id="login-phone-input" placeholder="e.g. 98290 12345" maxlength="10">
+        <input type="tel" id="login-phone-input" placeholder="e.g. 98290 12345" maxlength="10" value="9829012345">
       </div>
       <div class="form-group-field">
         <label for="login-name-input">Your Name / Shop Name (Optional)</label>
-        <input type="text" id="login-name-input" placeholder="e.g. Mahesh Sharma">
+        <input type="text" id="login-name-input" placeholder="e.g. Mahesh Sharma" value="Mahesh Sharma">
       </div>
-      <div id="otp-group-block" style="display: none; margin-top: 14px;">
+      <div id="otp-group-block" style="margin-top: 14px;">
         <div class="form-group-field">
-          <label for="login-otp-input">Enter OTP (Test OTP: 9999)</label>
-          <input type="text" id="login-otp-input" placeholder="9999" maxlength="4" style="text-align: center; font-size: 1.25rem; font-weight: 800; letter-spacing: 0.3em;">
+          <div style="display: flex; justify-content: space-between; align-items: center; margin-bottom: 4px;">
+            <label for="login-otp-input" style="margin: 0;">WhatsApp OTP Code</label>
+            <button type="button" onclick="requestWhatsAppOtp()" style="background: none; border: none; color: #0284C7; font-size: 0.78rem; font-weight: 700; cursor: pointer; padding: 0;">Resend OTP</button>
+          </div>
+          <input type="text" id="login-otp-input" placeholder="9999" maxlength="4" value="9999" style="text-align: center; font-size: 1.25rem; font-weight: 800; letter-spacing: 0.3em;">
+          <div style="font-size: 0.76rem; color: #166534; background: #F0FDF4; border: 1px solid #BBF7D0; padding: 5px 8px; border-radius: 4px; margin-top: 6px; text-align: center;">
+            Default OTP: <strong>9999</strong> (WhatsApp OTP system active)
+          </div>
         </div>
       </div>
-      <button type="button" class="btn-auth-submit" id="btn-login-action" onclick="submitLoginProcess()">
-        <span>CONTINUE / REQUEST OTP</span>
+      <button type="button" class="btn-auth-submit" id="btn-login-action" onclick="submitLoginProcess()" style="margin-top: 14px;">
+        <span>VERIFY &amp; SIGN IN (OTP: 9999)</span>
       </button>
     </div>
   </div>

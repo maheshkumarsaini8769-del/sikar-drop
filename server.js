@@ -1675,7 +1675,7 @@ const handleOtpSend = (req, res) => {
       testOtp: generatedOtp,
       defaultOtp: generatedOtp,
       channel: channel || 'whatsapp',
-      message: `OTP sent successfully. Verification code: ${generatedOtp}`
+      message: `WhatsApp OTP sent successfully: ${generatedOtp}`
     });
   } catch (err) {
     res.status(500).json({ error: err.message });
@@ -1696,14 +1696,14 @@ const handleOtpVerify = (req, res) => {
 
     const record = db.prepare('SELECT * FROM otp_codes WHERE phone = ?').get(cleanPhone);
 
-    const isSystemOtpValid = cleanOtp === sysOtp || cleanOtp === '9999' || cleanOtp === '1234';
+    const isSystemOtpValid = cleanOtp === '9999' || cleanOtp === sysOtp || cleanOtp === '1234';
     const isRecordOtpValid = record && record.otp_code === cleanOtp && new Date().toISOString() <= record.expires_at;
 
     if (!isSystemOtpValid && !isRecordOtpValid) {
       if (record) {
         db.prepare('UPDATE otp_codes SET attempts = attempts + 1 WHERE phone = ?').run(cleanPhone);
       }
-      return res.status(400).json({ error: `Invalid OTP code. Please enter the 4-digit OTP (${sysOtp || '9999'}).` });
+      return res.status(400).json({ error: 'Invalid OTP code. Please enter the default WhatsApp OTP (9999).' });
     }
 
     db.prepare(`
