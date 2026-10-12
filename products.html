@@ -585,7 +585,7 @@
             <div>
               <div class="card-photo-box">
                 <img src="${p.image}" alt="${escapeHTML(p.title)}" id="prod-img-${p.id}" loading="lazy">
-                ${p.mrp > p.price ? `<span class="badge-discount-save" style="position: absolute; top: 8px; left: 8px; background: #DC2626; color: #FFF; font-size: 0.7rem; font-weight: 800; padding: 2px 6px; border-radius: 4px;">SAVE ₹${p.mrp - p.price}</span>` : ''}
+                ${p.mrp > p.price ? `<span class="badge-discount-save" style="position: absolute; top: 8px; left: 8px; background: #DC2626; color: #FFF; font-size: 0.7rem; font-weight: 800; padding: 2px 6px; border-radius: 4px; z-index: 2; pointer-events: none;">SAVE ₹${p.mrp - p.price}</span>` : ''}
               </div>
               <h3 class="card-title-text">${escapeHTML(p.title)}</h3>
               <div class="card-spec-sub">${escapeHTML(p.spec)}</div>

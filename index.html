@@ -1085,24 +1085,27 @@
 
     .card-photo-box {
       width: 100%;
-      height: 160px;
+      height: 165px;
       background: #FFFFFF;
       border-radius: var(--radius-xs);
       overflow: hidden;
       display: flex;
       align-items: center;
       justify-content: center;
-      margin-bottom: 14px;
+      margin-bottom: 12px;
       position: relative;
-      padding: 8px;
+      padding: 10px 8px 8px;
     }
 
     .card-photo-box img {
       width: auto;
       max-width: 90%;
-      height: 145px;
+      max-height: 90%;
+      height: auto;
       object-fit: contain;
-      transition: transform 0.3s;
+      display: block;
+      margin: 0 auto;
+      transition: transform 0.3s cubic-bezier(0.16, 1, 0.3, 1);
     }
 
     .clean-product-card:hover .card-photo-box img {
@@ -1629,7 +1632,8 @@
       width: 54px;
       height: 54px;
       border-radius: var(--radius-xs);
-      object-fit: cover;
+      object-fit: contain;
+      padding: 3px;
       background: #F8FAFC;
     }
 
@@ -2035,7 +2039,10 @@
 
     .bundle-card-visual {
       position: relative;
-      height: 205px;
+      width: 100%;
+      aspect-ratio: 16 / 9;
+      height: auto;
+      min-height: 195px;
       background: #0B192C;
       display: flex;
       align-items: center;
@@ -2047,7 +2054,7 @@
     .bundle-card-img {
       width: 100%;
       height: 100%;
-      object-fit: cover;
+      object-fit: contain;
       object-position: center center;
       transition: transform 0.4s cubic-bezier(0.16, 1, 0.3, 1);
     }
@@ -2379,7 +2386,9 @@
         gap: 16px;
       }
       .bundle-card-visual {
-        height: 160px;
+        aspect-ratio: 16 / 9;
+        height: auto;
+        min-height: 160px;
       }
       .bundle-card-body {
         padding: 16px;
@@ -2949,8 +2958,8 @@
       .cat-label-text { font-size: 0.78rem; min-height: 28px; }
 
       .clean-product-card { padding: 10px; }
-      .card-photo-box { height: 115px; margin-bottom: 8px; padding: 4px; }
-      .card-photo-box img { height: 105px; }
+      .card-photo-box { height: 125px; margin-bottom: 8px; padding: 6px; }
+      .card-photo-box img { max-width: 90%; max-height: 90%; width: auto; height: auto; object-fit: contain; }
       .card-title-text { font-size: 0.82rem; min-height: 32px; }
       .card-spec-sub { font-size: 0.74rem; margin-bottom: 8px; }
       .card-bottom-action-row { padding-top: 8px; gap: 6px; }
@@ -4278,38 +4287,6 @@
         </div>
       </section>
 
-      <!-- SECTION 2.5: LIVE DELIVERY AVAILABILITY & AREA CHECKER -->
-      <section class="delivery-checker-section" id="delivery-checker-section" style="padding: 20px 0 8px;">
-        <div class="container">
-          <div style="background: linear-gradient(135deg, #F0F9FF 0%, #E0F2FE 100%); border: 1.5px solid #BAE6FD; border-radius: var(--radius-md); padding: 18px 22px; box-shadow: 0 4px 14px rgba(2, 132, 199, 0.06);">
-            <div style="display: flex; align-items: center; justify-content: space-between; gap: 16px; flex-wrap: wrap;">
-              <div style="min-width: 240px; flex: 1;">
-                <div style="display: inline-flex; align-items: center; gap: 6px; background: #0284C7; color: #FFFFFF; font-size: 0.7rem; font-weight: 800; text-transform: uppercase; letter-spacing: 0.05em; padding: 3px 9px; border-radius: 999px; margin-bottom: 6px;">
-                  <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" width="13" height="13"><path d="M20 10c0 6-8 12-8 12s-8-6-8-12a8 8 0 0 1 16 0Z"/><circle cx="12" cy="10" r="3"/></svg>
-                  <span>SIKAR DELIVERY CHECKER</span>
-                </div>
-                <h3 style="font-family: var(--font-heading); font-size: 1.18rem; font-weight: 900; color: #0C4A6E; margin: 0 0 3px;">Check If Delivery Is Possible in Your Area</h3>
-                <p style="font-size: 0.82rem; color: #0369A1; margin: 0; font-weight: 600;">Enter your Sikar area, colony, road, or pincode (332001) to check express tempo delivery availability.</p>
-              </div>
-
-              <div style="flex: 1.2; min-width: 280px;">
-                <div style="display: flex; gap: 8px; flex-wrap: wrap;">
-                  <input type="text" id="site-delivery-check-input" placeholder="Enter area, colony, road or pincode (e.g. Piprali Road, Nawalgarh Road, 332001)..." onkeydown="if(event.key==='Enter'){event.preventDefault();checkWebsiteDeliveryAvailability();}" style="flex: 1; min-width: 200px; padding: 10px 14px; border: 1.5px solid #7DD3FC; border-radius: var(--radius-xs); background: #FFFFFF; font-size: 0.86rem; font-weight: 600; color: #0F172A; outline: none;">
-                  <button type="button" onclick="checkWebsiteDeliveryAvailability()" style="background: #0284C7; color: #FFFFFF; border: none; border-radius: var(--radius-xs); padding: 10px 18px; font-family: var(--font-heading); font-size: 0.86rem; font-weight: 800; cursor: pointer; white-space: nowrap;">
-                    Check Availability
-                  </button>
-                </div>
-                <div id="site-delivery-quick-chips" style="display: flex; align-items: center; gap: 6px; flex-wrap: wrap; margin-top: 8px;">
-                  <!-- Dynamically populated quick area pills from Admin delivery_zones -->
-                </div>
-              </div>
-            </div>
-
-            <div id="site-delivery-check-result" style="display: none; margin-top: 12px; padding: 11px 14px; border-radius: var(--radius-xs); font-size: 0.85rem; font-weight: 700;"></div>
-          </div>
-        </div>
-      </section>
-
       <!-- SECTION 3: CATEGORIES SHOWCASE (6 CLEAN WHITE CARDS) -->
       <section class="categories-showcase-section" id="categories-section">
         <div class="container">
@@ -4578,7 +4555,7 @@
             <!-- CARD 1: WEDDING PACK -->
             <article class="bundle-card" data-category="wedding">
               <div class="bundle-card-visual">
-                <img src="assets/cat_wedding_supply.jpg" alt="Shaadi & Banquet VIP Hydration Pack" class="bundle-card-img" loading="lazy">
+                <img src="assets/bundle_wedding_vip.jpg" alt="Shaadi & Banquet VIP Hydration Pack" class="bundle-card-img" loading="lazy">
                 <span class="bundle-badge-floating popular">👑 Wedding Favorite</span>
               </div>
               <div class="bundle-card-body">
@@ -4627,7 +4604,7 @@
             <!-- CARD 2: HOSTEL & PG PACK -->
             <article class="bundle-card" data-category="hostel">
               <div class="bundle-card-visual">
-                <img src="assets/prod_water_case.jpg" alt="Coaching Hostel & PG Monthly Water Pack" class="bundle-card-img" loading="lazy">
+                <img src="assets/bundle_hostel_hydration.jpg" alt="Coaching Hostel & PG Monthly Water Pack" class="bundle-card-img" loading="lazy">
                 <span class="bundle-badge-floating deal">🏢 Piprali / Nawalgarh Rd</span>
               </div>
               <div class="bundle-card-body">
@@ -4676,7 +4653,7 @@
             <!-- CARD 3: PARTY & COLD DRINKS PACK -->
             <article class="bundle-card" data-category="party">
               <div class="bundle-card-visual">
-                <img src="assets/prod_coca_cola.jpg" alt="Summer Party & Cold Drinks Mega Crate" class="bundle-card-img" loading="lazy">
+                <img src="assets/bundle_summer_party.jpg" alt="Summer Party & Cold Drinks Mega Crate" class="bundle-card-img" loading="lazy">
                 <span class="bundle-badge-floating hot">⚡ Instant Dispatch</span>
               </div>
               <div class="bundle-card-body">
@@ -4725,7 +4702,7 @@
             <!-- CARD 4: KIRANA STORE PACK -->
             <article class="bundle-card" data-category="kirana">
               <div class="bundle-card-visual">
-                <img src="assets/cat_soft_drinks.jpg" alt="Kirana Retailer High-Margin Starter Crate" class="bundle-card-img" loading="lazy">
+                <img src="assets/bundle_kirana_starter.jpg" alt="Kirana Retailer High-Margin Starter Crate" class="bundle-card-img" loading="lazy">
                 <span class="bundle-badge-floating deal">🏪 Kirana Restock</span>
               </div>
               <div class="bundle-card-body">
@@ -4934,6 +4911,38 @@
                 </div>
               </div>
             </article>
+          </div>
+        </div>
+      </section>
+
+      <!-- SECTION: LIVE DELIVERY AVAILABILITY & AREA CHECKER (BOTTOM CONVERSION STRIP) -->
+      <section class="delivery-checker-section" id="delivery-checker-section" style="padding: 24px 0 24px; background: #F8FAFC; border-top: 1px solid var(--border-subtle);">
+        <div class="container">
+          <div style="background: linear-gradient(135deg, #F0F9FF 0%, #E0F2FE 100%); border: 1.5px solid #BAE6FD; border-radius: var(--radius-md); padding: 22px 26px; box-shadow: 0 4px 14px rgba(2, 132, 199, 0.06);">
+            <div style="display: flex; align-items: center; justify-content: space-between; gap: 16px; flex-wrap: wrap;">
+              <div style="min-width: 240px; flex: 1;">
+                <div style="display: inline-flex; align-items: center; gap: 6px; background: #0284C7; color: #FFFFFF; font-size: 0.7rem; font-weight: 800; text-transform: uppercase; letter-spacing: 0.05em; padding: 3px 9px; border-radius: 999px; margin-bottom: 6px;">
+                  <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" width="13" height="13"><path d="M20 10c0 6-8 12-8 12s-8-6-8-12a8 8 0 0 1 16 0Z"/><circle cx="12" cy="10" r="3"/></svg>
+                  <span>SIKAR DELIVERY CHECKER</span>
+                </div>
+                <h3 style="font-family: var(--font-heading); font-size: 1.18rem; font-weight: 900; color: #0C4A6E; margin: 0 0 3px;">Check If Delivery Is Possible in Your Area</h3>
+                <p style="font-size: 0.82rem; color: #0369A1; margin: 0; font-weight: 600;">Enter your Sikar area, colony, road, or pincode (332001) to check express tempo delivery availability.</p>
+              </div>
+
+              <div style="flex: 1.2; min-width: 280px;">
+                <div style="display: flex; gap: 8px; flex-wrap: wrap;">
+                  <input type="text" id="site-delivery-check-input" placeholder="Enter area, colony, road or pincode (e.g. Piprali Road, Nawalgarh Road, 332001)..." onkeydown="if(event.key==='Enter'){event.preventDefault();checkWebsiteDeliveryAvailability();}" style="flex: 1; min-width: 200px; padding: 10px 14px; border: 1.5px solid #7DD3FC; border-radius: var(--radius-xs); background: #FFFFFF; font-size: 0.86rem; font-weight: 600; color: #0F172A; outline: none;">
+                  <button type="button" onclick="checkWebsiteDeliveryAvailability()" style="background: #0284C7; color: #FFFFFF; border: none; border-radius: var(--radius-xs); padding: 10px 18px; font-family: var(--font-heading); font-size: 0.86rem; font-weight: 800; cursor: pointer; white-space: nowrap;">
+                    Check Availability
+                  </button>
+                </div>
+                <div id="site-delivery-quick-chips" style="display: flex; align-items: center; gap: 6px; flex-wrap: wrap; margin-top: 8px;">
+                  <!-- Dynamically populated quick area pills from Admin delivery_zones -->
+                </div>
+              </div>
+            </div>
+
+            <div id="site-delivery-check-result" style="display: none; margin-top: 12px; padding: 11px 14px; border-radius: var(--radius-xs); font-size: 0.85rem; font-weight: 700;"></div>
           </div>
         </div>
       </section>
