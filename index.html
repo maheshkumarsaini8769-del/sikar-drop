@@ -7150,13 +7150,13 @@
       <input type="hidden" id="cat-form-id">
 
       <div class="form-group-field">
-        <label for="cat-name-input">Category Name</label>
-        <input type="text" id="cat-name-input" placeholder="e.g. Energy Drinks &amp; Soda">
+        <label for="cat-name-input">Category Name *</label>
+        <input type="text" id="cat-name-input" oninput="autoGenerateIndexCategorySlug(this.value)" placeholder="e.g. Energy Drinks &amp; Soda">
       </div>
 
       <div class="form-group-field">
-        <label for="cat-slug-input">Category ID / Slug</label>
-        <input type="text" id="cat-slug-input" placeholder="e.g. energy">
+        <label for="cat-slug-input">Category ID / Slug <span style="font-size:0.72rem; color:var(--text-light); font-weight:normal;">(Auto-filled)</span></label>
+        <input type="text" id="cat-slug-input" placeholder="e.g. energy_drinks">
       </div>
 
       <div class="form-group-field">
@@ -10564,6 +10564,14 @@
       if (modal) modal.classList.remove('active');
     }
 
+    function autoGenerateIndexCategorySlug(name) {
+      const slugInput = document.getElementById('cat-slug-input');
+      const formId = document.getElementById('cat-form-id');
+      if (slugInput && (!formId || !formId.value)) {
+        slugInput.value = (name || '').toLowerCase().replace(/[^a-z0-9]/g, '_').replace(/_+/g, '_').replace(/^_|_$/g, '');
+      }
+    }
+
     async function saveCategory() {
       const editId = document.getElementById('cat-form-id').value;
       const name = document.getElementById('cat-name-input').value.trim();
@@ -10571,23 +10579,25 @@
       const tagline = document.getElementById('cat-tagline-input').value.trim() || 'Wholesale Petis';
       const image = document.getElementById('cat-image-select').value;
 
-      if (!name || (!editId && !slug)) {
-        showToast('Please enter category name and unique slug');
+      if (!name) {
+        showToast('Kripya category name enter karein');
         return;
       }
 
-      const finalId = editId || slug;
+      let cleanSlug = slug || name.toLowerCase().replace(/[^a-z0-9]/g, '_').replace(/_+/g, '_').replace(/^_|_$/g, '');
+      if (!cleanSlug) cleanSlug = 'cat_' + Date.now().toString(36);
+      let finalId = editId || cleanSlug;
+      if (!editId && CATEGORIES.some(c => c.id === finalId)) {
+        finalId = finalId + '_' + Date.now().toString().slice(-4);
+      }
+
       if (editId) {
         const idx = CATEGORIES.findIndex(c => c.id === editId);
         if (idx > -1) {
           CATEGORIES[idx] = { id: editId, name, tagline, image };
         }
       } else {
-        if (CATEGORIES.some(c => c.id === slug)) {
-          showToast('Category ID already exists');
-          return;
-        }
-        CATEGORIES.push({ id: slug, name, tagline, image });
+        CATEGORIES.push({ id: finalId, name, tagline, image });
       }
 
       adminCategories = CATEGORIES;
@@ -10596,7 +10606,7 @@
       renderStorefrontCategories();
       renderSoftCategories();
       closeCategoryModal();
-      showToast('Category updated and published to live website!');
+      showToast(`Category "${name}" add ho gayi aur website par live hai!`);
 
       // Persist to SQLite backend API
       try {
@@ -10610,7 +10620,7 @@
           await fetch('/api/categories', {
             method: 'POST',
             headers: { 'Content-Type': 'application/json' },
-            body: JSON.stringify({ id: slug, name, tagline, image })
+            body: JSON.stringify({ id: finalId, name, tagline, image })
           });
         }
       } catch (err) {

@@ -1071,8 +1071,15 @@ app.get('/api/categories', (req, res) => {
 app.post('/api/categories', (req, res) => {
   try {
     const { id, name, tagline, image } = req.body;
-    if (!name) return res.status(400).json({ error: 'Category name is required' });
-    const catId = (id || name.toLowerCase().replace(/[^a-z0-9]/g, '_')).trim();
+    if (!name || !name.trim()) return res.status(400).json({ error: 'Category name is required' });
+    let cleanId = (id || '').trim().toLowerCase().replace(/[^a-z0-9_]/g, '_').replace(/_+/g, '_').replace(/^_|_$/g, '');
+    if (!cleanId) {
+      cleanId = name.toLowerCase().replace(/[^a-z0-9_]/g, '_').replace(/_+/g, '_').replace(/^_|_$/g, '');
+    }
+    if (!cleanId) {
+      cleanId = 'cat_' + Date.now().toString(36);
+    }
+    const catId = cleanId;
     const order = db.prepare('SELECT COUNT(*) AS c FROM categories').get().c + 1;
     db.prepare(`
       INSERT INTO categories (id, name, tagline, image, display_order, active)
@@ -1082,7 +1089,7 @@ app.post('/api/categories', (req, res) => {
         tagline = excluded.tagline,
         image = excluded.image,
         active = 1
-    `).run(catId, name, tagline || '', image || 'assets/cat_water_bottles.jpg', order);
+    `).run(catId, name.trim(), tagline || '', image || 'assets/cat_water_bottles.jpg', order);
     res.status(201).json({ success: true, id: catId, message: `Category '${name}' saved` });
   } catch (err) {
     res.status(400).json({ error: err.message });

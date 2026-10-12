@@ -4143,11 +4143,11 @@
         <div class="portal-form-grid-2">
           <div class="portal-field-group">
             <label for="cat-name-input">Category Name *</label>
-            <input type="text" id="cat-name-input" class="portal-input" required>
+            <input type="text" id="cat-name-input" class="portal-input" oninput="autoGenerateCategorySlug(this.value)" placeholder="e.g. Energy Drinks & Soda" required>
           </div>
           <div class="portal-field-group">
-            <label for="cat-slug-input">Category Slug ID *</label>
-            <input type="text" id="cat-slug-input" class="portal-input" placeholder="e.g. water, cases, cola" required>
+            <label for="cat-slug-input">Category Slug / ID <span style="font-size:0.72rem; color:var(--text-muted); font-weight:normal;">(Auto-filled)</span></label>
+            <input type="text" id="cat-slug-input" class="portal-input" placeholder="e.g. energy_drinks">
           </div>
         </div>
         <div class="portal-field-group">
@@ -7064,6 +7064,14 @@
       openModal('category-modal');
     }
 
+    function autoGenerateCategorySlug(name) {
+      const slugInput = document.getElementById('cat-slug-input');
+      const editId = document.getElementById('cat-id-edit');
+      if (slugInput && (!editId || !editId.value)) {
+        slugInput.value = (name || '').toLowerCase().replace(/[^a-z0-9]/g, '_').replace(/_+/g, '_').replace(/^_|_$/g, '');
+      }
+    }
+
     async function handleCategorySave(e) {
       e.preventDefault();
       const editId = document.getElementById('cat-id-edit').value.trim();
@@ -7077,7 +7085,12 @@
         return;
       }
 
-      const finalCatId = editId || slug || name.toLowerCase().replace(/[^a-z0-9]/g, '_');
+      let cleanSlug = slug || name.toLowerCase().replace(/[^a-z0-9]/g, '_').replace(/_+/g, '_').replace(/^_|_$/g, '');
+      if (!cleanSlug) cleanSlug = 'cat_' + Date.now().toString(36);
+      let finalCatId = editId || cleanSlug;
+      if (!editId && adminCategories.some(c => c.id === finalCatId)) {
+        finalCatId = finalCatId + '_' + Date.now().toString().slice(-4);
+      }
 
       // Optimistically update adminCategories & localStorage
       if (editId) {
@@ -7103,6 +7116,8 @@
       localStorage.setItem('sikar_admin_categories', JSON.stringify(adminCategories));
       renderCategoriesTable();
       populateCategorySelectDropdown();
+      closeModal('category-modal');
+      showToast(`Category '${name}' save ho gayi aur website par live hai!`);
 
       try {
         if (editId) {
@@ -7114,15 +7129,11 @@
             id: finalCatId, name, tagline, image
           });
         }
-        closeModal('category-modal');
         await syncFromBackend();
         renderCategoriesTable();
         populateCategorySelectDropdown();
-        showToast(`Category '${name}' save ho gayi aur website par live hai!`);
       } catch (err) {
-        console.error(err);
-        showToast('Category saved locally! Backend sync note: ' + err.message);
-        closeModal('category-modal');
+        console.warn('Backend category sync note:', err);
       }
     }
 
