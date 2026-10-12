@@ -4010,7 +4010,7 @@
 
         <div class="portal-field-group">
           <label for="pur-product">Product Delivered to Depot *</label>
-          <select id="pur-product" class="portal-select" required></select>
+          <select id="pur-product" class="portal-select" onchange="onPurProductChange()" required></select>
         </div>
 
         <div class="portal-form-grid-3">
@@ -4787,7 +4787,9 @@
           localStorage.setItem('sikar_admin_khata', JSON.stringify(adminKhata));
         }
         if (purchases && Array.isArray(purchases) && purchases.length > 0) {
-          adminPurchases = purchases.map(p => ({
+          const localPurchases = JSON.parse(localStorage.getItem('sikar_admin_purchases') || '[]');
+          const customPurchases = localPurchases.filter(lp => lp && lp.id && !purchases.some(sp => sp.id === lp.id));
+          const mappedPurchases = purchases.map(p => ({
             id: p.id,
             supplier: p.supplier_name || p.supplier,
             productTitle: p.product_title || p.productTitle,
@@ -4798,7 +4800,9 @@
             billNo: p.bill_no || p.billNo,
             status: p.status
           }));
-          localStorage.setItem('sikar_admin_purchases', JSON.stringify(adminPurchases));
+          const mergedPurchases = [...customPurchases, ...mappedPurchases];
+          adminPurchases = mergedPurchases;
+          localStorage.setItem('sikar_admin_purchases', JSON.stringify(mergedPurchases));
         }
         if (coupons && Array.isArray(coupons) && coupons.length > 0) {
           adminCoupons = coupons.map(cp => ({
@@ -6452,22 +6456,83 @@
       }).join('');
     }
 
-    function quickAdjustStock(prodId, delta) {
+    async function quickAdjustStock(prodId, delta) {
       const p = adminProducts.find(item => item.id === prodId);
-      if (p) {
-        p.stock = Math.max(0, p.stock + delta);
-        localStorage.setItem('sikar_admin_products', JSON.stringify(adminProducts));
+      if (!p) return;
+
+      const beforeStock = p.stock || 0;
+      p.stock = Math.max(0, beforeStock + delta);
+      localStorage.setItem('sikar_admin_products', JSON.stringify(adminProducts));
+
+      // If adding stock in Inventory, automatically record in Purchases ledger!
+      if (delta > 0) {
+        const cost = p.cost || Math.round(p.price * 0.75) || 14;
+        const total = delta * cost;
+        const purId = `PUR-${Math.floor(100 + Math.random() * 900)}`;
+        const billNo = `INW-${Date.now().toString().slice(-4)}`;
+        adminPurchases.unshift({
+          id: purId,
+          supplier: 'Depot Stock Inward',
+          productTitle: p.title,
+          qty: delta,
+          cost: cost,
+          total: total,
+          date: new Date().toISOString().split('T')[0],
+          billNo: billNo,
+          status: 'received'
+        });
+        localStorage.setItem('sikar_admin_purchases', JSON.stringify(adminPurchases));
+
+        renderInventoryTable();
+        renderPurchasesTable();
+        renderDashboard();
+        showToast(`${p.title} stock +${delta} boxes badha aur Purchase inward record ho gaya!`);
+
+        try {
+          await sikarApi.post('/api/purchases', {
+            supplierName: 'Depot Stock Inward',
+            productId: p.id,
+            productTitle: p.title,
+            qty: delta,
+            unitCost: cost,
+            billNo: billNo,
+            autoReceive: true,
+            actor: currentOperator ? currentOperator.name : 'Admin'
+          });
+          await syncFromBackend();
+          renderInventoryTable();
+          renderPurchasesTable();
+        } catch (err) {
+          console.warn('Backend quick stock adjust purchase note:', err);
+        }
+      } else {
         renderInventoryTable();
         renderDashboard();
         showToast(`${p.title} stock adjusted to ${p.stock} boxes.`);
+        try {
+          await sikarApi.put(`/api/products/${p.id}`, { stock: p.stock });
+        } catch (err) {
+          console.warn('Backend stock adjust note:', err);
+        }
       }
     }
 
     function openPurchaseModal() {
       const select = document.getElementById('pur-product');
       select.innerHTML = adminProducts.map(p => `<option value="${p.id}" data-cost="${p.cost || 14}">${escapeHTML(p.title)}</option>`).join('');
-      calcPurTotal();
+      onPurProductChange();
       openModal('purchase-add-modal');
+    }
+
+    function onPurProductChange() {
+      const select = document.getElementById('pur-product');
+      if (!select) return;
+      const opt = select.options[select.selectedIndex];
+      if (opt) {
+        const cost = opt.getAttribute('data-cost');
+        if (cost) document.getElementById('pur-cost').value = cost;
+      }
+      calcPurTotal();
     }
 
     function calcPurTotal() {
@@ -6480,7 +6545,7 @@
       const tbody = document.getElementById('purchases-table-tbody');
       if (!tbody) return;
 
-      if (adminPurchases.length === 0) {
+      if (!adminPurchases || adminPurchases.length === 0) {
         tbody.innerHTML = '<tr><td colspan="8" style="text-align:center; padding:24px; color:var(--text-muted);">No supplier inwards recorded yet.</td></tr>';
         return;
       }
@@ -6514,6 +6579,8 @@
         });
         if (res && res.success) {
           await syncFromBackend();
+          renderPurchasesTable();
+          renderInventoryTable();
           showToast(`Purchase ${purId} received! Stock incremented.`);
           return;
         }
@@ -6522,50 +6589,38 @@
       }
       const item = adminPurchases.find(p => p.id === purId);
       if (item) item.status = 'received';
+      localStorage.setItem('sikar_admin_purchases', JSON.stringify(adminPurchases));
       renderPurchasesTable();
       showToast(`Purchase ${purId} marked received.`);
     }
 
     async function handlePurchaseSubmit(e) {
       e.preventDefault();
-      const supplier = document.getElementById('pur-supplier').value.trim();
+      const supplier = document.getElementById('pur-supplier').value.trim() || 'Bisleri Plant Jaipur';
       const billNo = document.getElementById('pur-billno').value.trim() || `BILL-${Date.now().toString().slice(-4)}`;
       const prodId = document.getElementById('pur-product').value;
       const prod = adminProducts.find(p => p.id === prodId);
-      if (!prod) return;
+      if (!prod) {
+        showToast('Kripya product select karein.');
+        return;
+      }
 
       const qty = parseInt(document.getElementById('pur-qty').value, 10) || 0;
       const cost = parseFloat(document.getElementById('pur-cost').value) || 0;
+      if (qty <= 0 || cost <= 0) {
+        showToast('Valid quantity aur cost enter karein.');
+        return;
+      }
       const total = qty * cost;
 
-      try {
-        const res = await sikarApi.post('/api/purchases', {
-          supplierName: supplier,
-          productId: prodId,
-          qty: qty,
-          unitCost: cost,
-          billNo: billNo,
-          autoReceive: true,
-          actor: currentOperator ? currentOperator.name : 'Admin'
-        });
-        if (res && res.success) {
-          closeModal('purchase-add-modal');
-          await syncFromBackend();
-          showToast(`Supplier purchase recorded! Stock for ${prod.title} increased by +${qty} boxes.`);
-          return;
-        }
-      } catch (err) {
-        console.warn('Backend purchase submit fallback', err);
-      }
-
-      // 1. AUTO INCREMENT INVENTORY STOCK
-      prod.stock += qty;
+      // 1. Optimistically update local product stock & purchases ledger
+      prod.stock = (prod.stock || 0) + qty;
       prod.cost = cost;
       localStorage.setItem('sikar_admin_products', JSON.stringify(adminProducts));
 
-      // 2. RECORD IN PURCHASES LEDGER
+      const newPurId = `PUR-${Math.floor(100 + Math.random() * 900)}`;
       adminPurchases.unshift({
-        id: `PUR-${Math.floor(100 + Math.random() * 900)}`,
+        id: newPurId,
         supplier: supplier,
         productTitle: prod.title,
         qty: qty,
@@ -6581,7 +6636,27 @@
       renderInventoryTable();
       renderPurchasesTable();
       renderDashboard();
-      showToast(`Supplier purchase recorded! Stock for ${prod.title} increased by +${qty} boxes (New Stock: ${prod.stock}).`);
+      showToast(`Supplier purchase recorded! ${prod.title} stock +${qty} boxes ho gaya.`);
+
+      // 2. Persist to backend SQLite API
+      try {
+        await sikarApi.post('/api/purchases', {
+          supplierName: supplier,
+          productId: prodId,
+          productTitle: prod.title,
+          qty: qty,
+          unitCost: cost,
+          billNo: billNo,
+          autoReceive: true,
+          actor: currentOperator ? currentOperator.name : 'Admin'
+        });
+        await syncFromBackend();
+        renderInventoryTable();
+        renderPurchasesTable();
+        renderDashboard();
+      } catch (err) {
+        console.warn('Backend purchase submit note:', err);
+      }
     }
 
     function openBulkPriceModal() {

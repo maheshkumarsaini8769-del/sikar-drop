@@ -5869,6 +5869,36 @@
               </table>
             </div>
           </div>
+
+          <div class="admin-panel-card" style="margin-top: 20px;">
+            <div class="admin-section-header">
+              <div>
+                <h3>Supplier Purchases &amp; Inward Stock Ledger</h3>
+                <p>Plant receipts and depot inward deliveries. Inward entries automatically increment inventory stock.</p>
+              </div>
+              <button type="button" class="btn-admin-save" style="background: #15803D;" onclick="openAddPurchaseModal()">
+                <span>+ Record New Inward</span>
+              </button>
+            </div>
+
+            <div class="admin-table-wrapper">
+              <table class="admin-table">
+                <thead>
+                  <tr>
+                    <th>Purchase ID</th>
+                    <th>Date</th>
+                    <th>Supplier / Plant</th>
+                    <th>Product Title</th>
+                    <th>Boxes Inwarded</th>
+                    <th>Cost / Peti ₹</th>
+                    <th>Total Spend ₹</th>
+                    <th>Status</th>
+                  </tr>
+                </thead>
+                <tbody id="admin-purchases-tbody"></tbody>
+              </table>
+            </div>
+          </div>
         </div>
 
         <!-- TAB PANE 6: PRODUCTS CATALOG MANAGER -->
@@ -7032,7 +7062,7 @@
 
       <div class="form-group-field">
         <label for="purch-product-select">Select Wholesale Product</label>
-        <select id="purch-product-select" class="admin-select">
+        <select id="purch-product-select" class="admin-select" onchange="onPurchProductChange()">
           <!-- Populated dynamically from products -->
         </select>
       </div>
@@ -9492,7 +9522,7 @@
       else if (tabName === 'pos') { populatePosProductDropdown(); updatePosCalculations(); }
       else if (tabName === 'khata') renderKhataList();
       else if (tabName === 'customers') renderCustomersDirectory();
-      else if (tabName === 'inventory') renderInventoryTable();
+      else if (tabName === 'inventory') { renderInventoryTable(); renderPurchasesTable(); }
       else if (tabName === 'products') renderAdminProductsTable();
       else if (tabName === 'categories') renderCategoriesManager();
       else if (tabName === 'coupons') renderCouponsManager();
@@ -9513,6 +9543,7 @@
       renderKhataList();
       renderCustomersDirectory();
       renderInventoryTable();
+      renderPurchasesTable();
       renderAdminProductsTable();
       renderCategoriesManager();
       renderCouponsManager();
@@ -10249,32 +10280,115 @@
       }).join('');
     }
 
-    function quickAdjustStock(id, delta) {
+    async function quickAdjustStock(id, delta) {
       const prod = adminProducts.find(p => p.id === id);
-      if (prod) {
-        prod.stock = Math.max(0, (prod.stock || 0) + delta);
-        PRODUCTS = adminProducts;
-        localStorage.setItem('sikar_admin_products', JSON.stringify(adminProducts));
-        renderInventoryTable();
-        renderAdminProductsTable();
-        renderAdminGauges();
-        updateAdminMetrics();
-        showToast(`Stock updated for ${prod.title}: ${prod.stock} Petis`);
+      if (!prod) return;
+
+      const beforeStock = prod.stock || 0;
+      prod.stock = Math.max(0, beforeStock + delta);
+      PRODUCTS = adminProducts;
+      localStorage.setItem('sikar_admin_products', JSON.stringify(adminProducts));
+
+      if (delta > 0) {
+        const cost = prod.costPrice || prod.cost || Math.round(prod.price * 0.75) || 14;
+        const total = delta * cost;
+        const purId = 'PUR-' + Math.floor(100 + Math.random() * 900);
+        const billNo = 'INW-' + Date.now().toString().slice(-4);
+        adminPurchases.unshift({
+          id: purId,
+          supplier: 'Depot Stock Inward',
+          productTitle: prod.title,
+          qty: delta,
+          cost: cost,
+          total: total,
+          date: new Date().toISOString().slice(0, 10),
+          billNo: billNo,
+          status: 'received'
+        });
+        localStorage.setItem('sikar_admin_purchases', JSON.stringify(adminPurchases));
+        renderPurchasesTable();
+
+        try {
+          await fetch('/api/purchases', {
+            method: 'POST',
+            headers: { 'Content-Type': 'application/json' },
+            body: JSON.stringify({
+              supplierName: 'Depot Stock Inward',
+              productId: prod.id,
+              productTitle: prod.title,
+              qty: delta,
+              unitCost: cost,
+              billNo: billNo,
+              autoReceive: true,
+              actor: 'Admin'
+            })
+          });
+        } catch (err) {
+          console.warn('Backend stock adjust purchase note:', err);
+        }
+      } else {
+        try {
+          await fetch('/api/products/' + prod.id, {
+            method: 'PUT',
+            headers: { 'Content-Type': 'application/json' },
+            body: JSON.stringify({ stock: prod.stock })
+          });
+        } catch (err) {
+          console.warn('Backend stock update note:', err);
+        }
       }
+
+      renderInventoryTable();
+      renderPurchasesTable();
+      renderAdminProductsTable();
+      renderAdminGauges();
+      updateAdminMetrics();
+      showToast(delta > 0 ? `${prod.title} stock +${delta} badha aur Purchases me add ho gaya!` : `Stock updated for ${prod.title}: ${prod.stock} Petis`);
     }
 
     function openAddPurchaseModal() {
       const select = document.getElementById('purch-product-select');
       if (select) {
         select.innerHTML = adminProducts.map(p => `
-          <option value="${p.id}">${escapeHTML(p.title)} (Current Stock: ${p.stock})</option>
+          <option value="${p.id}" data-cost="${p.costPrice || p.cost || Math.round(p.price * 0.75) || 14}">${escapeHTML(p.title)} (Current Stock: ${p.stock})</option>
         `).join('');
       }
       document.getElementById('purch-supplier').value = 'Bisleri Plant Jaipur';
       document.getElementById('purch-qty').value = '30';
-      document.getElementById('purch-cost').value = '150';
+      onPurchProductChange();
       document.getElementById('purch-bill-no').value = 'INV-PLANT-' + Math.floor(1000 + Math.random() * 9000);
       document.getElementById('purchase-add-modal').classList.add('active');
+    }
+
+    function onPurchProductChange() {
+      const select = document.getElementById('purch-product-select');
+      if (!select) return;
+      const opt = select.options[select.selectedIndex];
+      if (opt) {
+        const cost = opt.getAttribute('data-cost');
+        if (cost) document.getElementById('purch-cost').value = cost;
+      }
+    }
+
+    function renderPurchasesTable() {
+      const tbody = document.getElementById('admin-purchases-tbody');
+      if (!tbody) return;
+      if (!adminPurchases || adminPurchases.length === 0) {
+        tbody.innerHTML = '<tr><td colspan="8" style="text-align: center; padding: 20px; color: var(--text-light);">No supplier inwards recorded yet.</td></tr>';
+        return;
+      }
+      tbody.innerHTML = adminPurchases.map(p => `
+        <tr>
+          <td><code>${escapeHTML(p.id)}</code></td>
+          <td>${escapeHTML(p.date || 'Recent')}</td>
+          <td><strong>${escapeHTML(p.supplier)}</strong></td>
+          <td>${escapeHTML(p.productTitle || 'Water Petis')}</td>
+          <td><strong>${p.qty} Boxes</strong></td>
+          <td class="tabular">₹${p.cost}</td>
+          <td class="tabular"><strong style="color: #15803D;">₹${(p.total || (p.qty * p.cost)).toLocaleString('en-IN')}</strong></td>
+          <td><span class="badge-status delivered" style="background:#DCFCE7; color:#15803D;">Stock Inwarded</span></td>
+        </tr>
+      `).join('');
     }
 
     function closePurchaseModal() {
@@ -10282,7 +10396,7 @@
       if (modal) modal.classList.remove('active');
     }
 
-    function savePurchaseEntry() {
+    async function savePurchaseEntry() {
       const supplier = document.getElementById('purch-supplier').value.trim() || 'Jaipur Bottling Hub';
       const prodId = document.getElementById('purch-product-select').value;
       const qty = parseInt(document.getElementById('purch-qty').value, 10) || 0;
@@ -10304,24 +10418,46 @@
       localStorage.setItem('sikar_admin_products', JSON.stringify(adminProducts));
 
       const total = qty * cost;
+      const purId = 'PUR-' + Math.floor(100 + Math.random() * 900);
       adminPurchases.unshift({
-        id: 'PUR-' + Date.now().toString().slice(-4),
+        id: purId,
         supplier,
         productTitle: prod.title,
         qty,
         cost,
         total,
         date: new Date().toISOString().slice(0, 10),
-        billNo
+        billNo,
+        status: 'received'
       });
       localStorage.setItem('sikar_admin_purchases', JSON.stringify(adminPurchases));
 
       renderInventoryTable();
+      renderPurchasesTable();
       renderAdminProductsTable();
       renderAdminGauges();
       updateAdminMetrics();
       closePurchaseModal();
       showToast(`Purchased ${qty} Petis! New stock: ${prod.stock} Petis. Added to Purchases.`);
+
+      try {
+        await fetch('/api/purchases', {
+          method: 'POST',
+          headers: { 'Content-Type': 'application/json' },
+          body: JSON.stringify({
+            supplierName: supplier,
+            productId: prodId,
+            productTitle: prod.title,
+            qty: qty,
+            unitCost: cost,
+            billNo: billNo,
+            autoReceive: true,
+            actor: 'Admin'
+          })
+        });
+      } catch (err) {
+        console.warn('Backend purchase save note:', err);
+      }
     }
 
     // UNIVERSAL PRICE MARKUP & FESTIVAL DISCOUNT TOOL
@@ -11562,6 +11698,32 @@
             applyActiveFestivalTheme(settings);
           }
         }
+
+        try {
+          const purchRes = await fetch('/api/purchases');
+          if (purchRes && purchRes.ok) {
+            const purchs = await purchRes.json();
+            if (Array.isArray(purchs) && purchs.length > 0) {
+              const localPurchs = JSON.parse(localStorage.getItem('sikar_admin_purchases')) || [];
+              const customPurchs = localPurchs.filter(lp => lp && lp.id && !purchs.some(sp => sp.id === lp.id));
+              const mappedPurchs = purchs.map(p => ({
+                id: p.id,
+                supplier: p.supplier_name || p.supplier,
+                productTitle: p.product_title || p.productTitle,
+                qty: p.qty,
+                cost: p.unit_cost || p.cost,
+                total: p.total_cost || p.total,
+                date: p.invoice_date || p.date,
+                billNo: p.bill_no || p.billNo,
+                status: p.status
+              }));
+              const mergedPurchs = [...customPurchs, ...mappedPurchs];
+              adminPurchases = mergedPurchs;
+              localStorage.setItem('sikar_admin_purchases', JSON.stringify(mergedPurchs));
+              renderPurchasesTable();
+            }
+          }
+        } catch (pErr) {}
       } catch (err) {
         console.warn('Backend storefront sync failed, using cached catalog:', err);
       }

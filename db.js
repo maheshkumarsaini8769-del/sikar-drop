@@ -987,24 +987,27 @@ function receivePurchaseTransaction({ purchaseId, actor = 'Admin' }) {
     if (purchase.status === 'received') throw new Error('Purchase is already received and stock is added');
 
     const product = db.prepare('SELECT stock FROM products WHERE id = ?').get(purchase.product_id);
-    if (!product) throw new Error('Product not found: ' + purchase.product_id);
-
     const now = new Date().toISOString();
-    const beforeStock = product.stock;
-    const afterStock = beforeStock + purchase.qty;
+    let beforeStock = 0;
+    let afterStock = purchase.qty;
 
-    // Update product stock and purchase cost
-    db.prepare('UPDATE products SET stock = ?, cost = ?, updated_at = ? WHERE id = ?')
-      .run(afterStock, purchase.unit_cost, now, purchase.product_id);
+    if (product) {
+      beforeStock = product.stock;
+      afterStock = beforeStock + purchase.qty;
+
+      // Update product stock and purchase cost
+      db.prepare('UPDATE products SET stock = ?, cost = ?, updated_at = ? WHERE id = ?')
+        .run(afterStock, purchase.unit_cost, now, purchase.product_id);
+
+      // Record movement
+      db.prepare(`
+        INSERT INTO inventory_movements (id, product_id, movement_type, quantity, before_stock, after_stock, reference_id, reason, actor, created_at)
+        VALUES (?, ?, 'purchase_received', ?, ?, ?, ?, ?, ?, ?)
+      `).run('MOV-' + Math.floor(100000 + Math.random() * 900000), purchase.product_id, purchase.qty, beforeStock, afterStock, purchaseId, `Received Inward Stock from ${purchase.supplier_name}`, actor, now);
+    }
 
     // Update purchase status
     db.prepare("UPDATE purchases SET status = 'received' WHERE id = ?").run(purchaseId);
-
-    // Record movement
-    db.prepare(`
-      INSERT INTO inventory_movements (id, product_id, movement_type, quantity, before_stock, after_stock, reference_id, reason, actor, created_at)
-      VALUES (?, ?, 'purchase_received', ?, ?, ?, ?, ?, ?, ?)
-    `).run('MOV-' + Math.floor(100000 + Math.random() * 900000), purchase.product_id, purchase.qty, beforeStock, afterStock, purchaseId, `Received Inward Stock from ${purchase.supplier_name}`, actor, now);
 
     db.prepare(`
       INSERT INTO audit_logs (id, actor, action, module, details, created_at)

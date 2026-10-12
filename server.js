@@ -842,7 +842,7 @@ app.post('/api/purchases', (req, res) => {
     }
 
     const prod = db.prepare('SELECT title FROM products WHERE id = ?').get(productId);
-    if (!prod) return res.status(404).json({ error: 'Product not found' });
+    const prodTitle = prod ? prod.title : (req.body.productTitle || ('Product ' + productId));
 
     const id = 'PUR-' + Math.floor(100 + Math.random() * 900);
     const now = new Date().toISOString();
@@ -851,7 +851,7 @@ app.post('/api/purchases', (req, res) => {
     db.prepare(`
       INSERT INTO purchases (id, supplier_name, supplier_phone, product_id, product_title, qty, unit_cost, total_cost, bill_no, invoice_date, payment_method, payment_status, status, notes, created_at)
       VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, 'Paid', ?, ?, ?)
-    `).run(id, supplierName, supplierPhone || '', productId, prod.title, qty, unitCost, totalCost, billNo || '', invoiceDate || now.split('T')[0], paymentMethod || 'Bank Transfer', autoReceive ? 'draft' : (status || 'draft'), notes || '', now);
+    `).run(id, supplierName, supplierPhone || '', productId, prodTitle, qty, unitCost, totalCost, billNo || '', invoiceDate || now.split('T')[0], paymentMethod || 'Bank Transfer', autoReceive ? 'draft' : (status || 'draft'), notes || '', now);
 
     // If autoReceive is true, immediately receive and increment inventory
     if (autoReceive || status === 'received') {
