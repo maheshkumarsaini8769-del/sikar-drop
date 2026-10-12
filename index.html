@@ -1935,487 +1935,463 @@
       box-shadow: 0 2px 6px rgba(15, 61, 100, 0.2);
     }
 
-    /* SECTION 6: INTERACTIVE BULK CALCULATOR */
-    .bulk-calculator-section {
-      padding: 38px 0 54px;
-      background: #F8FAFC;
+    /* =========================================================
+       SECTION 6: WHOLESALE EVENT BUNDLES & COMMERCIAL SUPPLY HUB
+       ========================================================= */
+    .wholesale-bundles-section {
+      padding: 56px 0 64px;
+      background: linear-gradient(180deg, #F8FAFC 0%, #F1F5F9 100%);
       border-top: 1px solid var(--border-subtle);
       border-bottom: 1px solid var(--border-subtle);
+      position: relative;
     }
 
-    .bulk-calc-box {
-      overflow: hidden;
-      max-width: 100%;
+    .bundle-header-tag {
+      display: inline-flex;
+      align-items: center;
+      gap: 6px;
+      background: #E0F2FE;
+      color: #0284C7;
+      font-size: 0.76rem;
+      font-weight: 800;
+      letter-spacing: 0.06em;
+      text-transform: uppercase;
+      padding: 5px 12px;
+      border-radius: var(--radius-pill);
+      margin-bottom: 10px;
+      border: 1px solid #BAE6FD;
     }
 
-    .bulk-calc-grid {
+    .bundle-tabs-nav {
+      display: flex;
+      align-items: center;
+      gap: 8px;
+      overflow-x: auto;
+      -webkit-overflow-scrolling: touch;
+      scrollbar-width: none;
+      padding: 4px 2px 14px;
+      margin-bottom: 24px;
+    }
+
+    .bundle-tabs-nav::-webkit-scrollbar {
+      display: none;
+    }
+
+    .bundle-tab-btn {
+      padding: 9px 18px;
+      border-radius: var(--radius-pill);
+      background: #FFFFFF;
+      border: 1px solid var(--border-subtle);
+      color: var(--text-muted);
+      font-size: 0.84rem;
+      font-weight: 700;
+      cursor: pointer;
+      white-space: nowrap;
+      transition: all 0.2s cubic-bezier(0.16, 1, 0.3, 1);
+      display: inline-flex;
+      align-items: center;
+      gap: 6px;
+      touch-action: manipulation;
+      box-shadow: 0 1px 3px rgba(0, 0, 0, 0.04);
+    }
+
+    .bundle-tab-btn:hover {
+      border-color: #0284C7;
+      color: #0284C7;
+      transform: translateY(-1px);
+    }
+
+    .bundle-tab-btn.active {
+      background: #0284C7;
+      border-color: #0284C7;
+      color: #FFFFFF;
+      box-shadow: 0 4px 14px rgba(2, 132, 199, 0.3);
+    }
+
+    .bundles-grid {
       display: grid;
-      grid-template-columns: minmax(0, 1.55fr) minmax(0, 1fr);
+      grid-template-columns: repeat(auto-fit, minmax(280px, 1fr));
+      gap: 22px;
+      margin-bottom: 40px;
+    }
+
+    .bundle-card {
       background: #FFFFFF;
       border: 1px solid var(--border-subtle);
       border-radius: var(--radius-md);
-      box-shadow: 0 4px 16px rgba(15, 23, 42, 0.05);
       overflow: hidden;
-      max-width: 100%;
-    }
-
-    .calc-items-col {
-      padding: 22px 24px;
+      box-shadow: 0 4px 18px rgba(15, 23, 42, 0.04);
+      transition: all 0.25s cubic-bezier(0.16, 1, 0.3, 1);
       display: flex;
       flex-direction: column;
-      gap: 14px;
-      min-width: 0;
-      max-width: 100%;
-    }
-
-    .calc-toolbar {
-      display: flex;
-      flex-direction: column;
-      gap: 10px;
-      padding-bottom: 12px;
-      border-bottom: 1px solid var(--border-subtle);
-      min-width: 0;
-      max-width: 100%;
-    }
-
-    .calc-search-row {
-      display: flex;
-      align-items: center;
-      gap: 10px;
-      flex-wrap: wrap;
-    }
-
-    .calc-search-input-wrap {
-      flex: 1;
-      min-width: 200px;
       position: relative;
-      display: flex;
-      align-items: center;
     }
 
-    .calc-search-input-wrap svg {
-      position: absolute;
-      left: 11px;
-      width: 15px;
-      height: 15px;
-      color: #64748B;
-      pointer-events: none;
+    .bundle-card:hover {
+      transform: translateY(-4px);
+      box-shadow: 0 12px 30px rgba(15, 23, 42, 0.1);
+      border-color: #BAE6FD;
     }
 
-    .calc-search-input {
-      width: 100%;
-      padding: 8px 12px 8px 34px;
-      border: 1.5px solid var(--border-subtle);
-      border-radius: var(--radius-xs);
-      font-size: 0.84rem;
-      font-weight: 600;
-      color: #0F172A;
+    .bundle-card-visual {
+      position: relative;
+      height: 190px;
       background: #F8FAFC;
-      outline: none;
-      transition: border-color 0.15s, background 0.15s;
-    }
-
-    .calc-search-input:focus {
-      border-color: #0284C7;
-      background: #FFFFFF;
-    }
-
-    .btn-calc-reset {
-      padding: 8px 12px;
-      border-radius: var(--radius-xs);
-      border: 1px solid #FECACA;
-      background: #FEF2F2;
-      color: #B91C1C;
-      font-size: 0.78rem;
-      font-weight: 800;
-      cursor: pointer;
-      white-space: nowrap;
-      transition: background 0.15s;
-    }
-
-    .btn-calc-reset:hover {
-      background: #FEE2E2;
-    }
-
-    .calc-cat-pills {
-      display: flex;
-      align-items: center;
-      gap: 6px;
-      overflow-x: auto;
-      padding-bottom: 4px;
-      scrollbar-width: thin;
-    }
-
-    .calc-cat-pill {
-      padding: 5px 11px;
-      border-radius: 9999px;
-      border: 1px solid var(--border-subtle);
-      background: #F8FAFC;
-      color: #475569;
-      font-size: 0.76rem;
-      font-weight: 700;
-      white-space: nowrap;
-      cursor: pointer;
-      transition: all 0.15s;
-    }
-
-    .calc-cat-pill:hover {
-      border-color: #0284C7;
-      color: #0284C7;
-    }
-
-    .calc-cat-pill.active {
-      background: #0284C7;
-      border-color: #0284C7;
-      color: #FFFFFF;
-    }
-
-    .calc-items-scroll {
-      display: flex;
-      flex-direction: column;
-      gap: 10px;
-      max-height: 470px;
-      overflow-y: auto;
-      padding-right: 6px;
-    }
-
-    .calc-items-scroll::-webkit-scrollbar {
-      width: 6px;
-    }
-
-    .calc-items-scroll::-webkit-scrollbar-track {
-      background: #F1F5F9;
-      border-radius: 999px;
-    }
-
-    .calc-items-scroll::-webkit-scrollbar-thumb {
-      background: #94A3B8;
-      border-radius: 999px;
-    }
-
-    .calc-row {
-      display: flex;
-      align-items: center;
-      justify-content: space-between;
-      gap: 12px;
-      padding: 10px 12px;
-      border: 1px solid var(--border-subtle);
-      border-radius: var(--radius-xs);
-      background: #FFFFFF;
-      transition: border-color 0.15s, background 0.15s;
-    }
-
-    .calc-row.active-row {
-      background: #F0F9FF;
-      border-color: #7DD3FC;
-    }
-
-    .calc-row-left {
-      display: flex;
-      align-items: center;
-      gap: 10px;
-      min-width: 0;
-      flex: 1;
-    }
-
-    .calc-row-thumb {
-      width: 42px;
-      height: 42px;
-      border-radius: 6px;
-      border: 1px solid var(--border-subtle);
-      background: #FFFFFF;
-      object-fit: contain;
-      padding: 2px;
-      flex-shrink: 0;
-    }
-
-    .calc-row-info {
-      min-width: 0;
-      flex: 1;
-    }
-
-    .calc-row-cat-tag {
-      display: inline-block !important;
-      width: fit-content;
-      font-size: 0.65rem;
-      font-weight: 800;
-      text-transform: uppercase;
-      letter-spacing: 0.04em;
-      color: #0369A1;
-      background: #E0F2FE;
-      padding: 1px 6px;
-      border-radius: 4px;
-      margin-bottom: 2px;
-    }
-
-    .calc-row-info strong {
-      display: block;
-      font-size: 0.88rem;
-      color: #0B192C;
-      margin-bottom: 2px;
-      white-space: nowrap;
-      overflow: hidden;
-      text-overflow: ellipsis;
-    }
-
-    .calc-row-info span {
-      font-size: 0.76rem;
-      color: var(--text-light);
-      display: block;
-    }
-
-    .calc-stepper {
-      display: flex;
-      align-items: center;
-      gap: 4px;
-      background: #F1F5F9;
-      border: 1px solid #E2E8F0;
-      border-radius: var(--radius-xs);
-      padding: 3px;
-      flex-shrink: 0;
-    }
-
-    .calc-btn {
-      min-width: 28px;
-      height: 28px;
-      padding: 0 5px;
-      border-radius: 4px;
-      background: #FFFFFF;
-      color: #0F172A;
-      font-weight: 800;
-      font-size: 0.78rem;
       display: flex;
       align-items: center;
       justify-content: center;
-      transition: all 0.15s;
-      border: 1px solid #E2E8F0;
-      cursor: pointer;
+      overflow: hidden;
+      border-bottom: 1px solid var(--border-subtle);
     }
 
-    .calc-btn.calc-btn-step {
-      background: #0284C7;
+    .bundle-card-img {
+      width: 100%;
+      height: 100%;
+      object-fit: cover;
+      transition: transform 0.4s ease;
+    }
+
+    .bundle-card:hover .bundle-card-img {
+      transform: scale(1.05);
+    }
+
+    .bundle-badge-floating {
+      position: absolute;
+      top: 12px;
+      left: 12px;
+      background: #0F172A;
       color: #FFFFFF;
-      border-color: #0284C7;
-      min-width: 30px;
-      font-size: 0.82rem;
-    }
-
-    .calc-btn:hover {
-      background: #0369A1;
-      color: #FFFFFF;
-      border-color: #0369A1;
-    }
-
-    .calc-input {
-      width: 42px;
-      border: none;
-      background: #FFFFFF;
-      border-radius: 4px;
-      height: 28px;
-      text-align: center;
+      font-size: 0.72rem;
       font-weight: 800;
-      font-size: 0.88rem;
-      color: #0F172A;
-      outline: none;
-      border: 1px solid #CBD5E1;
+      padding: 4px 10px;
+      border-radius: var(--radius-pill);
+      letter-spacing: 0.03em;
+      box-shadow: 0 2px 8px rgba(0, 0, 0, 0.25);
     }
 
-    .calc-summary-col {
-      background: #0F2B48;
-      color: #FFFFFF;
-      padding: 24px;
+    .bundle-badge-floating.popular {
+      background: linear-gradient(135deg, #0284C7, #0369A1);
+    }
+
+    .bundle-badge-floating.hot {
+      background: linear-gradient(135deg, #DC2626, #B91C1C);
+    }
+
+    .bundle-badge-floating.deal {
+      background: linear-gradient(135deg, #15803D, #166534);
+    }
+
+    .bundle-card-body {
+      padding: 20px 22px;
       display: flex;
       flex-direction: column;
-      justify-content: space-between;
-      gap: 16px;
-      min-width: 0;
+      flex: 1;
     }
 
-    .calc-summary-header {
+    .bundle-card-title {
+      font-family: var(--font-heading);
+      font-size: 1.15rem;
+      font-weight: 800;
+      color: #0F172A;
+      margin-bottom: 6px;
+      line-height: 1.3;
+    }
+
+    .bundle-card-desc {
+      font-size: 0.82rem;
+      color: #64748B;
+      line-height: 1.45;
+      margin-bottom: 14px;
+    }
+
+    .bundle-specs-list {
+      list-style: none;
+      padding: 0;
+      margin: 0 0 16px 0;
+      display: flex;
+      flex-direction: column;
+      gap: 7px;
+      background: #F8FAFC;
+      border-radius: var(--radius-sm);
+      padding: 12px 14px;
+      border: 1px solid var(--border-subtle);
+    }
+
+    .bundle-specs-list li {
+      font-size: 0.8rem;
+      font-weight: 600;
+      color: #334155;
       display: flex;
       align-items: center;
-      justify-content: space-between;
-      flex-wrap: wrap;
       gap: 8px;
     }
 
-    .calc-summary-header h3 {
-      font-family: var(--font-heading);
-      font-size: 1.3rem;
-      font-weight: 800;
-      color: #FFFFFF;
+    .bundle-specs-list li svg {
+      width: 14px;
+      height: 14px;
+      color: #10B981;
+      flex-shrink: 0;
     }
 
-    .bulk-badge-tempo {
-      background: rgba(56, 189, 248, 0.2);
-      border: 1px solid #38BDF8;
-      color: #BAE6FD;
-      font-size: 0.78rem;
+    .bundle-pricing-row {
+      display: flex;
+      align-items: baseline;
+      justify-content: space-between;
+      gap: 8px;
+      margin-top: auto;
+      margin-bottom: 16px;
+      padding-top: 12px;
+      border-top: 1px solid var(--border-subtle);
+    }
+
+    .bundle-price-main {
+      font-family: var(--font-heading);
+      font-size: 1.45rem;
+      font-weight: 900;
+      color: #0284C7;
+      display: flex;
+      align-items: baseline;
+      gap: 6px;
+    }
+
+    .bundle-price-mrp {
+      font-size: 0.88rem;
+      color: #94A3B8;
+      text-decoration: line-through;
+      font-weight: 600;
+    }
+
+    .bundle-save-pill {
+      background: #DCFCE7;
+      color: #15803D;
+      font-size: 0.74rem;
       font-weight: 800;
       padding: 3px 8px;
       border-radius: var(--radius-pill);
+      border: 1px solid #BBF7D0;
     }
 
-    .calc-selected-breakdown {
-      background: rgba(15, 23, 42, 0.45);
-      border: 1px solid rgba(255, 255, 255, 0.12);
-      border-radius: var(--radius-xs);
-      padding: 10px 12px;
-      max-height: 175px;
-      overflow-y: auto;
+    .bundle-actions-row {
       display: flex;
-      flex-direction: column;
-      gap: 6px;
+      gap: 8px;
     }
 
-    .calc-selected-item-line {
+    .btn-bundle-cart {
+      flex: 1.2;
+      background: #0284C7;
+      color: #FFFFFF;
+      border: none;
+      border-radius: var(--radius-xs);
+      font-family: var(--font-heading);
+      font-size: 0.86rem;
+      font-weight: 800;
+      padding: 10px 14px;
+      display: inline-flex;
+      align-items: center;
+      justify-content: center;
+      gap: 6px;
+      cursor: pointer;
+      transition: background 0.15s, transform 0.15s;
+      touch-action: manipulation;
+    }
+
+    .btn-bundle-cart:hover {
+      background: #0369A1;
+      transform: translateY(-1px);
+    }
+
+    .btn-bundle-whatsapp {
+      flex: 1;
+      background: #15803D;
+      color: #FFFFFF;
+      border: none;
+      border-radius: var(--radius-xs);
+      font-family: var(--font-heading);
+      font-size: 0.86rem;
+      font-weight: 800;
+      padding: 10px 14px;
+      display: inline-flex;
+      align-items: center;
+      justify-content: center;
+      gap: 6px;
+      cursor: pointer;
+      transition: background 0.15s, transform 0.15s;
+      touch-action: manipulation;
+    }
+
+    .btn-bundle-whatsapp:hover {
+      background: #166534;
+      transform: translateY(-1px);
+    }
+
+    /* HOW IT WORKS 3-STEP STRIP */
+    .bundle-steps-box {
+      background: #FFFFFF;
+      border: 1px solid var(--border-subtle);
+      border-radius: var(--radius-md);
+      padding: 28px 32px;
+      margin-bottom: 28px;
+      box-shadow: 0 2px 12px rgba(15, 23, 42, 0.03);
+    }
+
+    .steps-grid {
+      display: grid;
+      grid-template-columns: repeat(3, 1fr);
+      gap: 24px;
+      position: relative;
+    }
+
+    .step-item {
+      display: flex;
+      align-items: flex-start;
+      gap: 14px;
+    }
+
+    .step-num-circle {
+      width: 38px;
+      height: 38px;
+      border-radius: 50%;
+      background: linear-gradient(135deg, #0284C7, #38BDF8);
+      color: #FFFFFF;
+      font-family: var(--font-heading);
+      font-weight: 900;
+      font-size: 1rem;
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      flex-shrink: 0;
+      box-shadow: 0 4px 10px rgba(2, 132, 199, 0.25);
+    }
+
+    .step-content h4 {
+      font-family: var(--font-heading);
+      font-size: 0.96rem;
+      font-weight: 800;
+      color: #0F172A;
+      margin-bottom: 4px;
+    }
+
+    .step-content p {
+      font-size: 0.82rem;
+      color: #64748B;
+      line-height: 1.45;
+      margin: 0;
+    }
+
+    /* VIP CUSTOM QUOTE BANNER */
+    .bundle-vip-banner {
+      background: linear-gradient(135deg, #0F172A 0%, #1E293B 100%);
+      color: #FFFFFF;
+      border-radius: var(--radius-md);
+      padding: 24px 30px;
       display: flex;
       align-items: center;
       justify-content: space-between;
-      gap: 8px;
-      font-size: 0.78rem;
-      color: #E2E8F0;
-      padding-bottom: 5px;
-      border-bottom: 1px dashed rgba(255, 255, 255, 0.08);
+      gap: 20px;
+      box-shadow: 0 8px 24px rgba(15, 23, 42, 0.15);
+      border: 1px solid rgba(255, 255, 255, 0.08);
+      flex-wrap: wrap;
     }
 
-    .calc-selected-item-line:last-child {
-      border-bottom: none;
-      padding-bottom: 0;
-    }
-
-    .calc-summary-lines {
+    .bundle-vip-info h3 {
+      font-family: var(--font-heading);
+      font-size: 1.25rem;
+      font-weight: 900;
+      color: #FFFFFF;
+      margin-bottom: 4px;
       display: flex;
-      flex-direction: column;
+      align-items: center;
       gap: 10px;
     }
 
-    .calc-summary-row {
+    .bundle-vip-info p {
+      font-size: 0.85rem;
+      color: #94A3B8;
+      margin: 0;
+    }
+
+    .bundle-vip-actions {
       display: flex;
-      justify-content: space-between;
+      gap: 12px;
+      flex-wrap: wrap;
+    }
+
+    .btn-vip-whatsapp {
+      background: #16A34A;
+      color: #FFFFFF;
+      font-family: var(--font-heading);
       font-size: 0.86rem;
-      color: #CBD5E1;
-    }
-
-    .calc-summary-row strong {
-      color: #FFFFFF;
-    }
-
-    .calc-summary-row.discount-row strong {
-      color: #34D399;
-    }
-
-    .calc-summary-divider {
-      height: 1px;
-      background: rgba(255, 255, 255, 0.15);
-      margin: 4px 0;
-    }
-
-    .calc-summary-row.total-row {
-      font-size: 1.02rem;
-      color: #FFFFFF;
       font-weight: 800;
-    }
-
-    .calc-summary-row.total-row strong {
-      font-family: var(--font-heading);
-      font-size: 1.4rem;
-      color: #38BDF8;
-    }
-
-    .btn-bulk-cart {
-      background: #0284C7;
-      color: #FFFFFF;
-      font-family: var(--font-heading);
-      font-size: 0.9rem;
-      font-weight: 800;
-      padding: 11px 16px;
+      padding: 10px 18px;
       border-radius: var(--radius-xs);
-      display: flex;
+      text-decoration: none;
+      display: inline-flex;
       align-items: center;
-      justify-content: center;
       gap: 8px;
-      border: none;
-      cursor: pointer;
-      transition: background 0.15s;
-      width: 100%;
+      transition: background 0.15s, transform 0.15s;
     }
 
-    .btn-bulk-cart:hover {
-      background: #0369A1;
-    }
-
-    .btn-bulk-whatsapp {
+    .btn-vip-whatsapp:hover {
       background: #15803D;
+      transform: translateY(-1px);
+    }
+
+    .btn-vip-call {
+      background: rgba(255, 255, 255, 0.12);
       color: #FFFFFF;
+      border: 1px solid rgba(255, 255, 255, 0.2);
       font-family: var(--font-heading);
-      font-size: 0.92rem;
+      font-size: 0.86rem;
       font-weight: 800;
-      padding: 12px 18px;
+      padding: 10px 18px;
       border-radius: var(--radius-xs);
-      display: flex;
+      text-decoration: none;
+      display: inline-flex;
       align-items: center;
-      justify-content: center;
       gap: 8px;
       transition: background 0.15s;
-      box-shadow: 0 4px 14px rgba(15, 23, 42, 0.12);
-      border: none;
-      cursor: pointer;
-      width: 100%;
     }
 
-    .btn-bulk-whatsapp:hover {
-      background: #166534;
-    }
-
-    .btn-bulk-whatsapp svg {
-      width: 18px;
-      height: 18px;
-      flex-shrink: 0;
+    .btn-vip-call:hover {
+      background: rgba(255, 255, 255, 0.22);
     }
 
     @media (max-width: 900px) {
-      .bulk-calc-grid {
-        grid-template-columns: minmax(0, 1fr) !important;
+      .steps-grid {
+        grid-template-columns: 1fr;
+        gap: 18px;
+      }
+      .bundle-steps-box {
+        padding: 20px;
+      }
+      .bundle-vip-banner {
+        padding: 20px;
       }
     }
 
     @media (max-width: 640px) {
-      .bulk-calc-grid {
-        grid-template-columns: minmax(0, 1fr) !important;
+      .wholesale-bundles-section {
+        padding: 36px 0 44px;
       }
-      .calc-items-col,
-      .calc-summary-col {
-        padding: 14px;
-        min-width: 0;
-        width: 100%;
-        box-sizing: border-box;
+      .bundles-grid {
+        grid-template-columns: 1fr;
+        gap: 16px;
       }
-      .calc-search-input-wrap {
-        min-width: 0;
-        width: 100%;
+      .bundle-card-visual {
+        height: 160px;
       }
-      .calc-row {
+      .bundle-card-body {
+        padding: 16px;
+      }
+      .bundle-actions-row {
         flex-direction: column;
-        align-items: stretch;
-        gap: 8px;
-        padding: 10px;
       }
-      .calc-stepper {
+      .bundle-vip-actions {
         width: 100%;
-        justify-content: space-between;
-        box-sizing: border-box;
       }
-      .calc-btn {
-        flex: 1;
-        height: 32px;
-      }
-      .calc-input {
-        width: 54px;
-        height: 32px;
-      }
-      .calc-row-info strong {
-        white-space: normal;
+      .btn-vip-whatsapp, .btn-vip-call {
+        width: 100%;
+        justify-content: center;
       }
     }
 
@@ -4557,90 +4533,289 @@
         </div>
       </section>
 
-      <!-- SECTION 6: WHOLESALE BULK CALCULATOR (ALL PRODUCTS) -->
-      <section class="bulk-calculator-section" id="bulk-calculator-section">
+      <!-- SECTION 6: WHOLESALE EVENT BUNDLES & COMMERCIAL SUPPLY HUB -->
+      <section class="wholesale-bundles-section" id="wholesale-bundles-section">
         <div class="container">
           <div class="section-headline-bar">
             <div>
-              <h2>Wholesale Peti &amp; Bulk Calculator</h2>
-              <p>Live mandi rate calculator across all <span id="calc-total-catalog-count">50</span> wholesale products for Marriage Gardens, Hostels &amp; Kirana Stores in Sikar</p>
+              <span class="bundle-header-tag">
+                <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" width="14" height="14"><path d="M12 2l3.09 6.26L22 9.27l-5 4.87 1.18 6.88L12 17.77l-6.18 3.25L7 14.14 2 9.27l6.91-1.01L12 2z"/></svg>
+                Mandi Direct Wholesale • 100% Factory Sealed
+              </span>
+              <h2>Wholesale Event Bundles &amp; Commercial Supply</h2>
+              <p>Special curated mandi-rate packages for Marriage Gardens, Coaching Hostels, Banquets &amp; Kirana Stores across Sikar. Fast tempo delivery with zero-camper purity.</p>
+            </div>
+            <div>
+              <a href="/bulk" style="font-size: 0.84rem; font-weight: 800; color: #0284C7; text-decoration: none; display: inline-flex; align-items: center; gap: 4px;">
+                <span>View Full Rate Slab</span>
+                <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" width="14" height="14"><polyline points="9 18 15 12 9 6"/></svg>
+              </a>
             </div>
           </div>
 
-          <div class="bulk-calc-box">
-            <div class="bulk-calc-grid">
-              <!-- LEFT: ALL PRODUCTS SELECTION WITH SEARCH, CATEGORY FILTER & -1/+1 STEPPERS -->
-              <div class="calc-items-col">
-                <div class="calc-toolbar">
-                  <div class="calc-search-row">
-                    <div class="calc-search-input-wrap">
-                      <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.3">
-                        <circle cx="11" cy="11" r="8"></circle>
-                        <line x1="21" y1="21" x2="16.65" y2="16.65"></line>
-                      </svg>
-                      <input type="text" id="calc-search-input" class="calc-search-input" placeholder="Search any product in calculator (e.g. Bisleri, Kinley, Sting, Real)..." oninput="filterBulkCalculatorList()">
+          <!-- CATEGORY TABS -->
+          <div class="bundle-tabs-nav" id="bundle-tabs-nav">
+            <button type="button" class="bundle-tab-btn active" onclick="filterBundles('all', this)">
+              <span>🌟 All Featured Deals (4)</span>
+            </button>
+            <button type="button" class="bundle-tab-btn" onclick="filterBundles('wedding', this)">
+              <span>💍 Wedding &amp; Banquet</span>
+            </button>
+            <button type="button" class="bundle-tab-btn" onclick="filterBundles('hostel', this)">
+              <span>🏢 Hostel &amp; PG Hydration</span>
+            </button>
+            <button type="button" class="bundle-tab-btn" onclick="filterBundles('party', this)">
+              <span>🥤 Party &amp; Soft Drinks</span>
+            </button>
+            <button type="button" class="bundle-tab-btn" onclick="filterBundles('kirana', this)">
+              <span>🏪 Kirana Retailer Restock</span>
+            </button>
+          </div>
+
+          <!-- BUNDLES GRID -->
+          <div class="bundles-grid" id="bundles-grid">
+            <!-- CARD 1: WEDDING PACK -->
+            <article class="bundle-card" data-category="wedding">
+              <div class="bundle-card-visual">
+                <img src="assets/cat_wedding_supply.jpg" alt="Shaadi & Banquet VIP Hydration Pack" class="bundle-card-img" loading="lazy">
+                <span class="bundle-badge-floating popular">👑 Wedding Favorite</span>
+              </div>
+              <div class="bundle-card-body">
+                <h3 class="bundle-card-title">Shaadi &amp; Banquet VIP Hydration Pack</h3>
+                <p class="bundle-card-desc">Complete water &amp; banquet setup for marriages, ring ceremonies, and family gatherings of 200–500 guests in Sikar.</p>
+                <ul class="bundle-specs-list">
+                  <li>
+                    <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5"><polyline points="20 6 9 17 4 12"/></svg>
+                    <span>10x Shaadi Mini Water Petis (48x 250ml Sealed)</span>
+                  </li>
+                  <li>
+                    <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5"><polyline points="20 6 9 17 4 12"/></svg>
+                    <span>5x Bailey / Kinley 1L Packaged Cases (60 Bottles)</span>
+                  </li>
+                  <li>
+                    <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5"><polyline points="20 6 9 17 4 12"/></svg>
+                    <span>2x Real Fruit Power Mixed Juices (24x 1L Packs)</span>
+                  </li>
+                  <li>
+                    <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5"><polyline points="20 6 9 17 4 12"/></svg>
+                    <span>Strict Zero 20L Campers • 100% Tamper-Proof</span>
+                  </li>
+                </ul>
+                <div class="bundle-pricing-row">
+                  <div>
+                    <div class="bundle-price-main tabular">
+                      ₹4,699
+                      <span class="bundle-price-mrp tabular">₹5,860</span>
                     </div>
-                    <button type="button" class="btn-calc-reset" onclick="resetBulkCalculator()">Reset All (0)</button>
                   </div>
-                  <div class="calc-cat-pills" id="calc-cat-pills">
-                    <!-- Dynamically populated category filter pills -->
-                  </div>
+                  <span class="bundle-save-pill tabular">Save ₹1,161 (20% OFF)</span>
                 </div>
-
-                <div class="calc-items-scroll" id="calc-items-list">
-                  <!-- Dynamically populated with all 50+ products and -5, -1, input, +1, +5 steppers -->
-                </div>
-              </div>
-
-              <!-- RIGHT: LIVE QUOTE SUMMARY -->
-              <div class="calc-summary-col">
-                <div>
-                  <div class="calc-summary-header" style="margin-bottom: 12px;">
-                    <h3>Wholesale Estimate</h3>
-                    <span class="bulk-badge-tempo">Free Sikar Tempo Delivery</span>
-                  </div>
-
-                  <div style="font-size: 0.75rem; font-weight: 800; text-transform: uppercase; letter-spacing: 0.05em; color: #94A3B8; margin-bottom: 6px;">
-                    Selected Items Breakdown:
-                  </div>
-                  <div class="calc-selected-breakdown" id="calc-selected-breakdown">
-                    <!-- Dynamically populated selected items -->
-                  </div>
-                </div>
-
-                <div class="calc-summary-lines">
-                  <div class="calc-summary-row">
-                    <span>Total Selected Petis / Units:</span>
-                    <strong id="calc-total-petis-disp" class="tabular">26 Petis</strong>
-                  </div>
-                  <div class="calc-summary-row">
-                    <span>Standard Mandi Value:</span>
-                    <span id="calc-subtotal-disp" class="tabular">₹10,620</span>
-                  </div>
-                  <div class="calc-summary-row discount-row">
-                    <span>Bulk Wholesale Discount:</span>
-                    <strong id="calc-discount-disp" class="tabular">-₹1,062</strong>
-                  </div>
-                  <div class="calc-summary-divider"></div>
-                  <div class="calc-summary-row total-row">
-                    <span>Estimated Net Total:</span>
-                    <strong id="calc-net-total-disp" class="tabular">₹9,558</strong>
-                  </div>
-                </div>
-
-                <div style="display: flex; flex-direction: column; gap: 10px;">
-                  <button type="button" class="btn-bulk-cart" onclick="addBulkCalcItemsToCart()">
-                    <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.3" width="18" height="18"><circle cx="9" cy="21" r="1"></circle><circle cx="20" cy="21" r="1"></circle><path d="M1 1h4l2.68 13.39a2 2 0 0 0 2 1.61h9.72a2 2 0 0 0 2-1.61L23 6H6"></path></svg>
-                    <span>Add Selected Items to Cart</span>
+                <div class="bundle-actions-row">
+                  <button type="button" class="btn-bundle-cart" onclick="addBundleToCart('bundle-shaadi')">
+                    <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2" width="16" height="16"><circle cx="9" cy="21" r="1"/><circle cx="20" cy="21" r="1"/><path d="M1 1h4l2.68 13.39a2 2 0 0 0 2 1.61h9.72a2 2 0 0 0 2-1.61L23 6H6"/></svg>
+                    <span>Add to Cart</span>
                   </button>
-                  <button type="button" class="btn-bulk-whatsapp" onclick="dispatchBulkCalcWhatsApp()">
-                    <svg viewBox="0 0 24 24" fill="currentColor">
-                      <path d="M.057 24l1.687-6.163c-1.041-1.804-1.588-3.849-1.587-5.946.003-6.556 5.338-11.891 11.893-11.891 3.181.001 6.167 1.24 8.413 3.488 2.245 2.248 3.481 5.236 3.48 8.414-.003 6.557-5.338 11.892-11.893 11.892-1.99-.001-3.951-.5-5.688-1.448l-6.305 1.654zm6.597-3.807c1.676.995 3.276 1.591 5.392 1.592 0 0 9.886-4.434 9.889-9.885.002-5.462-4.415-9.89-9.881-9.892-5.452 0-9.887 4.434-9.889 9.884-.001 2.225.651 3.891 1.746 5.634l-.999 3.648 3.742-.981zm11.387-5.464c-.074-.124-.272-.198-.57-.347-.297-.149-1.758-.868-2.031-.967-.272-.099-.47-.149-.669.149-.198.297-.768.967-.941 1.165-.173.198-.347.223-.644.074-.297-.149-1.255-.462-2.39-1.475-.883-.788-1.48-1.761-1.653-2.059-.173-.297-.018-.458.13-.606.134-.133.297-.347.446-.521.151-.172.2-.296.3-.495.099-.198.05-.372-.025-.521-.075-.148-.669-1.611-.916-2.206-.242-.579-.487-.501-.669-.51l-.57-.01c-.198 0-.52.074-.792.372s-1.04 1.016-1.04 2.479 1.065 2.876 1.213 3.074c.149.198 2.095 3.2 5.076 4.487.709.306 1.263.489 1.694.626.712.226 1.36.194 1.872.118.571-.085 1.758-.719 2.006-1.413.248-.695.248-1.29.173-1.414z"/>
-                    </svg>
-                    <span>Request Official Invoice on WhatsApp</span>
+                  <button type="button" class="btn-bundle-whatsapp" onclick="orderBundleWhatsApp('bundle-shaadi')">
+                    <svg viewBox="0 0 24 24" fill="currentColor" width="15" height="15"><path d="M.057 24l1.687-6.163c-1.041-1.804-1.588-3.849-1.587-5.946.003-6.556 5.338-11.891 11.893-11.891 3.181.001 6.167 1.24 8.413 3.488 2.245 2.248 3.481 5.236 3.48 8.414-.003 6.557-5.338 11.892-11.893 11.892-1.99-.001-3.951-.5-5.688-1.448l-6.305 1.654zm6.597-3.807c1.676.995 3.276 1.591 5.392 1.592 0 0 9.886-4.434 9.889-9.885.002-5.462-4.415-9.89-9.881-9.892-5.452 0-9.887 4.434-9.889 9.884-.001 2.225.651 3.891 1.746 5.634l-.999 3.648 3.742-.981zm11.387-5.464c-.074-.124-.272-.198-.57-.347-.297-.149-1.758-.868-2.031-.967-.272-.099-.47-.149-.669.149-.198.297-.768.967-.941 1.165-.173.198-.347.223-.644.074-.297-.149-1.255-.462-2.39-1.475-.883-.788-1.48-1.761-1.653-2.059-.173-.297-.018-.458.13-.606.134-.133.297-.347.446-.521.151-.172.2-.296.3-.495.099-.198.05-.372-.025-.521-.075-.148-.669-1.611-.916-2.206-.242-.579-.487-.501-.669-.51l-.57-.01c-.198 0-.52.074-.792.372s-1.04 1.016-1.04 2.479 1.065 2.876 1.213 3.074c.149.198 2.095 3.2 5.076 4.487.709.306 1.263.489 1.694.626.712.226 1.36.194 1.872.118.571-.085 1.758-.719 2.006-1.413.248-.695.248-1.29.173-1.414z"/></svg>
+                    <span>WhatsApp</span>
                   </button>
                 </div>
               </div>
+            </article>
+
+            <!-- CARD 2: HOSTEL & PG PACK -->
+            <article class="bundle-card" data-category="hostel">
+              <div class="bundle-card-visual">
+                <img src="assets/prod_water_case.jpg" alt="Coaching Hostel & PG Monthly Water Pack" class="bundle-card-img" loading="lazy">
+                <span class="bundle-badge-floating deal">🏢 Piprali / Nawalgarh Rd</span>
+              </div>
+              <div class="bundle-card-body">
+                <h3 class="bundle-card-title">Coaching Hostel &amp; PG Hydration Deal</h3>
+                <p class="bundle-card-desc">Scheduled recurring cases for students and staff. Pure certified mineral water with doorstep tempo unloading.</p>
+                <ul class="bundle-specs-list">
+                  <li>
+                    <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5"><polyline points="20 6 9 17 4 12"/></svg>
+                    <span>15x Bailey 1L Packaged Cases (180 Bottles)</span>
+                  </li>
+                  <li>
+                    <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5"><polyline points="20 6 9 17 4 12"/></svg>
+                    <span>4x Aquafina 500ml Compact Petis (96 Bottles)</span>
+                  </li>
+                  <li>
+                    <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5"><polyline points="20 6 9 17 4 12"/></svg>
+                    <span>Daily Morning Scheduled Tempo Delivery</span>
+                  </li>
+                  <li>
+                    <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5"><polyline points="20 6 9 17 4 12"/></svg>
+                    <span>Official Bilty &amp; GST Tax Invoice Included</span>
+                  </li>
+                </ul>
+                <div class="bundle-pricing-row">
+                  <div>
+                    <div class="bundle-price-main tabular">
+                      ₹3,250
+                      <span class="bundle-price-mrp tabular">₹3,960</span>
+                    </div>
+                  </div>
+                  <span class="bundle-save-pill tabular">Save ₹710 (18% OFF)</span>
+                </div>
+                <div class="bundle-actions-row">
+                  <button type="button" class="btn-bundle-cart" onclick="addBundleToCart('bundle-hostel')">
+                    <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2" width="16" height="16"><circle cx="9" cy="21" r="1"/><circle cx="20" cy="21" r="1"/><path d="M1 1h4l2.68 13.39a2 2 0 0 0 2 1.61h9.72a2 2 0 0 0 2-1.61L23 6H6"/></svg>
+                    <span>Add to Cart</span>
+                  </button>
+                  <button type="button" class="btn-bundle-whatsapp" onclick="orderBundleWhatsApp('bundle-hostel')">
+                    <svg viewBox="0 0 24 24" fill="currentColor" width="15" height="15"><path d="M.057 24l1.687-6.163c-1.041-1.804-1.588-3.849-1.587-5.946.003-6.556 5.338-11.891 11.893-11.891 3.181.001 6.167 1.24 8.413 3.488 2.245 2.248 3.481 5.236 3.48 8.414-.003 6.557-5.338 11.892-11.893 11.892-1.99-.001-3.951-.5-5.688-1.448l-6.305 1.654zm6.597-3.807c1.676.995 3.276 1.591 5.392 1.592 0 0 9.886-4.434 9.889-9.885.002-5.462-4.415-9.89-9.881-9.892-5.452 0-9.887 4.434-9.889 9.884-.001 2.225.651 3.891 1.746 5.634l-.999 3.648 3.742-.981zm11.387-5.464c-.074-.124-.272-.198-.57-.347-.297-.149-1.758-.868-2.031-.967-.272-.099-.47-.149-.669.149-.198.297-.768.967-.941 1.165-.173.198-.347.223-.644.074-.297-.149-1.255-.462-2.39-1.475-.883-.788-1.48-1.761-1.653-2.059-.173-.297-.018-.458.13-.606.134-.133.297-.347.446-.521.151-.172.2-.296.3-.495.099-.198.05-.372-.025-.521-.075-.148-.669-1.611-.916-2.206-.242-.579-.487-.501-.669-.51l-.57-.01c-.198 0-.52.074-.792.372s-1.04 1.016-1.04 2.479 1.065 2.876 1.213 3.074c.149.198 2.095 3.2 5.076 4.487.709.306 1.263.489 1.694.626.712.226 1.36.194 1.872.118.571-.085 1.758-.719 2.006-1.413.248-.695.248-1.29.173-1.414z"/></svg>
+                    <span>WhatsApp</span>
+                  </button>
+                </div>
+              </div>
+            </article>
+
+            <!-- CARD 3: PARTY & COLD DRINKS PACK -->
+            <article class="bundle-card" data-category="party">
+              <div class="bundle-card-visual">
+                <img src="assets/prod_coca_cola.jpg" alt="Summer Party & Cold Drinks Mega Crate" class="bundle-card-img" loading="lazy">
+                <span class="bundle-badge-floating hot">⚡ Instant Dispatch</span>
+              </div>
+              <div class="bundle-card-body">
+                <h3 class="bundle-card-title">Summer Party &amp; Soft Drinks Mega Crate</h3>
+                <p class="bundle-card-desc">Chilled party mix for celebrations, birthdays, catering, and festive get-togethers in Sikar.</p>
+                <ul class="bundle-specs-list">
+                  <li>
+                    <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5"><polyline points="20 6 9 17 4 12"/></svg>
+                    <span>2x Coca-Cola 750ml Party Crates (48 Bottles)</span>
+                  </li>
+                  <li>
+                    <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5"><polyline points="20 6 9 17 4 12"/></svg>
+                    <span>2x Thums Up 250ml PET Crates (48 Bottles)</span>
+                  </li>
+                  <li>
+                    <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5"><polyline points="20 6 9 17 4 12"/></svg>
+                    <span>1x Chilled Soda &amp; Soft Drink Cans Tray (24 Cans)</span>
+                  </li>
+                  <li>
+                    <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5"><polyline points="20 6 9 17 4 12"/></svg>
+                    <span>Mandi Depot Cold Stash Priority Option</span>
+                  </li>
+                </ul>
+                <div class="bundle-pricing-row">
+                  <div>
+                    <div class="bundle-price-main tabular">
+                      ₹2,999
+                      <span class="bundle-price-mrp tabular">₹3,620</span>
+                    </div>
+                  </div>
+                  <span class="bundle-save-pill tabular">Save ₹621 (17% OFF)</span>
+                </div>
+                <div class="bundle-actions-row">
+                  <button type="button" class="btn-bundle-cart" onclick="addBundleToCart('bundle-party')">
+                    <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2" width="16" height="16"><circle cx="9" cy="21" r="1"/><circle cx="20" cy="21" r="1"/><path d="M1 1h4l2.68 13.39a2 2 0 0 0 2 1.61h9.72a2 2 0 0 0 2-1.61L23 6H6"/></svg>
+                    <span>Add to Cart</span>
+                  </button>
+                  <button type="button" class="btn-bundle-whatsapp" onclick="orderBundleWhatsApp('bundle-party')">
+                    <svg viewBox="0 0 24 24" fill="currentColor" width="15" height="15"><path d="M.057 24l1.687-6.163c-1.041-1.804-1.588-3.849-1.587-5.946.003-6.556 5.338-11.891 11.893-11.891 3.181.001 6.167 1.24 8.413 3.488 2.245 2.248 3.481 5.236 3.48 8.414-.003 6.557-5.338 11.892-11.893 11.892-1.99-.001-3.951-.5-5.688-1.448l-6.305 1.654zm6.597-3.807c1.676.995 3.276 1.591 5.392 1.592 0 0 9.886-4.434 9.889-9.885.002-5.462-4.415-9.89-9.881-9.892-5.452 0-9.887 4.434-9.889 9.884-.001 2.225.651 3.891 1.746 5.634l-.999 3.648 3.742-.981zm11.387-5.464c-.074-.124-.272-.198-.57-.347-.297-.149-1.758-.868-2.031-.967-.272-.099-.47-.149-.669.149-.198.297-.768.967-.941 1.165-.173.198-.347.223-.644.074-.297-.149-1.255-.462-2.39-1.475-.883-.788-1.48-1.761-1.653-2.059-.173-.297-.018-.458.13-.606.134-.133.297-.347.446-.521.151-.172.2-.296.3-.495.099-.198.05-.372-.025-.521-.075-.148-.669-1.611-.916-2.206-.242-.579-.487-.501-.669-.51l-.57-.01c-.198 0-.52.074-.792.372s-1.04 1.016-1.04 2.479 1.065 2.876 1.213 3.074c.149.198 2.095 3.2 5.076 4.487.709.306 1.263.489 1.694.626.712.226 1.36.194 1.872.118.571-.085 1.758-.719 2.006-1.413.248-.695.248-1.29.173-1.414z"/></svg>
+                    <span>WhatsApp</span>
+                  </button>
+                </div>
+              </div>
+            </article>
+
+            <!-- CARD 4: KIRANA STORE PACK -->
+            <article class="bundle-card" data-category="kirana">
+              <div class="bundle-card-visual">
+                <img src="assets/cat_soft_drinks.jpg" alt="Kirana Retailer High-Margin Starter Crate" class="bundle-card-img" loading="lazy">
+                <span class="bundle-badge-floating deal">🏪 Kirana Restock</span>
+              </div>
+              <div class="bundle-card-body">
+                <h3 class="bundle-card-title">Kirana Retailer High-Margin Starter Pack</h3>
+                <p class="bundle-card-desc">Top 3 fastest-selling packaged beverages in Sikar for local provision and general stores.</p>
+                <ul class="bundle-specs-list">
+                  <li>
+                    <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5"><polyline points="20 6 9 17 4 12"/></svg>
+                    <span>40x Bisleri 1L Mineral Water Bottles</span>
+                  </li>
+                  <li>
+                    <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5"><polyline points="20 6 9 17 4 12"/></svg>
+                    <span>2x Frooti &amp; Maaza Mango Juice Trays (60 Packs)</span>
+                  </li>
+                  <li>
+                    <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5"><polyline points="20 6 9 17 4 12"/></svg>
+                    <span>2x Thums Up 250ml PET Crates (48 Bottles)</span>
+                  </li>
+                  <li>
+                    <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5"><polyline points="20 6 9 17 4 12"/></svg>
+                    <span>Same-Day Depot Re-Stocking Guarantee</span>
+                  </li>
+                </ul>
+                <div class="bundle-pricing-row">
+                  <div>
+                    <div class="bundle-price-main tabular">
+                      ₹1,980
+                      <span class="bundle-price-mrp tabular">₹2,380</span>
+                    </div>
+                  </div>
+                  <span class="bundle-save-pill tabular">Save ₹400 (17% OFF)</span>
+                </div>
+                <div class="bundle-actions-row">
+                  <button type="button" class="btn-bundle-cart" onclick="addBundleToCart('bundle-kirana')">
+                    <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2" width="16" height="16"><circle cx="9" cy="21" r="1"/><circle cx="20" cy="21" r="1"/><path d="M1 1h4l2.68 13.39a2 2 0 0 0 2 1.61h9.72a2 2 0 0 0 2-1.61L23 6H6"/></svg>
+                    <span>Add to Cart</span>
+                  </button>
+                  <button type="button" class="btn-bundle-whatsapp" onclick="orderBundleWhatsApp('bundle-kirana')">
+                    <svg viewBox="0 0 24 24" fill="currentColor" width="15" height="15"><path d="M.057 24l1.687-6.163c-1.041-1.804-1.588-3.849-1.587-5.946.003-6.556 5.338-11.891 11.893-11.891 3.181.001 6.167 1.24 8.413 3.488 2.245 2.248 3.481 5.236 3.48 8.414-.003 6.557-5.338 11.892-11.893 11.892-1.99-.001-3.951-.5-5.688-1.448l-6.305 1.654zm6.597-3.807c1.676.995 3.276 1.591 5.392 1.592 0 0 9.886-4.434 9.889-9.885.002-5.462-4.415-9.89-9.881-9.892-5.452 0-9.887 4.434-9.889 9.884-.001 2.225.651 3.891 1.746 5.634l-.999 3.648 3.742-.981zm11.387-5.464c-.074-.124-.272-.198-.57-.347-.297-.149-1.758-.868-2.031-.967-.272-.099-.47-.149-.669.149-.198.297-.768.967-.941 1.165-.173.198-.347.223-.644.074-.297-.149-1.255-.462-2.39-1.475-.883-.788-1.48-1.761-1.653-2.059-.173-.297-.018-.458.13-.606.134-.133.297-.347.446-.521.151-.172.2-.296.3-.495.099-.198.05-.372-.025-.521-.075-.148-.669-1.611-.916-2.206-.242-.579-.487-.501-.669-.51l-.57-.01c-.198 0-.52.074-.792.372s-1.04 1.016-1.04 2.479 1.065 2.876 1.213 3.074c.149.198 2.095 3.2 5.076 4.487.709.306 1.263.489 1.694.626.712.226 1.36.194 1.872.118.571-.085 1.758-.719 2.006-1.413.248-.695.248-1.29.173-1.414z"/></svg>
+                    <span>WhatsApp</span>
+                  </button>
+                </div>
+              </div>
+            </article>
+          </div>
+
+          <!-- HOW IT WORKS 3-STEP STRIP -->
+          <div class="bundle-steps-box">
+            <div class="steps-grid">
+              <div class="step-item">
+                <div class="step-num-circle">1</div>
+                <div class="step-content">
+                  <h4>Order Mandi Wholesale Rates</h4>
+                  <p>Choose from 50+ branded products or our ready-made banquet bundles at true wholesale depot pricing.</p>
+                </div>
+              </div>
+              <div class="step-item">
+                <div class="step-num-circle">2</div>
+                <div class="step-content">
+                  <h4>Factory Tamper-Proof Seals</h4>
+                  <p>Strict Zero-Camper policy. 100% genuine factory-packed PET bottles loaded straight from Krishi Mandi bypass depot.</p>
+                </div>
+              </div>
+              <div class="step-item">
+                <div class="step-num-circle">3</div>
+                <div class="step-content">
+                  <h4>Doorstep Tempo Unloading</h4>
+                  <p>Our dedicated Sikar tempo fleet delivers and unloads right at your event gate, wedding lawn, or hostel porch.</p>
+                </div>
+              </div>
+            </div>
+          </div>
+
+          <!-- VIP CUSTOM QUOTE BANNER -->
+          <div class="bundle-vip-banner">
+            <div class="bundle-vip-info">
+              <h3>
+                <svg viewBox="0 0 24 24" fill="none" stroke="#38BDF8" stroke-width="2.3" width="24" height="24"><path d="M22 16.92v3a2 2 0 0 1-2.18 2 19.79 19.79 0 0 1-8.63-3.07 19.5 19.5 0 0 1-6-6 19.79 19.79 0 0 1-3.07-8.67A2 2 0 0 1 4.11 2h3a2 2 0 0 1 2 1.72 12.84 12.84 0 0 0 .7 2.81 2 2 0 0 1-.45 2.11L8.09 9.91a16 16 0 0 0 6 6l1.27-1.27a2 2 0 0 1 2.11-.45 12.84 12.84 0 0 0 2.81.7A2 2 0 0 1 22 16.92z"/></svg>
+                Planning a Large Wedding or 50+ Peti Bulk Order in Sikar?
+              </h3>
+              <p>Speak directly with our Mandi Depot Dispatcher for custom slab pricing, cold-stash reserving, and dedicated tempo scheduling.</p>
+            </div>
+            <div class="bundle-vip-actions">
+              <a href="https://wa.me/919829011223?text=Hello%20Sikar%20Drop%2C%20I%20need%20a%20custom%20wholesale%20quotation%20for%20an%20upcoming%20event%20in%20Sikar." target="_blank" class="btn-vip-whatsapp">
+                <svg viewBox="0 0 24 24" fill="currentColor" width="16" height="16"><path d="M.057 24l1.687-6.163c-1.041-1.804-1.588-3.849-1.587-5.946.003-6.556 5.338-11.891 11.893-11.891 3.181.001 6.167 1.24 8.413 3.488 2.245 2.248 3.481 5.236 3.48 8.414-.003 6.557-5.338 11.892-11.893 11.892-1.99-.001-3.951-.5-5.688-1.448l-6.305 1.654zm6.597-3.807c1.676.995 3.276 1.591 5.392 1.592 0 0 9.886-4.434 9.889-9.885.002-5.462-4.415-9.89-9.881-9.892-5.452 0-9.887 4.434-9.889 9.884-.001 2.225.651 3.891 1.746 5.634l-.999 3.648 3.742-.981zm11.387-5.464c-.074-.124-.272-.198-.57-.347-.297-.149-1.758-.868-2.031-.967-.272-.099-.47-.149-.669.149-.198.297-.768.967-.941 1.165-.173.198-.347.223-.644.074-.297-.149-1.255-.462-2.39-1.475-.883-.788-1.48-1.761-1.653-2.059-.173-.297-.018-.458.13-.606.134-.133.297-.347.446-.521.151-.172.2-.296.3-.495.099-.198.05-.372-.025-.521-.075-.148-.669-1.611-.916-2.206-.242-.579-.487-.501-.669-.51l-.57-.01c-.198 0-.52.074-.792.372s-1.04 1.016-1.04 2.479 1.065 2.876 1.213 3.074c.149.198 2.095 3.2 5.076 4.487.709.306 1.263.489 1.694.626.712.226 1.36.194 1.872.118.571-.085 1.758-.719 2.006-1.413.248-.695.248-1.29.173-1.414z"/></svg>
+                <span>WhatsApp Depot</span>
+              </a>
+              <a href="tel:919829011223" class="btn-vip-call">
+                <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.3" width="16" height="16"><path d="M22 16.92v3a2 2 0 0 1-2.18 2 19.79 19.79 0 0 1-8.63-3.07 19.5 19.5 0 0 1-6-6 19.79 19.79 0 0 1-3.07-8.67A2 2 0 0 1 4.11 2h3a2 2 0 0 1 2 1.72 12.84 12.84 0 0 0 .7 2.81 2 2 0 0 1-.45 2.11L8.09 9.91a16 16 0 0 0 6 6l1.27-1.27a2 2 0 0 1 2.11-.45 12.84 12.84 0 0 0 2.81.7A2 2 0 0 1 22 16.92z"/></svg>
+                <span>Call +91 98290 11223</span>
+              </a>
             </div>
           </div>
         </div>
@@ -8744,282 +8919,154 @@
       showToast(`Tracking status loaded for #${order.id}`);
     }
 
-    // BULK MANDI CALCULATOR (ALL 50+ PRODUCTS WITH -1/+1 & -5/+5 CONTROLS)
-    let bulkCalcQuantities = {
-      p8: 10,
-      p3: 10,
-      p5: 4,
-      p6: 2
-    };
-    let bulkCalcCategory = 'all';
-    let bulkCalcSearch = '';
-
-    function setBulkCalculatorCategory(catId) {
-      bulkCalcCategory = catId;
-      renderBulkCalculatorItems();
-    }
-
-    function filterBulkCalculatorList() {
-      const searchEl = document.getElementById('calc-search-input');
-      bulkCalcSearch = searchEl ? searchEl.value.trim().toLowerCase() : '';
-      renderBulkCalculatorItems();
-    }
-
-    function resetBulkCalculator() {
-      bulkCalcQuantities = {};
-      if (bulkCalcCategory === 'selected') bulkCalcCategory = 'all';
-      renderBulkCalculatorItems();
-      showToast('Calculator quantities reset to 0.');
-    }
-
-    function changeBulkQty(prodId, delta) {
-      const current = bulkCalcQuantities[prodId] || 0;
-      const next = Math.max(0, current + delta);
-      if (next === 0) {
-        delete bulkCalcQuantities[prodId];
-      } else {
-        bulkCalcQuantities[prodId] = next;
+    // WHOLESALE BUNDLES & EVENT PACKAGES
+    const WHOLESALE_BUNDLES = [
+      {
+        id: 'bundle-shaadi',
+        category: 'wedding',
+        title: 'Shaadi & Banquet VIP Hydration Pack',
+        desc: 'Complete water & banquet setup for marriages, ring ceremonies, and family gatherings of 200–500 guests in Sikar.',
+        price: 4699,
+        mrp: 5860,
+        saveAmt: 1161,
+        savePct: 20,
+        badge: '👑 Wedding Favorite',
+        badgeClass: 'popular',
+        image: 'assets/cat_wedding_supply.jpg',
+        specs: [
+          '10x Shaadi Mini Water Petis (48x 250ml Sealed)',
+          '5x Bailey / Kinley 1L Packaged Cases (60 Bottles)',
+          '2x Real Fruit Power Mixed Juices (24x 1L Packs)',
+          'Strict Zero 20L Campers • 100% Tamper-Proof'
+        ],
+        items: [
+          { id: 'p7', qty: 10 },
+          { id: 'p3', qty: 5 },
+          { id: 'p6', qty: 2 }
+        ]
+      },
+      {
+        id: 'bundle-hostel',
+        category: 'hostel',
+        title: 'Coaching Hostel & PG Hydration Deal',
+        desc: 'Scheduled recurring cases for students and staff. Pure certified mineral water with doorstep tempo unloading.',
+        price: 3250,
+        mrp: 3960,
+        saveAmt: 710,
+        savePct: 18,
+        badge: '🏢 Piprali / Nawalgarh Rd',
+        badgeClass: 'deal',
+        image: 'assets/prod_water_case.jpg',
+        specs: [
+          '15x Bailey 1L Packaged Cases (180 Bottles)',
+          '4x Aquafina 500ml Compact Petis (96 Bottles)',
+          'Daily Morning Scheduled Tempo Delivery',
+          'Official Bilty & GST Tax Invoice Included'
+        ],
+        items: [
+          { id: 'p3', qty: 15 },
+          { id: 'p4', qty: 4 }
+        ]
+      },
+      {
+        id: 'bundle-party',
+        category: 'party',
+        title: 'Summer Party & Soft Drinks Mega Crate',
+        desc: 'Chilled party mix for celebrations, birthdays, catering, and festive get-togethers in Sikar.',
+        price: 2999,
+        mrp: 3620,
+        saveAmt: 621,
+        savePct: 17,
+        badge: '⚡ Instant Dispatch',
+        badgeClass: 'hot',
+        image: 'assets/prod_coca_cola.jpg',
+        specs: [
+          '2x Coca-Cola 750ml Party Crates (48 Bottles)',
+          '2x Thums Up 250ml PET Crates (48 Bottles)',
+          '1x Chilled Soda & Soft Drink Cans Tray (24 Cans)',
+          'Mandi Depot Cold Stash Priority Option'
+        ],
+        items: [
+          { id: 'p5', qty: 2 },
+          { id: 'p8', qty: 2 },
+          { id: 'p11', qty: 1 }
+        ]
+      },
+      {
+        id: 'bundle-kirana',
+        category: 'kirana',
+        title: 'Kirana Retailer High-Margin Starter Pack',
+        desc: 'Top 3 fastest-selling packaged beverages in Sikar for local provision and general stores.',
+        price: 1980,
+        mrp: 2380,
+        saveAmt: 400,
+        savePct: 17,
+        badge: '🏪 Kirana Restock',
+        badgeClass: 'deal',
+        image: 'assets/cat_soft_drinks.jpg',
+        specs: [
+          '40x Bisleri 1L Mineral Water Bottles',
+          '2x Frooti & Maaza Mango Juice Trays (60 Packs)',
+          '2x Thums Up 250ml PET Crates (48 Bottles)',
+          'Same-Day Depot Re-Stocking Guarantee'
+        ],
+        items: [
+          { id: 'p1', qty: 40 },
+          { id: 'p9', qty: 2 },
+          { id: 'p8', qty: 2 }
+        ]
       }
-      renderBulkCalculatorItems();
-    }
+    ];
 
-    function setBulkQty(prodId, rawVal) {
-      const next = Math.max(0, parseInt(rawVal, 10) || 0);
-      if (next === 0) {
-        delete bulkCalcQuantities[prodId];
-      } else {
-        bulkCalcQuantities[prodId] = next;
-      }
-      const rowEl = document.getElementById('calc-row-' + prodId);
-      if (rowEl) {
-        rowEl.classList.toggle('active-row', next > 0);
-      }
-      recalcBulk();
-    }
-
-    function renderBulkCalculatorItems() {
-      const listEl = document.getElementById('calc-items-list');
-      const pillsEl = document.getElementById('calc-cat-pills');
-      const countBadgeEl = document.getElementById('calc-total-catalog-count');
-      if (!listEl) return;
-
-      const activeProducts = (PRODUCTS || []).filter(p => p.active !== 0);
-      if (countBadgeEl) countBadgeEl.textContent = activeProducts.length;
-
-      const selectedIds = Object.keys(bulkCalcQuantities).filter(id => (bulkCalcQuantities[id] || 0) > 0);
-
-      if (pillsEl) {
-        const catPillsHtml = (CATEGORIES || []).map(c => {
-          const cCount = activeProducts.filter(p => p.category === c.id).length;
-          return `<button type="button" class="calc-cat-pill ${bulkCalcCategory === c.id ? 'active' : ''}" onclick="setBulkCalculatorCategory('${c.id}')">${escapeHTML(c.name)} (${cCount})</button>`;
-        }).join('');
-
-        pillsEl.innerHTML = `
-          <button type="button" class="calc-cat-pill ${bulkCalcCategory === 'all' ? 'active' : ''}" onclick="setBulkCalculatorCategory('all')">All Products (${activeProducts.length})</button>
-          <button type="button" class="calc-cat-pill ${bulkCalcCategory === 'selected' ? 'active' : ''}" onclick="setBulkCalculatorCategory('selected')">Selected (${selectedIds.length})</button>
-          ${catPillsHtml}
-        `;
-      }
-
-      const filtered = activeProducts.filter(p => {
-        if (bulkCalcCategory === 'selected') {
-          if ((bulkCalcQuantities[p.id] || 0) <= 0) return false;
-        } else if (bulkCalcCategory !== 'all') {
-          if (p.category !== bulkCalcCategory) return false;
-        }
-        if (bulkCalcSearch) {
-          const hay = `${p.title} ${p.spec || ''} ${p.category || ''} ${getCategoryDisplayName(p.category)}`.toLowerCase();
-          if (!hay.includes(bulkCalcSearch)) return false;
-        }
-        return true;
-      });
-
-      if (filtered.length === 0) {
-        listEl.innerHTML = `
-          <div style="text-align: center; padding: 32px 16px; color: var(--text-light); border: 1px dashed var(--border-subtle); border-radius: var(--radius-xs);">
-            <strong style="display: block; color: #0F172A; margin-bottom: 4px;">No matching products in calculator</strong>
-            <span style="font-size: 0.8rem;">Try switching category to "All Products" or clearing search box.</span>
-          </div>
-        `;
-        recalcBulk();
-        return;
-      }
-
-      const catOrderMap = { water: 1, cases: 2, cola: 3, juice: 4, can: 5, wedding: 6 };
-      filtered.sort((a, b) => (catOrderMap[a.category] || 99) - (catOrderMap[b.category] || 99));
-
-      let lastRenderedCategory = null;
-      listEl.innerHTML = filtered.map(p => {
-        const qty = bulkCalcQuantities[p.id] || 0;
-        const catName = getCategoryDisplayName(p.category);
-        const lineTotal = qty * (p.price || 0);
-        let catGroupHeaderHtml = '';
-        if (p.category !== lastRenderedCategory) {
-          lastRenderedCategory = p.category;
-          const catGroupCount = filtered.filter(item => item.category === p.category).length;
-          catGroupHeaderHtml = `
-            <div class="calc-category-group-header" style="display: flex; align-items: center; justify-content: space-between; background: #EFF6FF; border: 1px solid #BFDBFE; border-left: 4px solid #0284C7; border-radius: 6px; padding: 7px 12px; margin: 8px 0 4px;">
-              <strong style="font-size: 0.8rem; font-weight: 800; color: #0369A1; text-transform: uppercase; letter-spacing: 0.04em;">${escapeHTML(catName)}</strong>
-              <span style="font-size: 0.72rem; font-weight: 700; color: #0284C7; background: #FFFFFF; padding: 2px 8px; border-radius: 999px; border: 1px solid #BAE6FD;">${catGroupCount} Products</span>
-            </div>
-          `;
-        }
-        return `
-          ${catGroupHeaderHtml}
-          <div class="calc-row ${qty > 0 ? 'active-row' : ''}" id="calc-row-${p.id}">
-            <div class="calc-row-left">
-              <img src="${p.image || 'assets/prod_bisleri_1l.jpg'}" alt="${escapeHTML(p.title)}" class="calc-row-thumb" loading="lazy">
-              <div class="calc-row-info">
-                <strong title="${escapeHTML(p.title)}">${escapeHTML(p.title)}</strong>
-                <span>
-                  <strong style="display:inline; color:#0284C7; font-size:0.84rem;">₹${p.price}</strong>
-                  ${p.mrp > p.price ? `<s style="color:#94A3B8; font-size:0.74rem; margin-left:3px;">₹${p.mrp}</s>` : ''}
-                  • ${escapeHTML(p.spec || 'Factory Sealed')}
-                  ${qty > 0 ? `<strong style="display:inline; color:#15803D; font-size:0.78rem; margin-left:6px;">(Subtotal: ₹${lineTotal.toLocaleString('en-IN')})</strong>` : ''}
-                </span>
-              </div>
-            </div>
-            <div class="calc-stepper tabular">
-              <button type="button" class="calc-btn" onclick="changeBulkQty('${p.id}', -5)" title="Decrease by 5">-5</button>
-              <button type="button" class="calc-btn calc-btn-step" onclick="changeBulkQty('${p.id}', -1)" title="Decrease by 1">-1</button>
-              <input type="number" id="qty-${p.id}" class="calc-input" value="${qty}" min="0" oninput="setBulkQty('${p.id}', this.value)">
-              <button type="button" class="calc-btn calc-btn-step" onclick="changeBulkQty('${p.id}', 1)" title="Increase by 1">+1</button>
-              <button type="button" class="calc-btn" onclick="changeBulkQty('${p.id}', 5)" title="Increase by 5">+5</button>
-            </div>
-          </div>
-        `;
-      }).join('');
-
-      recalcBulk();
-    }
-
-    function recalcBulk() {
-      const activeProducts = (PRODUCTS || []).filter(p => p.active !== 0);
-      const d10Pct = (adminRates.disc10 !== undefined ? adminRates.disc10 : 5) / 100;
-      const d20Pct = (adminRates.disc20 !== undefined ? adminRates.disc20 : 10) / 100;
-
-      let totalPetis = 0;
-      let subtotal = 0;
-      const selectedRows = [];
-
-      activeProducts.forEach(p => {
-        const qty = Math.max(0, parseInt(bulkCalcQuantities[p.id], 10) || 0);
-        if (qty > 0) {
-          const lineAmt = qty * (p.price || 0);
-          totalPetis += qty;
-          subtotal += lineAmt;
-          selectedRows.push({ product: p, qty, lineAmt });
-        }
-      });
-
-      let discountPct = 0;
-      if (totalPetis >= 20) discountPct = d20Pct;
-      else if (totalPetis >= 10) discountPct = d10Pct;
-
-      const discountAmt = Math.round(subtotal * discountPct);
-      const netTotal = subtotal - discountAmt;
-
-      const breakdownEl = document.getElementById('calc-selected-breakdown');
-      if (breakdownEl) {
-        if (selectedRows.length === 0) {
-          breakdownEl.innerHTML = `<div style="color:#94A3B8; font-size:0.78rem; text-align:center; padding:8px 0;">No items selected yet. Use +1 or +5 buttons on the left to add products.</div>`;
+    function filterBundles(category, btnEl) {
+      document.querySelectorAll('#bundle-tabs-nav .bundle-tab-btn').forEach(b => b.classList.remove('active'));
+      if (btnEl) btnEl.classList.add('active');
+      document.querySelectorAll('.bundle-card').forEach(card => {
+        if (category === 'all' || card.dataset.category === category) {
+          card.style.display = 'flex';
         } else {
-          breakdownEl.innerHTML = selectedRows.map(r => `
-            <div class="calc-selected-item-line">
-              <span style="flex:1; min-width:0; overflow:hidden; text-overflow:ellipsis; white-space:nowrap;">
-                <strong style="color:#38BDF8;">${r.qty}x</strong> ${escapeHTML(r.product.title)}
-              </span>
-              <div style="display:flex; align-items:center; gap:6px; flex-shrink:0;">
-                <strong class="tabular" style="color:#FFFFFF;">₹${r.lineAmt.toLocaleString('en-IN')}</strong>
-                <button type="button" onclick="changeBulkQty('${r.product.id}', -1)" style="background:rgba(255,255,255,0.12); color:#FFFFFF; border:none; border-radius:3px; padding:1px 5px; font-size:0.7rem; font-weight:800; cursor:pointer;" title="Decrease by 1">-1</button>
-                <button type="button" onclick="changeBulkQty('${r.product.id}', 1)" style="background:#0284C7; color:#FFFFFF; border:none; border-radius:3px; padding:1px 5px; font-size:0.7rem; font-weight:800; cursor:pointer;" title="Increase by 1">+1</button>
-              </div>
-            </div>
-          `).join('');
-        }
-      }
-
-      const petisDisp = document.getElementById('calc-total-petis-disp');
-      const subtotalDisp = document.getElementById('calc-subtotal-disp');
-      const discountDisp = document.getElementById('calc-discount-disp');
-      const netTotalDisp = document.getElementById('calc-net-total-disp');
-
-      if (petisDisp) petisDisp.textContent = `${totalPetis} Units / Petis`;
-      if (subtotalDisp) subtotalDisp.textContent = `₹${subtotal.toLocaleString('en-IN')}`;
-      if (discountDisp) {
-        discountDisp.textContent = discountAmt > 0
-          ? `-₹${discountAmt.toLocaleString('en-IN')} (${Math.round(discountPct * 100)}%)`
-          : `₹0 (${adminRates.disc10 || 5}%-${adminRates.disc20 || 10}% off on 10+ Units)`;
-      }
-      if (netTotalDisp) netTotalDisp.textContent = `₹${netTotal.toLocaleString('en-IN')}`;
-    }
-
-    function addBulkCalcItemsToCart() {
-      const activeProducts = (PRODUCTS || []).filter(p => p.active !== 0);
-      let addedCount = 0;
-      activeProducts.forEach(p => {
-        const qty = Math.max(0, parseInt(bulkCalcQuantities[p.id], 10) || 0);
-        if (qty > 0) {
-          cart[p.id] = (cart[p.id] || 0) + qty;
-          addedCount += qty;
+          card.style.display = 'none';
         }
       });
+    }
 
-      if (addedCount === 0) {
-        showToast('Please select at least 1 product (+1 or +5) in the calculator first.');
-        return;
-      }
-
+    function addBundleToCart(bundleId) {
+      const bundle = WHOLESALE_BUNDLES.find(b => b.id === bundleId);
+      if (!bundle) return;
+      let totalAdded = 0;
+      bundle.items.forEach(it => {
+        cart[it.id] = (cart[it.id] || 0) + it.qty;
+        totalAdded += it.qty;
+      });
       updateCartUI();
       renderProducts();
       toggleCartDrawer(true);
-      showToast(`${addedCount} wholesale units added to cart from Bulk Calculator!`);
+      showToast(`Added "${bundle.title}" (${totalAdded} items) to your cart!`);
     }
 
-    function dispatchBulkCalcWhatsApp() {
-      const activeProducts = (PRODUCTS || []).filter(p => p.active !== 0);
-      const d10Pct = (adminRates.disc10 !== undefined ? adminRates.disc10 : 5) / 100;
-      const d20Pct = (adminRates.disc20 !== undefined ? adminRates.disc20 : 10) / 100;
-
-      let totalPetis = 0;
-      let subtotal = 0;
-      let quoteList = '';
-
-      activeProducts.forEach(p => {
-        const qty = Math.max(0, parseInt(bulkCalcQuantities[p.id], 10) || 0);
-        if (qty > 0) {
-          const lineAmt = qty * (p.price || 0);
-          totalPetis += qty;
-          subtotal += lineAmt;
-          quoteList += `• ${p.title}: ${qty} x ₹${p.price} = ₹${lineAmt.toLocaleString('en-IN')}\n`;
-        }
-      });
-
-      if (totalPetis === 0) {
-        showToast('Please select at least 1 product first.');
-        return;
-      }
-
-      const discountPct = totalPetis >= 20 ? d20Pct : (totalPetis >= 10 ? d10Pct : 0);
-      const discountAmt = Math.round(subtotal * discountPct);
-      const netTotal = subtotal - discountAmt;
-
-      const msg = `*SIKAR DROP - WHOLESALE PETI ESTIMATE*\n` +
+    function orderBundleWhatsApp(bundleId) {
+      const bundle = WHOLESALE_BUNDLES.find(b => b.id === bundleId);
+      if (!bundle) return;
+      const msg = `*SIKAR DROP WHOLESALE ORDER*\n` +
         `------------------------------------\n` +
-        `*Items Quote:*\n${quoteList}` +
+        `*Package:* ${bundle.title}\n` +
+        `*Wholesale Rate:* ₹${bundle.price.toLocaleString('en-IN')} (MRP: ₹${bundle.mrp.toLocaleString('en-IN')})\n` +
+        `*Savings:* ₹${bundle.saveAmt.toLocaleString('en-IN')} (${bundle.savePct}% OFF)\n` +
+        `*Items Included:*\n${bundle.specs.map(s => '• ' + s).join('\n')}\n` +
         `------------------------------------\n` +
-        `*Total Units / Petis:* ${totalPetis}\n` +
-        `*Mandi Subtotal:* ₹${subtotal.toLocaleString('en-IN')}\n` +
-        `*Wholesale Discount:* -₹${discountAmt.toLocaleString('en-IN')} (${Math.round(discountPct * 100)}%)\n` +
-        `*Estimated Net Total:* ₹${netTotal.toLocaleString('en-IN')}\n` +
-        `*Free Sikar Tempo Delivery Included*\n` +
-        `*Policy Confirmed:* 100% factory-sealed bottles only (No 20L jars).\n` +
-        `Please confirm the dispatch schedule!`;
-
+        `Please confirm delivery time and dispatch tempo from Mandi Depot!`;
       trackSocialClick('whatsapp');
-      window.open(`https://wa.me/919829000000?text=${encodeURIComponent(msg)}`, '_blank');
-      showToast('Wholesale quotation prepared for WhatsApp!');
+      window.open(`https://wa.me/919829011223?text=${encodeURIComponent(msg)}`, '_blank');
+      showToast(`WhatsApp message opened for ${bundle.title}!`);
     }
+
+    // SAFE STUBS FOR BACKWARD COMPATIBILITY
+    function renderBulkCalculatorItems() {}
+    function filterBulkCalculatorList() {}
+    function resetBulkCalculator() {}
+    function recalcBulk() {}
+    function addBulkCalcItemsToCart() {}
+    function dispatchBulkCalcWhatsApp() {}
 
     function sendBulkQuoteWhatsApp() {
       const eventType = document.getElementById('bulk-event-type').value.trim() || 'Marriage Garden Supply';

@@ -593,6 +593,10 @@ function updateCart(id, delta, event) {
   if (typeof renderProductsPageGrid === 'function') renderProductsPageGrid();
 }
 
+function saveCart() {
+  localStorage.setItem('sikar_cart', JSON.stringify(cart));
+}
+
 function updateCartUI() {
   let count = 0;
   let subtotal = 0;

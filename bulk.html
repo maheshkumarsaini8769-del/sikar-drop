@@ -206,86 +206,277 @@
         </div>
       </div>
 
-      <!-- WHOLESALE PETI & BULK CALCULATOR (ALL 50+ PRODUCTS) -->
-      <div style="margin-bottom: 40px;">
-        <div class="section-headline-bar">
-          <div>
-            <h2>Wholesale Peti &amp; Bulk Calculator</h2>
-            <p>Live mandi rate calculator across all <span id="calc-total-catalog-count">50</span> wholesale products for Marriage Gardens, Hostels &amp; Kirana Stores in Sikar</p>
+      <!-- WHOLESALE EVENT BUNDLES & COMMERCIAL SUPPLY -->
+      <section class="wholesale-bundles-section" id="wholesale-bundles" style="margin-bottom: 40px; border-radius: var(--radius-md); padding: 36px 28px;">
+        <div style="margin-bottom: 24px;">
+          <div class="bundle-header-tag">
+            <svg viewBox="0 0 24 24" fill="currentColor" width="14" height="14"><polygon points="12 2 15.09 8.26 22 9.27 17 14.14 18.18 21.02 12 17.77 5.82 21.02 7 14.14 2 9.27 8.91 8.26 12 2"></polygon></svg>
+            <span>Mandi Direct Wholesale &bull; 100% Factory Sealed</span>
           </div>
+          <h2 style="font-family: var(--font-heading); font-size: 1.8rem; font-weight: 800; color: #0B192C; margin-bottom: 6px;">Wholesale Event Bundles &amp; Commercial Supply</h2>
+          <p style="color: var(--text-muted); font-size: 0.95rem; max-width: 780px;">Special curated mandi-rate packages for Marriage Gardens, Coaching Hostels, Banquets &amp; Kirana Stores across Sikar. Fast tempo delivery with zero-camper purity.</p>
         </div>
 
-        <div class="bulk-calc-box">
-          <div class="bulk-calc-grid">
-            <!-- LEFT: ALL PRODUCTS SELECTION WITH SEARCH, CATEGORY FILTER & -1/+1 STEPPERS -->
-            <div class="calc-items-col">
-              <div class="calc-toolbar">
-                <div class="calc-search-row">
-                  <div class="calc-search-input-wrap">
-                    <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.3">
-                      <circle cx="11" cy="11" r="8"></circle>
-                      <line x1="21" y1="21" x2="16.65" y2="16.65"></line>
-                    </svg>
-                    <input type="text" id="calc-search-input" class="calc-search-input" placeholder="Search any product in calculator (e.g. Bisleri, Kinley, Sting, Real)..." oninput="filterBulkCalculatorList()">
-                  </div>
-                  <button type="button" class="btn-calc-reset" onclick="resetBulkCalculator()">Reset All (0)</button>
-                </div>
-                <div class="calc-cat-pills" id="calc-cat-pills"></div>
-              </div>
+        <!-- CATEGORY TABS -->
+        <div class="bundle-tabs-nav" id="bundle-tabs-nav">
+          <button type="button" class="bundle-tab-btn active" onclick="filterBundles('all', this)">🌟 All Featured Deals (4)</button>
+          <button type="button" class="bundle-tab-btn" onclick="filterBundles('wedding', this)">💍 Wedding &amp; Banquet</button>
+          <button type="button" class="bundle-tab-btn" onclick="filterBundles('hostel', this)">🏢 Hostel &amp; PG Hydration</button>
+          <button type="button" class="bundle-tab-btn" onclick="filterBundles('party', this)">🥤 Party &amp; Soft Drinks</button>
+          <button type="button" class="bundle-tab-btn" onclick="filterBundles('kirana', this)">🏪 Kirana Retailer Restock</button>
+        </div>
 
-              <div class="calc-items-scroll" id="calc-items-list"></div>
+        <!-- BUNDLES GRID -->
+        <div class="bundles-grid" id="bundles-grid">
+          <!-- BUNDLE 1: SHAADI & BANQUET PACK -->
+          <div class="bundle-card" data-category="wedding">
+            <div class="bundle-card-visual">
+              <span class="bundle-badge-floating popular">👑 Wedding Favorite</span>
+              <img src="assets/cat_wedding_supply.jpg" alt="Shaadi & Banquet VIP Hydration Pack" class="bundle-card-img" loading="lazy">
             </div>
+            <div class="bundle-card-body">
+              <h3 class="bundle-card-title">Shaadi &amp; Banquet VIP Hydration Pack</h3>
+              <p class="bundle-card-desc">Complete water &amp; banquet setup for marriages, ring ceremonies, and family gatherings of 200–500 guests in Sikar.</p>
+              
+              <ul class="bundle-specs-list">
+                <li>
+                  <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5"><polyline points="20 6 9 17 4 12"></polyline></svg>
+                  <span><strong>10x</strong> Shaadi Mini Water Petis (48x 250ml Sealed)</span>
+                </li>
+                <li>
+                  <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5"><polyline points="20 6 9 17 4 12"></polyline></svg>
+                  <span><strong>5x</strong> Bailey / Kinley 1L Packaged Cases (60 Bottles)</span>
+                </li>
+                <li>
+                  <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5"><polyline points="20 6 9 17 4 12"></polyline></svg>
+                  <span><strong>2x</strong> Real Fruit Power Mixed Juices (24x 1L Packs)</span>
+                </li>
+                <li>
+                  <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5"><polyline points="20 6 9 17 4 12"></polyline></svg>
+                  <span>Strict Zero 20L Campers &bull; 100% Tamper-Proof</span>
+                </li>
+              </ul>
 
-            <!-- RIGHT: LIVE QUOTE SUMMARY -->
-            <div class="calc-summary-col">
-              <div>
-                <div class="calc-summary-header" style="margin-bottom: 12px;">
-                  <h3>Wholesale Estimate</h3>
-                  <span class="bulk-badge-tempo">Free Sikar Tempo Delivery</span>
+              <div class="bundle-pricing-row">
+                <div class="bundle-price-main">
+                  <span>₹4,699</span>
+                  <span class="bundle-price-mrp">₹5,860</span>
                 </div>
-
-                <div style="font-size: 0.75rem; font-weight: 800; text-transform: uppercase; letter-spacing: 0.05em; color: #94A3B8; margin-bottom: 6px;">
-                  Selected Items Breakdown:
-                </div>
-                <div class="calc-selected-breakdown" id="calc-selected-breakdown"></div>
+                <span class="bundle-save-pill">Save ₹1,161 (20% OFF)</span>
               </div>
 
-              <div class="calc-summary-lines">
-                <div class="calc-summary-row">
-                  <span>Total Selected Petis / Units:</span>
-                  <strong id="calc-total-petis-disp" class="tabular">26 Units / Petis</strong>
-                </div>
-                <div class="calc-summary-row">
-                  <span>Standard Mandi Value:</span>
-                  <span id="calc-subtotal-disp" class="tabular">₹10,620</span>
-                </div>
-                <div class="calc-summary-row discount-row">
-                  <span>Bulk Wholesale Discount:</span>
-                  <strong id="calc-discount-disp" class="tabular">-₹1,062</strong>
-                </div>
-                <div class="calc-summary-divider"></div>
-                <div class="calc-summary-row total-row">
-                  <span>Estimated Net Total:</span>
-                  <strong id="calc-net-total-disp" class="tabular">₹9,558</strong>
-                </div>
-              </div>
-
-              <div style="display: flex; flex-direction: column; gap: 10px;">
-                <button type="button" class="btn-bulk-cart" onclick="addBulkCalcItemsToCart()">
-                  <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.3" width="18" height="18"><circle cx="9" cy="21" r="1"></circle><circle cx="20" cy="21" r="1"></circle><path d="M1 1h4l2.68 13.39a2 2 0 0 0 2 1.61h9.72a2 2 0 0 0 2-1.61L23 6H6"></path></svg>
-                  <span>Add Selected Items to Cart</span>
+              <div class="bundle-actions-row">
+                <button type="button" class="btn-bundle-cart" onclick="addBundleToCart('b1')">
+                  <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.3" width="16" height="16"><circle cx="9" cy="21" r="1"></circle><circle cx="20" cy="21" r="1"></circle><path d="M1 1h4l2.68 13.39a2 2 0 0 0 2 1.61h9.72a2 2 0 0 0 2-1.61L23 6H6"></path></svg>
+                  <span>Add to Cart</span>
                 </button>
-                <button type="button" class="btn-bulk-whatsapp" onclick="dispatchBulkCalcWhatsApp()">
-                  <svg viewBox="0 0 24 24" fill="currentColor">
-                    <path d="M.057 24l1.687-6.163c-1.041-1.804-1.588-3.849-1.587-5.946.003-6.556 5.338-11.891 11.893-11.891 3.181.001 6.167 1.24 8.413 3.488 2.245 2.248 3.481 5.236 3.48 8.414-.003 6.557-5.338 11.892-11.893 11.892-1.99-.001-3.951-.5-5.688-1.448l-6.305 1.654zm6.597-3.807c1.676.995 3.276 1.591 5.392 1.592 0 0 9.886-4.434 9.889-9.885.002-5.462-4.415-9.89-9.881-9.892-5.452 0-9.887 4.434-9.889 9.884-.001 2.225.651 3.891 1.746 5.634l-.999 3.648 3.742-.981zm11.387-5.464c-.074-.124-.272-.198-.57-.347-.297-.149-1.758-.868-2.031-.967-.272-.099-.47-.149-.669.149-.198.297-.768.967-.941 1.165-.173.198-.347.223-.644.074-.297-.149-1.255-.462-2.39-1.475-.883-.788-1.48-1.761-1.653-2.059-.173-.297-.018-.458.13-.606.134-.133.297-.347.446-.521.151-.172.2-.296.3-.495.099-.198.05-.372-.025-.521-.075-.148-.669-1.611-.916-2.206-.242-.579-.487-.501-.669-.51l-.57-.01c-.198 0-.52.074-.792.372s-1.04 1.016-1.04 2.479 1.065 2.876 1.213 3.074c.149.198 2.095 3.2 5.076 4.487.709.306 1.263.489 1.694.626.712.226 1.36.194 1.872.118.571-.085 1.758-.719 2.006-1.413.248-.695.248-1.29.173-1.414z"/>
-                  </svg>
-                  <span>Request Official Invoice on WhatsApp</span>
+                <button type="button" class="btn-bundle-whatsapp" onclick="orderBundleWhatsApp('b1')">
+                  <svg viewBox="0 0 24 24" fill="currentColor" width="16" height="16"><path d="M.057 24l1.687-6.163c-1.041-1.804-1.588-3.849-1.587-5.946.003-6.556 5.338-11.891 11.893-11.891 3.181.001 6.167 1.24 8.413 3.488 2.245 2.248 3.481 5.236 3.48 8.414-.003 6.557-5.338 11.892-11.893 11.892-1.99-.001-3.951-.5-5.688-1.448l-6.305 1.654zm6.597-3.807c1.676.995 3.276 1.591 5.392 1.592 0 0 9.886-4.434 9.889-9.885.002-5.462-4.415-9.89-9.881-9.892-5.452 0-9.887 4.434-9.889 9.884-.001 2.225.651 3.891 1.746 5.634l-.999 3.648 3.742-.981zm11.387-5.464c-.074-.124-.272-.198-.57-.347-.297-.149-1.758-.868-2.031-.967-.272-.099-.47-.149-.669.149-.198.297-.768.967-.941 1.165-.173.198-.347.223-.644.074-.297-.149-1.255-.462-2.39-1.475-.883-.788-1.48-1.761-1.653-2.059-.173-.297-.018-.458.13-.606.134-.133.297-.347.446-.521.151-.172.2-.296.3-.495.099-.198.05-.372-.025-.521-.075-.148-.669-1.611-.916-2.206-.242-.579-.487-.501-.669-.51l-.57-.01c-.198 0-.52.074-.792.372s-1.04 1.016-1.04 2.479 1.065 2.876 1.213 3.074c.149.198 2.095 3.2 5.076 4.487.709.306 1.263.489 1.694.626.712.226 1.36.194 1.872.118.571-.085 1.758-.719 2.006-1.413.248-.695.248-1.29.173-1.414z"/></svg>
+                  <span>WhatsApp</span>
                 </button>
               </div>
             </div>
           </div>
+
+          <!-- BUNDLE 2: COACHING HOSTEL DEAL -->
+          <div class="bundle-card" data-category="hostel">
+            <div class="bundle-card-visual">
+              <span class="bundle-badge-floating deal">🏢 Piprali / Nawalgarh Rd</span>
+              <img src="assets/cat_water_cases.jpg" alt="Coaching Hostel & PG Hydration Deal" class="bundle-card-img" loading="lazy">
+            </div>
+            <div class="bundle-card-body">
+              <h3 class="bundle-card-title">Coaching Hostel &amp; PG Hydration Deal</h3>
+              <p class="bundle-card-desc">Scheduled recurring cases for students and staff. Pure certified mineral water with doorstep tempo unloading.</p>
+              
+              <ul class="bundle-specs-list">
+                <li>
+                  <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5"><polyline points="20 6 9 17 4 12"></polyline></svg>
+                  <span><strong>15x</strong> Bailey 1L Packaged Cases (180 Bottles)</span>
+                </li>
+                <li>
+                  <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5"><polyline points="20 6 9 17 4 12"></polyline></svg>
+                  <span><strong>4x</strong> Aquafina 500ml Compact Petis (96 Bottles)</span>
+                </li>
+                <li>
+                  <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5"><polyline points="20 6 9 17 4 12"></polyline></svg>
+                  <span>Daily Morning Scheduled Tempo Delivery</span>
+                </li>
+                <li>
+                  <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5"><polyline points="20 6 9 17 4 12"></polyline></svg>
+                  <span>Official Bilty &amp; GST Tax Invoice Included</span>
+                </li>
+              </ul>
+
+              <div class="bundle-pricing-row">
+                <div class="bundle-price-main">
+                  <span>₹3,250</span>
+                  <span class="bundle-price-mrp">₹3,960</span>
+                </div>
+                <span class="bundle-save-pill">Save ₹710 (18% OFF)</span>
+              </div>
+
+              <div class="bundle-actions-row">
+                <button type="button" class="btn-bundle-cart" onclick="addBundleToCart('b2')">
+                  <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.3" width="16" height="16"><circle cx="9" cy="21" r="1"></circle><circle cx="20" cy="21" r="1"></circle><path d="M1 1h4l2.68 13.39a2 2 0 0 0 2 1.61h9.72a2 2 0 0 0 2-1.61L23 6H6"></path></svg>
+                  <span>Add to Cart</span>
+                </button>
+                <button type="button" class="btn-bundle-whatsapp" onclick="orderBundleWhatsApp('b2')">
+                  <svg viewBox="0 0 24 24" fill="currentColor" width="16" height="16"><path d="M.057 24l1.687-6.163c-1.041-1.804-1.588-3.849-1.587-5.946.003-6.556 5.338-11.891 11.893-11.891 3.181.001 6.167 1.24 8.413 3.488 2.245 2.248 3.481 5.236 3.48 8.414-.003 6.557-5.338 11.892-11.893 11.892-1.99-.001-3.951-.5-5.688-1.448l-6.305 1.654zm6.597-3.807c1.676.995 3.276 1.591 5.392 1.592 0 0 9.886-4.434 9.889-9.885.002-5.462-4.415-9.89-9.881-9.892-5.452 0-9.887 4.434-9.889 9.884-.001 2.225.651 3.891 1.746 5.634l-.999 3.648 3.742-.981zm11.387-5.464c-.074-.124-.272-.198-.57-.347-.297-.149-1.758-.868-2.031-.967-.272-.099-.47-.149-.669.149-.198.297-.768.967-.941 1.165-.173.198-.347.223-.644.074-.297-.149-1.255-.462-2.39-1.475-.883-.788-1.48-1.761-1.653-2.059-.173-.297-.018-.458.13-.606.134-.133.297-.347.446-.521.151-.172.2-.296.3-.495.099-.198.05-.372-.025-.521-.075-.148-.669-1.611-.916-2.206-.242-.579-.487-.501-.669-.51l-.57-.01c-.198 0-.52.074-.792.372s-1.04 1.016-1.04 2.479 1.065 2.876 1.213 3.074c.149.198 2.095 3.2 5.076 4.487.709.306 1.263.489 1.694.626.712.226 1.36.194 1.872.118.571-.085 1.758-.719 2.006-1.413.248-.695.248-1.29.173-1.414z"/></svg>
+                  <span>WhatsApp</span>
+                </button>
+              </div>
+            </div>
+          </div>
+
+          <!-- BUNDLE 3: SUMMER PARTY MEGA CRATE -->
+          <div class="bundle-card" data-category="party">
+            <div class="bundle-card-visual">
+              <span class="bundle-badge-floating hot">⚡ Instant Dispatch</span>
+              <img src="assets/prod_coca_cola.jpg" alt="Summer Party & Soft Drinks Mega Crate" class="bundle-card-img" loading="lazy">
+            </div>
+            <div class="bundle-card-body">
+              <h3 class="bundle-card-title">Summer Party &amp; Soft Drinks Mega Crate</h3>
+              <p class="bundle-card-desc">Chilled party mix for celebrations, birthdays, catering, and festive get-togethers in Sikar.</p>
+              
+              <ul class="bundle-specs-list">
+                <li>
+                  <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5"><polyline points="20 6 9 17 4 12"></polyline></svg>
+                  <span><strong>2x</strong> Coca-Cola 750ml Party Crates (48 Bottles)</span>
+                </li>
+                <li>
+                  <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5"><polyline points="20 6 9 17 4 12"></polyline></svg>
+                  <span><strong>2x</strong> Thums Up 250ml PET Crates (48 Bottles)</span>
+                </li>
+                <li>
+                  <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5"><polyline points="20 6 9 17 4 12"></polyline></svg>
+                  <span><strong>1x</strong> Chilled Soda &amp; Soft Drink Cans Tray (24 Cans)</span>
+                </li>
+                <li>
+                  <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5"><polyline points="20 6 9 17 4 12"></polyline></svg>
+                  <span>Mandi Depot Cold Stash Priority Option</span>
+                </li>
+              </ul>
+
+              <div class="bundle-pricing-row">
+                <div class="bundle-price-main">
+                  <span>₹2,999</span>
+                  <span class="bundle-price-mrp">₹3,620</span>
+                </div>
+                <span class="bundle-save-pill">Save ₹621 (17% OFF)</span>
+              </div>
+
+              <div class="bundle-actions-row">
+                <button type="button" class="btn-bundle-cart" onclick="addBundleToCart('b3')">
+                  <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.3" width="16" height="16"><circle cx="9" cy="21" r="1"></circle><circle cx="20" cy="21" r="1"></circle><path d="M1 1h4l2.68 13.39a2 2 0 0 0 2 1.61h9.72a2 2 0 0 0 2-1.61L23 6H6"></path></svg>
+                  <span>Add to Cart</span>
+                </button>
+                <button type="button" class="btn-bundle-whatsapp" onclick="orderBundleWhatsApp('b3')">
+                  <svg viewBox="0 0 24 24" fill="currentColor" width="16" height="16"><path d="M.057 24l1.687-6.163c-1.041-1.804-1.588-3.849-1.587-5.946.003-6.556 5.338-11.891 11.893-11.891 3.181.001 6.167 1.24 8.413 3.488 2.245 2.248 3.481 5.236 3.48 8.414-.003 6.557-5.338 11.892-11.893 11.892-1.99-.001-3.951-.5-5.688-1.448l-6.305 1.654zm6.597-3.807c1.676.995 3.276 1.591 5.392 1.592 0 0 9.886-4.434 9.889-9.885.002-5.462-4.415-9.89-9.881-9.892-5.452 0-9.887 4.434-9.889 9.884-.001 2.225.651 3.891 1.746 5.634l-.999 3.648 3.742-.981zm11.387-5.464c-.074-.124-.272-.198-.57-.347-.297-.149-1.758-.868-2.031-.967-.272-.099-.47-.149-.669.149-.198.297-.768.967-.941 1.165-.173.198-.347.223-.644.074-.297-.149-1.255-.462-2.39-1.475-.883-.788-1.48-1.761-1.653-2.059-.173-.297-.018-.458.13-.606.134-.133.297-.347.446-.521.151-.172.2-.296.3-.495.099-.198.05-.372-.025-.521-.075-.148-.669-1.611-.916-2.206-.242-.579-.487-.501-.669-.51l-.57-.01c-.198 0-.52.074-.792.372s-1.04 1.016-1.04 2.479 1.065 2.876 1.213 3.074c.149.198 2.095 3.2 5.076 4.487.709.306 1.263.489 1.694.626.712.226 1.36.194 1.872.118.571-.085 1.758-.719 2.006-1.413.248-.695.248-1.29.173-1.414z"/></svg>
+                  <span>WhatsApp</span>
+                </button>
+              </div>
+            </div>
+          </div>
+
+          <!-- BUNDLE 4: KIRANA RETAILER RESTOCK -->
+          <div class="bundle-card" data-category="kirana">
+            <div class="bundle-card-visual">
+              <span class="bundle-badge-floating deal">🏪 Kirana Restock</span>
+              <img src="assets/cat_soft_drinks.jpg" alt="Kirana Retailer High-Margin Starter Pack" class="bundle-card-img" loading="lazy">
+            </div>
+            <div class="bundle-card-body">
+              <h3 class="bundle-card-title">Kirana Retailer High-Margin Starter Pack</h3>
+              <p class="bundle-card-desc">Top 3 fastest-selling packaged beverages in Sikar for local provision and general stores.</p>
+              
+              <ul class="bundle-specs-list">
+                <li>
+                  <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5"><polyline points="20 6 9 17 4 12"></polyline></svg>
+                  <span><strong>40x</strong> Bisleri 1L Mineral Water Bottles</span>
+                </li>
+                <li>
+                  <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5"><polyline points="20 6 9 17 4 12"></polyline></svg>
+                  <span><strong>2x</strong> Frooti &amp; Maaza Mango Juice Trays (60 Packs)</span>
+                </li>
+                <li>
+                  <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5"><polyline points="20 6 9 17 4 12"></polyline></svg>
+                  <span><strong>2x</strong> Thums Up 250ml PET Crates (48 Bottles)</span>
+                </li>
+                <li>
+                  <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5"><polyline points="20 6 9 17 4 12"></polyline></svg>
+                  <span>Same-Day Depot Re-Stocking Guarantee</span>
+                </li>
+              </ul>
+
+              <div class="bundle-pricing-row">
+                <div class="bundle-price-main">
+                  <span>₹1,980</span>
+                  <span class="bundle-price-mrp">₹2,380</span>
+                </div>
+                <span class="bundle-save-pill">Save ₹400 (17% OFF)</span>
+              </div>
+
+              <div class="bundle-actions-row">
+                <button type="button" class="btn-bundle-cart" onclick="addBundleToCart('b4')">
+                  <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.3" width="16" height="16"><circle cx="9" cy="21" r="1"></circle><circle cx="20" cy="21" r="1"></circle><path d="M1 1h4l2.68 13.39a2 2 0 0 0 2 1.61h9.72a2 2 0 0 0 2-1.61L23 6H6"></path></svg>
+                  <span>Add to Cart</span>
+                </button>
+                <button type="button" class="btn-bundle-whatsapp" onclick="orderBundleWhatsApp('b4')">
+                  <svg viewBox="0 0 24 24" fill="currentColor" width="16" height="16"><path d="M.057 24l1.687-6.163c-1.041-1.804-1.588-3.849-1.587-5.946.003-6.556 5.338-11.891 11.893-11.891 3.181.001 6.167 1.24 8.413 3.488 2.245 2.248 3.481 5.236 3.48 8.414-.003 6.557-5.338 11.892-11.893 11.892-1.99-.001-3.951-.5-5.688-1.448l-6.305 1.654zm6.597-3.807c1.676.995 3.276 1.591 5.392 1.592 0 0 9.886-4.434 9.889-9.885.002-5.462-4.415-9.89-9.881-9.892-5.452 0-9.887 4.434-9.889 9.884-.001 2.225.651 3.891 1.746 5.634l-.999 3.648 3.742-.981zm11.387-5.464c-.074-.124-.272-.198-.57-.347-.297-.149-1.758-.868-2.031-.967-.272-.099-.47-.149-.669.149-.198.297-.768.967-.941 1.165-.173.198-.347.223-.644.074-.297-.149-1.255-.462-2.39-1.475-.883-.788-1.48-1.761-1.653-2.059-.173-.297-.018-.458.13-.606.134-.133.297-.347.446-.521.151-.172.2-.296.3-.495.099-.198.05-.372-.025-.521-.075-.148-.669-1.611-.916-2.206-.242-.579-.487-.501-.669-.51l-.57-.01c-.198 0-.52.074-.792.372s-1.04 1.016-1.04 2.479 1.065 2.876 1.213 3.074c.149.198 2.095 3.2 5.076 4.487.709.306 1.263.489 1.694.626.712.226 1.36.194 1.872.118.571-.085 1.758-.719 2.006-1.413.248-.695.248-1.29.173-1.414z"/></svg>
+                  <span>WhatsApp</span>
+                </button>
+              </div>
+            </div>
+          </div>
         </div>
-      </div>
+
+        <!-- HOW DISPATCH & DELIVERY WORKS 3-STEP STRIP -->
+        <div class="bundle-steps-box">
+          <div class="steps-grid">
+            <div class="step-item">
+              <div class="step-num-circle">1</div>
+              <div class="step-content">
+                <h4>Order Mandi Wholesale Rates</h4>
+                <p>Choose from 50+ branded products or our ready-made banquet bundles at true wholesale depot pricing.</p>
+              </div>
+            </div>
+            <div class="step-item">
+              <div class="step-num-circle">2</div>
+              <div class="step-content">
+                <h4>Factory Tamper-Proof Seals</h4>
+                <p>Strict Zero-Camper policy. 100% genuine factory-packed PET bottles loaded straight from Krishi Mandi bypass depot.</p>
+              </div>
+            </div>
+            <div class="step-item">
+              <div class="step-num-circle">3</div>
+              <div class="step-content">
+                <h4>Doorstep Tempo Unloading</h4>
+                <p>Our dedicated Sikar tempo fleet delivers and unloads right at your event gate, wedding lawn, or hostel porch.</p>
+              </div>
+            </div>
+          </div>
+        </div>
+
+        <!-- VIP DIRECT HOTLINE BANNER -->
+        <div class="bundle-vip-banner">
+          <div class="bundle-vip-info">
+            <h3>
+              <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2" width="22" height="22"><path d="M22 16.92v3a2 2 0 0 1-2.18 2 19.79 19.79 0 0 1-8.63-3.07 19.5 19.5 0 0 1-6-6 19.79 19.79 0 0 1-3.07-8.67A2 2 0 0 1 4.11 2h3a2 2 0 0 1 2 1.72 12.84 12.84 0 0 0 .7 2.81 2 2 0 0 1-.45 2.11L8.09 9.91a16 16 0 0 0 6 6l1.27-1.27a2 2 0 0 1 2.11-.45 12.84 12.84 0 0 0 2.81.7A2 2 0 0 1 22 16.92z"></path></svg>
+              <span>Planning a Large Wedding or 50+ Peti Bulk Order in Sikar?</span>
+            </h3>
+            <p>Speak directly with our Mandi Depot Dispatcher for custom slab pricing, cold-stash reserving, and dedicated tempo scheduling.</p>
+          </div>
+          <div class="bundle-vip-actions">
+            <a href="https://wa.me/919829011223?text=Hello%20Sikar%20Drop%2C%20I%20need%20a%20VIP%20Wholesale%20Quote%20for%20a%20large%20order" target="_blank" rel="noopener" class="btn-vip-whatsapp">
+              <svg viewBox="0 0 24 24" fill="currentColor" width="16" height="16"><path d="M.057 24l1.687-6.163c-1.041-1.804-1.588-3.849-1.587-5.946.003-6.556 5.338-11.891 11.893-11.891 3.181.001 6.167 1.24 8.413 3.488 2.245 2.248 3.481 5.236 3.48 8.414-.003 6.557-5.338 11.892-11.893 11.892-1.99-.001-3.951-.5-5.688-1.448l-6.305 1.654zm6.597-3.807c1.676.995 3.276 1.591 5.392 1.592 0 0 9.886-4.434 9.889-9.885.002-5.462-4.415-9.89-9.881-9.892-5.452 0-9.887 4.434-9.889 9.884-.001 2.225.651 3.891 1.746 5.634l-.999 3.648 3.742-.981zm11.387-5.464c-.074-.124-.272-.198-.57-.347-.297-.149-1.758-.868-2.031-.967-.272-.099-.47-.149-.669.149-.198.297-.768.967-.941 1.165-.173.198-.347.223-.644.074-.297-.149-1.255-.462-2.39-1.475-.883-.788-1.48-1.761-1.653-2.059-.173-.297-.018-.458.13-.606.134-.133.297-.347.446-.521.151-.172.2-.296.3-.495.099-.198.05-.372-.025-.521-.075-.148-.669-1.611-.916-2.206-.242-.579-.487-.501-.669-.51l-.57-.01c-.198 0-.52.074-.792.372s-1.04 1.016-1.04 2.479 1.065 2.876 1.213 3.074c.149.198 2.095 3.2 5.076 4.487.709.306 1.263.489 1.694.626.712.226 1.36.194 1.872.118.571-.085 1.758-.719 2.006-1.413.248-.695.248-1.29.173-1.414z"/></svg>
+              <span>WhatsApp Depot</span>
+            </a>
+            <a href="tel:+919829011223" class="btn-vip-call">
+              <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.3" width="16" height="16"><path d="M22 16.92v3a2 2 0 0 1-2.18 2 19.79 19.79 0 0 1-8.63-3.07 19.5 19.5 0 0 1-6-6 19.79 19.79 0 0 1-3.07-8.67A2 2 0 0 1 4.11 2h3a2 2 0 0 1 2 1.72 12.84 12.84 0 0 0 .7 2.81 2 2 0 0 1-.45 2.11L8.09 9.91a16 16 0 0 0 6 6l1.27-1.27a2 2 0 0 1 2.11-.45 12.84 12.84 0 0 0 2.81.7A2 2 0 0 1 22 16.92z"></path></svg>
+              <span>Call +91 98290 11223</span>
+            </a>
+          </div>
+        </div>
+      </section>
 
       <!-- INQUIRY FORM -->
       <div class="portal-card" style="padding: 28px; max-width: 760px; margin: 0 auto;">
@@ -417,264 +608,162 @@
 
   <script src="assets/site.js"></script>
   <script>
-    let bulkCalcQuantities = { p8: 10, p3: 10, p5: 4, p6: 2 };
-    let bulkCalcCategory = 'all';
-    let bulkCalcSearch = '';
-
     window.addEventListener('DOMContentLoaded', async () => {
       await initStorefrontTheme();
       await loadCatalogFromBackend();
       updateCartUI();
       runBulkCalculator();
-      renderBulkCalculatorItems();
     });
 
-    function setBulkCalculatorCategory(catId) {
-      bulkCalcCategory = catId;
-      renderBulkCalculatorItems();
-    }
-
-    function filterBulkCalculatorList() {
-      const searchEl = document.getElementById('calc-search-input');
-      bulkCalcSearch = searchEl ? searchEl.value.trim().toLowerCase() : '';
-      renderBulkCalculatorItems();
-    }
-
-    function resetBulkCalculator() {
-      bulkCalcQuantities = {};
-      if (bulkCalcCategory === 'selected') bulkCalcCategory = 'all';
-      renderBulkCalculatorItems();
-      showToast('Calculator quantities reset to 0.');
-    }
-
-    function changeBulkQty(prodId, delta) {
-      const current = bulkCalcQuantities[prodId] || 0;
-      const next = Math.max(0, current + delta);
-      if (next === 0) delete bulkCalcQuantities[prodId];
-      else bulkCalcQuantities[prodId] = next;
-      renderBulkCalculatorItems();
-    }
-
-    function setBulkQty(prodId, rawVal) {
-      const next = Math.max(0, parseInt(rawVal, 10) || 0);
-      if (next === 0) delete bulkCalcQuantities[prodId];
-      else bulkCalcQuantities[prodId] = next;
-      const rowEl = document.getElementById('calc-row-' + prodId);
-      if (rowEl) rowEl.classList.toggle('active-row', next > 0);
-      recalcBulk();
-    }
-
-    function renderBulkCalculatorItems() {
-      const listEl = document.getElementById('calc-items-list');
-      const pillsEl = document.getElementById('calc-cat-pills');
-      const countBadgeEl = document.getElementById('calc-total-catalog-count');
-      if (!listEl) return;
-
-      const activeProducts = (PRODUCTS || []).filter(p => p.active !== 0);
-      if (countBadgeEl) countBadgeEl.textContent = activeProducts.length;
-
-      const selectedIds = Object.keys(bulkCalcQuantities).filter(id => (bulkCalcQuantities[id] || 0) > 0);
-
-      if (pillsEl) {
-        const catPillsHtml = (CATEGORIES || []).map(c => {
-          const cCount = activeProducts.filter(p => p.category === c.id).length;
-          return `<button type="button" class="calc-cat-pill ${bulkCalcCategory === c.id ? 'active' : ''}" onclick="setBulkCalculatorCategory('${c.id}')">${escapeHTML(c.name)} (${cCount})</button>`;
-        }).join('');
-
-        pillsEl.innerHTML = `
-          <button type="button" class="calc-cat-pill ${bulkCalcCategory === 'all' ? 'active' : ''}" onclick="setBulkCalculatorCategory('all')">All Products (${activeProducts.length})</button>
-          <button type="button" class="calc-cat-pill ${bulkCalcCategory === 'selected' ? 'active' : ''}" onclick="setBulkCalculatorCategory('selected')">Selected (${selectedIds.length})</button>
-          ${catPillsHtml}
-        `;
+    // WHOLESALE BUNDLES & EVENT PACKAGES
+    const WHOLESALE_BUNDLES = [
+      {
+        id: 'b1',
+        category: 'wedding',
+        title: 'Shaadi & Banquet VIP Hydration Pack',
+        desc: 'Complete water & banquet setup for marriages, ring ceremonies, and family gatherings of 200–500 guests in Sikar.',
+        price: 4699,
+        mrp: 5860,
+        saveAmt: 1161,
+        savePct: 20,
+        badge: '👑 Wedding Favorite',
+        badgeClass: 'popular',
+        image: 'assets/cat_wedding.jpg',
+        specs: [
+          '10x Shaadi Mini Water Petis (48x 250ml Sealed)',
+          '5x Bailey / Kinley 1L Packaged Cases (60 Bottles)',
+          '2x Real Fruit Power Mixed Juices (24x 1L Packs)',
+          'Strict Zero 20L Campers • 100% Tamper-Proof'
+        ],
+        items: [
+          { id: 'p7', qty: 10 },
+          { id: 'p3', qty: 5 },
+          { id: 'p6', qty: 2 }
+        ]
+      },
+      {
+        id: 'b2',
+        category: 'hostel',
+        title: 'Coaching Hostel & PG Hydration Deal',
+        desc: 'Scheduled recurring cases for students and staff. Pure certified mineral water with doorstep tempo unloading.',
+        price: 3250,
+        mrp: 3960,
+        saveAmt: 710,
+        savePct: 18,
+        badge: '🏢 Piprali / Nawalgarh Rd',
+        badgeClass: 'deal',
+        image: 'assets/cat_water_cases.jpg',
+        specs: [
+          '15x Bailey 1L Packaged Cases (180 Bottles)',
+          '4x Aquafina 500ml Compact Petis (96 Bottles)',
+          'Daily Morning Scheduled Tempo Delivery',
+          'Official Bilty & GST Tax Invoice Included'
+        ],
+        items: [
+          { id: 'p3', qty: 15 },
+          { id: 'p4', qty: 4 }
+        ]
+      },
+      {
+        id: 'b3',
+        category: 'party',
+        title: 'Summer Party & Soft Drinks Mega Crate',
+        desc: 'Chilled party mix for celebrations, birthdays, catering, and festive get-togethers in Sikar.',
+        price: 2999,
+        mrp: 3620,
+        saveAmt: 621,
+        savePct: 17,
+        badge: '⚡ Instant Dispatch',
+        badgeClass: 'hot',
+        image: 'assets/prod_coca_cola_750.jpg',
+        specs: [
+          '2x Coca-Cola 750ml Party Crates (48 Bottles)',
+          '2x Thums Up 250ml PET Crates (48 Bottles)',
+          '1x Chilled Soda & Soft Drink Cans Tray (24 Cans)',
+          'Mandi Depot Cold Stash Priority Option'
+        ],
+        items: [
+          { id: 'p5', qty: 2 },
+          { id: 'p8', qty: 2 },
+          { id: 'p11', qty: 1 }
+        ]
+      },
+      {
+        id: 'b4',
+        category: 'kirana',
+        title: 'Kirana Retailer High-Margin Starter Pack',
+        desc: 'Top 3 fastest-selling packaged beverages in Sikar for local provision and general stores.',
+        price: 1980,
+        mrp: 2380,
+        saveAmt: 400,
+        savePct: 17,
+        badge: '🏪 Kirana Restock',
+        badgeClass: 'deal',
+        image: 'assets/cat_cold_drinks.jpg',
+        specs: [
+          '40x Bisleri 1L Mineral Water Bottles',
+          '2x Frooti & Maaza Mango Juice Trays (60 Packs)',
+          '2x Thums Up 250ml PET Crates (48 Bottles)',
+          'Same-Day Depot Re-Stocking Guarantee'
+        ],
+        items: [
+          { id: 'p1', qty: 40 },
+          { id: 'p9', qty: 2 },
+          { id: 'p8', qty: 2 }
+        ]
       }
+    ];
 
-      const filtered = activeProducts.filter(p => {
-        if (bulkCalcCategory === 'selected') {
-          if ((bulkCalcQuantities[p.id] || 0) <= 0) return false;
-        } else if (bulkCalcCategory !== 'all') {
-          if (p.category !== bulkCalcCategory) return false;
-        }
-        if (bulkCalcSearch) {
-          const hay = `${p.title} ${p.spec || ''} ${p.category || ''} ${getCategoryDisplayName(p.category)}`.toLowerCase();
-          if (!hay.includes(bulkCalcSearch)) return false;
-        }
-        return true;
-      });
-
-      if (filtered.length === 0) {
-        listEl.innerHTML = `<div style="text-align:center; padding:32px 16px; color:var(--text-light); border:1px dashed var(--border-subtle); border-radius:var(--radius-xs);"><strong>No matching products in calculator</strong></div>`;
-        recalcBulk();
-        return;
-      }
-
-      const catOrderMap = { water: 1, cases: 2, cola: 3, juice: 4, can: 5, wedding: 6 };
-      filtered.sort((a, b) => (catOrderMap[a.category] || 99) - (catOrderMap[b.category] || 99));
-
-      let lastRenderedCategory = null;
-      listEl.innerHTML = filtered.map(p => {
-        const qty = bulkCalcQuantities[p.id] || 0;
-        const catName = getCategoryDisplayName(p.category);
-        const lineTotal = qty * (p.price || 0);
-        let catGroupHeaderHtml = '';
-        if (p.category !== lastRenderedCategory) {
-          lastRenderedCategory = p.category;
-          const catGroupCount = filtered.filter(item => item.category === p.category).length;
-          catGroupHeaderHtml = `
-            <div class="calc-category-group-header" style="display: flex; align-items: center; justify-content: space-between; background: #EFF6FF; border: 1px solid #BFDBFE; border-left: 4px solid #0284C7; border-radius: 6px; padding: 7px 12px; margin: 8px 0 4px;">
-              <strong style="font-size: 0.8rem; font-weight: 800; color: #0369A1; text-transform: uppercase; letter-spacing: 0.04em;">${escapeHTML(catName)}</strong>
-              <span style="font-size: 0.72rem; font-weight: 700; color: #0284C7; background: #FFFFFF; padding: 2px 8px; border-radius: 999px; border: 1px solid #BAE6FD;">${catGroupCount} Products</span>
-            </div>
-          `;
-        }
-        return `
-          ${catGroupHeaderHtml}
-          <div class="calc-row ${qty > 0 ? 'active-row' : ''}" id="calc-row-${p.id}">
-            <div class="calc-row-left">
-              <img src="${p.image || 'assets/prod_bisleri_1l.jpg'}" alt="${escapeHTML(p.title)}" class="calc-row-thumb" loading="lazy">
-              <div class="calc-row-info">
-                <strong title="${escapeHTML(p.title)}">${escapeHTML(p.title)}</strong>
-                <span>
-                  <strong style="display:inline; color:#0284C7; font-size:0.84rem;">₹${p.price}</strong>
-                  ${p.mrp > p.price ? `<s style="color:#94A3B8; font-size:0.74rem; margin-left:3px;">₹${p.mrp}</s>` : ''}
-                  • ${escapeHTML(p.spec || 'Factory Sealed')}
-                  ${qty > 0 ? `<strong style="display:inline; color:#15803D; font-size:0.78rem; margin-left:6px;">(Subtotal: ₹${lineTotal.toLocaleString('en-IN')})</strong>` : ''}
-                </span>
-              </div>
-            </div>
-            <div class="calc-stepper tabular">
-              <button type="button" class="calc-btn" onclick="changeBulkQty('${p.id}', -5)" title="Decrease by 5">-5</button>
-              <button type="button" class="calc-btn calc-btn-step" onclick="changeBulkQty('${p.id}', -1)" title="Decrease by 1">-1</button>
-              <input type="number" id="qty-${p.id}" class="calc-input" value="${qty}" min="0" oninput="setBulkQty('${p.id}', this.value)">
-              <button type="button" class="calc-btn calc-btn-step" onclick="changeBulkQty('${p.id}', 1)" title="Increase by 1">+1</button>
-              <button type="button" class="calc-btn" onclick="changeBulkQty('${p.id}', 5)" title="Increase by 5">+5</button>
-            </div>
-          </div>
-        `;
-      }).join('');
-
-      recalcBulk();
-    }
-
-    function recalcBulk() {
-      const activeProducts = (PRODUCTS || []).filter(p => p.active !== 0);
-      let totalPetis = 0;
-      let subtotal = 0;
-      const selectedRows = [];
-
-      activeProducts.forEach(p => {
-        const qty = Math.max(0, parseInt(bulkCalcQuantities[p.id], 10) || 0);
-        if (qty > 0) {
-          const lineAmt = qty * (p.price || 0);
-          totalPetis += qty;
-          subtotal += lineAmt;
-          selectedRows.push({ product: p, qty, lineAmt });
-        }
-      });
-
-      let discountPct = 0;
-      if (totalPetis >= 20) discountPct = 0.10;
-      else if (totalPetis >= 10) discountPct = 0.05;
-
-      const discountAmt = Math.round(subtotal * discountPct);
-      const netTotal = subtotal - discountAmt;
-
-      const breakdownEl = document.getElementById('calc-selected-breakdown');
-      if (breakdownEl) {
-        if (selectedRows.length === 0) {
-          breakdownEl.innerHTML = `<div style="color:#94A3B8; font-size:0.78rem; text-align:center; padding:8px 0;">No items selected yet. Use +1 or +5 buttons on the left to add products.</div>`;
+    function filterBundles(category, btnEl) {
+      document.querySelectorAll('#bundle-tabs-nav .bundle-tab-btn').forEach(b => b.classList.remove('active'));
+      if (btnEl) btnEl.classList.add('active');
+      document.querySelectorAll('.bundle-card').forEach(card => {
+        if (category === 'all' || card.dataset.category === category) {
+          card.style.display = 'flex';
         } else {
-          breakdownEl.innerHTML = selectedRows.map(r => `
-            <div class="calc-selected-item-line">
-              <span style="flex:1; min-width:0; overflow:hidden; text-overflow:ellipsis; white-space:nowrap;">
-                <strong style="color:#38BDF8;">${r.qty}x</strong> ${escapeHTML(r.product.title)}
-              </span>
-              <div style="display:flex; align-items:center; gap:6px; flex-shrink:0;">
-                <strong class="tabular" style="color:#FFFFFF;">₹${r.lineAmt.toLocaleString('en-IN')}</strong>
-                <button type="button" onclick="changeBulkQty('${r.product.id}', -1)" style="background:rgba(255,255,255,0.12); color:#FFFFFF; border:none; border-radius:3px; padding:1px 5px; font-size:0.7rem; font-weight:800; cursor:pointer;">-1</button>
-                <button type="button" onclick="changeBulkQty('${r.product.id}', 1)" style="background:#0284C7; color:#FFFFFF; border:none; border-radius:3px; padding:1px 5px; font-size:0.7rem; font-weight:800; cursor:pointer;">+1</button>
-              </div>
-            </div>
-          `).join('');
-        }
-      }
-
-      const petisDisp = document.getElementById('calc-total-petis-disp');
-      const subtotalDisp = document.getElementById('calc-subtotal-disp');
-      const discountDisp = document.getElementById('calc-discount-disp');
-      const netTotalDisp = document.getElementById('calc-net-total-disp');
-
-      if (petisDisp) petisDisp.textContent = `${totalPetis} Units / Petis`;
-      if (subtotalDisp) subtotalDisp.textContent = `₹${subtotal.toLocaleString('en-IN')}`;
-      if (discountDisp) {
-        discountDisp.textContent = discountAmt > 0
-          ? `-₹${discountAmt.toLocaleString('en-IN')} (${Math.round(discountPct * 100)}%)`
-          : `₹0 (5%-10% off on 10+ Units)`;
-      }
-      if (netTotalDisp) netTotalDisp.textContent = `₹${netTotal.toLocaleString('en-IN')}`;
-    }
-
-    function addBulkCalcItemsToCart() {
-      const activeProducts = (PRODUCTS || []).filter(p => p.active !== 0);
-      let addedCount = 0;
-      activeProducts.forEach(p => {
-        const qty = Math.max(0, parseInt(bulkCalcQuantities[p.id], 10) || 0);
-        if (qty > 0) {
-          cart[p.id] = (cart[p.id] || 0) + qty;
-          addedCount += qty;
+          card.style.display = 'none';
         }
       });
+    }
 
-      if (addedCount === 0) {
-        showToast('Please select at least 1 product (+1 or +5) in the calculator first.');
-        return;
-      }
-
+    function addBundleToCart(bundleId) {
+      const bundle = WHOLESALE_BUNDLES.find(b => b.id === bundleId);
+      if (!bundle) return;
+      let totalAdded = 0;
+      bundle.items.forEach(it => {
+        cart[it.id] = (cart[it.id] || 0) + it.qty;
+        totalAdded += it.qty;
+      });
       saveCart();
       updateCartUI();
       toggleCartDrawer(true);
-      showToast(`${addedCount} wholesale units added to cart from Bulk Calculator!`);
+      showToast(`Added "${bundle.title}" (${totalAdded} items) to your cart!`);
     }
 
-    function dispatchBulkCalcWhatsApp() {
-      const activeProducts = (PRODUCTS || []).filter(p => p.active !== 0);
-      let totalPetis = 0;
-      let subtotal = 0;
-      let quoteList = '';
-
-      activeProducts.forEach(p => {
-        const qty = Math.max(0, parseInt(bulkCalcQuantities[p.id], 10) || 0);
-        if (qty > 0) {
-          const lineAmt = qty * (p.price || 0);
-          totalPetis += qty;
-          subtotal += lineAmt;
-          quoteList += `• ${p.title}: ${qty} x ₹${p.price} = ₹${lineAmt.toLocaleString('en-IN')}\n`;
-        }
-      });
-
-      if (totalPetis === 0) {
-        showToast('Please select at least 1 product first.');
-        return;
-      }
-
-      const discountPct = totalPetis >= 20 ? 0.10 : (totalPetis >= 10 ? 0.05 : 0);
-      const discountAmt = Math.round(subtotal * discountPct);
-      const netTotal = subtotal - discountAmt;
-
-      const msg = `*SIKAR DROP - WHOLESALE PETI ESTIMATE*\n` +
+    function orderBundleWhatsApp(bundleId) {
+      const bundle = WHOLESALE_BUNDLES.find(b => b.id === bundleId);
+      if (!bundle) return;
+      const msg = `*SIKAR DROP WHOLESALE ORDER*\n` +
         `------------------------------------\n` +
-        `*Items Quote:*\n${quoteList}` +
+        `*Package:* ${bundle.title}\n` +
+        `*Wholesale Rate:* ₹${bundle.price.toLocaleString('en-IN')} (MRP: ₹${bundle.mrp.toLocaleString('en-IN')})\n` +
+        `*Savings:* ₹${bundle.saveAmt.toLocaleString('en-IN')} (${bundle.savePct}% OFF)\n` +
+        `*Items Included:*\n${bundle.specs.map(s => '• ' + s).join('\n')}\n` +
         `------------------------------------\n` +
-        `*Total Units / Petis:* ${totalPetis}\n` +
-        `*Mandi Subtotal:* ₹${subtotal.toLocaleString('en-IN')}\n` +
-        `*Wholesale Discount:* -₹${discountAmt.toLocaleString('en-IN')} (${Math.round(discountPct * 100)}%)\n` +
-        `*Estimated Net Total:* ₹${netTotal.toLocaleString('en-IN')}\n` +
-        `*Free Sikar Tempo Delivery Included*\n` +
-        `*Policy Confirmed:* 100% factory-sealed bottles only (No 20L jars).\n` +
-        `Please confirm the dispatch schedule!`;
-
-      window.open(`https://wa.me/919829000000?text=${encodeURIComponent(msg)}`, '_blank');
-      showToast('Wholesale quotation prepared for WhatsApp!');
+        `Please confirm delivery time and dispatch tempo from Mandi Depot!`;
+      window.open(`https://wa.me/919829011223?text=${encodeURIComponent(msg)}`, '_blank');
+      showToast(`WhatsApp message opened for ${bundle.title}!`);
     }
+
+    // SAFE STUBS FOR BACKWARD COMPATIBILITY
+    function renderBulkCalculatorItems() {}
+    function filterBulkCalculatorList() {}
+    function resetBulkCalculator() {}
+    function changeBulkQty() {}
+    function setBulkQty() {}
+    function recalcBulk() {}
+    function addBulkCalcItemsToCart() {}
+    function dispatchBulkCalcWhatsApp() {}
 
     let currentCalculatedSummary = {};
 
