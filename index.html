@@ -7592,6 +7592,7 @@
 
     const DEFAULT_REVIEWS = [
       {
+        id: 'REV-1',
         name: 'Rajendra Shekhawat',
         role: 'Manager, Royal Green Marriage Garden',
         location: 'Piprali Road',
@@ -7600,6 +7601,7 @@
         reply: 'Thank you Rajendra! Sikar Drop always supplies 100% factory-sealed bottles.'
       },
       {
+        id: 'REV-2',
         name: 'Ashok Sharma',
         role: 'Warden, Matrix Coaching Hostel',
         location: 'Piprali Road Corridor',
@@ -7608,6 +7610,7 @@
         reply: 'Thank you Ashok! Factory-sealed water is always the safest choice for student health.'
       },
       {
+        id: 'REV-3',
         name: 'Suresh Kumar Pareek',
         role: 'Owner, Pareek Kirana Store',
         location: 'Station Road Mandi',
@@ -7616,6 +7619,7 @@
         reply: 'Thank you Suresh! Providing wholesale rates better than the mandi to retail shopkeepers is our top priority.'
       },
       {
+        id: 'REV-4',
         name: 'Anita Choudhary',
         role: 'Resident & Family Head',
         location: 'Radhakishanpura Colony',
@@ -7668,8 +7672,7 @@
     let adminKhata = JSON.parse(localStorage.getItem('sikar_admin_khata')) || DEFAULT_KHATA;
     let adminPurchases = JSON.parse(localStorage.getItem('sikar_admin_purchases')) || DEFAULT_PURCHASES;
     let adminCoupons = JSON.parse(localStorage.getItem('sikar_admin_coupons')) || DEFAULT_COUPONS;
-    let adminReviews = DEFAULT_REVIEWS;
-    localStorage.setItem('sikar_admin_reviews', JSON.stringify(DEFAULT_REVIEWS));
+    let adminReviews = JSON.parse(localStorage.getItem('sikar_admin_reviews')) || DEFAULT_REVIEWS;
     let adminSubAdmins = JSON.parse(localStorage.getItem('sikar_admin_subadmins')) || DEFAULT_SUBADMINS;
     let adminSocialClicks = JSON.parse(localStorage.getItem('sikar_admin_social_clicks')) || DEFAULT_SOCIAL_CLICKS;
     let adminUsers = JSON.parse(localStorage.getItem('sikar_admin_users')) || DEFAULT_USERS;
@@ -10766,7 +10769,7 @@
       if (modal) modal.classList.remove('active');
     }
 
-    function saveReviewReply() {
+    async function saveReviewReply() {
       const idx = parseInt(document.getElementById('reply-review-idx').value, 10);
       const reply = document.getElementById('reply-text-input').value.trim();
 
@@ -10777,6 +10780,17 @@
         renderStorefrontReviews();
         closeReviewReplyModal();
         showToast('Depot reply published on live website review cards!');
+
+        try {
+          const revId = adminReviews[idx].id || ('REV-' + (idx + 1));
+          await fetch('/api/reviews/' + encodeURIComponent(revId) + '/reply', {
+            method: 'PATCH',
+            headers: { 'Content-Type': 'application/json' },
+            body: JSON.stringify({ reply })
+          });
+        } catch (err) {
+          console.warn('Backend review reply sync note:', err);
+        }
       }
     }
 
@@ -11734,6 +11748,33 @@
             }
           }
         } catch (pErr) {}
+
+        try {
+          const revRes = await fetch('/api/reviews');
+          if (revRes && revRes.ok) {
+            const revs = await revRes.json();
+            if (Array.isArray(revs) && revs.length > 0) {
+              const localRevs = JSON.parse(localStorage.getItem('sikar_admin_reviews') || '[]');
+              adminReviews = revs.map((r, idx) => {
+                const targetId = r.id || ('REV-' + (idx + 1));
+                const localMatch = localRevs.find(lr => lr && (lr.id === targetId || lr.name === (r.customer_name || r.name)));
+                return {
+                  id: targetId,
+                  name: r.customer_name || r.reviewer_name || r.name || 'Customer',
+                  role: r.role || '',
+                  location: r.location || '',
+                  type: r.type || 'Verified Client',
+                  rating: r.rating !== undefined ? r.rating : 5,
+                  quote: r.quote || r.review_text || '',
+                  reply: (localMatch && localMatch.reply !== undefined && localMatch.reply !== '') ? localMatch.reply : (r.reply || r.reply_text || '')
+                };
+              });
+              localStorage.setItem('sikar_admin_reviews', JSON.stringify(adminReviews));
+              renderStorefrontReviews();
+              if (typeof renderAdminReviewsTable === 'function') renderAdminReviewsTable();
+            }
+          }
+        } catch (rErr) {}
       } catch (err) {
         console.warn('Backend storefront sync failed, using cached catalog:', err);
       }

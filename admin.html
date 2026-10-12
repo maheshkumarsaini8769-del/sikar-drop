@@ -4561,6 +4561,7 @@
 
     const DEFAULT_REVIEWS = [
       {
+        id: 'REV-1',
         name: 'Rajendra Shekhawat',
         role: 'Manager, Royal Green Marriage Garden',
         location: 'Piprali Road',
@@ -4568,6 +4569,7 @@
         reply: 'Dhanyawad Rajendra ji! Sikar Drop hamesha 100% factory sealed bottles supply karta hai.'
       },
       {
+        id: 'REV-2',
         name: 'Ashok Sharma',
         role: 'Warden, Matrix Coaching Hostel',
         location: 'Piprali Road Corridor',
@@ -4575,6 +4577,7 @@
         reply: 'Dhanyawad Ashok ji! Hostel ke bacho ke swasthya ke liye factory-sealed water hi sarvottam hai.'
       },
       {
+        id: 'REV-3',
         name: 'Suresh Kumar Pareek',
         role: 'Owner, Pareek Kirana Store',
         location: 'Station Road Mandi',
@@ -4816,14 +4819,20 @@
           localStorage.setItem('sikar_admin_coupons', JSON.stringify(adminCoupons));
         }
         if (reviews && Array.isArray(reviews) && reviews.length > 0) {
-          adminReviews = reviews.map(r => ({
-            name: r.reviewer_name || r.name,
-            role: r.role,
-            location: r.location,
-            rating: r.rating,
-            quote: r.review_text || r.quote,
-            reply: r.reply_text || r.reply
-          }));
+          const localReviews = JSON.parse(localStorage.getItem('sikar_admin_reviews') || '[]');
+          adminReviews = reviews.map((r, idx) => {
+            const targetId = r.id || ('REV-' + (idx + 1));
+            const localMatch = localReviews.find(lr => lr && (lr.id === targetId || lr.name === (r.customer_name || r.name)));
+            return {
+              id: targetId,
+              name: r.customer_name || r.reviewer_name || r.name || 'Customer',
+              role: r.role || '',
+              location: r.location || '',
+              rating: r.rating !== undefined ? r.rating : 5,
+              quote: r.quote || r.review_text || '',
+              reply: (localMatch && localMatch.reply !== undefined && localMatch.reply !== '') ? localMatch.reply : (r.reply || r.reply_text || '')
+            };
+          });
           localStorage.setItem('sikar_admin_reviews', JSON.stringify(adminReviews));
         }
         if (soc && soc.clicks) {
@@ -7736,27 +7745,23 @@
       const r = adminReviews[idx];
 
       if (r) {
+        // 1. Optimistically update local array, localStorage, and table immediately
+        r.reply = text;
+        localStorage.setItem('sikar_admin_reviews', JSON.stringify(adminReviews));
+        renderReviewsTable();
+        closeModal('review-reply-modal');
+        showToast('Official depot reply live storefront aur table par publish ho gaya!');
+
+        // 2. Persist to backend database
         try {
-          const revId = r.id || ('rev-' + (idx + 1));
-          const res = await sikarApi.patch('/api/reviews/' + encodeURIComponent(revId) + '/reply', {
+          const revId = r.id || ('REV-' + (idx + 1));
+          await sikarApi.patch('/api/reviews/' + encodeURIComponent(revId) + '/reply', {
             reply: text,
             actor: currentOperator ? currentOperator.name : 'Admin'
           });
-          if (res && res.success) {
-            closeModal('review-reply-modal');
-            await syncFromBackend();
-            showToast('Depot reply published to live storefront & database!');
-            return;
-          }
         } catch (err) {
-          console.warn('Backend review reply fallback', err);
+          console.warn('Backend review reply sync note:', err);
         }
-
-        r.reply = text;
-        localStorage.setItem('sikar_admin_reviews', JSON.stringify(adminReviews));
-        closeModal('review-reply-modal');
-        renderReviewsTable();
-        showToast('Depot reply published to live storefront!');
       }
     }
 

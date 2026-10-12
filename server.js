@@ -1267,16 +1267,35 @@ app.post('/api/reviews', (req, res) => {
   }
 });
 
-app.patch('/api/reviews/:id/reply', (req, res) => {
+const handleReviewReply = (req, res) => {
   try {
     const { reply } = req.body;
     const now = new Date().toISOString().split('T')[0];
-    db.prepare('UPDATE reviews SET reply = ?, reply_date = ? WHERE id = ?').run(reply, now, req.params.id);
-    res.json({ success: true });
+    const targetId = (req.params.id || '').trim();
+
+    // 1. Try exact or case-insensitive ID match
+    let result = db.prepare('UPDATE reviews SET reply = ?, reply_date = ? WHERE UPPER(id) = UPPER(?) OR id = ?').run(reply || '', now, targetId, targetId);
+
+    // 2. Fallback: match by index if ID was formatted as rev-1, rev-2, etc.
+    if (result.changes === 0) {
+      const numMatch = targetId.match(/\d+/);
+      if (numMatch) {
+        const idx = parseInt(numMatch[0], 10) - 1;
+        const allRevs = db.prepare('SELECT id FROM reviews ORDER BY created_at ASC').all();
+        if (allRevs[idx]) {
+          result = db.prepare('UPDATE reviews SET reply = ?, reply_date = ? WHERE id = ?').run(reply || '', now, allRevs[idx].id);
+        }
+      }
+    }
+
+    res.json({ success: true, updated: result.changes });
   } catch (err) {
     res.status(400).json({ error: err.message });
   }
-});
+};
+
+app.patch('/api/reviews/:id/reply', handleReviewReply);
+app.put('/api/reviews/:id/reply', handleReviewReply);
 
 app.delete('/api/reviews/:id', (req, res) => {
   try {
