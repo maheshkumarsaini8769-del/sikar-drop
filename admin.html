@@ -5,6 +5,7 @@
   <meta name="viewport" content="width=device-width, initial-scale=1.0">
   <title>Sikar Drop • Depot Admin Portal &amp; Control Hub</title>
   <meta name="description" content="Central Enterprise Wholesale Depot Control Portal for Sikar Drop. Orders dispatch, POS case sell, inventory ledger, Udhar Khata, and CMS management.">
+  <link rel="icon" type="image/svg+xml" href="data:image/svg+xml,<svg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 24 24' fill='%230284C7'><path d='M12 2.69l5.66 5.66a8 8 0 1 1-11.31 0z'/></svg>">
 
   <!-- GOOGLE FONTS -->
   <link rel="preconnect" href="https://fonts.googleapis.com">
@@ -64,6 +65,12 @@
       min-height: 100vh;
       display: flex;
       overflow-x: hidden;
+      -webkit-font-smoothing: antialiased;
+      -moz-osx-font-smoothing: grayscale;
+    }
+
+    button, input, select, textarea, a, .sidebar-tab-btn, .btn-portal-primary, .btn-portal-success, .btn-portal-outline, .btn-tbl-action, .period-pill-btn {
+      touch-action: manipulation;
     }
 
     .tabular {
@@ -73,6 +80,25 @@
     /* =========================================================
        PORTAL APP SHELL LAYOUT
        ========================================================= */
+    .sidebar-backdrop {
+      position: fixed;
+      inset: 0;
+      background: rgba(11, 25, 44, 0.65);
+      backdrop-filter: blur(4px);
+      -webkit-backdrop-filter: blur(4px);
+      z-index: 2400;
+      opacity: 0;
+      visibility: hidden;
+      pointer-events: none;
+      transition: opacity 0.25s cubic-bezier(0.16, 1, 0.3, 1), visibility 0.25s;
+    }
+
+    .sidebar-backdrop.active {
+      opacity: 1;
+      visibility: visible;
+      pointer-events: auto;
+    }
+
     .portal-sidebar {
       width: 288px;
       background: #0F172B;
@@ -83,10 +109,15 @@
       top: 0;
       left: 0;
       bottom: 0;
+      height: 100vh;
+      height: 100dvh;
+      max-height: 100dvh;
       z-index: 100;
       box-shadow: 4px 0 24px rgba(0, 0, 0, 0.25);
-      transition: transform 0.3s cubic-bezier(0.2, 0.8, 0.2, 1);
+      transition: transform 0.28s cubic-bezier(0.16, 1, 0.3, 1);
       border-right: 1px solid rgba(255, 255, 255, 0.06);
+      will-change: transform;
+      transform: translate3d(0, 0, 0);
     }
 
     .sidebar-brand-box {
@@ -97,6 +128,27 @@
       gap: 10px;
       background: #0F172B;
       flex-shrink: 0;
+    }
+
+    .sidebar-close-btn {
+      display: none;
+      background: rgba(255, 255, 255, 0.08);
+      border: 1px solid rgba(255, 255, 255, 0.15);
+      color: #FFFFFF;
+      width: 32px;
+      height: 32px;
+      border-radius: 8px;
+      margin-left: auto;
+      cursor: pointer;
+      align-items: center;
+      justify-content: center;
+      transition: background 0.15s, transform 0.15s;
+      touch-action: manipulation;
+    }
+
+    .sidebar-close-btn:active {
+      background: rgba(255, 255, 255, 0.2);
+      transform: scale(0.94);
     }
 
     .brand-icon-drop {
@@ -131,8 +183,11 @@
     }
 
     .sidebar-scroll-nav {
-      flex: 1;
+      flex: 1 1 0%;
       overflow-y: auto;
+      -webkit-overflow-scrolling: touch;
+      overscroll-behavior: contain;
+      min-height: 0;
       padding: 6px 10px 10px;
       scrollbar-width: thin;
       scrollbar-color: rgba(255, 255, 255, 0.12) transparent;
@@ -211,7 +266,7 @@
     }
 
     .sidebar-footer-box {
-      padding: 8px 12px;
+      padding: 10px 12px max(14px, env(safe-area-inset-bottom));
       border-top: 1px solid rgba(255, 255, 255, 0.08);
       background: #0B1222;
       flex-shrink: 0;
@@ -607,6 +662,20 @@
       grid-template-columns: repeat(3, 1fr);
       gap: 16px;
       margin-bottom: 16px;
+    }
+
+    .portal-form-grid-4 {
+      display: grid;
+      grid-template-columns: repeat(4, 1fr);
+      gap: 12px;
+      margin-bottom: 16px;
+    }
+
+    .cust-modal-stats-grid {
+      display: grid;
+      grid-template-columns: repeat(4, 1fr);
+      gap: 10px;
+      margin-bottom: 18px;
     }
 
     .portal-field-group {
@@ -1066,16 +1135,20 @@
     .portal-modal-overlay {
       position: fixed;
       inset: 0;
-      background: rgba(11, 25, 44, 0.7);
+      background: rgba(11, 25, 44, 0.72);
       backdrop-filter: blur(6px);
-      z-index: 200;
+      -webkit-backdrop-filter: blur(6px);
+      z-index: 3000;
       display: flex;
       align-items: center;
       justify-content: center;
       padding: 20px;
       opacity: 0;
       visibility: hidden;
-      transition: opacity 0.2s, visibility 0.2s;
+      transition: opacity 0.22s cubic-bezier(0.16, 1, 0.3, 1), visibility 0.22s;
+      overflow-y: auto;
+      -webkit-overflow-scrolling: touch;
+      overscroll-behavior: contain;
     }
 
     .portal-modal-overlay.active {
@@ -1090,9 +1163,13 @@
       width: 100%;
       max-width: 650px;
       max-height: 90vh;
+      max-height: 90dvh;
       overflow-y: auto;
-      padding: 28px;
+      -webkit-overflow-scrolling: touch;
+      overscroll-behavior: contain;
+      padding: 26px;
       position: relative;
+      box-sizing: border-box;
     }
 
     .modal-close-x {
@@ -1195,7 +1272,7 @@
       font-size: 0.86rem;
       font-weight: 700;
       box-shadow: var(--shadow-lg);
-      z-index: 10000;
+      z-index: 2300;
       transform: translateY(60px);
       opacity: 0;
       transition: all 0.25s cubic-bezier(0.2, 0.8, 0.2, 1);
@@ -1223,11 +1300,19 @@
 
     @media (max-width: 768px) {
       .portal-sidebar {
-        transform: translateX(-100%);
+        width: 82%;
+        max-width: 320px;
+        z-index: 2500;
+        transform: translate3d(-100%, 0, 0);
+        transition: transform 0.28s cubic-bezier(0.16, 1, 0.3, 1);
+        box-shadow: none;
       }
       .portal-sidebar.open {
-        transform: translateX(0);
-        box-shadow: 10px 0 30px rgba(0, 0, 0, 0.5);
+        transform: translate3d(0, 0, 0);
+        box-shadow: 12px 0 36px rgba(0, 0, 0, 0.5);
+      }
+      .sidebar-close-btn {
+        display: flex;
       }
       .portal-main-stage {
         margin-left: 0;
@@ -1253,6 +1338,13 @@
         display: flex;
         align-items: center;
         justify-content: center;
+        width: 38px;
+        height: 38px;
+        border-radius: 8px;
+        touch-action: manipulation;
+      }
+      .mobile-menu-toggle:active {
+        background: rgba(0, 0, 0, 0.05);
       }
       .top-search-box {
         display: none;
@@ -1266,9 +1358,79 @@
       .btn-top-live {
         padding: 6px 10px;
         font-size: 0.74rem;
+        touch-action: manipulation;
+      }
+      .btn-top-lock {
+        padding: 6px 10px;
+        font-size: 0.74rem;
+        touch-action: manipulation;
       }
       .portal-content-body {
-        padding: 16px 12px;
+        padding: 14px 10px;
+      }
+      .portal-card {
+        padding: 16px 14px;
+        margin-bottom: 18px;
+        border-radius: var(--radius-sm);
+      }
+      .portal-card-header {
+        margin-bottom: 14px;
+        padding-bottom: 12px;
+      }
+      .portal-card-header h2 {
+        font-size: 1.18rem;
+      }
+      .portal-modal-overlay {
+        padding: 10px 10px max(18px, env(safe-area-inset-bottom));
+        align-items: flex-end;
+      }
+      .portal-modal-card {
+        padding: 20px 16px max(24px, env(safe-area-inset-bottom));
+        max-height: 86vh;
+        max-height: 86dvh;
+        border-radius: 20px 20px 12px 12px;
+      }
+      .portal-form-grid-4 {
+        grid-template-columns: repeat(2, 1fr) !important;
+        gap: 8px !important;
+      }
+      .cust-modal-stats-grid {
+        grid-template-columns: repeat(2, 1fr) !important;
+      }
+      .portal-toast {
+        left: 12px;
+        right: 12px;
+        bottom: max(14px, env(safe-area-inset-bottom));
+        justify-content: center;
+        text-align: center;
+        font-size: 0.82rem;
+        padding: 10px 14px;
+      }
+      .period-pills-group {
+        max-width: 100%;
+        overflow-x: auto;
+        -webkit-overflow-scrolling: touch;
+        scrollbar-width: none;
+        flex-wrap: nowrap;
+      }
+      .period-pills-group::-webkit-scrollbar {
+        display: none;
+      }
+      #order-filter-btn-group {
+        max-width: 100%;
+        overflow-x: auto;
+        -webkit-overflow-scrolling: touch;
+        scrollbar-width: none;
+        flex-wrap: nowrap;
+      }
+      #order-filter-btn-group::-webkit-scrollbar {
+        display: none;
+      }
+      .portal-table-wrapper {
+        -webkit-overflow-scrolling: touch;
+        scrollbar-width: thin;
+        margin-left: -2px;
+        margin-right: -2px;
       }
       .gauges-grid-4 { grid-template-columns: 1fr; }
       .gauges-grid-6 { grid-template-columns: 1fr; }
@@ -1704,6 +1866,7 @@
   <!-- =========================================================
        SIDEBAR NAVIGATION
        ========================================================= -->
+  <div class="sidebar-backdrop" id="sidebar-backdrop" onclick="toggleMobileSidebar(false)"></div>
   <aside class="portal-sidebar" id="portal-sidebar">
     <div class="sidebar-brand-box">
       <div class="brand-icon-drop">
@@ -1713,6 +1876,9 @@
         <strong>SIKAR DROP</strong>
         <span>ADMIN PORTAL</span>
       </div>
+      <button type="button" class="sidebar-close-btn" onclick="toggleMobileSidebar(false)" aria-label="Close sidebar">
+        <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" width="18" height="18"><line x1="18" y1="6" x2="6" y2="18"></line><line x1="6" y1="6" x2="18" y2="18"></line></svg>
+      </button>
     </div>
 
     <div class="sidebar-scroll-nav" id="sidebar-nav-container">
@@ -3645,7 +3811,7 @@
         <span id="modal-cust-id" style="font-size: 0.76rem; font-weight: 800; background: #E0F2FE; color: #0284C7; padding: 4px 10px; border-radius: 4px;">CUST-1002</span>
       </div>
 
-      <div style="display: grid; grid-template-columns: repeat(4, 1fr); gap: 10px; margin-bottom: 18px;">
+      <div class="cust-modal-stats-grid">
         <div style="background: #F8FAFC; border: 1px solid var(--border-subtle); border-radius: var(--radius-sm); padding: 10px; text-align: center;">
           <span style="font-size: 0.7rem; color: var(--text-muted); text-transform: uppercase; font-weight: 700;">Total Orders</span>
           <strong style="display: block; font-size: 1.15rem; font-weight: 900; color: #0284C7;" id="modal-cust-total-orders">0</strong>
@@ -3916,7 +4082,7 @@
           </div>
         </div>
 
-        <div class="portal-form-grid-4" style="display: grid; grid-template-columns: repeat(4, 1fr); gap: 10px;">
+        <div class="portal-form-grid-4">
           <div class="portal-field-group">
             <label for="prod-cost-input">Cost ₹ *</label>
             <input type="number" id="prod-cost-input" class="portal-input tabular" min="1" required>
@@ -4280,7 +4446,7 @@
   </div>
 
   <!-- TOAST NOTIFICATION -->
-  <div class="portal-toast" id="portal-toast">
+  <div class="portal-toast" id="portal-toast" onclick="this.classList.remove('show')" title="Tap to dismiss">
     <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" width="18" height="18"><polyline points="20 6 9 17 4 12"></polyline></svg>
     <span id="portal-toast-msg">Operation completed successfully</span>
   </div>
@@ -4676,13 +4842,15 @@
     }
 
     // TOAST NOTIFICATION
+    let toastTimer = null;
     function showToast(msg) {
       const t = document.getElementById('portal-toast');
       const m = document.getElementById('portal-toast-msg');
       if (t && m) {
+        if (toastTimer) clearTimeout(toastTimer);
         m.textContent = msg;
         t.classList.add('show');
-        setTimeout(() => { t.classList.remove('show'); }, 2600);
+        toastTimer = setTimeout(() => { t.classList.remove('show'); }, 2000);
       }
     }
 
@@ -4847,7 +5015,7 @@
       if (breadcrumb) breadcrumb.textContent = tabNames[tabId] || tabId;
 
       // Close mobile sidebar if open
-      document.getElementById('portal-sidebar').classList.remove('open');
+      toggleMobileSidebar(false);
 
       // Render tab data
       renderActiveTab(tabId);
@@ -4876,19 +5044,42 @@
       else if (tabId === 'settings') renderDeliveryZonesTable();
     }
 
-    function toggleMobileSidebar() {
-      document.getElementById('portal-sidebar').classList.toggle('open');
+    function toggleMobileSidebar(force) {
+      const sidebar = document.getElementById('portal-sidebar');
+      const backdrop = document.getElementById('sidebar-backdrop');
+      if (!sidebar) return;
+      const willOpen = (force !== undefined) ? !!force : !sidebar.classList.contains('open');
+      if (willOpen) {
+        sidebar.classList.add('open');
+        if (backdrop) backdrop.classList.add('active');
+        document.body.style.overflow = 'hidden';
+      } else {
+        sidebar.classList.remove('open');
+        if (backdrop) backdrop.classList.remove('active');
+        const anyModalActive = document.querySelector('.portal-modal-overlay.active');
+        if (!anyModalActive) {
+          document.body.style.overflow = '';
+        }
+      }
     }
 
     // MODALS CONTROLLER
     function openModal(id) {
       const el = document.getElementById(id);
-      if (el) el.classList.add('active');
+      if (el) {
+        el.classList.add('active');
+        document.body.style.overflow = 'hidden';
+      }
     }
 
     function closeModal(id) {
       const el = document.getElementById(id);
       if (el) el.classList.remove('active');
+      const anyModalActive = document.querySelector('.portal-modal-overlay.active');
+      const isSidebarOpen = document.getElementById('portal-sidebar')?.classList.contains('open');
+      if (!anyModalActive && !isSidebarOpen) {
+        document.body.style.overflow = '';
+      }
     }
 
     // =========================================================
@@ -8004,11 +8195,21 @@
       if (modalParam === 'cust') openCustomerHistory('98290 11223');
       if (modalParam === 'inv') openOrderInvoice('SKR-8421');
 
+      // Global overlay backdrop click dismiss
+      document.querySelectorAll('.portal-modal-overlay').forEach(modal => {
+        modal.addEventListener('click', (e) => {
+          if (e.target === modal) {
+            closeModal(modal.id);
+          }
+        });
+      });
+
       // Global key listener for ESC
       window.addEventListener('keydown', (e) => {
         if (e.key === 'Escape') {
           closeGlobalSearch();
-          document.querySelectorAll('.portal-modal-overlay.active').forEach(m => m.classList.remove('active'));
+          document.querySelectorAll('.portal-modal-overlay.active').forEach(m => closeModal(m.id));
+          toggleMobileSidebar(false);
         }
       });
     });
