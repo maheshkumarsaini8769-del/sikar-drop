@@ -6266,8 +6266,41 @@
           </div>
         </div>
 
-        <!-- TAB PANE 12: BULK MANDI RATES -->
+        <!-- TAB PANE 12: BULK ENQUIRIES & MANDI RATES -->
         <div id="atab-pane-bulk" class="admin-tab-pane" style="display: none;">
+          <!-- 1. LIVE BULK ENQUIRIES & LEADS CARD -->
+          <div class="admin-panel-card" style="margin-bottom: 24px;">
+            <div class="admin-section-header">
+              <div>
+                <h3>Bulk Supply Enquiries &amp; Customer Leads Desk</h3>
+                <p>Direct wholesale requirements &amp; event supply inquiries submitted from storefront &amp; bulk pages.</p>
+              </div>
+              <button type="button" class="btn-admin-save" onclick="renderIndexBulkEnquiries()">
+                <span>Refresh Leads</span>
+              </button>
+            </div>
+
+            <div class="admin-table-wrapper" style="overflow-x: auto;">
+              <table class="admin-table" style="width: 100%;">
+                <thead>
+                  <tr>
+                    <th>Customer Name</th>
+                    <th>Mobile Phone</th>
+                    <th>Inquiry Subject</th>
+                    <th>Requirement Details</th>
+                    <th>Received</th>
+                    <th>Status</th>
+                    <th>Action</th>
+                  </tr>
+                </thead>
+                <tbody id="index-bulk-enquiries-tbody">
+                  <tr><td colspan="7" style="text-align:center; padding:20px; color:#64748B;">Loading enquiries...</td></tr>
+                </tbody>
+              </table>
+            </div>
+          </div>
+
+          <!-- 2. WHOLESALE PETI MANDI RATES CARD -->
           <div class="admin-panel-card">
             <div class="admin-section-header">
               <div>
@@ -9532,7 +9565,7 @@
       else if (tabName === 'reviews') renderAdminReviewsTable();
       else if (tabName === 'users') renderUsersHub();
       else if (tabName === 'cms') populateAdminTextsForm();
-      else if (tabName === 'bulk') renderAdminBulkRates();
+      else if (tabName === 'bulk') { renderIndexBulkEnquiries(); renderAdminBulkRates(); }
       else if (tabName === 'social') renderSocialAnalytics();
       else if (tabName === 'subadmin') renderSubAdminsList();
       else if (tabName === 'seo') populateSeoSettings();
@@ -11283,6 +11316,78 @@
       localStorage.setItem('sikar_admin_rates', JSON.stringify(adminRates));
       recalcBulk();
       showToast('Bulk mandi rates & discounts updated!');
+    }
+
+    async function renderIndexBulkEnquiries() {
+      const tbody = document.getElementById('index-bulk-enquiries-tbody');
+      if (!tbody) return;
+
+      let enquiries = [];
+      try {
+        const res = await fetch('/api/enquiries');
+        if (res.ok) enquiries = await res.json();
+      } catch (err) {
+        console.warn('Index enquiries fetch fallback', err);
+      }
+
+      if (!Array.isArray(enquiries) || enquiries.length === 0) {
+        tbody.innerHTML = '<tr><td colspan="7" style="text-align:center; padding:24px; color:#64748B;">No customer enquiries received yet.</td></tr>';
+        return;
+      }
+
+      tbody.innerHTML = enquiries.map(e => {
+        const isDone = e.status === 'replied' || e.status === 'quoted' || e.status === 'done';
+        const cleanPhone = (e.phone || '').replace(/[^0-9]/g, '').slice(-10);
+        const waGreeting = encodeURIComponent(`Namaste ${e.name} ji! Sikar Drop Wholesale Depot se regarding your enquiry: ${e.subject || 'Bulk Supply'}. Aapko kitni petis ki delivery chahiye?`);
+        return `
+          <tr>
+            <td><strong style="color:#0B192C;">${escapeHTML(e.name)}</strong></td>
+            <td>
+              <a href="tel:${escapeHTML(cleanPhone)}" style="color:#0369A1; font-weight:700; text-decoration:none;">
+                ${escapeHTML(e.phone)}
+              </a>
+            </td>
+            <td><span class="badge-status ${isDone ? 'completed' : 'pending'}">${escapeHTML(e.subject || 'Bulk Supply')}</span></td>
+            <td style="max-width:280px; font-size:0.8rem; line-height:1.4;">${escapeHTML(e.message || '')}</td>
+            <td><small style="color:#64748B;">${escapeHTML(e.created_at ? new Date(e.created_at).toLocaleDateString('en-IN') : 'Recent')}</small></td>
+            <td><span class="badge-status ${isDone ? 'completed' : 'pending'}">${isDone ? 'Quoted / Done' : 'New Lead'}</span></td>
+            <td>
+              <div style="display:flex; gap:6px; flex-wrap:wrap;">
+                <a href="https://wa.me/91${cleanPhone}?text=${waGreeting}" target="_blank" class="btn-tbl-action" style="background:#16A34A; color:#FFFFFF; text-decoration:none; padding:4px 8px; font-size:0.75rem; border-radius:4px; display:inline-flex; align-items:center;">
+                  WhatsApp
+                </a>
+                ${!isDone ? `<button type="button" class="btn-tbl-action" onclick="updateIndexEnquiryStatus('${e.id}', 'replied')">Done</button>` : `<button type="button" class="btn-tbl-action" onclick="updateIndexEnquiryStatus('${e.id}', 'unread')">New</button>`}
+                <button type="button" class="btn-tbl-action danger" onclick="deleteIndexEnquiry('${e.id}')">Del</button>
+              </div>
+            </td>
+          </tr>
+        `;
+      }).join('');
+    }
+
+    async function updateIndexEnquiryStatus(id, status) {
+      try {
+        await fetch('/api/enquiries/' + encodeURIComponent(id) + '/status', {
+          method: 'PATCH',
+          headers: { 'Content-Type': 'application/json' },
+          body: JSON.stringify({ status })
+        });
+        await renderIndexBulkEnquiries();
+        showToast(`Enquiry #${id} marked as ${status}!`);
+      } catch (err) {
+        console.warn('Update index enquiry failed', err);
+      }
+    }
+
+    async function deleteIndexEnquiry(id) {
+      if (!confirm(`Delete enquiry #${id}?`)) return;
+      try {
+        await fetch('/api/enquiries/' + encodeURIComponent(id), { method: 'DELETE' });
+        await renderIndexBulkEnquiries();
+        showToast(`Enquiry #${id} deleted.`);
+      } catch (err) {
+        console.warn('Delete index enquiry failed', err);
+      }
     }
 
     // 16. SECURITY PIN & BACKUP

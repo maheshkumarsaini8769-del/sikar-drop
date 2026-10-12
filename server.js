@@ -1367,6 +1367,27 @@ app.post('/api/enquiries', (req, res) => {
   }
 });
 
+app.patch('/api/enquiries/:id/status', (req, res) => {
+  try {
+    const { status } = req.body;
+    const targetId = (req.params.id || '').trim();
+    const result = db.prepare('UPDATE contact_enquiries SET status = ? WHERE UPPER(id) = UPPER(?) OR id = ?').run(status || 'replied', targetId, targetId);
+    res.json({ success: true, updated: result.changes });
+  } catch (err) {
+    res.status(400).json({ error: err.message });
+  }
+});
+
+app.delete('/api/enquiries/:id', (req, res) => {
+  try {
+    const targetId = (req.params.id || '').trim();
+    const result = db.prepare('DELETE FROM contact_enquiries WHERE UPPER(id) = UPPER(?) OR id = ?').run(targetId, targetId);
+    res.json({ success: true, deleted: result.changes });
+  } catch (err) {
+    res.status(400).json({ error: err.message });
+  }
+});
+
 // ==========================================
 // 16. SOCIAL ANALYTICS
 // ==========================================

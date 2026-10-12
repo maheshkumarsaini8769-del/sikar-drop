@@ -1811,6 +1811,44 @@
     input:checked + .switch-slider:before {
       transform: translateX(22px);
     }
+
+    /* KPI STATS ROW & CARDS */
+    .stats-grid-row {
+      display: grid;
+      grid-template-columns: repeat(auto-fit, minmax(210px, 1fr));
+      gap: 16px;
+      margin-bottom: 20px;
+    }
+    .stat-kpi-card {
+      background: #F8FAFC;
+      border: 1.5px solid var(--border-subtle);
+      border-radius: var(--radius-sm);
+      padding: 16px;
+      display: flex;
+      flex-direction: column;
+      gap: 4px;
+    }
+    .stat-kpi-label {
+      font-size: 0.74rem;
+      font-weight: 800;
+      color: var(--text-muted);
+      text-transform: uppercase;
+      letter-spacing: 0.04em;
+    }
+    .stat-kpi-val {
+      font-family: var(--font-heading);
+      font-size: 1.4rem;
+      font-weight: 900;
+      color: #0B192C;
+    }
+    .stat-kpi-delta {
+      font-size: 0.74rem;
+      font-weight: 700;
+      color: #64748B;
+    }
+    .stat-kpi-delta.positive {
+      color: #15803D;
+    }
   </style>
 </head>
 <body>
@@ -2973,7 +3011,71 @@
       <!-- =======================================================
            TAB 9: MANDI BULK RATES
            ======================================================= -->
+      <!-- =======================================================
+           TAB 9: BULK SUPPLY ENQUIRIES & MANDI RATES
+           ======================================================= -->
       <section id="pane-bulk" class="tab-pane">
+        <!-- 1. LIVE BULK ENQUIRIES & LEADS CARD -->
+        <div class="portal-card" style="margin-bottom: 24px;">
+          <div class="portal-card-header">
+            <div>
+              <h2>Bulk Supply Enquiries &amp; Customer Leads Desk</h2>
+              <p>Direct wholesale requirements, event supply inquiries, and peti quotations submitted across Sikar.</p>
+            </div>
+            <div class="header-actions-flex">
+              <input type="text" id="bulk-enquiry-search" class="portal-input" placeholder="Search customer, phone, area..." style="max-width: 240px; padding: 7px 12px; font-size: 0.82rem;" oninput="filterBulkEnquiriesTable(this.value)">
+              <button type="button" class="btn-portal-primary" onclick="renderBulkEnquiries()">Refresh Leads</button>
+            </div>
+          </div>
+
+          <!-- DYNAMIC KPI STATS ROW -->
+          <div class="stats-grid-row" style="margin-bottom: 20px;">
+            <div class="stat-kpi-card">
+              <span class="stat-kpi-label">Total Inquiries</span>
+              <div class="stat-kpi-val" id="enq-stat-total">0 Leads</div>
+              <span class="stat-kpi-delta positive">All Sikar Corridors</span>
+            </div>
+            <div class="stat-kpi-card">
+              <span class="stat-kpi-label">Pending Callback</span>
+              <div class="stat-kpi-val" id="enq-stat-unread" style="color: #D97706;">0 Unanswered</div>
+              <span class="stat-kpi-delta" style="color: #DC2626;">Needs Action</span>
+            </div>
+            <div class="stat-kpi-card">
+              <span class="stat-kpi-label">Quoted / Replied</span>
+              <div class="stat-kpi-val" id="enq-stat-replied" style="color: #15803D;">0 Quotes Sent</div>
+              <span class="stat-kpi-delta positive">High Conversion</span>
+            </div>
+          </div>
+
+          <!-- FILTER PILLS -->
+          <div style="display:flex; gap:8px; margin-bottom: 14px; flex-wrap:wrap;">
+            <button type="button" class="btn-tbl-action enq-filter-btn active" id="enq-flt-all" onclick="setEnquiryFilter('all')">All Leads</button>
+            <button type="button" class="btn-tbl-action enq-filter-btn" id="enq-flt-unread" onclick="setEnquiryFilter('unread')">Pending / New Leads</button>
+            <button type="button" class="btn-tbl-action enq-filter-btn" id="enq-flt-replied" onclick="setEnquiryFilter('replied')">Quoted &amp; Done</button>
+          </div>
+
+          <!-- ENQUIRIES TABLE -->
+          <div class="portal-table-wrapper">
+            <table class="portal-table">
+              <thead>
+                <tr>
+                  <th>Customer / Establishment</th>
+                  <th>Mobile Number</th>
+                  <th>Event / Subject</th>
+                  <th>Peti Requirement / Message</th>
+                  <th>Received Date</th>
+                  <th>Status</th>
+                  <th>Action</th>
+                </tr>
+              </thead>
+              <tbody id="bulk-enquiries-tbody">
+                <tr><td colspan="7" style="text-align:center; padding:24px; color:var(--text-muted);">Loading enquiries from database...</td></tr>
+              </tbody>
+            </table>
+          </div>
+        </div>
+
+        <!-- 2. WHOLESALE PETI MANDI RATES CARD -->
         <div class="portal-card">
           <div class="portal-card-header">
             <div>
@@ -5057,8 +5159,8 @@
       else if (tabId === 'purchases') renderPurchasesTable();
       else if (tabId === 'products') renderProductsTable();
       else if (tabId === 'categories') renderCategoriesTable();
-      else if (tabId === 'bulk') renderBulkRates();
-      else if (tabId === 'contact_inbox') renderContactInbox();
+      else if (tabId === 'bulk') { renderBulkEnquiries(); renderBulkRates(); }
+      else if (tabId === 'contact_inbox') { renderBulkEnquiries(); }
       else if (tabId === 'coupons') { renderFestivalPresets(); renderCouponsTable(); updateLivePreview(); }
       else if (tabId === 'reviews') renderReviewsTable();
       else if (tabId === 'users') renderUsersTable();
@@ -7193,50 +7295,137 @@
     }
 
     // =========================================================
-    // 9B. CONTACT DESK INBOX
+    // 9B. BULK SUPPLY ENQUIRIES & LEADS DESK
     // =========================================================
-    async function renderContactInbox() {
-      const tbody = document.getElementById('contact-inbox-tbody');
-      if (!tbody) return;
+    let currentEnquiryFilter = 'all';
+    let cachedEnquiries = [];
 
-      let enquiries = [];
+    async function renderBulkEnquiries() {
+      const tbody1 = document.getElementById('bulk-enquiries-tbody');
+      const tbody2 = document.getElementById('contact-inbox-tbody');
+      if (!tbody1 && !tbody2) return;
+
       try {
         const res = await sikarApi.get('/api/enquiries');
-        if (res && Array.isArray(res)) enquiries = res;
+        if (res && Array.isArray(res)) {
+          cachedEnquiries = res;
+        }
       } catch (err) {
         console.warn('Backend enquiries fetch fallback', err);
       }
 
-      if (enquiries.length === 0) {
-        tbody.innerHTML = '<tr><td colspan="7" style="text-align:center; padding:24px; color:var(--text-muted);">No customer inquiries received yet.</td></tr>';
-        return;
+      // Update KPI counters
+      const total = cachedEnquiries.length;
+      const unread = cachedEnquiries.filter(e => e.status !== 'replied' && e.status !== 'quoted' && e.status !== 'done').length;
+      const replied = total - unread;
+
+      const setEl = (id, txt) => { const el = document.getElementById(id); if (el) el.textContent = txt; };
+      setEl('enq-stat-total', `${total} Leads`);
+      setEl('enq-stat-unread', `${unread} Unanswered`);
+      setEl('enq-stat-replied', `${replied} Quotes Sent`);
+
+      applyEnquiriesTableRender();
+    }
+
+    function renderContactInbox() {
+      return renderBulkEnquiries();
+    }
+
+    function setEnquiryFilter(flt) {
+      currentEnquiryFilter = flt;
+      document.querySelectorAll('.enq-filter-btn').forEach(b => {
+        b.classList.toggle('active', b.id === `enq-flt-${flt}`);
+      });
+      applyEnquiriesTableRender();
+    }
+
+    function filterBulkEnquiriesTable(searchVal) {
+      applyEnquiriesTableRender(searchVal);
+    }
+
+    function applyEnquiriesTableRender(searchVal = '') {
+      const q = (searchVal || (document.getElementById('bulk-enquiry-search')?.value) || '').toLowerCase().trim();
+      let list = cachedEnquiries;
+
+      if (currentEnquiryFilter === 'unread') {
+        list = list.filter(e => e.status !== 'replied' && e.status !== 'quoted' && e.status !== 'done');
+      } else if (currentEnquiryFilter === 'replied') {
+        list = list.filter(e => e.status === 'replied' || e.status === 'quoted' || e.status === 'done');
       }
 
-      tbody.innerHTML = enquiries.map(e => `
-        <tr>
-          <td><strong>${escapeHTML(e.name)}</strong></td>
-          <td>${escapeHTML(e.phone)}</td>
-          <td><span class="badge-status confirmed">${escapeHTML(e.subject || 'General')}</span></td>
-          <td>${escapeHTML(e.message || '')}</td>
-          <td><small>${escapeHTML(e.created_at ? new Date(e.created_at).toLocaleDateString('en-IN') : 'Recent')}</small></td>
-          <td><span class="badge-status ${e.status === 'replied' ? 'completed' : 'pending'}">${escapeHTML(e.status || 'new')}</span></td>
-          <td>
-            <div style="display:flex; gap:6px;">
-              <button type="button" class="btn-tbl-action success" onclick="window.open('https://wa.me/91${(e.phone || '').replace(/[^0-9]/g, '').slice(-10)}?text=${encodeURIComponent('Namaste ' + e.name + ' ji, Sikar Drop regarding your inquiry: ' + (e.subject || ''))}', '_blank')">WhatsApp</button>
-              ${e.status !== 'replied' ? `<button type="button" class="btn-tbl-action" onclick="updateEnquiryStatus('${e.id}', 'replied')">Mark Done</button>` : ''}
-            </div>
-          </td>
-        </tr>
-      `).join('');
+      if (q) {
+        list = list.filter(e =>
+          (e.name || '').toLowerCase().includes(q) ||
+          (e.phone || '').toLowerCase().includes(q) ||
+          (e.subject || '').toLowerCase().includes(q) ||
+          (e.message || '').toLowerCase().includes(q)
+        );
+      }
+
+      const rowsHtml = list.length === 0
+        ? `<tr><td colspan="7" style="text-align:center; padding:28px; color:var(--text-muted); font-size:0.86rem;">No enquiries found.</td></tr>`
+        : list.map(e => {
+            const isDone = e.status === 'replied' || e.status === 'quoted' || e.status === 'done';
+            const cleanPhone = (e.phone || '').replace(/[^0-9]/g, '').slice(-10);
+            const waGreeting = encodeURIComponent(`Namaste ${e.name} ji! Sikar Drop Wholesale Depot se regarding your enquiry: ${e.subject || 'Bulk Supply'}. Aapko kitni petis ki delivery chahiye?`);
+            return `
+              <tr>
+                <td><strong>${escapeHTML(e.name)}</strong></td>
+                <td>
+                  <a href="tel:${escapeHTML(cleanPhone)}" style="color:#0284C7; font-weight:700; text-decoration:none;">
+                    ${escapeHTML(e.phone)}
+                  </a>
+                </td>
+                <td><span class="badge-status ${isDone ? 'completed' : 'pending'}">${escapeHTML(e.subject || 'Bulk Supply')}</span></td>
+                <td style="max-width:320px; font-size:0.82rem; line-height:1.4;">${escapeHTML(e.message || '')}</td>
+                <td><small style="color:var(--text-muted);">${escapeHTML(e.created_at ? new Date(e.created_at).toLocaleString('en-IN', { day:'numeric', month:'short', hour:'2-digit', minute:'2-digit' }) : 'Recent')}</small></td>
+                <td>
+                  <span class="badge-status ${isDone ? 'completed' : 'pending'}">
+                    ${isDone ? 'Quoted / Done' : 'New Lead'}
+                  </span>
+                </td>
+                <td>
+                  <div style="display:flex; gap:6px; flex-wrap:wrap;">
+                    <a href="https://wa.me/91${cleanPhone}?text=${waGreeting}" target="_blank" class="btn-tbl-action" style="background:#16A34A; color:#FFFFFF; text-decoration:none; padding:4px 8px; font-size:0.75rem; border-radius:4px; display:inline-flex; align-items:center; gap:4px;">
+                      WhatsApp
+                    </a>
+                    ${!isDone ? `<button type="button" class="btn-tbl-action" onclick="updateEnquiryStatus('${e.id}', 'replied')">Mark Done</button>` : `<button type="button" class="btn-tbl-action" onclick="updateEnquiryStatus('${e.id}', 'unread')">Mark New</button>`}
+                    <button type="button" class="btn-tbl-action danger" onclick="deleteEnquiry('${e.id}')">Delete</button>
+                  </div>
+                </td>
+              </tr>
+            `;
+          }).join('');
+
+      const tbody1 = document.getElementById('bulk-enquiries-tbody');
+      if (tbody1) tbody1.innerHTML = rowsHtml;
+      const tbody2 = document.getElementById('contact-inbox-tbody');
+      if (tbody2) tbody2.innerHTML = rowsHtml;
     }
 
     async function updateEnquiryStatus(id, status) {
       try {
         await sikarApi.patch('/api/enquiries/' + encodeURIComponent(id) + '/status', { status });
-        await renderContactInbox();
-        showToast(`Inquiry #${id} marked as ${status}!`);
+        const item = cachedEnquiries.find(e => e.id === id);
+        if (item) item.status = status;
+        applyEnquiriesTableRender();
+        showToast(`Enquiry #${id} marked as ${status}!`);
       } catch (err) {
         console.warn('Backend update inquiry failed', err);
+        showToast('Status update note: ' + err.message);
+      }
+    }
+
+    async function deleteEnquiry(id) {
+      if (!confirm(`Are you sure you want to delete enquiry #${id}?`)) return;
+      try {
+        await sikarApi.delete('/api/enquiries/' + encodeURIComponent(id));
+        cachedEnquiries = cachedEnquiries.filter(e => e.id !== id);
+        applyEnquiriesTableRender();
+        showToast(`Enquiry #${id} deleted.`);
+      } catch (err) {
+        console.warn('Backend delete inquiry failed', err);
+        showToast('Delete failed: ' + err.message);
       }
     }
 
