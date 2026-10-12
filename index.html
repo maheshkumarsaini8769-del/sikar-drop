@@ -8369,12 +8369,19 @@
       if (modal) modal.classList.remove('active');
     }
 
-    function submitLoginProcess() {
-      const phone = document.getElementById('login-phone-input').value.trim();
-      const email = document.getElementById('login-email-input').value.trim();
-      const name = document.getElementById('login-name-input').value.trim() || 'Mahesh Sharma';
+    async function submitLoginProcess() {
+      const phoneInput = document.getElementById('login-phone-input');
+      const emailInput = document.getElementById('login-email-input');
+      const nameInput = document.getElementById('login-name-input');
+      const otpInput = document.getElementById('login-otp-input');
+      const otpGroup = document.getElementById('otp-group-block');
+      const btn = document.getElementById('btn-login-action');
 
-      if (selectedOtpChannel === 'whatsapp' && (!phone || phone.length < 10)) {
+      const phone = phoneInput ? phoneInput.value.trim() : '';
+      const email = emailInput ? emailInput.value.trim() : '';
+      const name = (nameInput && nameInput.value.trim()) ? nameInput.value.trim() : 'Mahesh Sharma';
+
+      if (selectedOtpChannel === 'whatsapp' && (!phone || phone.replace(/[^0-9]/g, '').length < 10)) {
         showToast('Please enter a valid 10-digit mobile number');
         return;
       }
@@ -8387,46 +8394,106 @@
       const defaultDemoOtp = adminOtp || '9999';
 
       if (!otpSent) {
-        otpSent = true;
-        document.getElementById('otp-group-block').style.display = 'block';
-        document.getElementById('btn-login-action').textContent = 'VERIFY OTP & LOGIN';
-        document.getElementById('login-otp-input').value = defaultDemoOtp;
-        showToast(`OTP sent via ${selectedOtpChannel.toUpperCase()}: ${defaultDemoOtp}`);
+        // Step 1: Send OTP
+        try {
+          if (btn) btn.textContent = 'REQUESTING OTP...';
+          const res = await fetch('/api/otp/send', {
+            method: 'POST',
+            headers: { 'Content-Type': 'application/json' },
+            body: JSON.stringify({ phone: selectedOtpChannel === 'whatsapp' ? phone : (phone || '9829012345'), channel: selectedOtpChannel, name })
+          });
+          const data = await res.json();
+          otpSent = true;
+          if (otpGroup) otpGroup.style.display = 'block';
+          if (btn) btn.textContent = 'VERIFY OTP & LOGIN';
+          const validOtp = (data && (data.otp || data.testOtp || data.defaultOtp)) || defaultDemoOtp;
+          if (otpInput) {
+            otpInput.value = validOtp;
+            otpInput.focus();
+          }
+          showToast(`OTP sent via ${selectedOtpChannel.toUpperCase()}: ${validOtp}`);
+        } catch (e) {
+          console.warn('Network send OTP fallback:', e);
+          otpSent = true;
+          if (otpGroup) otpGroup.style.display = 'block';
+          if (btn) btn.textContent = 'VERIFY OTP & LOGIN';
+          if (otpInput) otpInput.value = defaultDemoOtp;
+          showToast(`OTP sent via ${selectedOtpChannel.toUpperCase()}: ${defaultDemoOtp}`);
+        }
       } else {
-        const otpVal = document.getElementById('login-otp-input').value.trim();
-        if (otpVal !== defaultDemoOtp && otpVal !== '1234') {
-          showToast(`Invalid OTP. Use default OTP: ${defaultDemoOtp}`);
+        // Step 2: Verify OTP
+        const otpVal = otpInput ? otpInput.value.trim() : '';
+        if (!otpVal) {
+          showToast(`Please enter the 4-digit OTP (${defaultDemoOtp})`);
           return;
         }
 
-        currentUser = {
-          name,
-          phone: selectedOtpChannel === 'whatsapp' ? phone : (phone || '98290 XXXXX'),
-          email: selectedOtpChannel === 'email' ? email : 'client@sikardrop.in',
-          channel: selectedOtpChannel
-        };
-        localStorage.setItem('sikar_user', JSON.stringify(currentUser));
-
-        // Add to users database
-        const existingIdx = adminUsers.findIndex(u => (u.phone && u.phone === currentUser.phone) || (u.email && u.email === currentUser.email));
-        if (existingIdx === -1) {
-          adminUsers.unshift({
-            name: currentUser.name,
-            phone: currentUser.phone,
-            email: currentUser.email,
-            channel: selectedOtpChannel,
-            loginTime: new Date().toLocaleDateString('en-IN') + ' ' + new Date().toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' }),
-            orders: 0
+        try {
+          if (btn) btn.textContent = 'VERIFYING...';
+          const res = await fetch('/api/otp/verify', {
+            method: 'POST',
+            headers: { 'Content-Type': 'application/json' },
+            body: JSON.stringify({ phone: selectedOtpChannel === 'whatsapp' ? phone : (phone || '9829012345'), otp: otpVal, name })
           });
-          localStorage.setItem('sikar_admin_users', JSON.stringify(adminUsers));
-        }
+          const data = await res.json();
 
-        updateAuthNav();
-        closeLoginModal();
-        showToast(`Welcome ${name}! Login verified.`);
+          if (res.ok && data.verified) {
+            currentUser = {
+              id: data.user?.id || ('CUST-' + Math.floor(1000 + Math.random() * 9000)),
+              name: data.user?.name || name,
+              phone: selectedOtpChannel === 'whatsapp' ? phone : (phone || '98290 XXXXX'),
+              email: selectedOtpChannel === 'email' ? email : 'client@sikardrop.in',
+              channel: selectedOtpChannel,
+              verified: true
+            };
+            localStorage.setItem('sikar_user', JSON.stringify(currentUser));
 
-        if (loginPurpose === 'checkout') {
-          openOrderConfirmModal();
+            // Sync with local adminUsers
+            const existingIdx = adminUsers.findIndex(u => (u.phone && u.phone === currentUser.phone) || (u.email && u.email === currentUser.email));
+            if (existingIdx === -1) {
+              adminUsers.unshift({
+                name: currentUser.name,
+                phone: currentUser.phone,
+                email: currentUser.email,
+                channel: selectedOtpChannel,
+                loginTime: new Date().toLocaleDateString('en-IN') + ' ' + new Date().toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' }),
+                orders: 0
+              });
+              localStorage.setItem('sikar_admin_users', JSON.stringify(adminUsers));
+            }
+
+            updateAuthNav();
+            closeLoginModal();
+            showToast(`Welcome ${currentUser.name}! Login verified.`);
+
+            if (loginPurpose === 'checkout') {
+              openOrderConfirmModal();
+            }
+          } else {
+            if (btn) btn.textContent = 'VERIFY OTP & LOGIN';
+            showToast(data.error || `Invalid OTP. Use default OTP: ${defaultDemoOtp}`);
+          }
+        } catch (e) {
+          console.warn('Network verify OTP fallback:', e);
+          if (otpVal === defaultDemoOtp || otpVal === '9999' || otpVal === '1234') {
+            currentUser = {
+              name,
+              phone: selectedOtpChannel === 'whatsapp' ? phone : (phone || '98290 XXXXX'),
+              email: selectedOtpChannel === 'email' ? email : 'client@sikardrop.in',
+              channel: selectedOtpChannel,
+              verified: true
+            };
+            localStorage.setItem('sikar_user', JSON.stringify(currentUser));
+            updateAuthNav();
+            closeLoginModal();
+            showToast(`Welcome ${name}! Login verified.`);
+            if (loginPurpose === 'checkout') {
+              openOrderConfirmModal();
+            }
+          } else {
+            if (btn) btn.textContent = 'VERIFY OTP & LOGIN';
+            showToast(`Invalid OTP. Use default OTP: ${defaultDemoOtp}`);
+          }
         }
       }
     }
@@ -10872,12 +10939,46 @@
     }
 
     // 9. USERS & OTP HUB
-    function renderUsersHub() {
+    async function renderUsersHub() {
       const tbody = document.getElementById('admin-users-tbody');
       const otpInput = document.getElementById('adm-default-otp');
-      if (otpInput) otpInput.value = adminOtp || '9999';
 
+      // Fetch current system OTP from backend
+      try {
+        const otpRes = await fetch('/api/settings/otp');
+        if (otpRes.ok) {
+          const otpData = await otpRes.json();
+          if (otpData && otpData.default_otp) {
+            adminOtp = String(otpData.default_otp);
+            localStorage.setItem('sikar_admin_otp', adminOtp);
+          }
+        }
+      } catch (e) {}
+
+      if (otpInput) otpInput.value = adminOtp || '9999';
       if (!tbody) return;
+
+      // Try fetching live users from server
+      try {
+        const res = await fetch('/api/users');
+        if (res.ok) {
+          const serverUsers = await res.json();
+          if (Array.isArray(serverUsers) && serverUsers.length > 0) {
+            tbody.innerHTML = serverUsers.map(u => `
+              <tr>
+                <td><strong>${escapeHTML(u.name || 'Customer')}</strong></td>
+                <td>${escapeHTML(u.phone || u.email || 'N/A')}</td>
+                <td><span class="badge-status in-transit">WHATSAPP / OTP</span></td>
+                <td>${escapeHTML(u.loginTime ? new Date(u.loginTime).toLocaleDateString('en-IN') : (u.created_at || 'Recent'))}</td>
+                <td><span class="badge-status delivered">Verified (${u.total_orders || 0} orders)</span></td>
+              </tr>
+            `).join('');
+            return;
+          }
+        }
+      } catch (err) {}
+
+      // Fallback to local adminUsers
       tbody.innerHTML = adminUsers.map(u => `
         <tr>
           <td><strong>${escapeHTML(u.name)}</strong></td>
@@ -10889,7 +10990,7 @@
       `).join('');
     }
 
-    function saveAdminOtpConfig() {
+    async function saveAdminOtpConfig() {
       const otp = document.getElementById('adm-default-otp').value.trim();
       if (!otp || otp.length < 4) {
         showToast('OTP must be at least 4 digits');
@@ -10897,7 +10998,22 @@
       }
       adminOtp = otp;
       localStorage.setItem('sikar_admin_otp', adminOtp);
-      showToast(`Default OTP updated to ${adminOtp}`);
+
+      try {
+        const res = await fetch('/api/settings/otp', {
+          method: 'POST',
+          headers: { 'Content-Type': 'application/json' },
+          body: JSON.stringify({ otp: adminOtp })
+        });
+        const data = await res.json();
+        if (res.ok) {
+          showToast(`Default OTP saved live: ${adminOtp}`);
+        } else {
+          showToast(data.error || `Default OTP updated to ${adminOtp}`);
+        }
+      } catch (e) {
+        showToast(`Default OTP updated locally to ${adminOtp}`);
+      }
     }
 
     // 10. SOCIAL MEDIA ANALYTICS

@@ -7976,9 +7976,43 @@
     // =========================================================
     // 12. USERS & OTP HUB
     // =========================================================
-    function renderUsersTable() {
+    async function renderUsersTable() {
       const tbody = document.getElementById('users-table-tbody');
+      const otpInput = document.getElementById('cfg-default-otp');
+
+      try {
+        const otpRes = await fetch('/api/settings/otp');
+        if (otpRes.ok) {
+          const otpData = await otpRes.json();
+          if (otpData && otpData.default_otp) {
+            adminOtp = String(otpData.default_otp);
+            localStorage.setItem('sikar_admin_otp', adminOtp);
+          }
+        }
+      } catch (e) {}
+
+      if (otpInput) otpInput.value = adminOtp || '9999';
       if (!tbody) return;
+
+      try {
+        const res = await fetch('/api/users');
+        if (res.ok) {
+          const serverUsers = await res.json();
+          if (Array.isArray(serverUsers) && serverUsers.length > 0) {
+            tbody.innerHTML = serverUsers.map(u => `
+              <tr>
+                <td><strong>${escapeHTML(u.name || 'Customer')}</strong></td>
+                <td>${escapeHTML(u.phone || 'N/A')}</td>
+                <td>${escapeHTML(u.email || 'N/A')}</td>
+                <td><span class="badge-status confirmed">OTP VERIFIED</span></td>
+                <td><small>${escapeHTML(u.loginTime ? new Date(u.loginTime).toLocaleDateString('en-IN') : (u.created_at || 'Recent'))}</small></td>
+                <td class="tabular"><strong>${u.total_orders || 0}</strong></td>
+              </tr>
+            `).join('');
+            return;
+          }
+        }
+      } catch (err) {}
 
       tbody.innerHTML = adminUsers.map(u => `
         <tr>
@@ -7990,15 +8024,28 @@
           <td class="tabular"><strong>${u.orders || 1}</strong></td>
         </tr>
       `).join('');
-
-      document.getElementById('cfg-default-otp').value = adminOtp;
     }
 
-    function saveDefaultOtp() {
+    async function saveDefaultOtp() {
       const otp = document.getElementById('cfg-default-otp').value.trim() || '9999';
       adminOtp = otp;
       localStorage.setItem('sikar_admin_otp', adminOtp);
-      showToast(`Default OTP updated to '${adminOtp}'!`);
+
+      try {
+        const res = await fetch('/api/settings/otp', {
+          method: 'POST',
+          headers: { 'Content-Type': 'application/json' },
+          body: JSON.stringify({ otp: adminOtp })
+        });
+        const data = await res.json();
+        if (res.ok) {
+          showToast(`Default OTP updated live to '${adminOtp}'!`);
+        } else {
+          showToast(data.error || `Default OTP saved: '${adminOtp}'`);
+        }
+      } catch (e) {
+        showToast(`Default OTP saved locally: '${adminOtp}'`);
+      }
     }
 
     // =========================================================
