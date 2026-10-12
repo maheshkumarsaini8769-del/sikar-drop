@@ -1425,6 +1425,165 @@ app.get('/api/analytics/stats', (req, res) => {
 });
 
 // ==========================================
+// 16.8 WHOLESALE EVENT BUNDLES & COMMERCIAL DEALS (ADMIN CMS)
+// ==========================================
+app.get('/api/bundles', (req, res) => {
+  try {
+    const showAll = req.query.all === '1' || req.query.admin === '1';
+    const rows = showAll
+      ? db.prepare('SELECT * FROM event_bundles ORDER BY sort_order ASC, id ASC').all()
+      : db.prepare('SELECT * FROM event_bundles WHERE active = 1 ORDER BY sort_order ASC, id ASC').all();
+
+    const bundles = rows.map(r => {
+      let specs = [];
+      let items = [];
+      try { specs = JSON.parse(r.specs_json || '[]'); } catch (e) {}
+      try { items = JSON.parse(r.items_json || '[]'); } catch (e) {}
+      return {
+        ...r,
+        specs,
+        items,
+        saveAmt: r.save_amt,
+        savePct: r.save_pct,
+        badgeClass: r.badge_class
+      };
+    });
+
+    res.json(bundles);
+  } catch (err) {
+    res.status(500).json({ error: err.message });
+  }
+});
+
+app.post('/api/bundles', (req, res) => {
+  try {
+    const { title, category, desc, price, mrp, badge, badgeClass, image, specs, items, sort_order } = req.body;
+    if (!title || !price) return res.status(400).json({ error: 'Bundle title and price are required' });
+
+    const numPrice = Number(price) || 0;
+    const numMrp = Number(mrp) || numPrice;
+    const saveAmt = Math.max(0, numMrp - numPrice);
+    const savePct = numMrp > 0 ? Math.round((saveAmt / numMrp) * 100) : 0;
+    const id = req.body.id || ('b-' + Math.floor(1000 + Math.random() * 9000));
+    const now = new Date().toISOString();
+
+    const specsJson = Array.isArray(specs) ? JSON.stringify(specs) : (typeof specs === 'string' ? JSON.stringify(specs.split('\n').map(s => s.trim()).filter(Boolean)) : '[]');
+    const itemsJson = Array.isArray(items) ? JSON.stringify(items) : '[]';
+
+    db.prepare(`
+      INSERT INTO event_bundles (id, category, title, desc, price, mrp, save_amt, save_pct, badge, badge_class, image, specs_json, items_json, active, sort_order, updated_at)
+      VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, 1, ?, ?)
+    `).run(
+      id,
+      category || 'wedding',
+      title.trim(),
+      desc || '',
+      numPrice,
+      numMrp,
+      saveAmt,
+      savePct,
+      badge || '',
+      badgeClass || 'deal',
+      image || 'assets/cat_wedding_supply.jpg',
+      specsJson,
+      itemsJson,
+      Number(sort_order) || 99,
+      now
+    );
+
+    try {
+      db.prepare(`
+        INSERT INTO audit_logs (id, actor, action, module, details, created_at)
+        VALUES (?, 'Admin', 'BUNDLE_CREATED', 'bundles', ?, ?)
+      `).run('AUD-' + Math.floor(100000 + Math.random() * 900000), `Created new event bundle '${title}' (₹${numPrice})`, now);
+    } catch (e) {}
+
+    res.status(201).json({ success: true, id, message: 'Event bundle created successfully' });
+  } catch (err) {
+    res.status(500).json({ error: err.message });
+  }
+});
+
+app.put('/api/bundles/:id', (req, res) => {
+  try {
+    const { id } = req.params;
+    const { title, category, desc, price, mrp, badge, badgeClass, image, specs, items, active, sort_order } = req.body;
+    if (!title || !price) return res.status(400).json({ error: 'Title and price are required' });
+
+    const numPrice = Number(price) || 0;
+    const numMrp = Number(mrp) || numPrice;
+    const saveAmt = Math.max(0, numMrp - numPrice);
+    const savePct = numMrp > 0 ? Math.round((saveAmt / numMrp) * 100) : 0;
+    const now = new Date().toISOString();
+
+    const specsJson = Array.isArray(specs) ? JSON.stringify(specs) : (typeof specs === 'string' ? JSON.stringify(specs.split('\n').map(s => s.trim()).filter(Boolean)) : '[]');
+    const itemsJson = Array.isArray(items) ? JSON.stringify(items) : '[]';
+
+    const result = db.prepare(`
+      UPDATE event_bundles
+      SET category = ?, title = ?, desc = ?, price = ?, mrp = ?, save_amt = ?, save_pct = ?,
+          badge = ?, badge_class = ?, image = ?, specs_json = ?, items_json = ?, active = COALESCE(?, active),
+          sort_order = COALESCE(?, sort_order), updated_at = ?
+      WHERE id = ?
+    `).run(
+      category || 'wedding',
+      title.trim(),
+      desc || '',
+      numPrice,
+      numMrp,
+      saveAmt,
+      savePct,
+      badge || '',
+      badgeClass || 'deal',
+      image || 'assets/cat_wedding_supply.jpg',
+      specsJson,
+      itemsJson,
+      active !== undefined ? (active ? 1 : 0) : null,
+      sort_order !== undefined ? Number(sort_order) : null,
+      now,
+      id
+    );
+
+    if (result.changes === 0) return res.status(404).json({ error: 'Bundle not found' });
+
+    res.json({ success: true, id, message: 'Event bundle updated successfully' });
+  } catch (err) {
+    res.status(500).json({ error: err.message });
+  }
+});
+
+app.patch('/api/bundles/:id/toggle', (req, res) => {
+  try {
+    const { id } = req.params;
+    const now = new Date().toISOString();
+    const result = db.prepare(`
+      UPDATE event_bundles
+      SET active = CASE WHEN active = 1 THEN 0 ELSE 1 END, updated_at = ?
+      WHERE id = ?
+    `).run(now, id);
+
+    if (result.changes === 0) return res.status(404).json({ error: 'Bundle not found' });
+    const bundle = db.prepare('SELECT id, title, active FROM event_bundles WHERE id = ?').get(id);
+
+    res.json({ success: true, id, active: bundle.active, message: `Bundle is now ${bundle.active ? 'Active' : 'Paused'}` });
+  } catch (err) {
+    res.status(500).json({ error: err.message });
+  }
+});
+
+app.delete('/api/bundles/:id', (req, res) => {
+  try {
+    const { id } = req.params;
+    const result = db.prepare('DELETE FROM event_bundles WHERE id = ?').run(id);
+    if (result.changes === 0) return res.status(404).json({ error: 'Bundle not found' });
+
+    res.json({ success: true, id, message: 'Bundle deleted successfully' });
+  } catch (err) {
+    res.status(500).json({ error: err.message });
+  }
+});
+
+// ==========================================
 // 17. OTP VERIFICATION (DEV & PROD SECURE FLOW)
 // ==========================================
 function getSystemOtp() {

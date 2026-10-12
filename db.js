@@ -364,6 +364,26 @@ function initDatabase() {
       serviceable INTEGER DEFAULT 1,
       updated_at TEXT NOT NULL
     );
+
+    -- 22. WHOLESALE EVENT BUNDLES & COMMERCIAL PACKAGES (ADMIN MANAGED)
+    CREATE TABLE IF NOT EXISTS event_bundles (
+      id TEXT PRIMARY KEY,
+      category TEXT NOT NULL DEFAULT 'wedding',
+      title TEXT NOT NULL,
+      desc TEXT,
+      price REAL NOT NULL DEFAULT 0,
+      mrp REAL NOT NULL DEFAULT 0,
+      save_amt REAL DEFAULT 0,
+      save_pct INTEGER DEFAULT 0,
+      badge TEXT DEFAULT '',
+      badge_class TEXT DEFAULT 'deal',
+      image TEXT DEFAULT '',
+      specs_json TEXT DEFAULT '[]',
+      items_json TEXT DEFAULT '[]',
+      active INTEGER DEFAULT 1,
+      sort_order INTEGER DEFAULT 0,
+      updated_at TEXT NOT NULL
+    );
   `);
 
   // Seed default Sikar delivery zones if table is empty
@@ -449,6 +469,118 @@ function initDatabase() {
     }
   } catch (zErr) {
     console.warn('Delivery zones seed notice:', zErr.message);
+  }
+
+  // Seed default Wholesale Event Bundles if table is empty
+  try {
+    const bundleCount = db.prepare('SELECT COUNT(*) as c FROM event_bundles').get().c;
+    if (bundleCount === 0) {
+      const nowIso = new Date().toISOString();
+      const insertBundle = db.prepare(`
+        INSERT INTO event_bundles (id, category, title, desc, price, mrp, save_amt, save_pct, badge, badge_class, image, specs_json, items_json, active, sort_order, updated_at)
+        VALUES (@id, @category, @title, @desc, @price, @mrp, @save_amt, @save_pct, @badge, @badge_class, @image, @specs_json, @items_json, @active, @sort_order, @updated_at)
+      `);
+      const defaultBundles = [
+        {
+          id: 'b1',
+          category: 'wedding',
+          title: 'Shaadi & Banquet VIP Hydration Pack',
+          desc: 'Complete water & banquet setup for marriages, ring ceremonies, and family gatherings of 200–500 guests in Sikar.',
+          price: 4699,
+          mrp: 5860,
+          save_amt: 1161,
+          save_pct: 20,
+          badge: '👑 Wedding Favorite',
+          badge_class: 'popular',
+          image: 'assets/cat_wedding_supply.jpg',
+          specs_json: JSON.stringify([
+            '10x Shaadi Mini Water Petis (48x 250ml Sealed)',
+            '5x Bailey / Kinley 1L Packaged Cases (60 Bottles)',
+            '2x Real Fruit Power Mixed Juices (24x 1L Packs)',
+            'Strict Zero 20L Campers • 100% Tamper-Proof'
+          ]),
+          items_json: JSON.stringify([{ id: 'p7', qty: 10 }, { id: 'p3', qty: 5 }, { id: 'p6', qty: 2 }]),
+          active: 1,
+          sort_order: 1,
+          updated_at: nowIso
+        },
+        {
+          id: 'b2',
+          category: 'hostel',
+          title: 'Coaching Hostel & PG Hydration Deal',
+          desc: 'Scheduled recurring cases for students and staff. Pure certified mineral water with doorstep tempo unloading.',
+          price: 3250,
+          mrp: 3960,
+          save_amt: 710,
+          save_pct: 18,
+          badge: '🏢 Piprali / Nawalgarh Rd',
+          badge_class: 'deal',
+          image: 'assets/cat_water_cases.jpg',
+          specs_json: JSON.stringify([
+            '15x Bailey 1L Packaged Cases (180 Bottles)',
+            '4x Aquafina 500ml Compact Petis (96 Bottles)',
+            'Daily Morning Scheduled Tempo Delivery',
+            'Official Bilty & GST Tax Invoice Included'
+          ]),
+          items_json: JSON.stringify([{ id: 'p3', qty: 15 }, { id: 'p4', qty: 4 }]),
+          active: 1,
+          sort_order: 2,
+          updated_at: nowIso
+        },
+        {
+          id: 'b3',
+          category: 'party',
+          title: 'Summer Party & Soft Drinks Mega Crate',
+          desc: 'Chilled party mix for celebrations, birthdays, catering, and festive get-togethers in Sikar.',
+          price: 2999,
+          mrp: 3620,
+          save_amt: 621,
+          save_pct: 17,
+          badge: '⚡ Instant Dispatch',
+          badge_class: 'hot',
+          image: 'assets/prod_coca_cola.jpg',
+          specs_json: JSON.stringify([
+            '2x Coca-Cola 750ml Party Crates (48 Bottles)',
+            '2x Thums Up 250ml PET Crates (48 Bottles)',
+            '1x Chilled Soda & Soft Drink Cans Tray (24 Cans)',
+            'Mandi Depot Cold Stash Priority Option'
+          ]),
+          items_json: JSON.stringify([{ id: 'p5', qty: 2 }, { id: 'p8', qty: 2 }, { id: 'p11', qty: 1 }]),
+          active: 1,
+          sort_order: 3,
+          updated_at: nowIso
+        },
+        {
+          id: 'b4',
+          category: 'kirana',
+          title: 'Kirana Retailer High-Margin Starter Pack',
+          desc: 'Top 3 fastest-selling packaged beverages in Sikar for local provision and general stores.',
+          price: 1980,
+          mrp: 2380,
+          save_amt: 400,
+          save_pct: 17,
+          badge: '🏪 Kirana Restock',
+          badge_class: 'deal',
+          image: 'assets/cat_soft_drinks.jpg',
+          specs_json: JSON.stringify([
+            '40x Bisleri 1L Mineral Water Bottles',
+            '2x Frooti & Maaza Mango Juice Trays (60 Packs)',
+            '2x Thums Up 250ml PET Crates (48 Bottles)',
+            'Same-Day Depot Re-Stocking Guarantee'
+          ]),
+          items_json: JSON.stringify([{ id: 'p1', qty: 40 }, { id: 'p9', qty: 2 }, { id: 'p8', qty: 2 }]),
+          active: 1,
+          sort_order: 4,
+          updated_at: nowIso
+        }
+      ];
+      db.transaction(() => {
+        defaultBundles.forEach(b => insertBundle.run(b));
+      })();
+      console.log('Seeded default event bundles into event_bundles table');
+    }
+  } catch (bErr) {
+    console.warn('Event bundles seed notice:', bErr.message);
   }
 
   // Ensure login_phone and delivery_phone columns exist on orders table

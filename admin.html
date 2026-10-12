@@ -1982,6 +1982,12 @@
         <span>Categories Management</span>
       </button>
 
+      <button type="button" class="sidebar-tab-btn" data-tab="bundles" onclick="switchTab('bundles')">
+        <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><polygon points="12 2 15.09 8.26 22 9.27 17 14.14 18.18 21.02 12 17.77 5.82 21.02 7 14.14 2 9.27 8.91 8.26 12 2"></polygon></svg>
+        <span>Event Bundles &amp; Bulk Deals</span>
+        <span class="tab-badge-pill" id="badge-bundles-count" style="display:inline-block;">4 Active</span>
+      </button>
+
       <button type="button" class="sidebar-tab-btn" data-tab="inventory" onclick="switchTab('inventory')">
         <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M2.97 12.92A2 2 0 0 0 2 14.63v3.24a2 2 0 0 0 .97 1.71l3 1.8a2 2 0 0 0 2.06 0L12 19v-5.5l-5-3-4.03 2.42Z"/><path d="m7 16.5-4.74-2.85"/><path d="m7 16.5 5-3"/><path d="M7 16.5v5.17"/><path d="M12 13.5V19l3.97 2.38a2 2 0 0 0 2.06 0l3-1.8a2 2 0 0 0 .97-1.71v-3.24a2 2 0 0 0-.97-1.71L17 10.5l-5 3Z"/><path d="m17 16.5-5-3"/><path d="m17 16.5 4.74-2.85"/><path d="M17 16.5v5.17"/><path d="M7.97 4.42A2 2 0 0 0 7 6.13v4.37l5 3 5-3V6.13a2 2 0 0 0-.97-1.71l-3-1.8a2 2 0 0 0-2.06 0l-3 1.8Z"/><path d="M12 8 7.26 5.15"/><path d="m12 8 4.74-2.85"/><path d="M12 13.5V8"/></svg>
         <span>Inventory &amp; Stock Ledger</span>
@@ -3110,6 +3116,71 @@
               <label for="adm-disc-20">Discount for 20+ Petis (%)</label>
               <input type="number" id="adm-disc-20" class="portal-input tabular">
             </div>
+          </div>
+        </div>
+      </section>
+
+      <!-- =======================================================
+           TAB: WHOLESALE EVENT BUNDLES & COMMERCIAL SUPPLY MANAGER
+           ======================================================= -->
+      <section id="pane-bundles" class="tab-pane">
+        <div class="portal-card" style="margin-bottom: 24px;">
+          <div class="portal-card-header">
+            <div>
+              <h2>Wholesale Event Bundles &amp; Commercial Supply Manager</h2>
+              <p>Direct live control over Shaadi banquet packs, coaching hostel contracts, party soft drink crates, and kirana packages.</p>
+            </div>
+            <div class="header-actions-flex" style="display: flex; gap: 10px; align-items: center; flex-wrap: wrap;">
+              <a href="/bulk" target="_blank" class="btn-portal-secondary" style="text-decoration: none; display: inline-flex; align-items: center; gap: 6px;">
+                <svg width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M18 13v6a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2V8a2 2 0 0 1 2-2h6"></path><polyline points="15 3 21 3 21 9"></polyline><line x1="10" y1="14" x2="21" y2="3"></line></svg>
+                <span>Live Storefront /bulk</span>
+              </a>
+              <button type="button" class="btn-portal-primary" onclick="openAddBundleModal()">
+                <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5"><line x1="12" y1="5" x2="12" y2="19"></line><line x1="5" y1="12" x2="19" y2="12"></line></svg>
+                <span>+ Create Event Bundle</span>
+              </button>
+            </div>
+          </div>
+
+          <!-- DYNAMIC KPI STATS ROW -->
+          <div class="stats-grid-row" style="margin-bottom: 20px;">
+            <div class="stat-kpi-card">
+              <span class="stat-kpi-label">Total Bundles</span>
+              <div class="stat-kpi-val" id="bundle-stat-total">0 Packages</div>
+              <span class="stat-kpi-delta positive">All Categories</span>
+            </div>
+            <div class="stat-kpi-card">
+              <span class="stat-kpi-label">Active on Website</span>
+              <div class="stat-kpi-val" id="bundle-stat-active" style="color: #059669;">0 Live</div>
+              <span class="stat-kpi-delta positive">Visible on /bulk &amp; Home</span>
+            </div>
+            <div class="stat-kpi-card">
+              <span class="stat-kpi-label">Wedding &amp; Banquets</span>
+              <div class="stat-kpi-val" id="bundle-stat-wedding" style="color: #D97706;">0 Packages</div>
+              <span class="stat-kpi-delta">Marriage Lawn Special</span>
+            </div>
+            <div class="stat-kpi-card">
+              <span class="stat-kpi-label">Commercial &amp; Hostels</span>
+              <div class="stat-kpi-val" id="bundle-stat-commercial" style="color: #2563EB;">0 Packages</div>
+              <span class="stat-kpi-delta">Piprali &amp; Nawalgarh Rd</span>
+            </div>
+          </div>
+
+          <!-- FILTER BAR -->
+          <div style="display: flex; gap: 12px; align-items: center; justify-content: space-between; flex-wrap: wrap; margin-bottom: 18px; padding-bottom: 14px; border-bottom: 1px solid var(--border-subtle);">
+            <div style="display: flex; gap: 8px; flex-wrap: wrap;" id="admin-bundle-filter-pills">
+              <button type="button" class="filter-pill active" onclick="filterAdminBundles('all', this)">All Deals</button>
+              <button type="button" class="filter-pill" onclick="filterAdminBundles('wedding', this)">💍 Wedding &amp; Banquet</button>
+              <button type="button" class="filter-pill" onclick="filterAdminBundles('hostel', this)">🏢 Hostel &amp; PG</button>
+              <button type="button" class="filter-pill" onclick="filterAdminBundles('party', this)">🥤 Party &amp; Soft Drinks</button>
+              <button type="button" class="filter-pill" onclick="filterAdminBundles('kirana', this)">🏪 Kirana Restock</button>
+            </div>
+            <input type="text" id="admin-bundle-search" class="portal-input" placeholder="Search bundles by name..." style="max-width: 250px; font-size: 0.82rem;" oninput="searchAdminBundles(this.value)">
+          </div>
+
+          <!-- BUNDLES CARDS GRID -->
+          <div id="admin-bundles-container" style="display: grid; grid-template-columns: repeat(auto-fill, minmax(340px, 1fr)); gap: 20px;">
+            <!-- Rendered by JavaScript -->
           </div>
         </div>
       </section>
@@ -4339,6 +4410,97 @@
     </div>
   </div>
 
+  <!-- 8.5 EVENT BUNDLE MODAL -->
+  <div class="portal-modal-overlay" id="bundle-modal">
+    <div class="portal-modal-card" style="max-width: 640px;">
+      <button type="button" class="modal-close-x" onclick="closeModal('bundle-modal')"><svg style="width:14px;height:14px;display:block;" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5"><line x1="18" y1="6" x2="6" y2="18"></line><line x1="6" y1="6" x2="18" y2="18"></line></svg></button>
+      <h3 id="modal-bundle-title" style="font-family: var(--font-heading); font-size: 1.3rem; font-weight: 900; margin-bottom: 4px;">Create Wholesale Event Bundle</h3>
+      <p style="font-size: 0.82rem; color: var(--text-muted); margin-bottom: 16px;">Configure package pricing, items included, and live badge.</p>
+
+      <form onsubmit="handleBundleFormSubmit(event)">
+        <input type="hidden" id="bundle-input-id" value="">
+
+        <div class="portal-form-grid-2">
+          <div class="portal-field-group">
+            <label for="bundle-input-title">Package Title *</label>
+            <input type="text" id="bundle-input-title" class="portal-input" required placeholder="e.g. Shaadi & Banquet VIP Hydration Pack">
+          </div>
+          <div class="portal-field-group">
+            <label for="bundle-input-category">Target Category *</label>
+            <select id="bundle-input-category" class="portal-select" required>
+              <option value="wedding">💍 Wedding &amp; Banquet</option>
+              <option value="hostel">🏢 Hostel &amp; PG Hydration</option>
+              <option value="party">🥤 Party &amp; Soft Drinks</option>
+              <option value="kirana">🏪 Kirana Retailer Restock</option>
+              <option value="custom">🌟 Custom Wholesale Package</option>
+            </select>
+          </div>
+        </div>
+
+        <div class="portal-field-group">
+          <label for="bundle-input-desc">Short Description *</label>
+          <textarea id="bundle-input-desc" class="portal-textarea" rows="2" required placeholder="Complete water & banquet setup for marriages of 200–500 guests in Sikar..."></textarea>
+        </div>
+
+        <div class="portal-form-grid-3">
+          <div class="portal-field-group">
+            <label for="bundle-input-price">Wholesale Price (₹) *</label>
+            <input type="number" id="bundle-input-price" class="portal-input tabular" required min="1" placeholder="4699" oninput="calcBundleModalSavings()">
+          </div>
+          <div class="portal-field-group">
+            <label for="bundle-input-mrp">Regular MRP (₹) *</label>
+            <input type="number" id="bundle-input-mrp" class="portal-input tabular" required min="1" placeholder="5860" oninput="calcBundleModalSavings()">
+          </div>
+          <div class="portal-field-group">
+            <label>Savings Preview</label>
+            <div id="bundle-modal-savings-preview" style="padding: 9px 12px; background: #ECFDF5; border: 1px solid #A7F3D0; border-radius: var(--radius-xs); color: #065F46; font-weight: 800; font-size: 0.82rem; text-align: center; margin-top: 2px;">Save ₹1,161 (20% OFF)</div>
+          </div>
+        </div>
+
+        <div class="portal-form-grid-2">
+          <div class="portal-field-group">
+            <label for="bundle-input-badge">Floating Badge Tag</label>
+            <input type="text" id="bundle-input-badge" class="portal-input" placeholder="👑 Wedding Favorite">
+          </div>
+          <div class="portal-field-group">
+            <label for="bundle-input-badgeclass">Badge Theme Color</label>
+            <select id="bundle-input-badgeclass" class="portal-select">
+              <option value="popular">Popular (Gold / Yellow)</option>
+              <option value="deal">Deal (Blue / Primary)</option>
+              <option value="hot">Hot (Red / Urgency)</option>
+            </select>
+          </div>
+        </div>
+
+        <div class="portal-field-group">
+          <label for="bundle-input-image">Image URL / Path *</label>
+          <input type="text" id="bundle-input-image" class="portal-input" placeholder="assets/cat_wedding_supply.jpg" required value="assets/cat_wedding_supply.jpg">
+          <div style="font-size: 0.74rem; color: #64748B; margin-top: 4px;">Quick presets: 
+            <a href="javascript:void(0)" onclick="document.getElementById('bundle-input-image').value='assets/cat_wedding_supply.jpg'">[Wedding]</a>
+            <a href="javascript:void(0)" onclick="document.getElementById('bundle-input-image').value='assets/cat_water_cases.jpg'">[Water Cases]</a>
+            <a href="javascript:void(0)" onclick="document.getElementById('bundle-input-image').value='assets/prod_coca_cola.jpg'">[Coca-Cola]</a>
+            <a href="javascript:void(0)" onclick="document.getElementById('bundle-input-image').value='assets/cat_soft_drinks.jpg'">[Soft Drinks]</a>
+          </div>
+        </div>
+
+        <div class="portal-field-group">
+          <label for="bundle-input-specs">Included Specifications / Items (One item per line) *</label>
+          <textarea id="bundle-input-specs" class="portal-textarea" rows="4" required placeholder="10x Shaadi Mini Water Petis (48x 250ml Sealed)&#10;5x Bailey / Kinley 1L Packaged Cases (60 Bottles)&#10;2x Real Fruit Power Mixed Juices (24x 1L Packs)&#10;Strict Zero 20L Campers • 100% Tamper-Proof"></textarea>
+        </div>
+
+        <div style="display: flex; align-items: center; gap: 8px; margin-bottom: 18px;">
+          <input type="checkbox" id="bundle-input-active" checked style="width: 17px; height: 17px; cursor: pointer;">
+          <label for="bundle-input-active" style="font-size: 0.86rem; font-weight: 700; cursor: pointer;">Active on Website (Visible to customers on /bulk &amp; Home)</label>
+        </div>
+
+        <div style="display: flex; gap: 10px; justify-content: flex-end;">
+          <button type="button" class="btn-portal-secondary" onclick="closeModal('bundle-modal')">Cancel</button>
+          <button type="submit" class="btn-portal-primary" id="btn-save-bundle">Save Package Live</button>
+        </div>
+      </form>
+    </div>
+  </div>
+
   <!-- 9. SUBADMIN MODAL -->
   <div class="portal-modal-overlay" id="subadmin-modal">
     <div class="portal-modal-card">
@@ -5127,6 +5289,7 @@
         khata: 'Khata & Pending Payments Ledger',
         products: 'Products & Box Pricing',
         categories: 'Categories Management',
+        bundles: 'Wholesale Event Bundles & Commercial Deals',
         inventory: 'Inventory & Stock Ledger',
         purchases: 'Supplier Purchases (Stock In)',
         coupons: 'Festival Themes & Offers',
@@ -5159,6 +5322,7 @@
       else if (tabId === 'purchases') renderPurchasesTable();
       else if (tabId === 'products') renderProductsTable();
       else if (tabId === 'categories') renderCategoriesTable();
+      else if (tabId === 'bundles') renderAdminBundles();
       else if (tabId === 'bulk') { renderBulkEnquiries(); renderBulkRates(); }
       else if (tabId === 'contact_inbox') { renderBulkEnquiries(); }
       else if (tabId === 'coupons') { renderFestivalPresets(); renderCouponsTable(); updateLivePreview(); }
@@ -7426,6 +7590,308 @@
       } catch (err) {
         console.warn('Backend delete inquiry failed', err);
         showToast('Delete failed: ' + err.message);
+      }
+    }
+
+    // =========================================================
+    // 9C. WHOLESALE EVENT BUNDLES & COMMERCIAL PACKAGES CONTROLLER
+    // =========================================================
+    let adminBundles = [];
+    let currentAdminBundleFilter = 'all';
+    let currentAdminBundleSearch = '';
+
+    async function renderAdminBundles() {
+      const container = document.getElementById('admin-bundles-container');
+      if (!container) return;
+
+      try {
+        const res = await fetch('/api/bundles?all=1');
+        if (res.ok) {
+          adminBundles = await res.json();
+        }
+      } catch (err) {
+        console.warn('Backend bundles fetch fallback', err);
+      }
+
+      // Update KPI counters
+      const total = adminBundles.length;
+      const active = adminBundles.filter(b => b.active).length;
+      const wedding = adminBundles.filter(b => b.category === 'wedding').length;
+      const commercial = total - wedding;
+
+      const setEl = (id, txt) => { const el = document.getElementById(id); if (el) el.textContent = txt; };
+      setEl('bundle-stat-total', `${total} Packages`);
+      setEl('bundle-stat-active', `${active} Live`);
+      setEl('bundle-stat-wedding', `${wedding} Packages`);
+      setEl('bundle-stat-commercial', `${commercial} Packages`);
+      setEl('badge-bundles-count', `${active} Active`);
+
+      applyAdminBundlesRender();
+    }
+
+    function applyAdminBundlesRender() {
+      const container = document.getElementById('admin-bundles-container');
+      if (!container) return;
+
+      let list = [...adminBundles];
+      if (currentAdminBundleFilter !== 'all') {
+        list = list.filter(b => b.category === currentAdminBundleFilter);
+      }
+      if (currentAdminBundleSearch) {
+        const q = currentAdminBundleSearch.toLowerCase();
+        list = list.filter(b =>
+          (b.title && b.title.toLowerCase().includes(q)) ||
+          (b.desc && b.desc.toLowerCase().includes(q)) ||
+          (b.specs && b.specs.some(s => s.toLowerCase().includes(q)))
+        );
+      }
+
+      if (list.length === 0) {
+        container.innerHTML = `
+          <div style="grid-column: 1 / -1; text-align: center; padding: 48px 20px; background: #F8FAFC; border: 1.5px dashed var(--border-subtle); border-radius: var(--radius-sm); color: var(--text-muted);">
+            <svg width="44" height="44" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" style="margin-bottom: 12px; color: #94A3B8;"><polygon points="12 2 15.09 8.26 22 9.27 17 14.14 18.18 21.02 12 17.77 5.82 21.02 7 14.14 2 9.27 8.91 8.26 12 2"></polygon></svg>
+            <h4 style="font-size: 1.05rem; font-weight: 800; color: #0B192C; margin: 0 0 6px 0;">No Event Packages Found</h4>
+            <p style="font-size: 0.84rem; margin: 0 0 16px 0;">Create a new wedding banquet pack or commercial hostel hydration contract.</p>
+            <button type="button" class="btn-portal-primary" onclick="openAddBundleModal()">+ Create First Package</button>
+          </div>
+        `;
+        return;
+      }
+
+      const catBadges = {
+        wedding: { label: '💍 Wedding & Banquet', color: '#D97706', bg: '#FEF3C7' },
+        hostel: { label: '🏢 Hostel & PG', color: '#2563EB', bg: '#DBEAFE' },
+        party: { label: '🥤 Party & Soft Drinks', color: '#DC2626', bg: '#FEE2E2' },
+        kirana: { label: '🏪 Kirana Restock', color: '#059669', bg: '#D1FAE5' },
+        custom: { label: '🌟 Custom Package', color: '#7C3AED', bg: '#EDE9FE' }
+      };
+
+      container.innerHTML = list.map(b => {
+        const catInfo = catBadges[b.category] || { label: b.category, color: '#475569', bg: '#F1F5F9' };
+        const specsList = Array.isArray(b.specs) ? b.specs : [];
+        const isLive = !!b.active;
+
+        return `
+          <div class="portal-card" style="display: flex; flex-direction: column; justify-content: space-between; padding: 0; overflow: hidden; border: 1.5px solid ${isLive ? 'var(--border-subtle)' : '#CBD5E1'}; opacity: ${isLive ? '1' : '0.72'}; transition: box-shadow 0.2s;">
+            <!-- CARD TOP VISUAL -->
+            <div style="position: relative; height: 160px; background: #0B192C; overflow: hidden;">
+              <img src="${escapeHTML(b.image || 'assets/cat_wedding_supply.jpg')}" alt="${escapeHTML(b.title)}" style="width: 100%; height: 100%; object-fit: cover;" onerror="this.src='assets/cat_wedding_supply.jpg'">
+              <div style="position: absolute; top: 10px; left: 10px; display: flex; gap: 6px; flex-wrap: wrap;">
+                <span style="background: ${catInfo.bg}; color: ${catInfo.color}; font-size: 0.72rem; font-weight: 800; padding: 3px 9px; border-radius: 999px; text-transform: uppercase;">${catInfo.label}</span>
+                ${b.badge ? `<span style="background: #0B192C; color: #F59E0B; border: 1px solid rgba(245,158,11,0.4); font-size: 0.72rem; font-weight: 800; padding: 3px 9px; border-radius: 999px;">${escapeHTML(b.badge)}</span>` : ''}
+              </div>
+              <div style="position: absolute; top: 10px; right: 10px;">
+                <span style="background: ${isLive ? '#10B981' : '#64748B'}; color: #FFFFFF; font-size: 0.72rem; font-weight: 800; padding: 3px 10px; border-radius: 999px;">${isLive ? '● Live on Store' : '○ Paused'}</span>
+              </div>
+            </div>
+
+            <!-- CARD BODY -->
+            <div style="padding: 16px 18px; flex: 1; display: flex; flex-direction: column;">
+              <h3 style="font-family: var(--font-heading); font-size: 1.12rem; font-weight: 800; color: #0B192C; margin: 0 0 6px 0; line-height: 1.3;">${escapeHTML(b.title)}</h3>
+              <p style="font-size: 0.82rem; color: var(--text-muted); line-height: 1.45; margin: 0 0 14px 0; display: -webkit-box; -webkit-line-clamp: 2; -webkit-box-orient: vertical; overflow: hidden;">${escapeHTML(b.desc || '')}</p>
+
+              <!-- SPECS BULLETS -->
+              <div style="background: #F8FAFC; border: 1px solid #E2E8F0; border-radius: var(--radius-xs); padding: 10px 12px; margin-bottom: 14px; flex: 1;">
+                <div style="font-size: 0.74rem; font-weight: 800; text-transform: uppercase; color: #64748B; margin-bottom: 6px;">Included In Package (${specsList.length}):</div>
+                <ul style="list-style: none; padding: 0; margin: 0; font-size: 0.78rem; color: #1E293B; line-height: 1.5;">
+                  ${specsList.slice(0, 3).map(s => `<li style="display: flex; align-items: flex-start; gap: 5px; margin-bottom: 3px;">
+                    <span style="color: #0284C7; font-weight: 800;">✓</span>
+                    <span>${escapeHTML(s)}</span>
+                  </li>`).join('')}
+                  ${specsList.length > 3 ? `<li style="font-size: 0.74rem; color: #64748B; font-weight: 700; margin-top: 4px;">+ ${specsList.length - 3} more items included</li>` : ''}
+                </ul>
+              </div>
+
+              <!-- PRICING ROW -->
+              <div style="display: flex; justify-content: space-between; align-items: center; margin-bottom: 16px; padding-top: 10px; border-top: 1px solid var(--border-subtle);">
+                <div>
+                  <span style="font-size: 1.35rem; font-weight: 900; color: #0284C7; font-family: var(--font-heading);">₹${Number(b.price).toLocaleString('en-IN')}</span>
+                  ${b.mrp > b.price ? `<span style="text-decoration: line-through; font-size: 0.84rem; color: #94A3B8; margin-left: 6px;">₹${Number(b.mrp).toLocaleString('en-IN')}</span>` : ''}
+                </div>
+                ${b.save_pct > 0 ? `<span style="background: #ECFDF5; color: #065F46; border: 1px solid #A7F3D0; font-size: 0.76rem; font-weight: 800; padding: 3px 8px; border-radius: 999px;">Save ₹${Number(b.save_amt).toLocaleString('en-IN')} (${b.save_pct}% OFF)</span>` : ''}
+              </div>
+
+              <!-- ACTION BUTTONS -->
+              <div style="display: flex; gap: 8px;">
+                <button type="button" class="btn-portal-primary" style="flex: 1; padding: 8px 12px; font-size: 0.82rem; justify-content: center;" onclick="openEditBundleModal('${b.id}')">
+                  <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M11 4H4a2 2 0 0 0-2 2v14a2 2 0 0 0 2 2h14a2 2 0 0 0 2-2v-7"></path><path d="M18.5 2.5a2.121 2.121 0 0 1 3 3L12 15l-4 1 1-4 9.5-9.5z"></path></svg>
+                  <span>Edit</span>
+                </button>
+                <button type="button" class="${isLive ? 'btn-portal-secondary' : 'btn-portal-success'}" style="padding: 8px 12px; font-size: 0.82rem;" title="${isLive ? 'Pause package' : 'Make live'}" onclick="toggleBundleStatus('${b.id}')">
+                  ${isLive ? 'Pause' : 'Activate'}
+                </button>
+                <button type="button" class="btn-portal-danger" style="padding: 8px 10px; font-size: 0.82rem;" title="Delete bundle" onclick="deleteBundle('${b.id}')">
+                  <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><polyline points="3 6 5 6 21 6"></polyline><path d="M19 6v14a2 2 0 0 1-2 2H7a2 2 0 0 1-2-2V6m3 0V4a2 2 0 0 1 2-2h4a2 2 0 0 1 2 2v2"></path></svg>
+                </button>
+              </div>
+            </div>
+          </div>
+        `;
+      }).join('');
+    }
+
+    function filterAdminBundles(cat, btn) {
+      currentAdminBundleFilter = cat;
+      document.querySelectorAll('#admin-bundle-filter-pills .filter-pill').forEach(b => b.classList.remove('active'));
+      if (btn) btn.classList.add('active');
+      applyAdminBundlesRender();
+    }
+
+    function searchAdminBundles(query) {
+      currentAdminBundleSearch = (query || '').trim();
+      applyAdminBundlesRender();
+    }
+
+    function openAddBundleModal() {
+      document.getElementById('modal-bundle-title').textContent = 'Create Wholesale Event Bundle';
+      document.getElementById('bundle-input-id').value = '';
+      document.getElementById('bundle-input-title').value = '';
+      document.getElementById('bundle-input-category').value = 'wedding';
+      document.getElementById('bundle-input-desc').value = '';
+      document.getElementById('bundle-input-price').value = '';
+      document.getElementById('bundle-input-mrp').value = '';
+      document.getElementById('bundle-input-badge').value = '👑 Wedding Favorite';
+      document.getElementById('bundle-input-badgeclass').value = 'popular';
+      document.getElementById('bundle-input-image').value = 'assets/cat_wedding_supply.jpg';
+      document.getElementById('bundle-input-specs').value = "10x Shaadi Mini Water Petis (48x 250ml Sealed)\n5x Bailey / Kinley 1L Packaged Cases (60 Bottles)\n2x Real Fruit Power Mixed Juices (24x 1L Packs)\nStrict Zero 20L Campers • 100% Tamper-Proof";
+      document.getElementById('bundle-input-active').checked = true;
+      calcBundleModalSavings();
+      openModal('bundle-modal');
+    }
+
+    function openEditBundleModal(id) {
+      const b = adminBundles.find(item => item.id === id);
+      if (!b) return;
+
+      document.getElementById('modal-bundle-title').textContent = `Edit Event Package: ${b.title}`;
+      document.getElementById('bundle-input-id').value = b.id;
+      document.getElementById('bundle-input-title').value = b.title || '';
+      document.getElementById('bundle-input-category').value = b.category || 'wedding';
+      document.getElementById('bundle-input-desc').value = b.desc || '';
+      document.getElementById('bundle-input-price').value = b.price || '';
+      document.getElementById('bundle-input-mrp').value = b.mrp || '';
+      document.getElementById('bundle-input-badge').value = b.badge || '';
+      document.getElementById('bundle-input-badgeclass').value = b.badge_class || b.badgeClass || 'deal';
+      document.getElementById('bundle-input-image').value = b.image || 'assets/cat_wedding_supply.jpg';
+      document.getElementById('bundle-input-specs').value = Array.isArray(b.specs) ? b.specs.join('\n') : '';
+      document.getElementById('bundle-input-active').checked = !!b.active;
+      calcBundleModalSavings();
+      openModal('bundle-modal');
+    }
+
+    function calcBundleModalSavings() {
+      const price = parseFloat(document.getElementById('bundle-input-price').value) || 0;
+      const mrp = parseFloat(document.getElementById('bundle-input-mrp').value) || price;
+      const preview = document.getElementById('bundle-modal-savings-preview');
+      if (!preview) return;
+
+      if (mrp > price && price > 0) {
+        const save = mrp - price;
+        const pct = Math.round((save / mrp) * 100);
+        preview.textContent = `Save ₹${save.toLocaleString('en-IN')} (${pct}% OFF)`;
+        preview.style.background = '#ECFDF5';
+        preview.style.color = '#065F46';
+      } else {
+        preview.textContent = `Standard Wholesale Price`;
+        preview.style.background = '#F1F5F9';
+        preview.style.color = '#475569';
+      }
+    }
+
+    async function handleBundleFormSubmit(e) {
+      e.preventDefault();
+      const id = document.getElementById('bundle-input-id').value.trim();
+      const title = document.getElementById('bundle-input-title').value.trim();
+      const category = document.getElementById('bundle-input-category').value;
+      const desc = document.getElementById('bundle-input-desc').value.trim();
+      const price = parseFloat(document.getElementById('bundle-input-price').value) || 0;
+      const mrp = parseFloat(document.getElementById('bundle-input-mrp').value) || price;
+      const badge = document.getElementById('bundle-input-badge').value.trim();
+      const badgeClass = document.getElementById('bundle-input-badgeclass').value;
+      const image = document.getElementById('bundle-input-image').value.trim() || 'assets/cat_wedding_supply.jpg';
+      const specsRaw = document.getElementById('bundle-input-specs').value;
+      const specs = specsRaw.split('\n').map(s => s.trim()).filter(Boolean);
+      const active = document.getElementById('bundle-input-active').checked;
+
+      const payload = {
+        title,
+        category,
+        desc,
+        price,
+        mrp,
+        badge,
+        badgeClass,
+        image,
+        specs,
+        active
+      };
+
+      const btn = document.getElementById('btn-save-bundle');
+      if (btn) btn.disabled = true;
+
+      try {
+        let res;
+        if (id) {
+          res = await fetch(`/api/bundles/${encodeURIComponent(id)}`, {
+            method: 'PUT',
+            headers: { 'Content-Type': 'application/json' },
+            body: JSON.stringify(payload)
+          });
+        } else {
+          res = await fetch('/api/bundles', {
+            method: 'POST',
+            headers: { 'Content-Type': 'application/json' },
+            body: JSON.stringify(payload)
+          });
+        }
+
+        const data = await res.json();
+        if (res.ok) {
+          closeModal('bundle-modal');
+          showToast(`Event bundle "${title}" saved successfully!`);
+          await renderAdminBundles();
+        } else {
+          showToast(data.error || 'Failed to save event bundle');
+        }
+      } catch (err) {
+        console.error('Save bundle error', err);
+        showToast('Error saving bundle: ' + err.message);
+      } finally {
+        if (btn) btn.disabled = false;
+      }
+    }
+
+    async function toggleBundleStatus(id) {
+      try {
+        const res = await fetch(`/api/bundles/${encodeURIComponent(id)}/toggle`, { method: 'PATCH' });
+        const data = await res.json();
+        if (res.ok) {
+          showToast(data.message || 'Status updated');
+          await renderAdminBundles();
+        } else {
+          showToast(data.error || 'Status update failed');
+        }
+      } catch (err) {
+        showToast('Error toggling status: ' + err.message);
+      }
+    }
+
+    async function deleteBundle(id) {
+      const b = adminBundles.find(item => item.id === id);
+      const name = b ? b.title : id;
+      if (!confirm(`Are you sure you want to permanently delete event bundle "${name}"?`)) return;
+
+      try {
+        const res = await fetch(`/api/bundles/${encodeURIComponent(id)}`, { method: 'DELETE' });
+        const data = await res.json();
+        if (res.ok) {
+          showToast(`Event bundle "${name}" deleted.`);
+          await renderAdminBundles();
+        } else {
+          showToast(data.error || 'Delete failed');
+        }
+      } catch (err) {
+        showToast('Error deleting bundle: ' + err.message);
       }
     }
 

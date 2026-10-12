@@ -6300,7 +6300,46 @@
             </div>
           </div>
 
-          <!-- 2. WHOLESALE PETI MANDI RATES CARD -->
+          <!-- 2. WHOLESALE EVENT BUNDLES & COMMERCIAL SUPPLY CARD -->
+          <div class="admin-panel-card" style="margin-bottom: 24px;">
+            <div class="admin-section-header">
+              <div>
+                <h3>Wholesale Event Bundles &amp; Commercial Supply Manager</h3>
+                <p>Manage wedding packages, hostel hydration plans, party crates and kirana deals shown on storefront.</p>
+              </div>
+              <div style="display: flex; gap: 8px;">
+                <button type="button" class="btn-admin-save" onclick="renderIndexBundlesTable()">
+                  <span>Refresh Packages</span>
+                </button>
+                <a href="admin.html#bundles" class="btn-admin-save" style="text-decoration: none; display: inline-flex; align-items: center; gap: 6px; background: #0284C7;">
+                  <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" width="16" height="16"><rect x="3" y="3" width="18" height="18" rx="2"/><path d="M9 3v18"/><path d="M14 9l3 3-3 3"/></svg>
+                  <span>Open Full Bundles Hub</span>
+                </a>
+              </div>
+            </div>
+
+            <div class="admin-table-wrapper" style="overflow-x: auto;">
+              <table class="admin-table" style="width: 100%;">
+                <thead>
+                  <tr>
+                    <th>Package Title</th>
+                    <th>Category</th>
+                    <th>Wholesale Rate</th>
+                    <th>MRP</th>
+                    <th>Savings</th>
+                    <th>Badge</th>
+                    <th>Status</th>
+                    <th>Action</th>
+                  </tr>
+                </thead>
+                <tbody id="index-bundles-tbody">
+                  <tr><td colspan="8" style="text-align:center; padding:20px; color:#64748B;">Loading packages...</td></tr>
+                </tbody>
+              </table>
+            </div>
+          </div>
+
+          <!-- 3. WHOLESALE PETI MANDI RATES CARD -->
           <div class="admin-panel-card">
             <div class="admin-section-header">
               <div>
@@ -9060,10 +9099,10 @@
       showToast(`Tracking status loaded for #${order.id}`);
     }
 
-    // WHOLESALE BUNDLES & EVENT PACKAGES
-    const WHOLESALE_BUNDLES = [
+    // WHOLESALE BUNDLES & EVENT PACKAGES DYNAMIC STOREFRONT
+    let WHOLESALE_BUNDLES = [
       {
-        id: 'bundle-shaadi',
+        id: 'b1',
         category: 'wedding',
         title: 'Shaadi & Banquet VIP Hydration Pack',
         desc: 'Complete water & banquet setup for marriages, ring ceremonies, and family gatherings of 200–500 guests in Sikar.',
@@ -9087,7 +9126,7 @@
         ]
       },
       {
-        id: 'bundle-hostel',
+        id: 'b2',
         category: 'hostel',
         title: 'Coaching Hostel & PG Hydration Deal',
         desc: 'Scheduled recurring cases for students and staff. Pure certified mineral water with doorstep tempo unloading.',
@@ -9097,7 +9136,7 @@
         savePct: 18,
         badge: '🏢 Piprali / Nawalgarh Rd',
         badgeClass: 'deal',
-        image: 'assets/prod_water_case.jpg',
+        image: 'assets/cat_water_cases.jpg',
         specs: [
           '15x Bailey 1L Packaged Cases (180 Bottles)',
           '4x Aquafina 500ml Compact Petis (96 Bottles)',
@@ -9110,7 +9149,7 @@
         ]
       },
       {
-        id: 'bundle-party',
+        id: 'b3',
         category: 'party',
         title: 'Summer Party & Soft Drinks Mega Crate',
         desc: 'Chilled party mix for celebrations, birthdays, catering, and festive get-togethers in Sikar.',
@@ -9134,7 +9173,7 @@
         ]
       },
       {
-        id: 'bundle-kirana',
+        id: 'b4',
         category: 'kirana',
         title: 'Kirana Retailer High-Margin Starter Pack',
         desc: 'Top 3 fastest-selling packaged beverages in Sikar for local provision and general stores.',
@@ -9159,10 +9198,77 @@
       }
     ];
 
+    async function loadStorefrontBundles() {
+      try {
+        const res = await fetch('/api/bundles');
+        if (res.ok) {
+          const data = await res.json();
+          if (Array.isArray(data) && data.length > 0) {
+            WHOLESALE_BUNDLES = data;
+          }
+        }
+      } catch (err) {
+        console.warn('Backend bundles fallback:', err);
+      }
+      renderStorefrontBundles();
+    }
+
+    function renderStorefrontBundles() {
+      const grid = document.getElementById('bundles-grid');
+      if (!grid) return;
+
+      grid.innerHTML = WHOLESALE_BUNDLES.map(b => {
+        const specsList = Array.isArray(b.specs) ? b.specs : [];
+        const saveAmt = b.save_amt || b.saveAmt || Math.max(0, (b.mrp || b.price) - b.price);
+        const savePct = b.save_pct || b.savePct || (b.mrp > 0 ? Math.round((saveAmt / b.mrp) * 100) : 0);
+        const badgeClass = b.badge_class || b.badgeClass || 'popular';
+
+        return `
+          <article class="bundle-card" data-category="${escapeHTML(b.category || 'wedding')}">
+            <div class="bundle-card-visual">
+              <img src="${escapeHTML(b.image || 'assets/cat_wedding_supply.jpg')}" alt="${escapeHTML(b.title)}" class="bundle-card-img" loading="lazy" onerror="this.src='assets/cat_wedding_supply.jpg'">
+              ${b.badge ? `<span class="bundle-badge-floating ${escapeHTML(badgeClass)}">${escapeHTML(b.badge)}</span>` : ''}
+            </div>
+            <div class="bundle-card-body">
+              <h3 class="bundle-card-title">${escapeHTML(b.title)}</h3>
+              <p class="bundle-card-desc">${escapeHTML(b.desc || '')}</p>
+              <ul class="bundle-specs-list">
+                ${specsList.map(s => `
+                  <li>
+                    <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5"><polyline points="20 6 9 17 4 12"/></svg>
+                    <span>${escapeHTML(s)}</span>
+                  </li>
+                `).join('')}
+              </ul>
+              <div class="bundle-pricing-row">
+                <div>
+                  <div class="bundle-price-main tabular">
+                    ₹${Number(b.price).toLocaleString('en-IN')}
+                    ${b.mrp > b.price ? `<span class="bundle-price-mrp tabular">₹${Number(b.mrp).toLocaleString('en-IN')}</span>` : ''}
+                  </div>
+                </div>
+                ${savePct > 0 ? `<span class="bundle-save-pill tabular">Save ₹${Number(saveAmt).toLocaleString('en-IN')} (${savePct}% OFF)</span>` : ''}
+              </div>
+              <div class="bundle-actions-row">
+                <button type="button" class="btn-bundle-cart" onclick="addBundleToCart('${escapeHTML(b.id)}')">
+                  <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2" width="16" height="16"><circle cx="9" cy="21" r="1"/><circle cx="20" cy="21" r="1"/><path d="M1 1h4l2.68 13.39a2 2 0 0 0 2 1.61h9.72a2 2 0 0 0 2-1.61L23 6H6"/></svg>
+                  <span>Add to Cart</span>
+                </button>
+                <button type="button" class="btn-bundle-whatsapp" onclick="orderBundleWhatsApp('${escapeHTML(b.id)}')">
+                  <svg viewBox="0 0 24 24" fill="currentColor" width="15" height="15"><path d="M.057 24l1.687-6.163c-1.041-1.804-1.588-3.849-1.587-5.946.003-6.556 5.338-11.891 11.893-11.891 3.181.001 6.167 1.24 8.413 3.488 2.245 2.248 3.481 5.236 3.48 8.414-.003 6.557-5.338 11.892-11.893 11.892-1.99-.001-3.951-.5-5.688-1.448l-6.305 1.654zm6.597-3.807c1.676.995 3.276 1.591 5.392 1.592 0 0 9.886-4.434 9.889-9.885.002-5.462-4.415-9.89-9.881-9.892-5.452 0-9.887 4.434-9.889 9.884-.001 2.225.651 3.891 1.746 5.634l-.999 3.648 3.742-.981zm11.387-5.464c-.074-.124-.272-.198-.57-.347-.297-.149-1.758-.868-2.031-.967-.272-.099-.47-.149-.669.149-.198.297-.768.967-.941 1.165-.173.198-.347.223-.644.074-.297-.149-1.255-.462-2.39-1.475-.883-.788-1.48-1.761-1.653-2.059-.173-.297-.018-.458.13-.606.134-.133.297-.347.446-.521.151-.172.2-.296.3-.495.099-.198.05-.372-.025-.521-.075-.148-.669-1.611-.916-2.206-.242-.579-.487-.501-.669-.51l-.57-.01c-.198 0-.52.074-.792.372s-1.04 1.016-1.04 2.479 1.065 2.876 1.213 3.074c.149.198 2.095 3.2 5.076 4.487.709.306 1.263.489 1.694.626.712.226 1.36.194 1.872.118.571-.085 1.758-.719 2.006-1.413.248-.695.248-1.29.173-1.414z"/></svg>
+                  <span>WhatsApp</span>
+                </button>
+              </div>
+            </div>
+          </article>
+        `;
+      }).join('');
+    }
+
     function filterBundles(category, btnEl) {
       document.querySelectorAll('#bundle-tabs-nav .bundle-tab-btn').forEach(b => b.classList.remove('active'));
       if (btnEl) btnEl.classList.add('active');
-      document.querySelectorAll('.bundle-card').forEach(card => {
+      document.querySelectorAll('#bundles-grid .bundle-card').forEach(card => {
         if (category === 'all' || card.dataset.category === category) {
           card.style.display = 'flex';
         } else {
@@ -9172,28 +9278,37 @@
     }
 
     function addBundleToCart(bundleId) {
-      const bundle = WHOLESALE_BUNDLES.find(b => b.id === bundleId);
+      const bundle = WHOLESALE_BUNDLES.find(b => b.id === bundleId || b.id === 'bundle-' + bundleId || (bundleId === 'bundle-shaadi' && b.id === 'b1') || (bundleId === 'bundle-hostel' && b.id === 'b2') || (bundleId === 'bundle-party' && b.id === 'b3') || (bundleId === 'bundle-kirana' && b.id === 'b4'));
       if (!bundle) return;
       let totalAdded = 0;
-      bundle.items.forEach(it => {
-        cart[it.id] = (cart[it.id] || 0) + it.qty;
-        totalAdded += it.qty;
-      });
+      const items = Array.isArray(bundle.items) ? bundle.items : [];
+      if (items.length > 0) {
+        items.forEach(it => {
+          cart[it.id] = (cart[it.id] || 0) + it.qty;
+          totalAdded += it.qty;
+        });
+      } else {
+        cart[bundle.id] = (cart[bundle.id] || 0) + 1;
+        totalAdded = 1;
+      }
       updateCartUI();
-      renderProducts();
+      if (typeof renderProducts === 'function') renderProducts();
       toggleCartDrawer(true);
       showToast(`Added "${bundle.title}" (${totalAdded} items) to your cart!`);
     }
 
     function orderBundleWhatsApp(bundleId) {
-      const bundle = WHOLESALE_BUNDLES.find(b => b.id === bundleId);
+      const bundle = WHOLESALE_BUNDLES.find(b => b.id === bundleId || b.id === 'bundle-' + bundleId || (bundleId === 'bundle-shaadi' && b.id === 'b1') || (bundleId === 'bundle-hostel' && b.id === 'b2') || (bundleId === 'bundle-party' && b.id === 'b3') || (bundleId === 'bundle-kirana' && b.id === 'b4'));
       if (!bundle) return;
+      const specs = Array.isArray(bundle.specs) ? bundle.specs : [];
+      const saveAmt = bundle.save_amt || bundle.saveAmt || Math.max(0, (bundle.mrp || bundle.price) - bundle.price);
+      const savePct = bundle.save_pct || bundle.savePct || (bundle.mrp > 0 ? Math.round((saveAmt / bundle.mrp) * 100) : 0);
       const msg = `*SIKAR DROP WHOLESALE ORDER*\n` +
         `------------------------------------\n` +
         `*Package:* ${bundle.title}\n` +
-        `*Wholesale Rate:* ₹${bundle.price.toLocaleString('en-IN')} (MRP: ₹${bundle.mrp.toLocaleString('en-IN')})\n` +
-        `*Savings:* ₹${bundle.saveAmt.toLocaleString('en-IN')} (${bundle.savePct}% OFF)\n` +
-        `*Items Included:*\n${bundle.specs.map(s => '• ' + s).join('\n')}\n` +
+        `*Wholesale Rate:* ₹${Number(bundle.price).toLocaleString('en-IN')} (MRP: ₹${Number(bundle.mrp).toLocaleString('en-IN')})\n` +
+        `*Savings:* ₹${Number(saveAmt).toLocaleString('en-IN')} (${savePct}% OFF)\n` +
+        `*Items Included:*\n${specs.map(s => '• ' + s).join('\n')}\n` +
         `------------------------------------\n` +
         `Please confirm delivery time and dispatch tempo from Mandi Depot!`;
       trackSocialClick('whatsapp');
@@ -9632,7 +9747,7 @@
       else if (tabName === 'reviews') renderAdminReviewsTable();
       else if (tabName === 'users') renderUsersHub();
       else if (tabName === 'cms') populateAdminTextsForm();
-      else if (tabName === 'bulk') { renderIndexBulkEnquiries(); renderAdminBulkRates(); }
+      else if (tabName === 'bulk') { renderIndexBulkEnquiries(); renderIndexBundlesTable(); renderAdminBulkRates(); }
       else if (tabName === 'social') renderSocialAnalytics();
       else if (tabName === 'subadmin') renderSubAdminsList();
       else if (tabName === 'seo') populateSeoSettings();
@@ -9653,6 +9768,8 @@
       renderAdminReviewsTable();
       renderUsersHub();
       populateAdminTextsForm();
+      renderIndexBulkEnquiries();
+      renderIndexBundlesTable();
       renderAdminBulkRates();
       renderSocialAnalytics();
       renderSubAdminsList();
@@ -11506,6 +11623,70 @@
       }
     }
 
+    // EMBEDDED ADMIN: WHOLESALE EVENT BUNDLES DESK
+    async function renderIndexBundlesTable() {
+      const tbody = document.getElementById('index-bundles-tbody');
+      if (!tbody) return;
+      try {
+        const res = await fetch('/api/bundles?all=1');
+        const bundles = res.ok ? await res.json() : WHOLESALE_BUNDLES;
+        if (!bundles || bundles.length === 0) {
+          tbody.innerHTML = '<tr><td colspan="8" style="text-align:center; padding:20px; color:#64748B;">No event bundles configured.</td></tr>';
+          return;
+        }
+        tbody.innerHTML = bundles.map(b => {
+          const isActive = b.active !== false && b.active !== 0;
+          const saveAmt = b.save_amt || b.saveAmt || Math.max(0, (b.mrp || b.price) - b.price);
+          const savePct = b.save_pct || b.savePct || (b.mrp > 0 ? Math.round((saveAmt / b.mrp) * 100) : 0);
+          return `
+            <tr>
+              <td>
+                <div style="display: flex; align-items: center; gap: 10px;">
+                  <img src="${escapeHTML(b.image || 'assets/cat_wedding_supply.jpg')}" style="width: 38px; height: 38px; border-radius: 6px; object-fit: cover;" onerror="this.src='assets/cat_wedding_supply.jpg'">
+                  <div>
+                    <strong style="color: #0F172A; display: block;">${escapeHTML(b.title)}</strong>
+                    <span style="font-size: 0.76rem; color: #64748B;">ID: ${escapeHTML(b.id)}</span>
+                  </div>
+                </div>
+              </td>
+              <td><span style="text-transform: capitalize; background: #F1F5F9; padding: 3px 8px; border-radius: 4px; font-weight: 600; font-size: 0.8rem;">${escapeHTML(b.category || 'general')}</span></td>
+              <td><strong style="color: #0284C7;">₹${Number(b.price).toLocaleString('en-IN')}</strong></td>
+              <td><span style="color: #64748B; text-decoration: line-through;">₹${Number(b.mrp || b.price).toLocaleString('en-IN')}</span></td>
+              <td><span style="color: #16A34A; font-weight: 700; font-size: 0.82rem;">₹${Number(saveAmt).toLocaleString('en-IN')} (${savePct}%)</span></td>
+              <td><span style="font-size: 0.78rem; background: #FEF3C7; color: #92400E; padding: 2px 6px; border-radius: 4px;">${escapeHTML(b.badge || 'None')}</span></td>
+              <td>
+                <button type="button" onclick="toggleIndexBundleStatus('${escapeHTML(b.id)}')" style="border: none; cursor: pointer; padding: 4px 10px; border-radius: 999px; font-size: 0.78rem; font-weight: 700; ${isActive ? 'background: #DCFCE7; color: #166534;' : 'background: #F1F5F9; color: #64748B;'}">
+                  ${isActive ? '🟢 Active' : '⏸️ Paused'}
+                </button>
+              </td>
+              <td>
+                <a href="admin.html#bundles" class="btn-action-view" style="text-decoration: none; display: inline-flex; align-items: center; gap: 4px; padding: 4px 10px; font-size: 0.8rem; background: #0284C7; color: #FFF; border-radius: 6px;">
+                  <span>Edit in Hub</span>
+                </a>
+              </td>
+            </tr>
+          `;
+        }).join('');
+      } catch (e) {
+        tbody.innerHTML = `<tr><td colspan="8" style="text-align:center; padding:20px; color:#EF4444;">Failed to load bundles: ${escapeHTML(e.message)}</td></tr>`;
+      }
+    }
+
+    async function toggleIndexBundleStatus(id) {
+      try {
+        const res = await fetch(`/api/bundles/${encodeURIComponent(id)}/toggle`, { method: 'PATCH' });
+        if (res.ok) {
+          showToast(`Bundle status updated!`);
+          renderIndexBundlesTable();
+          loadStorefrontBundles();
+        } else {
+          showToast('Failed to toggle status');
+        }
+      } catch (err) {
+        showToast('Network error');
+      }
+    }
+
     // 16. SECURITY PIN & BACKUP
     function saveNewAdminPin() {
       const newPin = document.getElementById('adm-new-pin').value.trim();
@@ -11996,6 +12177,12 @@
             }
           }
         } catch (rErr) {}
+
+        try {
+          await loadStorefrontBundles();
+        } catch (bErr) {
+          console.warn('Bundles sync failed:', bErr);
+        }
       } catch (err) {
         console.warn('Backend storefront sync failed, using cached catalog:', err);
       }
@@ -12434,6 +12621,7 @@
       renderBulkCalculatorItems();
       renderDeliveryQuickChips();
       populateCheckoutDeliverySelect();
+      loadStorefrontBundles();
 
       // 2.5 Live Sync Products, Categories & Festival Theme from Database
       syncStorefrontFromBackend();
