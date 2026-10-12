@@ -1,0 +1,506 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  
+  <!-- STRONG SEO META TAGS -->
+  <title>Frequently Asked Questions (FAQs) | Sikar Drop Depot</title>
+  <meta name="description" content="Find answers about wholesale water orders, delivery corridors, Zero 20L camper policy, bilty tracking, wedding banquet bulk discounts, and payment methods in Sikar.">
+  <meta name="keywords" content="sikar drop faqs, water delivery questions sikar, wholesale peti moq, zero camper policy faq, bilty tracking questions">
+  <link rel="canonical" href="http://localhost:8080/faq">
+
+  <!-- OPEN GRAPH / SOCIAL SHARING -->
+  <meta property="og:type" content="website">
+  <meta property="og:title" content="Frequently Asked Questions (FAQs) | Sikar Drop Wholesale Depot">
+  <meta property="og:description" content="Answers to common questions regarding bottled water delivery, wholesale petis, and banquet supplies in Sikar.">
+  <meta property="og:url" content="http://localhost:8080/faq">
+  <meta property="og:image" content="http://localhost:8080/assets/hero_bottles.png">
+
+  <!-- SCHEMA.ORG FAQPAGE JSON-LD FOR GOOGLE RICH SNIPPETS -->
+  <script type="application/ld+json">
+  {
+    "@context": "https://schema.org",
+    "@type": "FAQPage",
+    "mainEntity": [
+      {
+        "@type": "Question",
+        "name": "Do you supply 20-litre open camper jars?",
+        "acceptedAnswer": {
+          "@type": "Answer",
+          "text": "We do not supply 20L water campers. To prevent microbiological contamination, unsealed bacterial biofilms, and untreated water hazards, Sikar Drop strictly supplies 100% factory-sealed bottled mineral water petis (250ml, 500ml, 1L) and branded beverages."
+        }
+      },
+      {
+        "@type": "Question",
+        "name": "What is the Minimum Order Quantity (MOQ) for delivery in Sikar?",
+        "acceptedAnswer": {
+          "@type": "Answer",
+          "text": "For local households and small offices, the MOQ is just 1 Peti. For wholesale mandi pricing, orders start at 5 Petis. Special bulk truck rates apply for orders of 25 Petis or more."
+        }
+      },
+      {
+        "@type": "Question",
+        "name": "How quickly can delivery tempos reach my location?",
+        "acceptedAnswer": {
+          "@type": "Answer",
+          "text": "Our express delivery corridor covers Piprali Road, Nawalgarh Road, Station Road, and Bajaj Gram within 40 minutes. Urgent banquet emergency refills are dispatched in 25 minutes."
+        }
+      },
+      {
+        "@type": "Question",
+        "name": "Which brands of packaged water and beverages are available?",
+        "acceptedAnswer": {
+          "@type": "Answer",
+          "text": "We supply genuine Bisleri, Kinley, Aquafina, Bailley, Coca-Cola, Thums Up, Sprite, Fanta, Pepsi, Limca, Maaza, Frooti, and Red Bull. All goods carry official factory seals and laser batch codes."
+        }
+      },
+      {
+        "@type": "Question",
+        "name": "How do I track my order bilty and tempo dispatch?",
+        "acceptedAnswer": {
+          "@type": "Answer",
+          "text": "Visit our Live Order Tracking page (/track) and enter your Bilty ID or WhatsApp mobile number to view live unloading status, vehicle number, and driver details."
+        }
+      },
+      {
+        "@type": "Question",
+        "name": "What payment methods are accepted?",
+        "acceptedAnswer": {
+          "@type": "Answer",
+          "text": "We accept Cash on Delivery (COD), UPI QR scan on tempo arrival, and merchant B2B Khata credit terms for verified retail partners."
+        }
+      }
+    ]
+  }
+  </script>
+
+  <!-- FONTS & STYLES -->
+  <link rel="preconnect" href="https://fonts.googleapis.com">
+  <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+  <link href="https://fonts.googleapis.com/css2?family=Be+Vietnam+Pro:wght@400;500;600;700;800&family=Outfit:wght@500;600;700;800;900&display=swap" rel="stylesheet">
+  <link rel="stylesheet" href="assets/site.css">
+  <style>
+    .faq-accordion-item {
+      background: #FFFFFF;
+      border: 1px solid var(--border-subtle);
+      border-radius: var(--radius-sm);
+      margin-bottom: 12px;
+      overflow: hidden;
+      transition: border-color var(--duration-fast);
+    }
+    .faq-accordion-item.active {
+      border-color: var(--primary);
+    }
+    .faq-question-btn {
+      width: 100%;
+      text-align: left;
+      background: none;
+      border: none;
+      padding: 18px 20px;
+      font-family: var(--font-heading);
+      font-size: 1.05rem;
+      font-weight: 700;
+      color: #0B192C;
+      cursor: pointer;
+      display: flex;
+      justify-content: space-between;
+      align-items: center;
+      gap: 12px;
+    }
+    .faq-question-btn:hover {
+      background: #F8FAFC;
+    }
+    .faq-icon-chevron {
+      transition: transform var(--duration-fast);
+      flex-shrink: 0;
+      color: var(--text-muted);
+    }
+    .faq-accordion-item.active .faq-icon-chevron {
+      transform: rotate(180deg);
+      color: var(--primary);
+    }
+    .faq-answer-body {
+      padding: 0 20px 18px;
+      font-size: 0.88rem;
+      color: var(--text-muted);
+      line-height: 1.65;
+      display: none;
+      border-top: 1px dashed var(--border-subtle);
+      margin-top: 4px;
+      padding-top: 14px;
+    }
+    .faq-accordion-item.active .faq-answer-body {
+      display: block;
+    }
+    .faq-filter-chip {
+      padding: 6px 14px;
+      border-radius: 20px;
+      border: 1.5px solid var(--border-subtle);
+      background: #FFFFFF;
+      font-size: 0.82rem;
+      font-weight: 700;
+      color: var(--text-muted);
+      cursor: pointer;
+      transition: all var(--duration-fast);
+    }
+    .faq-filter-chip.active, .faq-filter-chip:hover {
+      background: var(--primary);
+      color: #FFFFFF;
+      border-color: var(--primary);
+    }
+  </style>
+</head>
+<body>
+
+  <!-- NAVBAR -->
+  <header class="site-navbar">
+    <div class="container nav-layout">
+      <a href="/" class="brand-block">
+        <div class="brand-icon-drop">
+          <svg viewBox="0 0 24 24" fill="currentColor"><path d="M12 2.69l5.66 5.66a8 8 0 1 1-11.31 0z"></path></svg>
+        </div>
+        <div class="brand-text-col">
+          <div class="brand-title">SIKAR <span class="accent-blue">DROP</span></div>
+          <span class="brand-tagline">Pure Water. Healthy Life.</span>
+        </div>
+      </a>
+
+      <nav class="nav-links-menu" aria-label="Main Navigation">
+        <a href="/" class="nav-item-link">Home</a>
+        <a href="/products" class="nav-item-link">Products</a>
+        <a href="/categories" class="nav-item-link">Categories</a>
+        <a href="/bulk" class="nav-item-link">Corporate Supply</a>
+        <a href="/track" class="nav-item-link">Track Order</a>
+        <a href="/about" class="nav-item-link">About Us</a>
+        <a href="/why" class="nav-item-link">Why Us</a>
+        <a href="/faq" class="nav-item-link active">FAQs</a>
+        <a href="/contact" class="nav-item-link">Contact</a>
+      </nav>
+
+      <div class="nav-search-bar">
+        <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.3">
+          <circle cx="11" cy="11" r="8"></circle>
+          <line x1="21" y1="21" x2="16.65" y2="16.65"></line>
+        </svg>
+        <input type="text" class="nav-search-input" id="faq-search-box" placeholder="Search questions..." onkeyup="filterFaqs()">
+      </div>
+
+      <div class="nav-right-actions">
+        <button type="button" class="nav-icon-action-btn" onclick="toggleCartDrawer(true)" title="Shopping Cart">
+          <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2">
+            <circle cx="9" cy="21" r="1"></circle>
+            <circle cx="20" cy="21" r="1"></circle>
+            <path d="M1 1h4l2.68 13.39a2 2 0 0 0 2 1.61h9.72a2 2 0 0 0 2-1.61L23 6H6"></path>
+          </svg>
+          <span class="cart-badge-counter" id="cart-badge">0</span>
+        </button>
+      </div>
+    </div>
+  </header>
+
+  <!-- MAIN BODY -->
+  <main style="padding: 36px 0 64px; background: #F8FAFC; min-height: 85vh;">
+    <div class="container" style="max-width: 860px;">
+      
+      <!-- BREADCRUMB & HEADER -->
+      <div style="margin-bottom: 24px;">
+        <div style="font-size: 0.82rem; color: var(--text-light); margin-bottom: 6px;">
+          <a href="/" style="color: var(--primary); text-decoration: none;">Home</a> / <span style="color: var(--text-muted);">FAQs</span>
+        </div>
+        <h1 style="font-family: var(--font-heading); font-size: 2.2rem; font-weight: 800; color: #0B192C;">
+          Frequently Asked Questions
+        </h1>
+        <p style="color: var(--text-muted); font-size: 0.95rem; margin-top: 4px;">
+          Clear answers about packaged water orders, delivery timelines, bulk pricing, and depot policies in Sikar.
+        </p>
+      </div>
+
+      <!-- FILTER CHIPS -->
+      <div style="display: flex; gap: 8px; flex-wrap: wrap; margin-bottom: 24px;">
+        <button type="button" class="faq-filter-chip active" onclick="setFaqCategory('all', this)">All Questions</button>
+        <button type="button" class="faq-filter-chip" onclick="setFaqCategory('policy', this)">Zero Camper Policy</button>
+        <button type="button" class="faq-filter-chip" onclick="setFaqCategory('delivery', this)">Delivery &amp; Logistics</button>
+        <button type="button" class="faq-filter-chip" onclick="setFaqCategory('bulk', this)">Weddings &amp; Bulk</button>
+        <button type="button" class="faq-filter-chip" onclick="setFaqCategory('payments', this)">Billing &amp; Khata</button>
+      </div>
+
+      <!-- ACCORDION CONTAINER -->
+      <div id="faq-list-container">
+        
+        <!-- QUESTION 1 -->
+        <div class="faq-accordion-item active" data-category="policy">
+          <button type="button" class="faq-question-btn" onclick="toggleFaqItem(this)">
+            <span>Do you supply 20-litre open camper jars?</span>
+            <svg class="faq-icon-chevron" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2" width="18" height="18"><polyline points="6 9 12 15 18 9"></polyline></svg>
+          </button>
+          <div class="faq-answer-body">
+            <strong>We do not supply 20L water campers.</strong> Sikar Drop operates under a strict Zero 20L Camper Policy. Local 20L camper jars are frequently subjected to manual hose refilling, unwashed containers, and airborne bacterial contamination. We strictly supply 100% factory-sealed bottled mineral water (250ml, 500ml, 1L, 2L petis) and branded beverages with tamper-evident caps and laser batch stamps.
+          </div>
+        </div>
+
+        <!-- QUESTION 2 -->
+        <div class="faq-accordion-item" data-category="delivery">
+          <button type="button" class="faq-question-btn" onclick="toggleFaqItem(this)">
+            <span>What is the Minimum Order Quantity (MOQ) for delivery?</span>
+            <svg class="faq-icon-chevron" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2" width="18" height="18"><polyline points="6 9 12 15 18 9"></polyline></svg>
+          </button>
+          <div class="faq-answer-body">
+            For retail homes, coaching hostels, and small offices, our minimum order quantity is just <strong>1 Peti</strong>. For wholesale mandi pricing, orders begin at 5 Petis. If you require bulk supplies for a marriage banquet (20+ petis), you unlock our highest commercial discount slab with dedicated vehicle delivery.
+          </div>
+        </div>
+
+        <!-- QUESTION 3 -->
+        <div class="faq-accordion-item" data-category="delivery">
+          <button type="button" class="faq-question-btn" onclick="toggleFaqItem(this)">
+            <span>How fast is delivery across Sikar city?</span>
+            <svg class="faq-icon-chevron" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2" width="18" height="18"><polyline points="6 9 12 15 18 9"></polyline></svg>
+          </button>
+          <div class="faq-answer-body">
+            With our dual hubs on Piprali Road and Nawalgarh Road, standard delivery reaches Piprali coaching corridor, Station Road, Nawalgarh bypass, and Bajaj Gram within <strong>40 minutes</strong>. For marriage lawns requiring urgent mid-function top-ups, emergency tempos are dispatched within 25 minutes.
+          </div>
+        </div>
+
+        <!-- QUESTION 4 -->
+        <div class="faq-accordion-item" data-category="policy">
+          <button type="button" class="faq-question-btn" onclick="toggleFaqItem(this)">
+            <span>Which water and beverage brands are available?</span>
+            <svg class="faq-icon-chevron" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2" width="18" height="18"><polyline points="6 9 12 15 18 9"></polyline></svg>
+          </button>
+          <div class="faq-answer-body">
+            We supply 100% authentic packaged goods from India's leading beverage brands:
+            <ul style="margin: 8px 0 0 20px; line-height: 1.6;">
+              <li><strong>Packaged Mineral Water:</strong> Bisleri, Kinley, Aquafina, Bailley (250ml, 500ml, 1L, 2L petis).</li>
+              <li><strong>Cold Drinks:</strong> Coca-Cola, Thums Up, Sprite, Fanta, Pepsi, Mountain Dew, Limca.</li>
+              <li><strong>Juices &amp; Energy:</strong> Maaza, Frooti, Red Bull.</li>
+            </ul>
+          </div>
+        </div>
+
+        <!-- QUESTION 5 -->
+        <div class="faq-accordion-item" data-category="delivery">
+          <button type="button" class="faq-question-btn" onclick="toggleFaqItem(this)">
+            <span>How do I track my delivery bilty and vehicle?</span>
+            <svg class="faq-icon-chevron" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2" width="18" height="18"><polyline points="6 9 12 15 18 9"></polyline></svg>
+          </button>
+          <div class="faq-answer-body">
+            Once your order is confirmed, you receive an automated Bilty ID (e.g. SKR-8421). Visit our <a href="/track" style="color: var(--primary); font-weight: 700;">Live Order Tracking page</a> and input your Bilty ID or phone number to view live consignment status, assigned tempo registration, and direct driver contact.
+          </div>
+        </div>
+
+        <!-- QUESTION 6 -->
+        <div class="faq-accordion-item" data-category="payments">
+          <button type="button" class="faq-question-btn" onclick="toggleFaqItem(this)">
+            <span>What payment methods do you accept?</span>
+            <svg class="faq-icon-chevron" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2" width="18" height="18"><polyline points="6 9 12 15 18 9"></polyline></svg>
+          </button>
+          <div class="faq-answer-body">
+            We provide multiple flexible settlement options:
+            <ul style="margin: 8px 0 0 20px; line-height: 1.6;">
+              <li><strong>Cash on Delivery (COD):</strong> Pay in cash when the tempo driver unloads at your venue.</li>
+              <li><strong>Instant UPI QR:</strong> Scan and pay via PhonePe, Google Pay, or Paytm directly to the driver's verified UPI card.</li>
+              <li><strong>Merchant Credit Khata:</strong> For verified kirana stores, hostels, and regular caterers, we offer weekly credit ledger billing.</li>
+            </ul>
+          </div>
+        </div>
+
+        <!-- QUESTION 7 -->
+        <div class="faq-accordion-item" data-category="bulk">
+          <button type="button" class="faq-question-btn" onclick="toggleFaqItem(this)">
+            <span>How many petis do I need for a wedding banquet?</span>
+            <svg class="faq-icon-chevron" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2" width="18" height="18"><polyline points="6 9 12 15 18 9"></polyline></svg>
+          </button>
+          <div class="faq-answer-body">
+            On average, 500 guests require approximately 15-20 Petis of 250ml mini bottles (48 bottles/peti) during winter and 25-30 Petis during peak summer. You can use our <a href="/bulk" style="color: var(--primary); font-weight: 700;">Interactive Marriage Banquet Calculator</a> to receive instant estimates tailored to your guest headcount and season.
+          </div>
+        </div>
+
+        <!-- QUESTION 8 -->
+        <div class="faq-accordion-item" data-category="payments">
+          <button type="button" class="faq-question-btn" onclick="toggleFaqItem(this)">
+            <span>Do you provide GST tax invoices for commercial purchases?</span>
+            <svg class="faq-icon-chevron" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2" width="18" height="18"><polyline points="6 9 12 15 18 9"></polyline></svg>
+          </button>
+          <div class="faq-answer-body">
+            Yes, absolutely. All commercial deliveries include an official GST tax invoice with our depot GSTIN, allowing hotels, corporate offices, and institutions to claim appropriate input tax credit (ITC).
+          </div>
+        </div>
+
+      </div>
+
+      <!-- NEED DIRECT HELP CARD -->
+      <div class="portal-card" style="padding: 24px; margin-top: 32px; background: #EFF6FF; border: 1.5px solid #BFDBFE; text-align: center;">
+        <h3 style="font-family: var(--font-heading); font-size: 1.25rem; color: #1E3E62; margin-bottom: 6px;">
+          Have a Question Not Listed Here?
+        </h3>
+        <p style="font-size: 0.86rem; color: var(--text-muted); margin-bottom: 16px;">
+          Our depot dispatch desk is available from 7:00 AM to 9:00 PM every day to assist you.
+        </p>
+        <div style="display: flex; gap: 12px; justify-content: center; flex-wrap: wrap;">
+          <a href="/contact" class="btn-checkout-gate" style="width: auto; padding: 10px 22px; text-decoration: none;">
+            <span>CONTACT DISPATCH DESK</span>
+          </a>
+          <a href="https://wa.me/919829012345?text=Hello%20Sikar%20Drop,%20I%20have%20an%20inquiry%20regarding%20water%20supply" target="_blank" class="btn-portal-outline" style="padding: 10px 20px; text-decoration: none; font-weight: 700;">
+            <span>CHAT ON WHATSAPP</span>
+          </a>
+        </div>
+      </div>
+
+    </div>
+  </main>
+
+  <!-- CART SLIDE DRAWER -->
+  <div class="drawer-backdrop" id="cart-backdrop" onclick="toggleCartDrawer(false)"></div>
+  <aside class="cart-drawer-panel" id="cart-drawer" role="dialog" aria-modal="true" aria-label="Shopping Cart">
+    <div class="cart-drawer-header">
+      <div class="cart-drawer-title-row">
+        <h3>Dispatch Cart</h3>
+        <span class="drawer-count-badge" id="drawer-total-count">0</span>
+      </div>
+      <button type="button" class="drawer-close-btn" onclick="toggleCartDrawer(false)" aria-label="Close cart">
+        <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2" width="18" height="18"><line x1="18" y1="6" x2="6" y2="18"></line><line x1="6" y1="6" x2="18" y2="18"></line></svg>
+      </button>
+    </div>
+    <div class="cart-drawer-body" id="cart-items-container">
+      <div class="cart-empty-state">
+        <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" width="48" height="48" style="color: var(--text-light); margin-bottom: 12px;"><circle cx="9" cy="21" r="1"></circle><circle cx="20" cy="21" r="1"></circle><path d="M1 1h4l2.68 13.39a2 2 0 0 0 2 1.61h9.72a2 2 0 0 0 2-1.61L23 6H6"></path></svg>
+        <p>Your cart is empty</p>
+        <a href="/products" class="btn-portal-outline" style="display: inline-block; margin-top: 10px; text-decoration: none; padding: 6px 16px;">Browse Beverages</a>
+      </div>
+    </div>
+    <div class="cart-drawer-footer">
+      <div class="drawer-summary-row">
+        <span>Cart Total</span>
+        <strong id="drawer-subtotal">₹0</strong>
+      </div>
+      <button type="button" class="btn-checkout-gate" onclick="initiateCheckoutGate()">
+        <span>PROCEED TO BILTY DISPATCH</span>
+      </button>
+    </div>
+  </aside>
+
+  <!-- FOOTER -->
+  <footer style="background: #0B192C; color: #FFFFFF; padding: 48px 0 24px; margin-top: auto;">
+    <div class="container">
+      <div style="display: grid; grid-template-columns: repeat(auto-fit, minmax(220px, 1fr)); gap: 32px;">
+        <div>
+          <div style="display: flex; align-items: center; gap: 8px; margin-bottom: 12px;">
+            <div style="width: 28px; height: 28px; border-radius: 50%; background: #0066FF; display: flex; align-items: center; justify-content: center;">
+              <svg viewBox="0 0 24 24" fill="white" width="16" height="16"><path d="M12 2.69l5.66 5.66a8 8 0 1 1-11.31 0z"></path></svg>
+            </div>
+            <strong style="font-family: var(--font-heading); font-size: 1.15rem; letter-spacing: 0.04em;">SIKAR DROP</strong>
+          </div>
+          <p style="color: #94A3B8; font-size: 0.84rem; line-height: 1.55;">
+            Sikar's premier wholesale mineral water and cold drink peti supply depot. Direct mandi pricing with guaranteed factory-sealed purity.
+          </p>
+        </div>
+
+        <div>
+          <strong style="display: block; font-size: 0.88rem; color: #E2E8F0; margin-bottom: 12px; text-transform: uppercase;">Direct Links</strong>
+          <ul style="list-style: none; padding: 0; margin: 0; font-size: 0.84rem; line-height: 2;">
+            <li><a href="/products" style="color: #94A3B8; text-decoration: none;">Water &amp; Cold Drink Petis</a></li>
+            <li><a href="/categories" style="color: #94A3B8; text-decoration: none;">All Categories</a></li>
+            <li><a href="/bulk" style="color: #94A3B8; text-decoration: none;">Wedding &amp; Bulk Supply</a></li>
+            <li><a href="/track" style="color: #94A3B8; text-decoration: none;">Track Order Bilty</a></li>
+            <li><a href="/about" style="color: #94A3B8; text-decoration: none;">About Sikar Drop</a></li>
+            <li><a href="/why" style="color: #94A3B8; text-decoration: none;">Why Choose Us</a></li>
+            <li><a href="/faq" style="color: #94A3B8; text-decoration: none;">Frequently Asked Questions</a></li>
+            <li><a href="/contact" style="color: #94A3B8; text-decoration: none;">Depot Locations</a></li>
+          </ul>
+        </div>
+
+        <div>
+          <strong style="display: block; font-size: 0.88rem; color: #E2E8F0; margin-bottom: 12px; text-transform: uppercase;">Depot Logistics</strong>
+          <p style="color: #94A3B8; font-size: 0.84rem; line-height: 1.55; margin-bottom: 8px;">
+            Hub 1: Piprali Road Coaching Hub<br>
+            Hub 2: Nawalgarh Bypass Crossing<br>
+            Sikar, Rajasthan 332001
+          </p>
+          <div style="color: #38BDF8; font-weight: 700; font-size: 0.84rem;">
+            Hotline: +91 98290 12345
+          </div>
+        </div>
+      </div>
+
+      <div style="margin-top: 32px; padding-top: 18px; border-top: 1px solid rgba(255,255,255,0.08); text-align: center; color: #64748B; font-size: 0.8rem;">
+        &copy; 2026 Sikar Drop Wholesale Depot. All Rights Reserved.
+      </div>
+    </div>
+  </footer>
+
+  <!-- MOBILE BOTTOM NAVIGATION DOCK -->
+  <nav class="mobile-bottom-dock" id="mobile-bottom-dock" aria-label="Mobile Navigation">
+    <a href="/" class="dock-tab-btn" id="dock-btn-home">
+      <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2"><path d="m3 9 9-7 9 7v11a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2z"></path><polyline points="9 22 9 12 15 12 15 22"></polyline></svg>
+      <span>Home</span>
+    </a>
+    <a href="/products" class="dock-tab-btn" id="dock-btn-products">
+      <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2"><path d="M6 2 3 6v14a2 2 0 0 0 2 2h14a2 2 0 0 0 2-2V6l-3-4Z"></path><path d="M3 6h18"></path><path d="M16 10a4 4 0 0 1-8 0"></path></svg>
+      <span>Beverages</span>
+    </a>
+    <a href="/categories" class="dock-tab-btn" id="dock-btn-categories">
+      <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2"><rect x="3" y="3" width="7" height="7"></rect><rect x="14" y="3" width="7" height="7"></rect><rect x="14" y="14" width="7" height="7"></rect><rect x="3" y="14" width="7" height="7"></rect></svg>
+      <span>Categories</span>
+    </a>
+    <a href="/track" class="dock-tab-btn" id="dock-btn-track">
+      <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2"><rect x="1" y="3" width="15" height="13"></rect><polygon points="16 8 20 8 23 11 23 16 16 16 16 8"></polygon><circle cx="5.5" cy="18.5" r="2.5"></circle><circle cx="18.5" cy="18.5" r="2.5"></circle></svg>
+      <span>Track Order</span>
+    </a>
+    <button type="button" class="dock-tab-btn" id="dock-btn-cart" onclick="toggleCartDrawer(true)">
+      <div style="position: relative; display: inline-flex;">
+        <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2"><circle cx="9" cy="21" r="1"></circle><circle cx="20" cy="21" r="1"></circle><path d="M1 1h4l2.68 13.39a2 2 0 0 0 2 1.61h9.72a2 2 0 0 0 2-1.61L23 6H6"></path></svg>
+        <span class="dock-cart-counter" id="dock-cart-badge">0</span>
+      </div>
+      <span>Cart</span>
+    </button>
+  </nav>
+
+  <script src="assets/site.js"></script>
+  <script>
+    window.addEventListener('DOMContentLoaded', async () => {
+      await initStorefrontTheme();
+      await loadCatalogFromBackend();
+      updateCartUI();
+    });
+
+    function toggleFaqItem(btn) {
+      const item = btn.closest('.faq-accordion-item');
+      const isActive = item.classList.contains('active');
+      
+      // Close other items
+      document.querySelectorAll('.faq-accordion-item').forEach(i => i.classList.remove('active'));
+      
+      if (!isActive) {
+        item.classList.add('active');
+      }
+    }
+
+    function setFaqCategory(cat, chip) {
+      document.querySelectorAll('.faq-filter-chip').forEach(c => c.classList.remove('active'));
+      chip.classList.add('active');
+
+      const items = document.querySelectorAll('.faq-accordion-item');
+      items.forEach(item => {
+        if (cat === 'all' || item.getAttribute('data-category') === cat) {
+          item.style.display = 'block';
+        } else {
+          item.style.display = 'none';
+        }
+      });
+    }
+
+    function filterFaqs() {
+      const q = (document.getElementById('faq-search-box')?.value || '').toLowerCase().trim();
+      const items = document.querySelectorAll('.faq-accordion-item');
+      items.forEach(item => {
+        const text = item.textContent.toLowerCase();
+        if (!q || text.includes(q)) {
+          item.style.display = 'block';
+        } else {
+          item.style.display = 'none';
+        }
+      });
+    }
+  </script>
+</body>
+</html>

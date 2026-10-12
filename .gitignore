@@ -1,0 +1,13 @@
+node_modules
+node_modules/
+.vercel
+.vercel/
+.impeccable
+.impeccable/
+*.log
+*.bak
+data/*-wal
+data/*-shm
+.DS_Store
+.env
+.env.local

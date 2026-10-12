@@ -1,0 +1,357 @@
+<!DOCTYPE html>
+<html lang="hi">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  
+  <!-- STRONG SEO META TAGS -->
+  <title>Wholesale Beverage Categories &amp; Peti Packs in Sikar | Sikar Drop Depot</title>
+  <meta name="description" content="Explore wholesale packaged beverage categories in Sikar. Factory-sealed drinking water cases, cold drinks, natural mineral water, juices and soda cans at direct depot rates.">
+  <meta name="keywords" content="beverage categories sikar, wholesale water cases, bisleri peti categories, cold drink crates sikar, fruit juices wholesale, marriage banquet water supply">
+  <link rel="canonical" href="http://localhost:8080/categories">
+
+  <!-- OPEN GRAPH / SOCIAL SHARING -->
+  <meta property="og:type" content="website">
+  <meta property="og:title" content="Wholesale Beverage Categories in Sikar | Sikar Drop Depot">
+  <meta property="og:description" content="Browse factory-sealed drinking water petis, soft drink crates and juices in Sikar.">
+  <meta property="og:url" content="http://localhost:8080/categories">
+  <meta property="og:image" content="http://localhost:8080/assets/cat_drinking_water.jpg">
+
+  <!-- GOOGLE STRUCTURED DATA (JSON-LD) -->
+  <script type="application/ld+json">
+  {
+    "@context": "https://schema.org",
+    "@type": "CollectionPage",
+    "name": "Wholesale Beverage Categories",
+    "description": "Wholesale categories of factory-sealed drinking water and beverages in Sikar, Rajasthan.",
+    "url": "http://localhost:8080/categories"
+  }
+  </script>
+
+  <!-- FONTS & STYLES -->
+  <link rel="preconnect" href="https://fonts.googleapis.com">
+  <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+  <link href="https://fonts.googleapis.com/css2?family=Be+Vietnam+Pro:wght@400;500;600;700;800&family=Outfit:wght@500;600;700;800;900&display=swap" rel="stylesheet">
+  <link rel="stylesheet" href="assets/site.css">
+</head>
+<body>
+
+  <!-- NAVBAR -->
+  <header class="site-navbar">
+    <div class="container nav-layout">
+      <a href="/" class="brand-block">
+        <div class="brand-icon-drop">
+          <svg viewBox="0 0 24 24" fill="currentColor"><path d="M12 2.69l5.66 5.66a8 8 0 1 1-11.31 0z"></path></svg>
+        </div>
+        <div class="brand-text-col">
+          <div class="brand-title">SIKAR <span class="accent-blue">DROP</span></div>
+          <span class="brand-tagline">Pure Water. Healthy Life.</span>
+        </div>
+      </a>
+
+      <nav class="nav-links-menu" aria-label="Main Navigation">
+        <a href="/" class="nav-item-link">Home</a>
+        <a href="/products" class="nav-item-link">Products</a>
+        <a href="/categories" class="nav-item-link active">Categories</a>
+        <a href="/bulk" class="nav-item-link">Corporate Supply</a>
+        <a href="/track" class="nav-item-link">Track Order</a>
+        <a href="/about" class="nav-item-link">About Us</a>
+        <a href="/why" class="nav-item-link">Why Us</a>
+        <a href="/faq" class="nav-item-link">FAQs</a>
+        <a href="/contact" class="nav-item-link">Contact</a>
+      </nav>
+
+      <div class="nav-search-bar">
+        <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.3">
+          <circle cx="11" cy="11" r="8"></circle>
+          <line x1="21" y1="21" x2="16.65" y2="16.65"></line>
+        </svg>
+        <input type="text" class="nav-search-input" placeholder="Search categories..." oninput="handleCategorySearch(this.value)">
+      </div>
+
+      <div class="nav-right-actions">
+        <button type="button" class="nav-icon-action-btn" onclick="toggleCartDrawer(true)" title="Shopping Cart">
+          <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2">
+            <circle cx="9" cy="21" r="1"></circle>
+            <circle cx="20" cy="21" r="1"></circle>
+            <path d="M1 1h4l2.68 13.39a2 2 0 0 0 2 1.61h9.72a2 2 0 0 0 2-1.61L23 6H6"></path>
+          </svg>
+          <span class="cart-badge-counter" id="cart-badge">0</span>
+        </button>
+      </div>
+    </div>
+  </header>
+
+  <!-- MAIN BODY -->
+  <main style="padding: 36px 0 64px; background: #F8FAFC; min-height: 85vh;">
+    <div class="container">
+      <div style="margin-bottom: 28px;">
+        <div style="font-size: 0.82rem; color: var(--text-light); margin-bottom: 8px;">
+          <a href="/" style="color: var(--primary); text-decoration: none;">Home</a> / <span style="color: var(--text-muted);">Beverage Categories</span>
+        </div>
+        <div class="cat-section-top-pill">
+          <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.4" width="14" height="14"><rect x="3" y="3" width="7" height="7"></rect><rect x="14" y="3" width="7" height="7"></rect><rect x="14" y="14" width="7" height="7"></rect><rect x="3" y="14" width="7" height="7"></rect></svg>
+          <span>WHOLESALE CATEGORIES</span>
+        </div>
+        <h1 style="font-family: var(--font-heading); font-size: 2.2rem; font-weight: 800; color: #0B192C;">
+          Shop by Categories
+        </h1>
+        <p style="color: var(--text-muted); font-size: 0.95rem; margin-top: 4px;">
+          Direct depot supplies packed in factory-sealed cases. Select a category below to view live peti prices and packaging specifications.
+        </p>
+      </div>
+
+      <!-- CATEGORIES GRID -->
+      <div class="categories-portal-grid" id="categories-cards-grid">
+        <!-- Category Card 1 -->
+        <div class="portal-card" onclick="window.location.href='/products?category=water'" style="padding: 20px; cursor: pointer; transition: transform 0.2s, box-shadow 0.2s;">
+          <div class="cat-card-top-header" style="padding: 12px 14px; margin-bottom: 14px; background: #F0F9FF; border: 1.5px solid #BAE6FD; border-radius: var(--radius-xs); display: flex; flex-direction: row; align-items: center; justify-content: space-between; gap: 10px;">
+            <div style="text-align: left;">
+              <h2 style="font-family: var(--font-heading); font-size: 1.22rem; font-weight: 800; color: #0B192C; margin: 0; line-height: 1.25;">Drinking Water Bottles</h2>
+            </div>
+            <span style="background: #FFFFFF; color: #0369A1; border: 1px solid #BAE6FD; font-size: 0.75rem; font-weight: 800; padding: 4px 10px; border-radius: 999px; white-space: nowrap;">10 Items</span>
+          </div>
+          <img src="assets/cat_water_bottles.jpg" alt="Drinking Water Bottles" style="width: 100%; height: 180px; object-fit: cover; border-radius: var(--radius-sm); margin-bottom: 14px;">
+          <p style="color: var(--text-muted); font-size: 0.86rem; line-height: 1.5; margin-bottom: 14px;">
+            100% Factory-sealed Bisleri, Kinley, Aquafina &amp; Bailley. Available in 250ml mini event bottles, 500ml travel packs, 1L standard and 2L family bottles.
+          </p>
+          <div style="display: flex; justify-content: space-between; align-items: center; border-top: 1px solid var(--border-subtle); padding-top: 12px;">
+            <span style="font-size: 0.84rem; font-weight: 700; color: #0F172A;">From ₹10 / Bottle Rate</span>
+            <a href="/products?category=water" class="btn-portal-primary" style="padding: 6px 14px; font-size: 0.82rem; text-decoration: none;">View Category &rarr;</a>
+          </div>
+        </div>
+
+        <!-- Category Card 2 -->
+        <div class="portal-card" onclick="window.location.href='/products?category=cases'" style="padding: 20px; cursor: pointer; transition: transform 0.2s, box-shadow 0.2s;">
+          <div class="cat-card-top-header" style="padding: 12px 14px; margin-bottom: 14px; background: #F0F9FF; border: 1.5px solid #BAE6FD; border-radius: var(--radius-xs); display: flex; flex-direction: row; align-items: center; justify-content: space-between; gap: 10px;">
+            <div style="text-align: left;">
+              <h2 style="font-family: var(--font-heading); font-size: 1.22rem; font-weight: 800; color: #0B192C; margin: 0; line-height: 1.25;">Packaged Water (Cases)</h2>
+            </div>
+            <span style="background: #FFFFFF; color: #0369A1; border: 1px solid #BAE6FD; font-size: 0.75rem; font-weight: 800; padding: 4px 10px; border-radius: 999px; white-space: nowrap;">9 Items</span>
+          </div>
+          <img src="assets/cat_water_cases.jpg" alt="Packaged Water Cases" style="width: 100%; height: 180px; object-fit: cover; border-radius: var(--radius-sm); margin-bottom: 14px;">
+          <p style="color: var(--text-muted); font-size: 0.86rem; line-height: 1.5; margin-bottom: 14px;">
+            Shrink-wrapped cases of 12, 24 and 48 bottles for marriage gardens, coaching institutes, and restaurant banquets across Sikar.
+          </p>
+          <div style="display: flex; justify-content: space-between; align-items: center; border-top: 1px solid var(--border-subtle); padding-top: 12px;">
+            <span style="font-size: 0.84rem; font-weight: 700; color: #0F172A;">From ₹160 / Peti</span>
+            <a href="/products?category=cases" class="btn-portal-primary" style="padding: 6px 14px; font-size: 0.82rem; text-decoration: none;">View Category &rarr;</a>
+          </div>
+        </div>
+
+        <!-- Category Card 3 -->
+        <div class="portal-card" onclick="window.location.href='/products?category=cola'" style="padding: 20px; cursor: pointer; transition: transform 0.2s, box-shadow 0.2s;">
+          <div class="cat-card-top-header" style="padding: 12px 14px; margin-bottom: 14px; background: #F0F9FF; border: 1.5px solid #BAE6FD; border-radius: var(--radius-xs); display: flex; flex-direction: row; align-items: center; justify-content: space-between; gap: 10px;">
+            <div style="text-align: left;">
+              <h2 style="font-family: var(--font-heading); font-size: 1.22rem; font-weight: 800; color: #0B192C; margin: 0; line-height: 1.25;">Soft Drinks &amp; Beverages</h2>
+            </div>
+            <span style="background: #FFFFFF; color: #0369A1; border: 1px solid #BAE6FD; font-size: 0.75rem; font-weight: 800; padding: 4px 10px; border-radius: 999px; white-space: nowrap;">9 Items</span>
+          </div>
+          <img src="assets/cat_soft_drinks.jpg" alt="Soft Drinks and Soda" style="width: 100%; height: 180px; object-fit: cover; border-radius: var(--radius-sm); margin-bottom: 14px;">
+          <p style="color: var(--text-muted); font-size: 0.86rem; line-height: 1.5; margin-bottom: 14px;">
+            Coca-Cola, Sprite, Thums Up, Fanta, Limca and Mountain Dew in chilled 250ml, 750ml party bottles and 2L wholesale crates.
+          </p>
+          <div style="display: flex; justify-content: space-between; align-items: center; border-top: 1px solid var(--border-subtle); padding-top: 12px;">
+            <span style="font-size: 0.84rem; font-weight: 700; color: #0F172A;">From ₹510 / Crate</span>
+            <a href="/products?category=cola" class="btn-portal-primary" style="padding: 6px 14px; font-size: 0.82rem; text-decoration: none;">View Category &rarr;</a>
+          </div>
+        </div>
+
+        <!-- Category Card 4 -->
+        <div class="portal-card" onclick="window.location.href='/products?category=juice'" style="padding: 20px; cursor: pointer; transition: transform 0.2s, box-shadow 0.2s;">
+          <div class="cat-card-top-header" style="padding: 12px 14px; margin-bottom: 14px; background: #F0F9FF; border: 1.5px solid #BAE6FD; border-radius: var(--radius-xs); display: flex; flex-direction: row; align-items: center; justify-content: space-between; gap: 10px;">
+            <div style="text-align: left;">
+              <h2 style="font-family: var(--font-heading); font-size: 1.22rem; font-weight: 800; color: #0B192C; margin: 0; line-height: 1.25;">Fruit Juices &amp; Tetra</h2>
+            </div>
+            <span style="background: #FFFFFF; color: #0369A1; border: 1px solid #BAE6FD; font-size: 0.75rem; font-weight: 800; padding: 4px 10px; border-radius: 999px; white-space: nowrap;">8 Items</span>
+          </div>
+          <img src="assets/cat_fruit_juices.jpg" alt="Fruit Juices and Tetra Packs" style="width: 100%; height: 180px; object-fit: cover; border-radius: var(--radius-sm); margin-bottom: 14px;">
+          <p style="color: var(--text-muted); font-size: 0.86rem; line-height: 1.5; margin-bottom: 14px;">
+            Real Fruit Power, Frooti, Maaza Mango Drink, Minute Maid Pulpy Orange and Tropicana 100% tetra packs.
+          </p>
+          <div style="display: flex; justify-content: space-between; align-items: center; border-top: 1px solid var(--border-subtle); padding-top: 12px;">
+            <span style="font-size: 0.84rem; font-weight: 700; color: #0F172A;">From ₹260 / Tray</span>
+            <a href="/products?category=juice" class="btn-portal-primary" style="padding: 6px 14px; font-size: 0.82rem; text-decoration: none;">View Category &rarr;</a>
+          </div>
+        </div>
+
+        <!-- Category Card 5 -->
+        <div class="portal-card" onclick="window.location.href='/products?category=can'" style="padding: 20px; cursor: pointer; transition: transform 0.2s, box-shadow 0.2s;">
+          <div class="cat-card-top-header" style="padding: 12px 14px; margin-bottom: 14px; background: #F0F9FF; border: 1.5px solid #BAE6FD; border-radius: var(--radius-xs); display: flex; flex-direction: row; align-items: center; justify-content: space-between; gap: 10px;">
+            <div style="text-align: left;">
+              <h2 style="font-family: var(--font-heading); font-size: 1.22rem; font-weight: 800; color: #0B192C; margin: 0; line-height: 1.25;">Chilled Cans &amp; Soda</h2>
+            </div>
+            <span style="background: #FFFFFF; color: #0369A1; border: 1px solid #BAE6FD; font-size: 0.75rem; font-weight: 800; padding: 4px 10px; border-radius: 999px; white-space: nowrap;">7 Items</span>
+          </div>
+          <img src="assets/cat_chilled_cans.jpg" alt="Chilled Cans and Energy Drinks" style="width: 100%; height: 180px; object-fit: cover; border-radius: var(--radius-sm); margin-bottom: 14px;">
+          <p style="color: var(--text-muted); font-size: 0.86rem; line-height: 1.5; margin-bottom: 14px;">
+            Sting Energy Drink, Red Bull, Monster Energy, Schweppes Club Soda and Diet Coke 300ml sleek cans.
+          </p>
+          <div style="display: flex; justify-content: space-between; align-items: center; border-top: 1px solid var(--border-subtle); padding-top: 12px;">
+            <span style="font-size: 0.84rem; font-weight: 700; color: #0F172A;">From ₹520 / Tray</span>
+            <a href="/products?category=can" class="btn-portal-primary" style="padding: 6px 14px; font-size: 0.82rem; text-decoration: none;">View Category &rarr;</a>
+          </div>
+        </div>
+
+        <!-- Category Card 6 -->
+        <div class="portal-card" onclick="window.location.href='/products?category=wedding'" style="padding: 20px; cursor: pointer; transition: transform 0.2s, box-shadow 0.2s;">
+          <div class="cat-card-top-header" style="padding: 12px 14px; margin-bottom: 14px; background: #F0F9FF; border: 1.5px solid #BAE6FD; border-radius: var(--radius-xs); display: flex; flex-direction: row; align-items: center; justify-content: space-between; gap: 10px;">
+            <div style="text-align: left;">
+              <h2 style="font-family: var(--font-heading); font-size: 1.22rem; font-weight: 800; color: #0B192C; margin: 0; line-height: 1.25;">Wedding &amp; Event Supply</h2>
+            </div>
+            <span style="background: #FFFFFF; color: #0369A1; border: 1px solid #BAE6FD; font-size: 0.75rem; font-weight: 800; padding: 4px 10px; border-radius: 999px; white-space: nowrap;">7 Items</span>
+          </div>
+          <img src="assets/cat_wedding_supply.jpg" alt="Marriage and Banquet Bulk Water" style="width: 100%; height: 180px; object-fit: cover; border-radius: var(--radius-sm); margin-bottom: 14px;">
+          <p style="color: var(--text-muted); font-size: 0.86rem; line-height: 1.5; margin-bottom: 14px;">
+            Complete beverage setup for marriage gardens along Piprali &amp; Nawalgarh Road. Mini water petis + Cold drink crates + Fast venue unloading.
+          </p>
+          <div style="display: flex; justify-content: space-between; align-items: center; border-top: 1px solid var(--border-subtle); padding-top: 12px;">
+            <span style="font-size: 0.84rem; font-weight: 700; color: #0369A1;">Save up to 20%</span>
+            <a href="/products?category=wedding" class="btn-portal-primary" style="padding: 6px 14px; font-size: 0.82rem; text-decoration: none;">View Category &rarr;</a>
+          </div>
+        </div>
+      </div>
+    </div>
+  </main>
+
+  <!-- CART SLIDE DRAWER -->
+  <div class="drawer-backdrop" id="cart-backdrop" onclick="toggleCartDrawer(false)"></div>
+  <aside class="cart-drawer-panel" id="cart-drawer" role="dialog" aria-modal="true" aria-label="Shopping Cart">
+    <div class="cart-drawer-header">
+      <div class="cart-drawer-title-row">
+        <h3>Dispatch Cart</h3>
+        <span class="drawer-count-badge" id="drawer-total-count">0</span>
+      </div>
+      <button type="button" class="drawer-close-btn" onclick="toggleCartDrawer(false)" aria-label="Close cart">
+        <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2" width="18" height="18"><line x1="18" y1="6" x2="6" y2="18"></line><line x1="6" y1="6" x2="18" y2="18"></line></svg>
+      </button>
+    </div>
+    <div class="cart-drawer-body" id="cart-drawer-items-list"></div>
+    <div class="cart-drawer-footer">
+      <div class="drawer-total-row">
+        <span class="total-label">Subtotal:</span>
+        <span class="total-val tabular" id="cart-drawer-subtotal">₹0</span>
+      </div>
+      <button type="button" class="btn-checkout-gate" onclick="proceedToCheckout()">
+        <span>PROCEED TO WHATSAPP DISPATCH</span>
+      </button>
+    </div>
+  </aside>
+
+  <!-- EXTENDED FOOTER -->
+  <footer class="site-footer-main" id="contact-section">
+    <div class="container">
+      <div class="footer-cols-grid">
+        <div class="footer-col">
+          <div class="brand-title" style="color:#FFFFFF; margin-bottom: 12px;">SIKAR <span class="accent-blue">DROP</span></div>
+          <p style="font-size: 0.86rem; color: #94A3B8; line-height: 1.6; margin-bottom: 16px;">
+            Sikar's premier wholesale beverage &amp; mineral water depot. Dedicated express tempos supplying factory-sealed petis directly to stores, hostels and marriage gardens.
+          </p>
+          <div style="background: rgba(239, 68, 68, 0.12); border-left: 3px solid #EF4444; padding: 8px 12px; font-size: 0.78rem; color: #FECACA; font-weight: 700;">
+            Zero 20L Camper Notice: We do not supply 20L water jars. Only 100% factory-sealed bottles.
+          </div>
+        </div>
+        <div class="footer-col">
+          <h4 class="footer-col-title">Quick Links</h4>
+          <ul class="footer-links-list">
+            <li><a href="/">Home</a></li>
+            <li><a href="/products">Products Catalog</a></li>
+            <li><a href="/categories">Categories</a></li>
+            <li><a href="/bulk">Corporate &amp; Wedding Bulk</a></li>
+            <li><a href="/track">Live Order Tracking</a></li>
+          </ul>
+        </div>
+        <div class="footer-col">
+          <h4 class="footer-col-title">Information</h4>
+          <ul class="footer-links-list">
+            <li><a href="/about">About Depot</a></li>
+            <li><a href="/why">Why Choose Us</a></li>
+            <li><a href="/faq">Frequently Asked Questions</a></li>
+            <li><a href="/contact">Contact &amp; Location</a></li>
+          </ul>
+        </div>
+        <div class="footer-col">
+          <h4 class="footer-col-title">Depot Location</h4>
+          <p style="font-size: 0.84rem; color: #CBD5E1; margin-bottom: 8px;">Piprali &amp; Nawalgarh Road Junction, Sikar (Raj.)</p>
+          <p style="font-size: 0.84rem; color: #CBD5E1; margin-bottom: 12px;">Helpline: +91 98290 XXXXX</p>
+        </div>
+      </div>
+      <div style="margin-top: 32px; padding-top: 18px; border-top: 1px solid rgba(255,255,255,0.08); text-align: center; color: #64748B; font-size: 0.8rem;">
+        &copy; 2026 Sikar Drop Wholesale Depot. All Rights Reserved. Pure Water. Healthy Life.
+      </div>
+    </div>
+  </footer>
+
+  <!-- MOBILE BOTTOM NAVIGATION DOCK -->
+  <nav class="mobile-bottom-dock" id="mobile-bottom-dock" aria-label="Mobile Navigation">
+    <a href="/" class="dock-tab-btn" id="dock-btn-home">
+      <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2"><path d="m3 9 9-7 9 7v11a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2z"></path><polyline points="9 22 9 12 15 12 15 22"></polyline></svg>
+      <span>Home</span>
+    </a>
+    <a href="/products" class="dock-tab-btn" id="dock-btn-products">
+      <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2"><path d="M6 2 3 6v14a2 2 0 0 0 2 2h14a2 2 0 0 0 2-2V6l-3-4Z"></path><path d="M3 6h18"></path><path d="M16 10a4 4 0 0 1-8 0"></path></svg>
+      <span>Beverages</span>
+    </a>
+    <a href="/categories" class="dock-tab-btn active" id="dock-btn-categories">
+      <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2"><rect x="3" y="3" width="7" height="7"></rect><rect x="14" y="3" width="7" height="7"></rect><rect x="14" y="14" width="7" height="7"></rect><rect x="3" y="14" width="7" height="7"></rect></svg>
+      <span>Categories</span>
+    </a>
+    <a href="/track" class="dock-tab-btn" id="dock-btn-track">
+      <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2"><rect x="1" y="3" width="15" height="13"></rect><polygon points="16 8 20 8 23 11 23 16 16 16 16 8"></polygon><circle cx="5.5" cy="18.5" r="2.5"></circle><circle cx="18.5" cy="18.5" r="2.5"></circle></svg>
+      <span>Track Order</span>
+    </a>
+    <button type="button" class="dock-tab-btn" id="dock-btn-cart" onclick="toggleCartDrawer(true)">
+      <div style="position: relative; display: inline-flex;">
+        <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2"><circle cx="9" cy="21" r="1"></circle><circle cx="20" cy="21" r="1"></circle><path d="M1 1h4l2.68 13.39a2 2 0 0 0 2 1.61h9.72a2 2 0 0 0 2-1.61L23 6H6"></path></svg>
+        <span class="dock-cart-counter" id="dock-cart-badge">0</span>
+      </div>
+      <span>Cart</span>
+    </button>
+  </nav>
+
+  <script src="assets/site.js"></script>
+  <script>
+    window.addEventListener('DOMContentLoaded', async () => {
+      await initStorefrontTheme();
+      await loadCatalogFromBackend();
+      updateCartUI();
+      renderCategoriesPageCards();
+    });
+
+    function renderCategoriesPageCards() {
+      const grid = document.getElementById('categories-cards-grid');
+      if (!grid || !CATEGORIES || CATEGORIES.length === 0) return;
+
+      grid.innerHTML = CATEGORIES.map(c => {
+        const prodCount = PRODUCTS.filter(p => p.category === c.id && p.active !== 0).length;
+        return `
+          <div class="portal-card" onclick="window.location.href='/products?category=${encodeURIComponent(c.id)}'" style="padding: 20px; cursor: pointer; transition: transform 0.2s, box-shadow 0.2s;">
+            <div class="cat-card-top-header" style="padding: 12px 14px; margin-bottom: 14px; background: #F0F9FF; border: 1.5px solid #BAE6FD; border-radius: var(--radius-xs); display: flex; flex-direction: row; align-items: center; justify-content: space-between; gap: 10px;">
+              <div style="text-align: left;">
+                <h2 style="font-family: var(--font-heading); font-size: 1.25rem; font-weight: 800; color: #0B192C; margin: 0; line-height: 1.25;">${escapeHTML(c.name)}</h2>
+              </div>
+              <span style="background: #FFFFFF; color: #0369A1; border: 1px solid #BAE6FD; font-size: 0.76rem; font-weight: 800; padding: 4px 10px; border-radius: 999px; white-space: nowrap;">${prodCount} Items</span>
+            </div>
+            <img src="${c.image || 'assets/cat_water_bottles.jpg'}" alt="${escapeHTML(c.name)}" style="width: 100%; height: 180px; object-fit: cover; border-radius: var(--radius-sm); margin-bottom: 14px;">
+            <p style="color: var(--text-muted); font-size: 0.86rem; line-height: 1.5; margin-bottom: 14px;">
+              ${escapeHTML(c.tagline || '100% Genuine factory-sealed depot supplies across Sikar.')}
+            </p>
+            <div style="display: flex; justify-content: space-between; align-items: center; border-top: 1px solid var(--border-subtle); padding-top: 12px;">
+              <span style="font-size: 0.84rem; font-weight: 700; color: #0F172A;">${prodCount} Products in Stock</span>
+              <a href="/products?category=${encodeURIComponent(c.id)}" class="btn-portal-primary" style="padding: 6px 14px; font-size: 0.82rem; text-decoration: none;">Open Category &rarr;</a>
+            </div>
+          </div>
+        `;
+      }).join('');
+    }
+
+    function handleCategorySearch(val) {
+      const q = val.trim().toLowerCase();
+      document.querySelectorAll('#categories-cards-grid .portal-card').forEach(card => {
+        const text = card.textContent.toLowerCase();
+        card.style.display = text.includes(q) ? 'block' : 'none';
+      });
+    }
+  </script>
+</body>
+</html>

@@ -1,0 +1,18 @@
+{
+  "name": "sikar-drop",
+  "version": "1.0.0",
+  "description": "Sikar Drop Wholesale Bottled Water & Beverage Depot",
+  "main": "server.js",
+  "scripts": {
+    "start": "node server.js"
+  },
+  "dependencies": {
+    "better-sqlite3": "^11.8.1",
+    "body-parser": "^1.20.3",
+    "cors": "^2.8.5",
+    "express": "^4.21.2"
+  },
+  "engines": {
+    "node": ">=18.0.0"
+  }
+}
