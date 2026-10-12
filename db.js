@@ -492,7 +492,7 @@ function initDatabase() {
           save_pct: 20,
           badge: '👑 Wedding Favorite',
           badge_class: 'popular',
-          image: 'assets/cat_wedding_supply.jpg',
+          image: 'assets/bundle_wedding_vip.jpg',
           specs_json: JSON.stringify([
             '10x Shaadi Mini Water Petis (48x 250ml Sealed)',
             '5x Bailey / Kinley 1L Packaged Cases (60 Bottles)',
@@ -515,7 +515,7 @@ function initDatabase() {
           save_pct: 18,
           badge: '🏢 Piprali / Nawalgarh Rd',
           badge_class: 'deal',
-          image: 'assets/cat_water_cases.jpg',
+          image: 'assets/bundle_hostel_hydration.jpg',
           specs_json: JSON.stringify([
             '15x Bailey 1L Packaged Cases (180 Bottles)',
             '4x Aquafina 500ml Compact Petis (96 Bottles)',
@@ -538,7 +538,7 @@ function initDatabase() {
           save_pct: 17,
           badge: '⚡ Instant Dispatch',
           badge_class: 'hot',
-          image: 'assets/prod_coca_cola.jpg',
+          image: 'assets/bundle_summer_party.jpg',
           specs_json: JSON.stringify([
             '2x Coca-Cola 750ml Party Crates (48 Bottles)',
             '2x Thums Up 250ml PET Crates (48 Bottles)',
@@ -561,7 +561,7 @@ function initDatabase() {
           save_pct: 17,
           badge: '🏪 Kirana Restock',
           badge_class: 'deal',
-          image: 'assets/cat_soft_drinks.jpg',
+          image: 'assets/bundle_kirana_starter.jpg',
           specs_json: JSON.stringify([
             '40x Bisleri 1L Mineral Water Bottles',
             '2x Frooti & Maaza Mango Juice Trays (60 Packs)',
