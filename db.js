@@ -490,7 +490,7 @@ function initDatabase() {
           mrp: 5860,
           save_amt: 1161,
           save_pct: 20,
-          badge: '👑 Wedding Favorite',
+          badge: 'Wedding Favorite',
           badge_class: 'popular',
           image: 'assets/bundle_wedding_vip.jpg',
           specs_json: JSON.stringify([
@@ -513,7 +513,7 @@ function initDatabase() {
           mrp: 3960,
           save_amt: 710,
           save_pct: 18,
-          badge: '🏢 Piprali / Nawalgarh Rd',
+          badge: 'Piprali / Nawalgarh Rd',
           badge_class: 'deal',
           image: 'assets/bundle_hostel_hydration.jpg',
           specs_json: JSON.stringify([
@@ -536,7 +536,7 @@ function initDatabase() {
           mrp: 3620,
           save_amt: 621,
           save_pct: 17,
-          badge: '⚡ Instant Dispatch',
+          badge: 'Instant Dispatch',
           badge_class: 'hot',
           image: 'assets/bundle_summer_party.jpg',
           specs_json: JSON.stringify([
@@ -559,7 +559,7 @@ function initDatabase() {
           mrp: 2380,
           save_amt: 400,
           save_pct: 17,
-          badge: '🏪 Kirana Restock',
+          badge: 'Kirana Restock',
           badge_class: 'deal',
           image: 'assets/bundle_kirana_starter.jpg',
           specs_json: JSON.stringify([

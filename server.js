@@ -1199,40 +1199,59 @@ app.post('/api/coupons', (req, res) => {
   }
 });
 
+function validateCouponLogic(codeParam, totalParam) {
+  if (!codeParam) return { valid: false, error: 'Please enter a coupon code' };
+  const coupon = db.prepare('SELECT * FROM coupons WHERE code = ? AND active = 1').get(codeParam.trim().toUpperCase());
+  if (!coupon) return { valid: false, error: 'Invalid coupon code' };
+
+  if (coupon.expiry_date) {
+    const today = new Date().toISOString().split('T')[0];
+    if (today > coupon.expiry_date) return { valid: false, error: 'Coupon code has expired' };
+  }
+
+  const totalVal = Number(totalParam || 0);
+
+  if (coupon.min_order > 0 && totalVal > 0 && totalVal < coupon.min_order) {
+    return { valid: false, error: `Minimum order value for this coupon is Rs.${coupon.min_order}` };
+  }
+
+  let discount = 0;
+  if (coupon.discount_type === 'percentage') {
+    discount = Math.round(((totalVal > 0 ? totalVal : (coupon.min_order || 100)) * coupon.discount_val) / 100);
+    if (coupon.max_discount > 0) discount = Math.min(discount, coupon.max_discount);
+  } else {
+    discount = coupon.discount_val;
+  }
+
+  return {
+    valid: true,
+    code: coupon.code,
+    discount,
+    discount_val: coupon.discount_val,
+    discount_type: coupon.discount_type,
+    min_order: coupon.min_order,
+    finalTotal: Math.max(0, totalVal - discount),
+    desc: coupon.desc
+  };
+}
+
+app.get('/api/coupons/validate', (req, res) => {
+  try {
+    const code = req.query.code;
+    const total = req.query.orderTotal || req.query.subtotal || req.query.total || req.query.amount || 0;
+    const result = validateCouponLogic(code, total);
+    res.json(result);
+  } catch (err) {
+    res.status(500).json({ valid: false, error: err.message });
+  }
+});
+
 app.post('/api/coupons/validate', (req, res) => {
   try {
-    const { code, orderTotal, orderAmount } = req.body;
-    if (!code) return res.status(400).json({ valid: false, error: 'Please enter a coupon code' });
-
-    const coupon = db.prepare('SELECT * FROM coupons WHERE code = ? AND active = 1').get(code.trim().toUpperCase());
-    if (!coupon) return res.json({ valid: false, error: 'Invalid coupon code' });
-
-    if (coupon.expiry_date) {
-      const today = new Date().toISOString().split('T')[0];
-      if (today > coupon.expiry_date) return res.json({ valid: false, error: 'Coupon code has expired' });
-    }
-
-    const totalVal = Number(orderTotal !== undefined ? orderTotal : (orderAmount || 0));
-
-    if (totalVal < coupon.min_order) {
-      return res.json({ valid: false, error: `Minimum order value for this coupon is Rs.${coupon.min_order}` });
-    }
-
-    let discount = 0;
-    if (coupon.discount_type === 'percentage') {
-      discount = Math.round((totalVal * coupon.discount_val) / 100);
-      if (coupon.max_discount > 0) discount = Math.min(discount, coupon.max_discount);
-    } else {
-      discount = coupon.discount_val;
-    }
-
-    res.json({
-      valid: true,
-      code: coupon.code,
-      discount,
-      finalTotal: Math.max(0, totalVal - discount),
-      desc: coupon.desc
-    });
+    const { code, orderTotal, orderAmount, subtotal, total } = req.body || {};
+    const totalVal = orderTotal !== undefined ? orderTotal : (subtotal !== undefined ? subtotal : (orderAmount !== undefined ? orderAmount : (total || 0)));
+    const result = validateCouponLogic(code, totalVal);
+    res.json(result);
   } catch (err) {
     res.status(500).json({ valid: false, error: err.message });
   }

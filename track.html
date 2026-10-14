@@ -299,7 +299,7 @@
       updateCartUI();
 
       const params = new URLSearchParams(window.location.search);
-      const orderParam = params.get('id');
+      const orderParam = params.get('id') || params.get('order');
       if (orderParam) {
         document.getElementById('bilty-input').value = orderParam;
         lookupLiveBilty(orderParam);

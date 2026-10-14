@@ -4628,19 +4628,19 @@
           <!-- CATEGORY TABS -->
           <div class="bundle-tabs-nav" id="bundle-tabs-nav">
             <button type="button" class="bundle-tab-btn active" onclick="filterBundles('all', this)">
-              <span>🌟 All Featured Deals (4)</span>
+              <span>All Featured Deals (4)</span>
             </button>
             <button type="button" class="bundle-tab-btn" onclick="filterBundles('wedding', this)">
-              <span>💍 Wedding &amp; Banquet</span>
+              <span>Wedding &amp; Banquet</span>
             </button>
             <button type="button" class="bundle-tab-btn" onclick="filterBundles('hostel', this)">
-              <span>🏢 Hostel &amp; PG Hydration</span>
+              <span>Hostel &amp; PG Hydration</span>
             </button>
             <button type="button" class="bundle-tab-btn" onclick="filterBundles('party', this)">
-              <span>🥤 Party &amp; Soft Drinks</span>
+              <span>Party &amp; Soft Drinks</span>
             </button>
             <button type="button" class="bundle-tab-btn" onclick="filterBundles('kirana', this)">
-              <span>🏪 Kirana Retailer Restock</span>
+              <span>Kirana Retailer Restock</span>
             </button>
           </div>
 
@@ -4650,7 +4650,7 @@
             <article class="bundle-card" data-category="wedding">
               <div class="bundle-card-visual">
                 <img src="assets/bundle_wedding_vip.jpg" alt="Shaadi & Banquet VIP Hydration Pack" class="bundle-card-img" loading="lazy">
-                <span class="bundle-badge-floating popular">👑 Wedding Favorite</span>
+                <span class="bundle-badge-floating popular">Wedding Favorite</span>
               </div>
               <div class="bundle-card-body">
                 <h3 class="bundle-card-title">Shaadi &amp; Banquet VIP Hydration Pack</h3>
@@ -4699,7 +4699,7 @@
             <article class="bundle-card" data-category="hostel">
               <div class="bundle-card-visual">
                 <img src="assets/bundle_hostel_hydration.jpg" alt="Coaching Hostel & PG Monthly Water Pack" class="bundle-card-img" loading="lazy">
-                <span class="bundle-badge-floating deal">🏢 Piprali / Nawalgarh Rd</span>
+                <span class="bundle-badge-floating deal">Piprali / Nawalgarh Rd</span>
               </div>
               <div class="bundle-card-body">
                 <h3 class="bundle-card-title">Coaching Hostel &amp; PG Hydration Deal</h3>
@@ -4748,7 +4748,7 @@
             <article class="bundle-card" data-category="party">
               <div class="bundle-card-visual">
                 <img src="assets/bundle_summer_party.jpg" alt="Summer Party & Cold Drinks Mega Crate" class="bundle-card-img" loading="lazy">
-                <span class="bundle-badge-floating hot">⚡ Instant Dispatch</span>
+                <span class="bundle-badge-floating hot">Instant Dispatch</span>
               </div>
               <div class="bundle-card-body">
                 <h3 class="bundle-card-title">Summer Party &amp; Soft Drinks Mega Crate</h3>
@@ -4797,7 +4797,7 @@
             <article class="bundle-card" data-category="kirana">
               <div class="bundle-card-visual">
                 <img src="assets/bundle_kirana_starter.jpg" alt="Kirana Retailer High-Margin Starter Crate" class="bundle-card-img" loading="lazy">
-                <span class="bundle-badge-floating deal">🏪 Kirana Restock</span>
+                <span class="bundle-badge-floating deal">Kirana Restock</span>
               </div>
               <div class="bundle-card-body">
                 <h3 class="bundle-card-title">Kirana Retailer High-Margin Starter Pack</h3>
@@ -5026,7 +5026,7 @@
               <div style="flex: 1.2; min-width: 280px;">
                 <div style="display: flex; gap: 8px; flex-wrap: wrap;">
                   <input type="text" id="site-delivery-check-input" placeholder="Enter area, colony, road or pincode (e.g. Piprali Road, Nawalgarh Road, 332001)..." onkeydown="if(event.key==='Enter'){event.preventDefault();checkWebsiteDeliveryAvailability();}" style="flex: 1; min-width: 200px; padding: 10px 14px; border: 1.5px solid #7DD3FC; border-radius: var(--radius-xs); background: #FFFFFF; font-size: 0.86rem; font-weight: 600; color: #0F172A; outline: none;">
-                  <button type="button" onclick="checkWebsiteDeliveryAvailability()" style="background: #0284C7; color: #FFFFFF; border: none; border-radius: var(--radius-xs); padding: 10px 18px; font-family: var(--font-heading); font-size: 0.86rem; font-weight: 800; cursor: pointer; white-space: nowrap;">
+                  <button type="button" id="site-delivery-check-btn" onclick="checkWebsiteDeliveryAvailability()" style="background: #0284C7; color: #FFFFFF; border: none; border-radius: var(--radius-xs); padding: 10px 18px; font-family: var(--font-heading); font-size: 0.86rem; font-weight: 800; cursor: pointer; white-space: nowrap;">
                     Check Availability
                   </button>
                 </div>
@@ -5221,7 +5221,7 @@
 
         <div style="background: #FFFFFF; border: 1px solid var(--border-subtle); border-radius: var(--radius-md); padding: 32px; box-shadow: var(--shadow-sm); margin-bottom: 28px;">
           <h2 style="font-family: var(--font-heading); font-size: 1.5rem; font-weight: 800; color: #0B192C; margin-bottom: 12px;">Our Mission &amp; Strict Zero-Camper Philosophy</h2>
-          <p style="font-size: 0.92rem; color: #475569; line-height: 1.7; margin-bottom: 16px;">
+          <p id="live-about-story" style="font-size: 0.92rem; color: #475569; line-height: 1.7; margin-bottom: 16px;">
             Sikar Drop was established in 2024 with a singular objective: <strong>eliminating the health risks and unhygienic practices associated with unsealed 20L plastic camper jars</strong> across Sikar. Most marriage gardens, student hostels, and events were reliant on reusable campers that lacked batch seals, FSSAI water quality testing, and proper sanitization standards.
           </p>
           <p style="font-size: 0.92rem; color: #475569; line-height: 1.7; margin-bottom: 20px;">
@@ -5418,7 +5418,7 @@
               </div>
               <div>
                 <strong style="display: block; font-size: 0.88rem; color: #0B192C;">Depot Address</strong>
-                <span style="font-size: 0.84rem; color: #475569;">Plot 14-B, Near Krishi Upaj Mandi, Station Road Bypass, Sikar (Raj.) 332001</span>
+                <span id="live-contact-address" style="font-size: 0.84rem; color: #475569;">Plot 14-B, Near Krishi Upaj Mandi, Station Road Bypass, Sikar (Raj.) 332001</span>
               </div>
             </div>
 
@@ -5428,7 +5428,7 @@
               </div>
               <div>
                 <strong style="display: block; font-size: 0.88rem; color: #0B192C;">Phone &amp; WhatsApp</strong>
-                <span style="font-size: 0.84rem; color: #475569;">+91 98290 XXXXX / +91 98290 84210</span>
+                <span id="live-contact-phone" style="font-size: 0.84rem; color: #475569;">+91 98290 XXXXX / +91 98290 84210</span>
               </div>
             </div>
 
@@ -6733,8 +6733,8 @@
         <!-- COL 4: CONTACT & WAREHOUSE -->
         <div class="footer-col">
           <h4>Depot &amp; Helpline</h4>
-          <p><strong>Main Depot:</strong> Near Krishi Upaj Mandi, Station Road Bypass, Sikar (Raj.) 332001</p>
-          <p><strong>Phone:</strong> +91 98290 XXXXX<br><strong>Timings:</strong> 7:00 AM – 10:30 PM (All 7 Days)</p>
+          <p><strong>Main Depot:</strong> <span id="live-footer-address">Near Krishi Upaj Mandi, Station Road Bypass, Sikar (Raj.) 332001</span></p>
+          <p><strong>Phone:</strong> <span id="live-footer-phone">+91 98290 XXXXX</span><br><strong>Timings:</strong> 7:00 AM – 10:30 PM (All 7 Days)</p>
           <div style="background: rgba(255, 255, 255, 0.08); padding: 12px; border-radius: var(--radius-xs); font-size: 0.8rem; color: #CBD5E1;">
             Cash on Delivery, PhonePe, Google Pay, UPI on Delivery.
           </div>
@@ -6745,7 +6745,7 @@
       <div class="footer-bottom-legal">
         <span>© 2026 Sikar Drop Wholesale Hub. All rights reserved. Sikar, Rajasthan.</span>
         <span>100% Factory-Sealed Inventory • Zero 20L Camper Policy</span>
-<span>Helpline: +91 98290 XXXXX</span>
+        <span id="live-footer-helpline">Helpline: +91 98290 XXXXX</span>
       </div>
     </div>
   </footer>
@@ -9231,7 +9231,7 @@
         mrp: 5860,
         saveAmt: 1161,
         savePct: 20,
-        badge: '👑 Wedding Favorite',
+        badge: 'Wedding Favorite',
         badgeClass: 'popular',
         image: 'assets/bundle_wedding_vip.jpg',
         specs: [
@@ -9255,7 +9255,7 @@
         mrp: 3960,
         saveAmt: 710,
         savePct: 18,
-        badge: '🏢 Piprali / Nawalgarh Rd',
+        badge: 'Piprali / Nawalgarh Rd',
         badgeClass: 'deal',
         image: 'assets/bundle_hostel_hydration.jpg',
         specs: [
@@ -9278,7 +9278,7 @@
         mrp: 3620,
         saveAmt: 621,
         savePct: 17,
-        badge: '⚡ Instant Dispatch',
+        badge: 'Instant Dispatch',
         badgeClass: 'hot',
         image: 'assets/bundle_summer_party.jpg',
         specs: [
@@ -9302,7 +9302,7 @@
         mrp: 2380,
         saveAmt: 400,
         savePct: 17,
-        badge: '🏪 Kirana Restock',
+        badge: 'Kirana Restock',
         badgeClass: 'deal',
         image: 'assets/bundle_kirana_starter.jpg',
         specs: [
@@ -9558,6 +9558,12 @@
       const elBulkSub = document.getElementById('live-bulk-banner-sub');
       const elFooterNotice = document.getElementById('live-footer-camper-notice');
       const elFooterAbout = document.getElementById('live-footer-about-text');
+      const elContactAddress = document.getElementById('live-contact-address');
+      const elContactPhone = document.getElementById('live-contact-phone');
+      const elAboutStory = document.getElementById('live-about-story');
+      const elFooterAddress = document.getElementById('live-footer-address');
+      const elFooterPhone = document.getElementById('live-footer-phone');
+      const elFooterHelpline = document.getElementById('live-footer-helpline');
 
       if (elTopPolicy && t.topPolicy) elTopPolicy.textContent = t.topPolicy;
       if (elHelpline && t.helpline) {
@@ -9573,6 +9579,12 @@
         elFooterNotice.innerHTML = `<strong>Strict Policy Notice:</strong> ${escapeHTML(t.footerCamper)}`;
       }
       if (elFooterAbout && t.footerAbout) elFooterAbout.textContent = t.footerAbout;
+      if (elContactAddress && (t.contactAddress || t.contact_address)) elContactAddress.textContent = t.contactAddress || t.contact_address;
+      if (elContactPhone && (t.contactPhone || t.contact_phone)) elContactPhone.textContent = t.contactPhone || t.contact_phone;
+      if (elAboutStory && (t.aboutStory || t.about_story)) elAboutStory.innerHTML = escapeHTML(t.aboutStory || t.about_story).split('\n').join('<br>');
+      if (elFooterAddress && (t.contactAddress || t.contact_address)) elFooterAddress.textContent = t.contactAddress || t.contact_address;
+      if (elFooterPhone && (t.contactPhone || t.contact_phone)) elFooterPhone.textContent = t.contactPhone || t.contact_phone;
+      if (elFooterHelpline && (t.helpline || t.contactPhone)) elFooterHelpline.textContent = `Helpline: ${t.helpline || t.contactPhone}`;
     }
 
     // =========================================================
@@ -12241,18 +12253,15 @@
         if (prodRes.ok) {
           const prods = await prodRes.json();
           if (Array.isArray(prods)) {
-            const localProds = JSON.parse(localStorage.getItem('sikar_admin_products')) || [];
-            const customProds = localProds.filter(lp => lp && lp.id && !prods.some(sp => sp.id === lp.id));
-            const mergedProds = [...customProds, ...prods];
-            mergedProds.sort((a, b) => {
+            prods.sort((a, b) => {
               const ordA = a.display_order !== undefined ? a.display_order : 50;
               const ordB = b.display_order !== undefined ? b.display_order : 50;
               if (ordA !== ordB) return ordA - ordB;
               return (b.created_at || '').localeCompare(a.created_at || '');
             });
-            PRODUCTS = mergedProds;
-            adminProducts = mergedProds;
-            localStorage.setItem('sikar_admin_products', JSON.stringify(mergedProds));
+            PRODUCTS = prods;
+            adminProducts = prods;
+            localStorage.setItem('sikar_admin_products', JSON.stringify(prods));
             renderProducts();
             renderBulkCalculatorItems();
           }
@@ -12260,13 +12269,10 @@
 
         if (catRes.ok) {
           const cats = await catRes.json();
-          if (Array.isArray(cats)) {
-            const localCats = JSON.parse(localStorage.getItem('sikar_admin_categories')) || [];
-            const customCats = localCats.filter(lc => lc && lc.id && !cats.some(sc => sc.id === lc.id));
-            const mergedCats = [...cats, ...customCats];
-            CATEGORIES = mergedCats;
-            adminCategories = mergedCats;
-            localStorage.setItem('sikar_admin_categories', JSON.stringify(mergedCats));
+          if (Array.isArray(cats) && cats.length > 0) {
+            CATEGORIES = cats;
+            adminCategories = cats;
+            localStorage.setItem('sikar_admin_categories', JSON.stringify(cats));
             renderStorefrontCategories();
             renderSoftCategories();
             renderProducts();

@@ -505,36 +505,99 @@ async function loadCatalogFromBackend() {
     if (pRes.ok) {
       const pData = await pRes.json();
       if (Array.isArray(pData)) {
-        // Merge with locally created custom products so newly added products are NEVER wiped out
-        const localProds = JSON.parse(localStorage.getItem('sikar_admin_products') || '[]');
-        const customProds = localProds.filter(lp => lp && lp.id && !pData.some(sp => sp.id === lp.id));
-        const mergedProds = [...customProds, ...pData];
-        mergedProds.sort((a, b) => {
+        pData.sort((a, b) => {
           const ordA = a.display_order !== undefined ? a.display_order : 50;
           const ordB = b.display_order !== undefined ? b.display_order : 50;
           if (ordA !== ordB) return ordA - ordB;
           return (b.created_at || '').localeCompare(a.created_at || '');
         });
-        PRODUCTS = mergedProds;
-        localStorage.setItem('sikar_admin_products', JSON.stringify(mergedProds));
+        PRODUCTS = pData;
+        localStorage.setItem('sikar_admin_products', JSON.stringify(pData));
       }
     }
 
     if (cRes.ok) {
       const cData = await cRes.json();
       if (Array.isArray(cData)) {
-        // Merge with locally created categories
-        const localCats = JSON.parse(localStorage.getItem('sikar_admin_categories') || '[]');
-        const customCats = localCats.filter(lc => lc && lc.id && !cData.some(sc => sc.id === lc.id));
-        const mergedCats = [...cData, ...customCats];
-        CATEGORIES = mergedCats;
-        localStorage.setItem('sikar_admin_categories', JSON.stringify(mergedCats));
+        CATEGORIES = cData;
+        localStorage.setItem('sikar_admin_categories', JSON.stringify(cData));
       }
     }
   } catch (err) {
     console.warn('Backend catalog sync error, fallback to cache:', err);
     PRODUCTS = JSON.parse(localStorage.getItem('sikar_admin_products') || '[]');
     CATEGORIES = JSON.parse(localStorage.getItem('sikar_admin_categories') || '[]');
+  }
+}
+
+let SITE_TEXTS = JSON.parse(localStorage.getItem('sikar_admin_texts') || 'null');
+
+async function loadSiteTextsFromBackend() {
+  try {
+    const res = await fetch('/api/site-texts');
+    if (res.ok) {
+      const t = await res.json();
+      if (t && typeof t === 'object') {
+        SITE_TEXTS = t;
+        localStorage.setItem('sikar_admin_texts', JSON.stringify(t));
+        applyStorefrontSiteTexts(t);
+      }
+    }
+  } catch (err) {
+    if (SITE_TEXTS) applyStorefrontSiteTexts(SITE_TEXTS);
+  }
+}
+
+function applyStorefrontSiteTexts(t) {
+  if (!t) return;
+  const setTxt = (id, val) => {
+    const el = document.getElementById(id);
+    if (el && val !== undefined && val !== null) el.textContent = val;
+  };
+  const setHtml = (id, val) => {
+    const el = document.getElementById(id);
+    if (el && val !== undefined && val !== null) el.innerHTML = escapeHTML(val).replace(/\n/g, '<br>');
+  };
+
+  setTxt('live-hero-pill-text', t.heroPill || t.hero_pill);
+  setHtml('live-hero-main-title', t.heroTitle || t.hero_title);
+  setTxt('live-hero-desc-lead', t.heroDesc || t.hero_desc);
+  const heroImg = document.getElementById('live-hero-bottles-img');
+  if (heroImg && (t.heroImg || t.hero_img)) heroImg.src = t.heroImg || t.hero_img;
+
+  setTxt('live-top-policy-text', t.topPolicy || t.top_policy);
+  const helpline = document.getElementById('live-top-helpline-link');
+  const hVal = t.helpline || t.contactPhone || t.contact_phone;
+  if (helpline && hVal) {
+    helpline.textContent = hVal;
+    helpline.href = 'tel:' + String(hVal).replace(/[^0-9]/g, '');
+  }
+  setTxt('live-brand-tagline', t.brandTagline || t.brand_tagline);
+  setTxt('live-truck-banner-title', t.truckTitle || t.truck_title);
+  setTxt('live-truck-banner-sub', t.truckSub || t.truck_sub);
+  setTxt('live-bulk-banner-title', t.bulkTitle || t.bulk_title);
+  setTxt('live-bulk-banner-sub', t.bulkSub || t.bulk_sub);
+  setTxt('live-footer-about-text', t.footerAbout || t.footer_about);
+  setTxt('live-footer-address', t.contactAddress || t.contact_address);
+  setTxt('live-footer-phone', t.contactPhone || t.contact_phone);
+  setTxt('live-contact-address', t.contactAddress || t.contact_address);
+  
+  const cPhone = document.getElementById('live-contact-phone');
+  if (cPhone && (t.contactPhone || t.contact_phone)) {
+    cPhone.textContent = t.contactPhone || t.contact_phone;
+    if (cPhone.tagName === 'A') cPhone.href = 'tel:' + String(t.contactPhone || t.contact_phone).replace(/[^0-9]/g, '');
+  }
+
+  setHtml('live-about-story', t.aboutStory || t.about_story);
+
+  const footerHelpline = document.getElementById('live-footer-helpline');
+  if (footerHelpline && (t.helpline || t.contactPhone || t.contact_phone)) {
+    footerHelpline.textContent = `Helpline: ${t.helpline || t.contactPhone || t.contact_phone}`;
+  }
+
+  const notice = document.getElementById('live-footer-camper-notice');
+  if (notice && (t.footerCamper || t.footer_camper)) {
+    notice.innerHTML = '<strong>Strict Policy Notice:</strong> ' + escapeHTML(t.footerCamper || t.footer_camper);
   }
 }
 
@@ -1093,3 +1156,16 @@ window.addEventListener('keydown', (e) => {
     toggleCartDrawer(false);
   }
 });
+
+// 5. AUTO-INITIALIZE THEME & CMS SITE TEXTS
+if (typeof window !== 'undefined') {
+  if (document.readyState === 'loading') {
+    document.addEventListener('DOMContentLoaded', () => {
+      initStorefrontTheme();
+      loadSiteTextsFromBackend();
+    });
+  } else {
+    initStorefrontTheme();
+    loadSiteTextsFromBackend();
+  }
+}

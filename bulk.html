@@ -223,11 +223,11 @@
 
         <!-- CATEGORY TABS -->
         <div class="bundle-tabs-nav" id="bundle-tabs-nav">
-          <button type="button" class="bundle-tab-btn active" onclick="filterBundles('all', this)">🌟 All Featured Deals (4)</button>
-          <button type="button" class="bundle-tab-btn" onclick="filterBundles('wedding', this)">💍 Wedding &amp; Banquet</button>
-          <button type="button" class="bundle-tab-btn" onclick="filterBundles('hostel', this)">🏢 Hostel &amp; PG Hydration</button>
-          <button type="button" class="bundle-tab-btn" onclick="filterBundles('party', this)">🥤 Party &amp; Soft Drinks</button>
-          <button type="button" class="bundle-tab-btn" onclick="filterBundles('kirana', this)">🏪 Kirana Retailer Restock</button>
+          <button type="button" class="bundle-tab-btn active" onclick="filterBundles('all', this)">All Featured Deals (4)</button>
+          <button type="button" class="bundle-tab-btn" onclick="filterBundles('wedding', this)">Wedding &amp; Banquet</button>
+          <button type="button" class="bundle-tab-btn" onclick="filterBundles('hostel', this)">Hostel &amp; PG Hydration</button>
+          <button type="button" class="bundle-tab-btn" onclick="filterBundles('party', this)">Party &amp; Soft Drinks</button>
+          <button type="button" class="bundle-tab-btn" onclick="filterBundles('kirana', this)">Kirana Retailer Restock</button>
         </div>
 
         <!-- BUNDLES GRID -->
@@ -235,7 +235,7 @@
           <!-- BUNDLE 1: SHAADI & BANQUET PACK -->
           <div class="bundle-card" data-category="wedding">
             <div class="bundle-card-visual">
-              <span class="bundle-badge-floating popular">👑 Wedding Favorite</span>
+              <span class="bundle-badge-floating popular">Wedding Favorite</span>
               <img src="assets/bundle_wedding_vip.jpg" alt="Shaadi & Banquet VIP Hydration Pack" class="bundle-card-img" loading="lazy">
             </div>
             <div class="bundle-card-body">
@@ -285,7 +285,7 @@
           <!-- BUNDLE 2: COACHING HOSTEL DEAL -->
           <div class="bundle-card" data-category="hostel">
             <div class="bundle-card-visual">
-              <span class="bundle-badge-floating deal">🏢 Piprali / Nawalgarh Rd</span>
+              <span class="bundle-badge-floating deal">Piprali / Nawalgarh Rd</span>
               <img src="assets/bundle_hostel_hydration.jpg" alt="Coaching Hostel & PG Hydration Deal" class="bundle-card-img" loading="lazy">
             </div>
             <div class="bundle-card-body">
@@ -335,7 +335,7 @@
           <!-- BUNDLE 3: SUMMER PARTY MEGA CRATE -->
           <div class="bundle-card" data-category="party">
             <div class="bundle-card-visual">
-              <span class="bundle-badge-floating hot">⚡ Instant Dispatch</span>
+              <span class="bundle-badge-floating hot">Instant Dispatch</span>
               <img src="assets/bundle_summer_party.jpg" alt="Summer Party & Soft Drinks Mega Crate" class="bundle-card-img" loading="lazy">
             </div>
             <div class="bundle-card-body">
@@ -385,7 +385,7 @@
           <!-- BUNDLE 4: KIRANA RETAILER RESTOCK -->
           <div class="bundle-card" data-category="kirana">
             <div class="bundle-card-visual">
-              <span class="bundle-badge-floating deal">🏪 Kirana Restock</span>
+              <span class="bundle-badge-floating deal">Kirana Restock</span>
               <img src="assets/bundle_kirana_starter.jpg" alt="Kirana Retailer High-Margin Starter Pack" class="bundle-card-img" loading="lazy">
             </div>
             <div class="bundle-card-body">
@@ -631,7 +631,7 @@
         mrp: 5860,
         saveAmt: 1161,
         savePct: 20,
-        badge: '👑 Wedding Favorite',
+        badge: 'Wedding Favorite',
         badgeClass: 'popular',
         image: 'assets/bundle_wedding_vip.jpg',
         specs: [
@@ -655,7 +655,7 @@
         mrp: 3960,
         saveAmt: 710,
         savePct: 18,
-        badge: '🏢 Piprali / Nawalgarh Rd',
+        badge: 'Piprali / Nawalgarh Rd',
         badgeClass: 'deal',
         image: 'assets/bundle_hostel_hydration.jpg',
         specs: [
@@ -678,7 +678,7 @@
         mrp: 3620,
         saveAmt: 621,
         savePct: 17,
-        badge: '⚡ Instant Dispatch',
+        badge: 'Instant Dispatch',
         badgeClass: 'hot',
         image: 'assets/bundle_summer_party.jpg',
         specs: [
@@ -702,7 +702,7 @@
         mrp: 2380,
         saveAmt: 400,
         savePct: 17,
-        badge: '🏪 Kirana Restock',
+        badge: 'Kirana Restock',
         badgeClass: 'deal',
         image: 'assets/bundle_kirana_starter.jpg',
         specs: [
@@ -838,6 +838,22 @@
     function addBulkCalcItemsToCart() {}
     function dispatchBulkCalcWhatsApp() {}
 
+    let BULK_RATES = JSON.parse(localStorage.getItem('sikar_admin_rates') || 'null') || { w250: 280, w1000: 180, cold: 400, juice: 1180 };
+    async function loadBulkRates() {
+      try {
+        const res = await fetch('/api/bulk-rates');
+        if (res.ok) {
+          const r = await res.json();
+          if (r && typeof r === 'object') {
+            BULK_RATES = { ...BULK_RATES, ...r };
+            localStorage.setItem('sikar_admin_rates', JSON.stringify(BULK_RATES));
+            runBulkCalculator();
+          }
+        }
+      } catch (e) {}
+    }
+    loadBulkRates();
+
     let currentCalculatedSummary = {};
 
     function runBulkCalculator() {
@@ -856,8 +872,10 @@
       const totalDrinkBottles = Math.round(guests * 0.5 * mult);
       const crates = Math.ceil(totalDrinkBottles / 24); // 24 bottles per crate
 
-      // Peti cost ~ ₹280, Crate cost ~ ₹400
-      const totalCost = (petis * 280) + (crates * 400);
+      // Dynamic rates configured from Admin Panel
+      const ratePeti = Number(BULK_RATES.w250) || 280;
+      const rateCrate = Number(BULK_RATES.cold) || 400;
+      const totalCost = (petis * ratePeti) + (crates * rateCrate);
 
       document.getElementById('calc-petis-output').textContent = `${petis} Petis (${petis * 48} Bottles)`;
       document.getElementById('calc-crates-output').textContent = `${crates} Crates (${crates * 24} Bottles)`;

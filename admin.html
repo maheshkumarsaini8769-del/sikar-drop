@@ -3170,10 +3170,10 @@
           <div style="display: flex; gap: 12px; align-items: center; justify-content: space-between; flex-wrap: wrap; margin-bottom: 18px; padding-bottom: 14px; border-bottom: 1px solid var(--border-subtle);">
             <div style="display: flex; gap: 8px; flex-wrap: wrap;" id="admin-bundle-filter-pills">
               <button type="button" class="filter-pill active" onclick="filterAdminBundles('all', this)">All Deals</button>
-              <button type="button" class="filter-pill" onclick="filterAdminBundles('wedding', this)">💍 Wedding &amp; Banquet</button>
-              <button type="button" class="filter-pill" onclick="filterAdminBundles('hostel', this)">🏢 Hostel &amp; PG</button>
-              <button type="button" class="filter-pill" onclick="filterAdminBundles('party', this)">🥤 Party &amp; Soft Drinks</button>
-              <button type="button" class="filter-pill" onclick="filterAdminBundles('kirana', this)">🏪 Kirana Restock</button>
+              <button type="button" class="filter-pill" onclick="filterAdminBundles('wedding', this)">Wedding &amp; Banquet</button>
+              <button type="button" class="filter-pill" onclick="filterAdminBundles('hostel', this)">Hostel &amp; PG</button>
+              <button type="button" class="filter-pill" onclick="filterAdminBundles('party', this)">Party &amp; Soft Drinks</button>
+              <button type="button" class="filter-pill" onclick="filterAdminBundles('kirana', this)">Kirana Restock</button>
             </div>
             <input type="text" id="admin-bundle-search" class="portal-input" placeholder="Search bundles by name..." style="max-width: 250px; font-size: 0.82rem;" oninput="searchAdminBundles(this.value)">
           </div>
@@ -4454,11 +4454,11 @@
           <div class="portal-field-group">
             <label for="bundle-input-category">Target Category *</label>
             <select id="bundle-input-category" class="portal-select" required>
-              <option value="wedding">💍 Wedding &amp; Banquet</option>
-              <option value="hostel">🏢 Hostel &amp; PG Hydration</option>
-              <option value="party">🥤 Party &amp; Soft Drinks</option>
-              <option value="kirana">🏪 Kirana Retailer Restock</option>
-              <option value="custom">🌟 Custom Wholesale Package</option>
+              <option value="wedding">Wedding &amp; Banquet</option>
+              <option value="hostel">Hostel &amp; PG Hydration</option>
+              <option value="party">Party &amp; Soft Drinks</option>
+              <option value="kirana">Kirana Retailer Restock</option>
+              <option value="custom">Custom Wholesale Package</option>
             </select>
           </div>
         </div>
@@ -4486,7 +4486,7 @@
         <div class="portal-form-grid-2">
           <div class="portal-field-group">
             <label for="bundle-input-badge">Floating Badge Tag</label>
-            <input type="text" id="bundle-input-badge" class="portal-input" placeholder="👑 Wedding Favorite">
+            <input type="text" id="bundle-input-badge" class="portal-input" placeholder="Wedding Favorite">
           </div>
           <div class="portal-field-group">
             <label for="bundle-input-badgeclass">Badge Theme Color</label>
@@ -5007,24 +5007,18 @@
         }
 
         if (prods && Array.isArray(prods)) {
-          const localProds = JSON.parse(localStorage.getItem('sikar_admin_products') || '[]');
-          const customProds = localProds.filter(lp => lp && lp.id && !prods.some(sp => sp.id === lp.id));
-          const mergedProds = [...customProds, ...prods];
-          mergedProds.sort((a, b) => {
+          prods.sort((a, b) => {
             const ordA = a.display_order !== undefined ? a.display_order : 50;
             const ordB = b.display_order !== undefined ? b.display_order : 50;
             if (ordA !== ordB) return ordA - ordB;
             return (b.created_at || '').localeCompare(a.created_at || '');
           });
-          adminProducts = mergedProds;
-          localStorage.setItem('sikar_admin_products', JSON.stringify(mergedProds));
+          adminProducts = prods;
+          localStorage.setItem('sikar_admin_products', JSON.stringify(prods));
         }
         if (cats && Array.isArray(cats) && cats.length > 0) {
-          const localCats = JSON.parse(localStorage.getItem('sikar_admin_categories') || '[]');
-          const customCats = localCats.filter(lc => lc && lc.id && !cats.some(sc => sc.id === lc.id));
-          const mergedCats = [...cats, ...customCats];
-          adminCategories = mergedCats;
-          localStorage.setItem('sikar_admin_categories', JSON.stringify(mergedCats));
+          adminCategories = cats;
+          localStorage.setItem('sikar_admin_categories', JSON.stringify(cats));
         }
         if (manualSales && Array.isArray(manualSales)) {
           adminManualSales = manualSales;
@@ -7717,11 +7711,11 @@
       }
 
       const catBadges = {
-        wedding: { label: '💍 Wedding & Banquet', color: '#D97706', bg: '#FEF3C7' },
-        hostel: { label: '🏢 Hostel & PG', color: '#2563EB', bg: '#DBEAFE' },
-        party: { label: '🥤 Party & Soft Drinks', color: '#DC2626', bg: '#FEE2E2' },
-        kirana: { label: '🏪 Kirana Restock', color: '#059669', bg: '#D1FAE5' },
-        custom: { label: '🌟 Custom Package', color: '#7C3AED', bg: '#EDE9FE' }
+        wedding: { label: 'Wedding & Banquet', color: '#D97706', bg: '#FEF3C7' },
+        hostel: { label: 'Hostel & PG', color: '#2563EB', bg: '#DBEAFE' },
+        party: { label: 'Party & Soft Drinks', color: '#DC2626', bg: '#FEE2E2' },
+        kirana: { label: 'Kirana Restock', color: '#059669', bg: '#D1FAE5' },
+        custom: { label: 'Custom Package', color: '#7C3AED', bg: '#EDE9FE' }
       };
 
       container.innerHTML = list.map(b => {
@@ -7753,7 +7747,7 @@
                 <div style="font-size: 0.74rem; font-weight: 800; text-transform: uppercase; color: #64748B; margin-bottom: 6px;">Included In Package (${specsList.length}):</div>
                 <ul style="list-style: none; padding: 0; margin: 0; font-size: 0.78rem; color: #1E293B; line-height: 1.5;">
                   ${specsList.slice(0, 3).map(s => `<li style="display: flex; align-items: flex-start; gap: 5px; margin-bottom: 3px;">
-                    <span style="color: #0284C7; font-weight: 800;">✓</span>
+                    <svg viewBox="0 0 24 24" width="14" height="14" fill="none" stroke="#0284C7" stroke-width="2.5" style="flex-shrink:0; margin-top:2px;"><polyline points="20 6 9 17 4 12"/></svg>
                     <span>${escapeHTML(s)}</span>
                   </li>`).join('')}
                   ${specsList.length > 3 ? `<li style="font-size: 0.74rem; color: #64748B; font-weight: 700; margin-top: 4px;">+ ${specsList.length - 3} more items included</li>` : ''}
@@ -7808,7 +7802,7 @@
       document.getElementById('bundle-input-desc').value = '';
       document.getElementById('bundle-input-price').value = '';
       document.getElementById('bundle-input-mrp').value = '';
-      document.getElementById('bundle-input-badge').value = '👑 Wedding Favorite';
+      document.getElementById('bundle-input-badge').value = 'Wedding Favorite';
       document.getElementById('bundle-input-badgeclass').value = 'popular';
       document.getElementById('bundle-input-image').value = 'assets/cat_wedding_supply.jpg';
       document.getElementById('bundle-input-specs').value = "10x Shaadi Mini Water Petis (48x 250ml Sealed)\n5x Bailey / Kinley 1L Packaged Cases (60 Bottles)\n2x Real Fruit Power Mixed Juices (24x 1L Packs)\nStrict Zero 20L Campers • 100% Tamper-Proof";

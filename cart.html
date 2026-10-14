@@ -535,18 +535,24 @@
       }
 
       try {
-        const res = await fetch(`/api/coupons/validate?code=${encodeURIComponent(code)}`);
+        const cartObj = JSON.parse(localStorage.getItem('sikar_cart') || '{}');
+        let currentSubtotal = 0;
+        Object.entries(cartObj).forEach(([id, qty]) => {
+          const prod = (PRODUCTS || []).find(p => p.id === id);
+          if (prod) currentSubtotal += (prod.price || 0) * qty;
+        });
+        const res = await fetch(`/api/coupons/validate?code=${encodeURIComponent(code)}&subtotal=${currentSubtotal}`);
         const data = await res.json();
         if (data && data.valid) {
           pageAppliedCoupon = { code, pct: data.discount_pct || 10, minOrder: data.min_order_value || 0, maxDiscount: data.max_discount || 500 };
           statusDiv.style.display = 'block';
           statusDiv.style.color = '#15803D';
-          statusDiv.textContent = `✓ Coupon "${code}" applied! ${pageAppliedCoupon.pct}% Wholesale discount.`;
+          statusDiv.textContent = `Coupon "${code}" applied! ${pageAppliedCoupon.pct}% Wholesale discount.`;
           renderFullCartPage();
         } else {
           statusDiv.style.display = 'block';
           statusDiv.style.color = '#DC2626';
-          statusDiv.textContent = `Coupon "${code}" is invalid or expired.`;
+          statusDiv.textContent = (data && data.message) ? data.message : `Coupon "${code}" is invalid or expired.`;
         }
       } catch (e) {
         // Fallback for offline demo codes
@@ -554,7 +560,7 @@
           pageAppliedCoupon = { code, pct: 10, minOrder: 500, maxDiscount: 500 };
           statusDiv.style.display = 'block';
           statusDiv.style.color = '#15803D';
-          statusDiv.textContent = `✓ Coupon "${code}" applied! 10% Wholesale discount.`;
+          statusDiv.textContent = `Coupon "${code}" applied! 10% Wholesale discount.`;
           renderFullCartPage();
         } else {
           statusDiv.style.display = 'block';
@@ -579,19 +585,19 @@
           alertBox.style.background = '#ECFDF5';
           alertBox.style.border = '1px solid #A7F3D0';
           alertBox.style.color = '#065F46';
-          alertBox.innerHTML = `✓ <strong>Serviceable Zone:</strong> Express Tempo Delivery in ${data.zone ? data.zone.eta : '45-60 Mins'} (Pincode: 332001)`;
+          alertBox.innerHTML = `<strong>Serviceable Zone:</strong> Express Tempo Delivery in ${data.zone ? data.zone.eta : '45-60 Mins'} (Pincode: 332001)`;
         } else {
           alertBox.style.background = '#FEF2F2';
           alertBox.style.border = '1px solid #FECACA';
           alertBox.style.color = '#991B1B';
-          alertBox.innerHTML = `⚠ ${data.message || 'Location currently outside standard Sikar radius.'}`;
+          alertBox.innerHTML = `Notice: ${data.message || 'Location currently outside standard Sikar radius.'}`;
         }
       } catch (err) {
         alertBox.style.display = 'block';
         alertBox.style.background = '#ECFDF5';
         alertBox.style.border = '1px solid #A7F3D0';
         alertBox.style.color = '#065F46';
-        alertBox.innerHTML = `✓ <strong>Serviceable Sikar Corridor:</strong> Same-day tempo dispatch available.`;
+        alertBox.innerHTML = `<strong>Serviceable Sikar Corridor:</strong> Same-day tempo dispatch available.`;
       }
     }
 
