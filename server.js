@@ -147,6 +147,30 @@ Sitemap: ${sitemapUrl}
 `);
 });
 
+app.get('/favicon.ico', (req, res) => {
+  const p = path.join(__dirname, 'favicon.ico');
+  const pAssets = path.join(__dirname, 'assets', 'favicon.ico');
+  if (fs.existsSync(p)) return res.sendFile(p);
+  if (fs.existsSync(pAssets)) return res.sendFile(pAssets);
+  res.status(204).end();
+});
+
+app.get('/favicon.svg', (req, res) => {
+  const p = path.join(__dirname, 'favicon.svg');
+  const pAssets = path.join(__dirname, 'assets', 'favicon.svg');
+  if (fs.existsSync(p)) return res.sendFile(p);
+  if (fs.existsSync(pAssets)) return res.sendFile(pAssets);
+  res.status(204).end();
+});
+
+app.get('/favicon.png', (req, res) => {
+  const p = path.join(__dirname, 'favicon.png');
+  const pAssets = path.join(__dirname, 'assets', 'favicon.png');
+  if (fs.existsSync(p)) return res.sendFile(p);
+  if (fs.existsSync(pAssets)) return res.sendFile(pAssets);
+  res.status(204).end();
+});
+
 // ==========================================
 // 2. AUTHENTICATION & SUB-ADMIN RBAC
 // ==========================================
