@@ -54,8 +54,8 @@ app.use((req, res, next) => {
 // 1. DYNAMIC SEO: SITEMAP & ROBOTS.TXT
 // ==========================================
 app.get('/sitemap.xml', (req, res) => {
-  const host = req.get('host') || 'localhost:8080';
-  const protocol = req.protocol || 'http';
+  const host = req.get('x-forwarded-host') || req.get('host') || 'sikar-drop.vercel.app';
+  const protocol = req.get('x-forwarded-proto') || (host.includes('localhost') ? 'http' : 'https');
   const baseUrl = `${protocol}://${host}`;
   const now = new Date().toISOString().split('T')[0];
 
@@ -134,15 +134,16 @@ app.get('/sitemap.xml', (req, res) => {
 });
 
 app.get('/robots.txt', (req, res) => {
-  const host = req.get('host') || 'localhost:8080';
-  const protocol = req.protocol || 'http';
+  const host = req.get('x-forwarded-host') || req.get('host') || 'sikar-drop.vercel.app';
+  const protocol = req.get('x-forwarded-proto') || (host.includes('localhost') ? 'http' : 'https');
+  const sitemapUrl = host.includes('localhost') ? `${protocol}://${host}/sitemap.xml` : 'https://sikar-drop.vercel.app/sitemap.xml';
   res.header('Content-Type', 'text/plain');
   res.send(`User-agent: *
 Allow: /
 Disallow: /admin
 Disallow: /admin/
 Disallow: /api/
-Sitemap: ${protocol}://${host}/sitemap.xml
+Sitemap: ${sitemapUrl}
 `);
 });
 
