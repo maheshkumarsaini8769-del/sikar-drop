@@ -923,7 +923,7 @@ function seedDefaultData() {
   `);
 
   const initialAdmins = [
-    { id: 'ADM-01', username: 'admin', name: 'Super Admin', role: 'Depot Owner', pin: '1234', perms: ['all'] },
+    { id: 'ADM-01', username: 'maheshkumarsaini8769@gmail.com', name: 'Mahesh Kumar Saini', role: 'Super Admin', pin: 'mahesh99830', perms: ['all'] },
     { id: 'ADM-02', username: 'ramesh', name: 'Ramesh Kumawat', role: 'Logistics Operator', pin: '4321', perms: ['dashboard', 'orders', 'pos', 'inventory'] },
     { id: 'ADM-03', username: 'dinesh', name: 'Dinesh Accountant', role: 'Accountant', pin: '5678', perms: ['dashboard', 'orders', 'pos', 'khata', 'reports', 'purchases'] }
   ];

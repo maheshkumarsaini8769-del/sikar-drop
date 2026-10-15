@@ -176,18 +176,18 @@ app.get('/favicon.png', (req, res) => {
 // ==========================================
 app.post('/api/auth/login', (req, res) => {
   try {
-    const { pin, username } = req.body;
-    if (!pin) return res.status(400).json({ error: 'PIN is required' });
+    const { email, username, password, pin } = req.body;
+    const loginEmail = String(email || username || '').trim().toLowerCase();
+    const loginPassword = String(password || pin || '').trim();
 
-    let admin = null;
-    if (username) {
-      admin = db.prepare('SELECT * FROM admin_users WHERE username = ? AND pin = ? AND active = 1').get(username, pin);
-    } else {
-      admin = db.prepare('SELECT * FROM admin_users WHERE pin = ? AND active = 1').get(pin);
+    if (!loginEmail || !loginPassword) {
+      return res.status(400).json({ error: 'Email and password are required' });
     }
 
+    const admin = db.prepare('SELECT * FROM admin_users WHERE LOWER(TRIM(username)) = ? AND pin = ? AND active = 1').get(loginEmail, loginPassword);
+
     if (!admin) {
-      return res.status(401).json({ error: 'Invalid master PIN or user credentials' });
+      return res.status(401).json({ error: 'Invalid email or password' });
     }
 
     const now = new Date().toISOString();
@@ -196,15 +196,17 @@ app.post('/api/auth/login', (req, res) => {
     db.prepare(`
       INSERT INTO audit_logs (id, actor, action, module, details, created_at)
       VALUES (?, ?, 'LOGIN_SUCCESS', 'auth', ?, ?)
-    `).run('AUD-' + Math.floor(100000 + Math.random() * 900000), admin.name, `Successful login as ${admin.role}`, now);
+    `).run('AUD-' + Math.floor(100000 + Math.random() * 900000), admin.name, `Successful login as ${admin.role} (${admin.username})`, now);
 
     res.json({
       success: true,
       user: {
         id: admin.id,
         name: admin.name,
+        email: admin.username,
         username: admin.username,
         role: admin.role,
+        perms: JSON.parse(admin.permissions_json),
         permissions: JSON.parse(admin.permissions_json)
       }
     });
@@ -212,6 +214,97 @@ app.post('/api/auth/login', (req, res) => {
     res.status(500).json({ error: err.message });
   }
 });
+
+app.get('/api/auth/profile', (req, res) => {
+  try {
+    const adminId = req.query.id || 'ADM-01';
+    const admin = db.prepare('SELECT id, username, name, role, permissions_json, active, created_at, last_login FROM admin_users WHERE id = ?').get(adminId);
+    if (!admin) return res.status(404).json({ error: 'Admin account not found' });
+    res.json({
+      id: admin.id,
+      name: admin.name,
+      email: admin.username,
+      username: admin.username,
+      role: admin.role,
+      permissions: JSON.parse(admin.permissions_json),
+      active: admin.active,
+      created_at: admin.created_at,
+      last_login: admin.last_login
+    });
+  } catch (err) {
+    res.status(500).json({ error: err.message });
+  }
+});
+
+const handleCredentialsUpdate = (req, res) => {
+  try {
+    const { currentPassword, newEmail, newPassword, adminId = 'ADM-01' } = req.body;
+    if (!currentPassword) {
+      return res.status(400).json({ error: 'Current password is required to update credentials' });
+    }
+
+    const admin = db.prepare('SELECT * FROM admin_users WHERE id = ?').get(adminId);
+    if (!admin) {
+      return res.status(404).json({ error: 'Admin account not found' });
+    }
+
+    if (String(admin.pin).trim() !== String(currentPassword).trim()) {
+      return res.status(401).json({ error: 'Current password does not match' });
+    }
+
+    const cleanNewEmail = String(newEmail || '').trim().toLowerCase();
+    const cleanNewPass = String(newPassword || '').trim();
+
+    if (!cleanNewEmail && !cleanNewPass) {
+      return res.status(400).json({ error: 'Please specify a new email or new password' });
+    }
+
+    if (cleanNewEmail) {
+      const emailRegex = /^[^\s@]+@[^\s@]+\.[^\s@]+$/;
+      if (!emailRegex.test(cleanNewEmail)) {
+        return res.status(400).json({ error: 'Please enter a valid email address' });
+      }
+      if (cleanNewEmail !== admin.username.toLowerCase()) {
+        const existing = db.prepare('SELECT id FROM admin_users WHERE LOWER(TRIM(username)) = ? AND id != ?').get(cleanNewEmail, adminId);
+        if (existing) {
+          return res.status(400).json({ error: 'This email is already in use by another account' });
+        }
+      }
+    }
+
+    if (cleanNewPass && cleanNewPass.length < 6) {
+      return res.status(400).json({ error: 'New password must be at least 6 characters long' });
+    }
+
+    const updatedEmail = cleanNewEmail || admin.username;
+    const updatedPass = cleanNewPass || admin.pin;
+    const now = new Date().toISOString();
+
+    db.prepare('UPDATE admin_users SET username = ?, pin = ? WHERE id = ?').run(updatedEmail, updatedPass, adminId);
+
+    db.prepare(`
+      INSERT INTO audit_logs (id, actor, action, module, details, created_at)
+      VALUES (?, ?, 'SECURITY_CREDENTIALS_UPDATED', 'auth', ?, ?)
+    `).run('AUD-' + Math.floor(100000 + Math.random() * 900000), admin.name, `Updated admin login credentials (Email: ${updatedEmail})`, now);
+
+    res.json({
+      success: true,
+      message: 'Admin credentials updated successfully',
+      user: {
+        id: admin.id,
+        name: admin.name,
+        email: updatedEmail,
+        username: updatedEmail,
+        role: admin.role
+      }
+    });
+  } catch (err) {
+    res.status(500).json({ error: err.message });
+  }
+};
+
+app.put('/api/auth/credentials', handleCredentialsUpdate);
+app.post('/api/auth/credentials', handleCredentialsUpdate);
 
 app.get('/api/auth/subadmins', (req, res) => {
   try {

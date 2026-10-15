@@ -1864,34 +1864,19 @@
       <h2 style="font-family: var(--font-heading); font-size: 1.45rem; font-weight: 900; margin-bottom: 4px;">Sikar Drop Admin Portal</h2>
       <p style="font-size: 0.84rem; color: var(--text-muted); margin-bottom: 22px;">Central Wholesale Depot Console • Strict Zero 20L Camper Policy</p>
 
-      <div class="auth-tab-switch">
-        <button type="button" class="auth-tab-btn active" id="btn-auth-mode-pin" onclick="switchAuthMode('pin')">Master PIN Login</button>
-        <button type="button" class="auth-tab-btn" id="btn-auth-mode-pass" onclick="switchAuthMode('pass')">Email &amp; Password</button>
-      </div>
-
-      <!-- PIN FORM -->
-      <form id="form-auth-pin" onsubmit="handlePinLogin(event)">
-        <div class="portal-field-group" style="text-align: left;">
-          <label for="login-pin-input">Enter Master Security PIN</label>
-          <input type="password" id="login-pin-input" class="portal-input" placeholder="Default PIN: 1234" maxlength="8" style="font-size: 1.2rem; letter-spacing: 0.25em; text-align: center;" required>
+      <!-- EMAIL & PASSWORD LOGIN FORM -->
+      <form id="form-admin-login" onsubmit="handleAdminLogin(event)">
+        <div class="portal-field-group" style="text-align: left; margin-bottom: 14px;">
+          <label for="login-email-input">Admin Email Address</label>
+          <input type="email" id="login-email-input" class="portal-input" placeholder="maheshkumarsaini8769@gmail.com" required autocomplete="username">
         </div>
-        <button type="submit" class="btn-portal-primary" style="width: 100%; justify-content: center; padding: 12px;">
-          <span>Unlock Admin Console</span>
-        </button>
-      </form>
-
-      <!-- EMAIL / PASS FORM -->
-      <form id="form-auth-pass" style="display: none;" onsubmit="handlePassLogin(event)">
-        <div class="portal-field-group" style="text-align: left;">
-          <label for="login-email-input">Operator Email Address</label>
-          <input type="email" id="login-email-input" class="portal-input" placeholder="e.g. admin@sikardrop.in" required>
+        <div class="portal-field-group" style="text-align: left; margin-bottom: 16px;">
+          <label for="login-pass-input">Admin Password</label>
+          <input type="password" id="login-pass-input" class="portal-input" placeholder="Enter password" required autocomplete="current-password">
         </div>
-        <div class="portal-field-group" style="text-align: left;">
-          <label for="login-pass-input">Password</label>
-          <input type="password" id="login-pass-input" class="portal-input" placeholder="Password (sikar123)" required>
-        </div>
-        <button type="submit" class="btn-portal-primary" style="width: 100%; justify-content: center; padding: 12px;">
-          <span>Operator Login</span>
+        <div id="login-error-msg" style="display: none; color: #DC2626; background: #FEF2F2; border: 1px solid #FEE2E2; border-radius: var(--radius-sm); padding: 8px 12px; font-size: 0.82rem; font-weight: 600; margin-bottom: 14px; text-align: left;"></div>
+        <button type="submit" id="btn-admin-login" class="btn-portal-primary" style="width: 100%; justify-content: center; padding: 12px;">
+          <span>Sign In to Admin Console</span>
         </button>
       </form>
 
@@ -3972,21 +3957,32 @@
         <div class="portal-card">
           <div class="portal-card-header">
             <div>
-              <h2>Security &amp; Console PIN Protection</h2>
-              <p>Change your quick unlock PIN.</p>
+              <h2>Master Admin Credentials &amp; Security Authority</h2>
+              <p>Configure the authorized administrator email and password used to sign in to this console.</p>
             </div>
+            <span class="portal-badge badge-primary">Super Admin Authority</span>
           </div>
 
-          <form onsubmit="handlePinChange(event)" style="max-width: 460px;">
+          <form onsubmit="handleAdminCredentialsUpdate(event)" style="max-width: 520px;">
             <div class="portal-field-group">
-              <label for="cfg-current-pin">Current Master PIN</label>
-              <input type="password" id="cfg-current-pin" class="portal-input" placeholder="Enter current PIN (Default: 1234)" required>
+              <label for="cfg-admin-email">Admin Login Email Address</label>
+              <input type="email" id="cfg-admin-email" class="portal-input" value="maheshkumarsaini8769@gmail.com" required autocomplete="username">
+              <small style="color: var(--text-muted); font-size: 0.76rem; display: block; margin-top: 4px;">Strictly required to authenticate into the admin console.</small>
             </div>
             <div class="portal-field-group">
-              <label for="cfg-new-pin">New 4 to 8 Digit Security PIN</label>
-              <input type="password" id="cfg-new-pin" class="portal-input" placeholder="Enter new PIN" required>
+              <label for="cfg-admin-new-pass">New Admin Password</label>
+              <input type="password" id="cfg-admin-new-pass" class="portal-input" placeholder="Leave blank to keep existing password" autocomplete="new-password">
+              <small style="color: var(--text-muted); font-size: 0.76rem; display: block; margin-top: 4px;">Minimum 6 characters. Only fill this if you want to change your password.</small>
             </div>
-            <button type="submit" class="btn-portal-primary">Update Security PIN</button>
+            <div class="portal-field-group" style="padding-top: 10px; border-top: 1px dashed var(--border-subtle); margin-top: 16px;">
+              <label for="cfg-admin-cur-pass" style="color: #0F172A; font-weight: 700;">Current Admin Password (Required for Verification)</label>
+              <input type="password" id="cfg-admin-cur-pass" class="portal-input" placeholder="Enter current password to authorize update" required autocomplete="current-password">
+              <small style="color: var(--text-muted); font-size: 0.76rem; display: block; margin-top: 4px;">Security validation: Enter your existing password to commit changes.</small>
+            </div>
+            <div id="cfg-cred-msg" style="display: none; margin-bottom: 12px; font-size: 0.82rem; font-weight: 600; padding: 8px 12px; border-radius: var(--radius-sm);"></div>
+            <button type="submit" id="btn-save-credentials" class="btn-portal-primary" style="margin-top: 6px;">
+              <span>Update Admin Credentials</span>
+            </button>
           </form>
         </div>
       </section>
@@ -4926,8 +4922,8 @@
     let adminPin = localStorage.getItem('sikar_admin_pin') || DEFAULT_PIN;
     let adminOtp = localStorage.getItem('sikar_admin_otp') || DEFAULT_OTP;
 
-    let adminAuth = sessionStorage.getItem('sikar_portal_auth') === 'true' || sessionStorage.getItem('sikar_admin_unlocked') === 'true';
-    let currentOperator = JSON.parse(sessionStorage.getItem('sikar_portal_operator')) || (adminAuth ? { name: 'Super Admin', role: 'Depot Owner', email: 'admin@sikardrop.in', perms: 'all' } : null);
+    let adminAuth = sessionStorage.getItem('sikar_portal_auth') === 'true';
+    let currentOperator = JSON.parse(sessionStorage.getItem('sikar_portal_operator')) || (adminAuth ? { id: 'ADM-01', name: 'Mahesh Kumar Saini', role: 'Super Admin', email: 'maheshkumarsaini8769@gmail.com', username: 'maheshkumarsaini8769@gmail.com', perms: 'all' } : null);
     let currentTab = 'dashboard';
     let currentOrdersFilter = 'all';
     let currentPosHistoryFilter = 'all';
@@ -5191,80 +5187,84 @@
     }
 
     // AUTH & LOCK MANAGEMENT
+    // AUTH & LOCK MANAGEMENT
     function checkAuth() {
       const lockScreen = document.getElementById('auth-lock-screen');
       if (!adminAuth) {
-        lockScreen.style.display = 'flex';
+        if (lockScreen) lockScreen.style.display = 'flex';
       } else {
-        lockScreen.style.display = 'none';
+        if (lockScreen) lockScreen.style.display = 'none';
         applyOperatorPermissions();
+        renderAdminCredentials();
       }
     }
 
-    function switchAuthMode(mode) {
-      const pinBtn = document.getElementById('btn-auth-mode-pin');
-      const passBtn = document.getElementById('btn-auth-mode-pass');
-      const pinForm = document.getElementById('form-auth-pin');
-      const passForm = document.getElementById('form-auth-pass');
+    async function handleAdminLogin(e) {
+      if (e) e.preventDefault();
+      const emailInput = document.getElementById('login-email-input');
+      const passInput = document.getElementById('login-pass-input');
+      const errBox = document.getElementById('login-error-msg');
+      const loginBtn = document.getElementById('btn-admin-login');
 
-      if (mode === 'pin') {
-        pinBtn.classList.add('active');
-        passBtn.classList.remove('active');
-        pinForm.style.display = 'block';
-        passForm.style.display = 'none';
-      } else {
-        pinBtn.classList.remove('active');
-        passBtn.classList.add('active');
-        pinForm.style.display = 'none';
-        passForm.style.display = 'block';
+      const email = emailInput ? emailInput.value.trim().toLowerCase() : '';
+      const password = passInput ? passInput.value.trim() : '';
+
+      if (errBox) {
+        errBox.style.display = 'none';
+        errBox.textContent = '';
       }
-    }
 
-    function handlePinLogin(e) {
-      e.preventDefault();
-      const entered = document.getElementById('login-pin-input').value.trim();
-      if (entered === adminPin) {
-        adminAuth = true;
-        currentOperator = { name: 'Super Admin', role: 'Depot Owner', email: 'admin@sikardrop.in', perms: 'all' };
-        sessionStorage.setItem('sikar_portal_auth', 'true');
-        sessionStorage.setItem('sikar_portal_operator', JSON.stringify(currentOperator));
-        document.getElementById('auth-lock-screen').style.display = 'none';
-        applyOperatorPermissions();
-        showToast('Welcome back, Super Admin!');
-      } else {
-        showToast('Incorrect Security PIN. Please try again.');
-        document.getElementById('login-pin-input').value = '';
-      }
-    }
-
-    function handlePassLogin(e) {
-      e.preventDefault();
-      const email = document.getElementById('login-email-input').value.trim().toLowerCase();
-      const pass = document.getElementById('login-pass-input').value.trim();
-
-      if (email === 'admin@sikardrop.in' && pass === 'sikar123') {
-        adminAuth = true;
-        currentOperator = { name: 'Super Admin', role: 'Depot Owner', email: 'admin@sikardrop.in', perms: 'all' };
-        sessionStorage.setItem('sikar_portal_auth', 'true');
-        sessionStorage.setItem('sikar_portal_operator', JSON.stringify(currentOperator));
-        document.getElementById('auth-lock-screen').style.display = 'none';
-        applyOperatorPermissions();
-        showToast('Authenticated as Super Admin!');
+      if (!email || !password) {
+        if (errBox) {
+          errBox.textContent = 'Please enter both email and password.';
+          errBox.style.display = 'block';
+        }
+        showToast('Email and password are required.');
         return;
       }
 
-      // Check sub-admins
-      const staff = adminSubAdmins.find(s => s.email.toLowerCase() === email && s.pass === pass);
-      if (staff) {
+      if (loginBtn) {
+        loginBtn.disabled = true;
+        loginBtn.innerHTML = '<span>Verifying Credentials...</span>';
+      }
+
+      try {
+        const res = await fetch('/api/auth/login', {
+          method: 'POST',
+          headers: { 'Content-Type': 'application/json' },
+          body: JSON.stringify({ email, password })
+        });
+        const data = await res.json();
+
+        if (!res.ok || !data.success) {
+          throw new Error(data.error || 'Invalid email or password.');
+        }
+
         adminAuth = true;
-        currentOperator = { name: staff.name, role: staff.role, email: staff.email, perms: staff.perms };
+        currentOperator = data.user;
         sessionStorage.setItem('sikar_portal_auth', 'true');
         sessionStorage.setItem('sikar_portal_operator', JSON.stringify(currentOperator));
-        document.getElementById('auth-lock-screen').style.display = 'none';
+
+        const lockScreen = document.getElementById('auth-lock-screen');
+        if (lockScreen) lockScreen.style.display = 'none';
+
+        if (passInput) passInput.value = '';
+
         applyOperatorPermissions();
-        showToast(`Logged in as ${staff.name} (${staff.role})`);
-      } else {
-        showToast('Invalid email or password.');
+        renderAdminCredentials();
+        showToast(`Welcome back, ${currentOperator.name || 'Admin'}!`);
+      } catch (err) {
+        if (errBox) {
+          errBox.textContent = err.message || 'Invalid email or password.';
+          errBox.style.display = 'block';
+        }
+        showToast(err.message || 'Invalid email or password.');
+        if (passInput) passInput.value = '';
+      } finally {
+        if (loginBtn) {
+          loginBtn.disabled = false;
+          loginBtn.innerHTML = '<span>Sign In to Admin Console</span>';
+        }
       }
     }
 
@@ -5273,8 +5273,37 @@
       currentOperator = null;
       sessionStorage.removeItem('sikar_portal_auth');
       sessionStorage.removeItem('sikar_portal_operator');
-      document.getElementById('auth-lock-screen').style.display = 'flex';
+      const lockScreen = document.getElementById('auth-lock-screen');
+      if (lockScreen) lockScreen.style.display = 'flex';
+      const passInput = document.getElementById('login-pass-input');
+      if (passInput) passInput.value = '';
+      const errBox = document.getElementById('login-error-msg');
+      if (errBox) errBox.style.display = 'none';
       showToast('Admin Console session locked.');
+    }
+
+    async function renderAdminCredentials() {
+      const emailInput = document.getElementById('cfg-admin-email');
+      if (!emailInput) return;
+      if (currentOperator && currentOperator.email) {
+        emailInput.value = currentOperator.email;
+      }
+      try {
+        const res = await fetch('/api/auth/profile?id=ADM-01');
+        if (res.ok) {
+          const profile = await res.json();
+          if (profile && profile.email) {
+            emailInput.value = profile.email;
+            if (currentOperator && currentOperator.id === 'ADM-01') {
+              currentOperator.email = profile.email;
+              currentOperator.username = profile.email;
+              sessionStorage.setItem('sikar_portal_operator', JSON.stringify(currentOperator));
+            }
+          }
+        }
+      } catch (err) {
+        console.warn('Could not refresh admin profile:', err);
+      }
     }
 
     function applyOperatorPermissions() {
@@ -5291,7 +5320,7 @@
       // Filter tabs in sidebar if restricted
       document.querySelectorAll('.sidebar-tab-btn').forEach(btn => {
         const tab = btn.getAttribute('data-tab');
-        if (currentOperator.perms === 'all' || currentOperator.perms.includes(tab) || tab === 'dashboard') {
+        if (hasPermission(tab)) {
           btn.style.display = 'flex';
         } else {
           btn.style.display = 'none';
@@ -5299,9 +5328,23 @@
       });
     }
 
+    function hasPermission(tabId) {
+      if (!currentOperator) return false;
+      if (tabId === 'dashboard') return true;
+      const perms = currentOperator.permissions || currentOperator.perms || 'all';
+      if (perms === 'all') return true;
+      if (Array.isArray(perms)) {
+        return perms.includes('all') || perms.includes(tabId);
+      }
+      if (typeof perms === 'string') {
+        return perms === 'all' || perms.includes(tabId);
+      }
+      return false;
+    }
+
     // TAB SWITCHING
     function switchTab(tabId) {
-      if (currentOperator && currentOperator.perms !== 'all' && !currentOperator.perms.includes(tabId) && tabId !== 'dashboard') {
+      if (!hasPermission(tabId)) {
         showToast(`Access Restricted: Operator is not authorized for module '${tabId}'.`);
         return;
       }
@@ -5379,7 +5422,7 @@
       else if (tabId === 'social') renderSocialStats();
       else if (tabId === 'subadmin') renderSubAdminTable();
       else if (tabId === 'seo') renderSeoForm();
-      else if (tabId === 'settings') renderDeliveryZonesTable();
+      else if (tabId === 'settings') { renderDeliveryZonesTable(); renderAdminCredentials(); }
     }
 
     function toggleMobileSidebar(force) {
@@ -8931,25 +8974,105 @@
       }
     }
 
-    function handlePinChange(e) {
-      e.preventDefault();
-      const cur = document.getElementById('cfg-current-pin').value.trim();
-      const next = document.getElementById('cfg-new-pin').value.trim();
+    async function handleAdminCredentialsUpdate(e) {
+      if (e) e.preventDefault();
+      const emailInput = document.getElementById('cfg-admin-email');
+      const newPassInput = document.getElementById('cfg-admin-new-pass');
+      const curPassInput = document.getElementById('cfg-admin-cur-pass');
+      const msgBox = document.getElementById('cfg-cred-msg');
+      const saveBtn = document.getElementById('btn-save-credentials');
 
-      if (cur !== adminPin) {
-        showToast('Current PIN is incorrect.');
+      const newEmail = emailInput ? emailInput.value.trim().toLowerCase() : '';
+      const newPassword = newPassInput ? newPassInput.value.trim() : '';
+      const currentPassword = curPassInput ? curPassInput.value.trim() : '';
+
+      if (msgBox) {
+        msgBox.style.display = 'none';
+        msgBox.textContent = '';
+      }
+
+      if (!currentPassword) {
+        if (msgBox) {
+          msgBox.style.display = 'block';
+          msgBox.style.color = '#B91C1C';
+          msgBox.style.background = '#FEF2F2';
+          msgBox.textContent = 'Please enter your current password to authorize security changes.';
+        }
+        showToast('Current password is required.');
+        if (curPassInput) curPassInput.focus();
         return;
       }
-      if (next.length < 4) {
-        showToast('New PIN must be at least 4 digits.');
+
+      if (!newEmail && !newPassword) {
+        showToast('Please specify an email or new password.');
         return;
       }
 
-      adminPin = next;
-      localStorage.setItem('sikar_admin_pin', adminPin);
-      document.getElementById('cfg-current-pin').value = '';
-      document.getElementById('cfg-new-pin').value = '';
-      showToast('Master security PIN changed successfully!');
+      if (newPassword && newPassword.length < 6) {
+        if (msgBox) {
+          msgBox.style.display = 'block';
+          msgBox.style.color = '#B91C1C';
+          msgBox.style.background = '#FEF2F2';
+          msgBox.textContent = 'New password must be at least 6 characters long.';
+        }
+        showToast('New password must be at least 6 characters.');
+        return;
+      }
+
+      if (saveBtn) {
+        saveBtn.disabled = true;
+        saveBtn.innerHTML = '<span>Saving Changes...</span>';
+      }
+
+      try {
+        const adminId = (currentOperator && currentOperator.id) || 'ADM-01';
+        const res = await fetch('/api/auth/credentials', {
+          method: 'PUT',
+          headers: { 'Content-Type': 'application/json' },
+          body: JSON.stringify({
+            adminId,
+            currentPassword,
+            newEmail,
+            newPassword
+          })
+        });
+        const data = await res.json();
+
+        if (!res.ok || !data.success) {
+          throw new Error(data.error || 'Failed to update admin credentials.');
+        }
+
+        if (currentOperator) {
+          currentOperator.email = data.user.email;
+          currentOperator.username = data.user.username;
+          sessionStorage.setItem('sikar_portal_operator', JSON.stringify(currentOperator));
+        }
+
+        if (msgBox) {
+          msgBox.style.display = 'block';
+          msgBox.style.color = '#15803D';
+          msgBox.style.background = '#F0FDF4';
+          msgBox.textContent = 'Admin credentials updated successfully! New login details are active immediately.';
+        }
+
+        if (newPassInput) newPassInput.value = '';
+        if (curPassInput) curPassInput.value = '';
+
+        showToast('Admin credentials updated successfully!');
+      } catch (err) {
+        if (msgBox) {
+          msgBox.style.display = 'block';
+          msgBox.style.color = '#B91C1C';
+          msgBox.style.background = '#FEF2F2';
+          msgBox.textContent = err.message || 'Failed to update credentials.';
+        }
+        showToast(err.message || 'Credential update failed.');
+      } finally {
+        if (saveBtn) {
+          saveBtn.disabled = false;
+          saveBtn.innerHTML = '<span>Update Admin Credentials</span>';
+        }
+      }
     }
 
     // GLOBAL SEARCH IN PORTAL
