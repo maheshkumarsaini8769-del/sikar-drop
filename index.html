@@ -12234,11 +12234,12 @@
     // REAL-TIME STOREFRONT SYNC FROM SQLITE DATABASE
     async function syncStorefrontFromBackend() {
       try {
+        const t = Date.now();
         const [prodRes, catRes, setRes, zonesRes] = await Promise.all([
-          fetch('/api/products'),
-          fetch('/api/categories'),
-          fetch('/api/settings'),
-          fetch('/api/delivery-zones')
+          fetch(`/api/products?_t=${t}`, { cache: 'no-store' }),
+          fetch(`/api/categories?_t=${t}`, { cache: 'no-store' }),
+          fetch(`/api/settings?_t=${t}`, { cache: 'no-store' }),
+          fetch(`/api/delivery-zones?_t=${t}`, { cache: 'no-store' })
         ]);
 
         if (zonesRes && zonesRes.ok) {
@@ -12254,15 +12255,19 @@
         if (prodRes.ok) {
           const prods = await prodRes.json();
           if (Array.isArray(prods)) {
-            prods.sort((a, b) => {
+            const cached = JSON.parse(localStorage.getItem('sikar_admin_products') || '[]');
+            const serverIds = new Set(prods.map(p => p.id));
+            const localOnly = cached.filter(p => !serverIds.has(p.id) && (String(p.id).startsWith('p_') || String(p.id).startsWith('custom_')));
+            const merged = [...localOnly, ...prods];
+            merged.sort((a, b) => {
               const ordA = a.display_order !== undefined ? a.display_order : 50;
               const ordB = b.display_order !== undefined ? b.display_order : 50;
               if (ordA !== ordB) return ordA - ordB;
               return (b.created_at || '').localeCompare(a.created_at || '');
             });
-            PRODUCTS = prods;
-            adminProducts = prods;
-            localStorage.setItem('sikar_admin_products', JSON.stringify(prods));
+            PRODUCTS = merged;
+            adminProducts = merged;
+            localStorage.setItem('sikar_admin_products', JSON.stringify(merged));
             renderProducts();
             renderBulkCalculatorItems();
           }

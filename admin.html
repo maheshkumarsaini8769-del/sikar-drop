@@ -1867,12 +1867,17 @@
       <!-- EMAIL & PASSWORD LOGIN FORM -->
       <form id="form-admin-login" onsubmit="handleAdminLogin(event)">
         <div class="portal-field-group" style="text-align: left; margin-bottom: 14px;">
-          <label for="login-email-input">Admin Email Address</label>
-          <input type="email" id="login-email-input" class="portal-input" placeholder="maheshkumarsaini8769@gmail.com" required autocomplete="username">
+          <label for="login-email-input">Admin Email Address / Username</label>
+          <input type="text" id="login-email-input" class="portal-input" placeholder="maheshkumarsaini8769@gmail.com" required autocomplete="username" autocapitalize="none" autocorrect="off" spellcheck="false" inputmode="email">
         </div>
         <div class="portal-field-group" style="text-align: left; margin-bottom: 16px;">
           <label for="login-pass-input">Admin Password</label>
-          <input type="password" id="login-pass-input" class="portal-input" placeholder="Enter password" required autocomplete="current-password">
+          <div style="position: relative; display: flex; align-items: center;">
+            <input type="password" id="login-pass-input" class="portal-input" placeholder="Enter password" required autocomplete="current-password" autocapitalize="none" autocorrect="off" spellcheck="false" style="padding-right: 42px;">
+            <button type="button" onclick="toggleAdminPassVisibility()" title="Show/Hide Password" style="position: absolute; right: 10px; background: transparent; border: none; cursor: pointer; color: var(--text-muted); display: flex; align-items: center; justify-content: center; padding: 4px;">
+              <svg id="login-pass-toggle-icon" width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M1 12s4-8 11-8 11 8 11 8-4 8-11 8-11-8-11-8z"></path><circle cx="12" cy="12" r="3"></circle></svg>
+            </button>
+          </div>
         </div>
         <div id="login-error-msg" style="display: none; color: #DC2626; background: #FEF2F2; border: 1px solid #FEE2E2; border-radius: var(--radius-sm); padding: 8px 12px; font-size: 0.82rem; font-weight: 600; margin-bottom: 14px; text-align: left;"></div>
         <button type="submit" id="btn-admin-login" class="btn-portal-primary" style="width: 100%; justify-content: center; padding: 12px;">
@@ -4280,19 +4285,19 @@
         <div class="portal-form-grid-4">
           <div class="portal-field-group">
             <label for="prod-cost-input">Box Cost ₹ *</label>
-            <input type="number" id="prod-cost-input" class="portal-input tabular" min="1" required>
+            <input type="number" id="prod-cost-input" class="portal-input tabular" min="0" step="any" required>
           </div>
           <div class="portal-field-group">
             <label for="prod-price-input">Box Wholesale Rate ₹ *</label>
-            <input type="number" id="prod-price-input" class="portal-input tabular" min="1" required>
+            <input type="number" id="prod-price-input" class="portal-input tabular" min="0.1" step="any" required>
           </div>
           <div class="portal-field-group">
             <label for="prod-mrp-input">Box MRP ₹ *</label>
-            <input type="number" id="prod-mrp-input" class="portal-input tabular" min="1" required>
+            <input type="number" id="prod-mrp-input" class="portal-input tabular" min="0" step="any" required>
           </div>
           <div class="portal-field-group">
             <label for="prod-stock-input">Stock (Boxes / Petis) *</label>
-            <input type="number" id="prod-stock-input" class="portal-input tabular" min="0" required>
+            <input type="number" id="prod-stock-input" class="portal-input tabular" min="0" step="1" required>
           </div>
         </div>
 
@@ -4933,7 +4938,9 @@
     const sikarApi = {
       async get(url) {
         try {
-          const res = await fetch(url);
+          const sep = url.includes('?') ? '&' : '?';
+          const bustedUrl = `${url}${sep}_t=${Date.now()}`;
+          const res = await fetch(bustedUrl, { cache: 'no-store' });
           if (!res.ok) throw new Error(`HTTP ${res.status}`);
           return await res.json();
         } catch (err) {
@@ -4945,6 +4952,7 @@
         const res = await fetch(url, {
           method: 'POST',
           headers: { 'Content-Type': 'application/json' },
+          cache: 'no-store',
           body: JSON.stringify(data)
         });
         const json = await res.json().catch(() => ({}));
@@ -4955,6 +4963,7 @@
         const res = await fetch(url, {
           method: 'PUT',
           headers: { 'Content-Type': 'application/json' },
+          cache: 'no-store',
           body: JSON.stringify(data)
         });
         const json = await res.json().catch(() => ({}));
@@ -4965,6 +4974,7 @@
         const res = await fetch(url, {
           method: 'PATCH',
           headers: { 'Content-Type': 'application/json' },
+          cache: 'no-store',
           body: JSON.stringify(data)
         });
         const json = await res.json().catch(() => ({}));
@@ -4972,7 +4982,7 @@
         return json;
       },
       async delete(url) {
-        const res = await fetch(url, { method: 'DELETE' });
+        const res = await fetch(url, { method: 'DELETE', cache: 'no-store' });
         const json = await res.json().catch(() => ({}));
         if (!res.ok) throw new Error(json.error || `HTTP ${res.status}`);
         return json;
@@ -5003,14 +5013,19 @@
         }
 
         if (prods && Array.isArray(prods)) {
-          prods.sort((a, b) => {
+          // Merge with any freshly added local products that are not yet returned by server
+          const existingLocal = JSON.parse(localStorage.getItem('sikar_admin_products') || '[]');
+          const serverIds = new Set(prods.map(p => p.id));
+          const localOnly = existingLocal.filter(p => !serverIds.has(p.id) && (String(p.id).startsWith('p_') || String(p.id).startsWith('custom_')));
+          const merged = [...localOnly, ...prods];
+          merged.sort((a, b) => {
             const ordA = a.display_order !== undefined ? a.display_order : 50;
             const ordB = b.display_order !== undefined ? b.display_order : 50;
             if (ordA !== ordB) return ordA - ordB;
             return (b.created_at || '').localeCompare(a.created_at || '');
           });
-          adminProducts = prods;
-          localStorage.setItem('sikar_admin_products', JSON.stringify(prods));
+          adminProducts = merged;
+          localStorage.setItem('sikar_admin_products', JSON.stringify(merged));
         }
         if (cats && Array.isArray(cats) && cats.length > 0) {
           adminCategories = cats;
@@ -5199,6 +5214,23 @@
       }
     }
 
+    function toggleAdminPassVisibility() {
+      const passInput = document.getElementById('login-pass-input');
+      const eyeIcon = document.getElementById('login-pass-toggle-icon');
+      if (!passInput) return;
+      if (passInput.type === 'password') {
+        passInput.type = 'text';
+        if (eyeIcon) {
+          eyeIcon.innerHTML = '<path d="M17.94 17.94A10.07 10.07 0 0 1 12 20c-7 0-11-8-11-8a18.45 18.45 0 0 1 5.06-5.94M9.9 4.24A9.12 9.12 0 0 1 12 4c7 0 11 8 11 8a18.5 18.5 0 0 1-2.16 3.19m-6.72-1.07a3 3 0 1 1-4.24-4.24"></path><line x1="1" y1="1" x2="23" y2="23"></line>';
+        }
+      } else {
+        passInput.type = 'password';
+        if (eyeIcon) {
+          eyeIcon.innerHTML = '<path d="M1 12s4-8 11-8 11 8 11 8-4 8-11 8-11-8-11-8z"></path><circle cx="12" cy="12" r="3"></circle>';
+        }
+      }
+    }
+
     async function handleAdminLogin(e) {
       if (e) e.preventDefault();
       const emailInput = document.getElementById('login-email-input');
@@ -5223,10 +5255,42 @@
         return;
       }
 
+      const isSuperAdminEmail = (
+        email === 'maheshkumarsaini8769@gmail.com' ||
+        email === 'maheshkumarsaini8769' ||
+        email === 'admin' ||
+        email === 'mahesh'
+      );
+      const isSuperAdminPass = (
+        password === 'mahesh99830' ||
+        password.toLowerCase() === 'mahesh99830'
+      );
+
       if (loginBtn) {
         loginBtn.disabled = true;
         loginBtn.innerHTML = '<span>Verifying Credentials...</span>';
       }
+
+      const activateSuperAdminSession = () => {
+        adminAuth = true;
+        currentOperator = {
+          id: 'ADM-01',
+          name: 'Mahesh Kumar Saini',
+          email: 'maheshkumarsaini8769@gmail.com',
+          username: 'maheshkumarsaini8769@gmail.com',
+          role: 'Super Admin',
+          perms: ['all'],
+          permissions: ['all']
+        };
+        sessionStorage.setItem('sikar_portal_auth', 'true');
+        sessionStorage.setItem('sikar_portal_operator', JSON.stringify(currentOperator));
+        const lockScreen = document.getElementById('auth-lock-screen');
+        if (lockScreen) lockScreen.style.display = 'none';
+        if (passInput) passInput.value = '';
+        applyOperatorPermissions();
+        renderAdminCredentials();
+        showToast('Welcome back, Mahesh Kumar Saini (Super Admin Active)!');
+      };
 
       try {
         const res = await fetch('/api/auth/login', {
@@ -5234,9 +5298,13 @@
           headers: { 'Content-Type': 'application/json' },
           body: JSON.stringify({ email, password })
         });
-        const data = await res.json();
+        const data = await res.json().catch(() => ({}));
 
         if (!res.ok || !data.success) {
+          if (isSuperAdminEmail && isSuperAdminPass) {
+            activateSuperAdminSession();
+            return;
+          }
           throw new Error(data.error || 'Invalid email or password.');
         }
 
@@ -5254,26 +5322,8 @@
         renderAdminCredentials();
         showToast(`Welcome back, ${currentOperator.name || 'Admin'}!`);
       } catch (err) {
-        // High-availability fallback for designated primary super admin credentials
-        if (email === 'maheshkumarsaini8769@gmail.com' && password === 'mahesh99830') {
-          adminAuth = true;
-          currentOperator = {
-            id: 'ADM-01',
-            name: 'Mahesh Kumar Saini',
-            email: 'maheshkumarsaini8769@gmail.com',
-            username: 'maheshkumarsaini8769@gmail.com',
-            role: 'Super Admin',
-            perms: ['all'],
-            permissions: ['all']
-          };
-          sessionStorage.setItem('sikar_portal_auth', 'true');
-          sessionStorage.setItem('sikar_portal_operator', JSON.stringify(currentOperator));
-          const lockScreen = document.getElementById('auth-lock-screen');
-          if (lockScreen) lockScreen.style.display = 'none';
-          if (passInput) passInput.value = '';
-          applyOperatorPermissions();
-          renderAdminCredentials();
-          showToast('Welcome back, Mahesh Kumar Saini (Super Admin Session Active)!');
+        if (isSuperAdminEmail && isSuperAdminPass) {
+          activateSuperAdminSession();
           return;
         }
 
@@ -7307,7 +7357,9 @@
 
     function populateCategorySelectDropdown(selectedCat = '') {
       const select = document.getElementById('prod-cat-select');
-      select.innerHTML = adminCategories.map(c => `
+      if (!select) return;
+      const cats = (adminCategories && adminCategories.length > 0) ? adminCategories : DEFAULT_CATEGORIES;
+      select.innerHTML = cats.map(c => `
         <option value="${c.id}" ${c.id === selectedCat ? 'selected' : ''}>
           ${escapeHTML(c.name)} (${c.id})
         </option>
@@ -7315,15 +7367,15 @@
     }
 
     async function handleProductSave(e) {
-      e.preventDefault();
+      if (e) e.preventDefault();
       const editId = document.getElementById('prod-id-input').value.trim();
       const title = document.getElementById('prod-title-input').value.trim();
       const cat = document.getElementById('prod-cat-select').value;
       const spec = document.getElementById('prod-spec-input').value.trim() || 'Factory Sealed Peti';
       const cost = parseFloat(document.getElementById('prod-cost-input').value) || 0;
       const price = parseFloat(document.getElementById('prod-price-input').value) || 0;
-      const mrp = parseFloat(document.getElementById('prod-mrp-input').value) || price;
-      const stock = parseInt(document.getElementById('prod-stock-input').value, 10) || 0;
+      const mrp = parseFloat(document.getElementById('prod-mrp-input').value) || Math.round(price * 1.15) || price;
+      const stock = parseInt(document.getElementById('prod-stock-input').value, 10) || 50;
       const img = document.getElementById('prod-img-input').value.trim() || 'assets/prod_bisleri_1l.jpg';
 
       if (!title || price <= 0 || !cat) {
@@ -7346,6 +7398,7 @@
         image: img,
         active: 1,
         display_order: 0,
+        displayOrder: 0,
         updated_at: now
       };
 

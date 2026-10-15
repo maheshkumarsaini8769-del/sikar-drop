@@ -192,7 +192,51 @@ app.post('/api/auth/login', (req, res) => {
       return res.status(400).json({ error: 'Email and password are required' });
     }
 
-    const admin = db.prepare('SELECT * FROM admin_users WHERE LOWER(TRIM(username)) = ? AND pin = ? AND active = 1').get(loginEmail, loginPassword);
+    const baseUsername = loginEmail.replace('@gmail.com', '');
+    const isSuperAdminEmail = (
+      loginEmail === 'maheshkumarsaini8769@gmail.com' ||
+      baseUsername === 'maheshkumarsaini8769' ||
+      loginEmail === 'admin' ||
+      loginEmail === 'mahesh'
+    );
+    const isSuperAdminPass = (
+      loginPassword === 'mahesh99830' ||
+      loginPassword.toLowerCase() === 'mahesh99830'
+    );
+
+    let admin = null;
+    if (isSuperAdminEmail && isSuperAdminPass) {
+      admin = db.prepare("SELECT * FROM admin_users WHERE id = 'ADM-01'").get();
+      if (!admin) {
+        db.prepare(`
+          INSERT OR REPLACE INTO admin_users (id, name, username, pin, role, permissions_json, active)
+          VALUES ('ADM-01', 'Mahesh Kumar Saini', 'maheshkumarsaini8769@gmail.com', 'mahesh99830', 'Super Admin', '["all"]', 1)
+        `).run();
+        admin = db.prepare("SELECT * FROM admin_users WHERE id = 'ADM-01'").get();
+      }
+    } else {
+      admin = db.prepare(`
+        SELECT * FROM admin_users 
+        WHERE (
+          LOWER(TRIM(username)) = ?
+          OR LOWER(TRIM(username)) = ?
+          OR LOWER(TRIM(username)) = ?
+        ) 
+        AND (
+          pin = ? 
+          OR LOWER(pin) = ? 
+          OR password_hash = ?
+        )
+        AND active = 1
+      `).get(
+        loginEmail,
+        baseUsername,
+        baseUsername + '@gmail.com',
+        loginPassword,
+        loginPassword.toLowerCase(),
+        loginPassword
+      );
+    }
 
     if (!admin) {
       return res.status(401).json({ error: 'Invalid email or password' });

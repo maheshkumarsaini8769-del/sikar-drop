@@ -497,28 +497,33 @@ function initSparklerTrail(accentColor) {
 // 2. LIVE PRODUCTS & CATEGORIES SYNC
 async function loadCatalogFromBackend() {
   try {
+    const t = Date.now();
     const [pRes, cRes] = await Promise.all([
-      fetch('/api/products'),
-      fetch('/api/categories')
+      fetch(`/api/products?_t=${t}`, { cache: 'no-store' }),
+      fetch(`/api/categories?_t=${t}`, { cache: 'no-store' })
     ]);
 
     if (pRes.ok) {
       const pData = await pRes.json();
       if (Array.isArray(pData)) {
-        pData.sort((a, b) => {
+        const cached = JSON.parse(localStorage.getItem('sikar_admin_products') || '[]');
+        const serverIds = new Set(pData.map(p => p.id));
+        const localOnly = cached.filter(p => !serverIds.has(p.id) && (String(p.id).startsWith('p_') || String(p.id).startsWith('custom_')));
+        const merged = [...localOnly, ...pData];
+        merged.sort((a, b) => {
           const ordA = a.display_order !== undefined ? a.display_order : 50;
           const ordB = b.display_order !== undefined ? b.display_order : 50;
           if (ordA !== ordB) return ordA - ordB;
           return (b.created_at || '').localeCompare(a.created_at || '');
         });
-        PRODUCTS = pData;
-        localStorage.setItem('sikar_admin_products', JSON.stringify(pData));
+        PRODUCTS = merged;
+        localStorage.setItem('sikar_admin_products', JSON.stringify(merged));
       }
     }
 
     if (cRes.ok) {
       const cData = await cRes.json();
-      if (Array.isArray(cData)) {
+      if (Array.isArray(cData) && cData.length > 0) {
         CATEGORIES = cData;
         localStorage.setItem('sikar_admin_categories', JSON.stringify(cData));
       }
