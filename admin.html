@@ -5060,6 +5060,7 @@
               Add / Update Serviceable Delivery Location
             </div>
 
+            <!-- ROW 1: Area, Corridor, Pincode -->
             <div class="portal-form-grid-3">
               <div class="portal-field-group">
                 <label for="dz-area-name">Full Area / Location Name *</label>
@@ -5070,30 +5071,60 @@
                 <input type="text" id="dz-corridor" class="portal-input" placeholder="e.g. Piprali Road" required>
               </div>
               <div class="portal-field-group">
-                <label for="dz-pincode">Pincode *</label>
-                <input type="text" id="dz-pincode" class="portal-input tabular" value="332001" placeholder="e.g. 332001" required>
+                <label for="dz-pincode">6-Digit Pincode *</label>
+                <input type="text" id="dz-pincode" class="portal-input tabular" value="332001" placeholder="e.g. 332001" required pattern="[1-9][0-9]{5}" maxlength="6">
               </div>
             </div>
 
+            <!-- ROW 2: Delivery Charge, Free Threshold, Min Order, COD Policy -->
+            <div class="portal-form-grid-4" style="display: grid; grid-template-columns: repeat(auto-fit, minmax(180px, 1fr)); gap: 14px; margin-top: 10px; margin-bottom: 10px;">
+              <div class="portal-field-group">
+                <label for="dz-delivery-charge">Delivery Charge (₹)</label>
+                <input type="number" id="dz-delivery-charge" class="portal-input tabular" value="0" min="0" step="1" placeholder="0 for Free">
+              </div>
+              <div class="portal-field-group">
+                <label for="dz-free-threshold">Free Delivery Above (₹)</label>
+                <input type="number" id="dz-free-threshold" class="portal-input tabular" value="0" min="0" step="1" placeholder="0 for No Free Limit">
+              </div>
+              <div class="portal-field-group">
+                <label for="dz-min-order">Minimum Order (₹)</label>
+                <input type="number" id="dz-min-order" class="portal-input tabular" value="0" min="0" step="1" placeholder="0 for No Min Order">
+              </div>
+              <div class="portal-field-group">
+                <label for="dz-cod-available">COD Payment Policy</label>
+                <select id="dz-cod-available" class="portal-select">
+                  <option value="1">COD Allowed</option>
+                  <option value="0">Prepaid Only (COD Disabled)</option>
+                </select>
+              </div>
+            </div>
+
+            <!-- ROW 3: Priority, ETA, Availability Status -->
             <div class="portal-form-grid-3">
               <div class="portal-field-group">
-                <label for="dz-keywords">Matching Landmarks / Colonies / Keywords (Comma separated) *</label>
-                <input type="text" id="dz-keywords" class="portal-input" placeholder="e.g. piprali road, clc, allen, prince school, gokulpura, 332001" required>
+                <label for="dz-priority">Priority Rank (Higher Wins)</label>
+                <input type="number" id="dz-priority" class="portal-input tabular" value="10" step="1" placeholder="e.g. 10 or 20">
               </div>
               <div class="portal-field-group">
                 <label for="dz-eta">Delivery Time Estimate (ETA)</label>
                 <input type="text" id="dz-eta" class="portal-input" value="45-60 Mins Express Tempo" placeholder="e.g. 45-60 Mins Express Tempo">
               </div>
               <div class="portal-field-group">
-                <label for="dz-serviceable">Delivery Availability Status</label>
+                <label for="dz-serviceable">Service Availability Status</label>
                 <select id="dz-serviceable" class="portal-select">
-                  <option value="1">Serviceable (Delivery Possible)</option>
+                  <option value="1">Serviceable (Delivery Active)</option>
                   <option value="0">Not Serviceable / Paused (No Delivery)</option>
                 </select>
               </div>
             </div>
 
-            <div style="display: flex; align-items: center; gap: 10px; margin-top: 6px;">
+            <!-- ROW 4: Keywords & Landmarks -->
+            <div class="portal-field-group" style="margin-top: 10px;">
+              <label for="dz-keywords">Matching Landmarks / Colonies / Keywords (Comma separated) *</label>
+              <input type="text" id="dz-keywords" class="portal-input" placeholder="e.g. piprali road, clc, allen, prince school, gokulpura, 332001" required>
+            </div>
+
+            <div style="display: flex; align-items: center; gap: 10px; margin-top: 14px;">
               <button type="submit" class="btn-portal-success" id="dz-save-btn">Save Delivery Location</button>
               <button type="button" class="btn-portal-outline" onclick="resetDeliveryZoneForm()">Reset Form</button>
             </div>
@@ -5106,15 +5137,17 @@
                 <tr>
                   <th>Area / Location Name</th>
                   <th>Pincode</th>
-                  <th>Matched Landmarks &amp; Keywords</th>
-                  <th>Delivery ETA</th>
+                  <th>Delivery Fee &amp; Threshold</th>
+                  <th>Min Order</th>
+                  <th>COD Policy</th>
+                  <th>Priority &amp; ETA</th>
                   <th>Delivery Status</th>
                   <th>Actions</th>
                 </tr>
               </thead>
               <tbody id="delivery-zones-tbody">
                 <tr>
-                  <td colspan="6" style="text-align: center; padding: 24px; color: var(--text-muted);">Loading configured delivery locations...</td>
+                  <td colspan="8" style="text-align: center; padding: 24px; color: var(--text-muted);">Loading configured delivery locations...</td>
                 </tr>
               </tbody>
             </table>
@@ -8597,6 +8630,13 @@
                       <td></td>
                     </tr>
                   ` : ''}
+                  <tr style="background:#F8FAFC;">
+                    <td colspan="3" style="text-align:right; font-weight:700; color:#0369A1;">Delivery / Shipping Fee:</td>
+                    <td style="text-align:right; color:${Number(o.delivery_charge || 0) > 0 ? '#0F172A' : '#15803D'};" class="tabular">
+                      ${Number(o.delivery_charge || 0) > 0 ? `₹${Number(o.delivery_charge).toLocaleString('en-IN')}` : '<span style="color:#15803D; font-weight:800;">FREE Delivery</span>'}
+                    </td>
+                    <td></td>
+                  </tr>
                   <tr style="background:#F1F5F9;">
                     <td colspan="3" style="text-align:right; font-weight:900; font-size:1rem; color:#0F172A;">Final Bilty Bill Total:</td>
                     <td style="text-align:right; font-weight:900; font-size:1.15rem; color:#0284C7;" class="tabular">₹${(o.total || 0).toLocaleString('en-IN')}</td>
@@ -14564,7 +14604,7 @@
       if (zones.length === 0) {
         tbody.innerHTML = `
           <tr>
-            <td colspan="6" style="text-align: center; padding: 24px; color: var(--text-muted);">
+            <td colspan="8" style="text-align: center; padding: 24px; color: var(--text-muted);">
               No delivery areas configured yet. Add a Sikar area above to enable delivery checking.
             </td>
           </tr>
@@ -14575,23 +14615,53 @@
       tbody.innerHTML = zones.map(z => {
         const isServiceable = Number(z.serviceable) === 1;
         const statusBadge = isServiceable
-          ? `<span style="display:inline-block; background:#F0FDF4; color:#15803D; border:1px solid #BBF7D0; font-weight:800; font-size:0.78rem; padding:3px 9px; border-radius:999px;">Delivery Possible (Active)</span>`
-          : `<span style="display:inline-block; background:#FEF2F2; color:#DC2626; border:1px solid #FECACA; font-weight:800; font-size:0.78rem; padding:3px 9px; border-radius:999px;">Not Serviceable (Paused)</span>`;
+          ? `<span style="display:inline-block; background:#F0FDF4; color:#15803D; border:1px solid #BBF7D0; font-weight:800; font-size:0.76rem; padding:3px 8px; border-radius:999px;">Serviceable</span>`
+          : `<span style="display:inline-block; background:#FEF2F2; color:#DC2626; border:1px solid #FECACA; font-weight:800; font-size:0.76rem; padding:3px 8px; border-radius:999px;">Paused</span>`;
+
+        const isCod = Number(z.cod_available !== undefined ? z.cod_available : 1) === 1;
+        const codBadge = isCod
+          ? `<span style="display:inline-block; background:#EFF6FF; color:#1D4ED8; font-weight:700; font-size:0.74rem; padding:2px 7px; border-radius:4px; border:1px solid #BFDBFE;">COD Allowed</span>`
+          : `<span style="display:inline-block; background:#FFFBEB; color:#B45309; font-weight:700; font-size:0.74rem; padding:2px 7px; border-radius:4px; border:1px solid #FDE68A;">Prepaid Only</span>`;
+
+        const charge = Number(z.delivery_charge || 0);
+        const freeThr = Number(z.free_delivery_threshold || 0);
+        const feeHtml = charge > 0
+          ? `<strong class="tabular" style="color:#0F172A; font-size:0.86rem;">₹${charge}</strong>`
+          : `<strong style="color:#15803D; font-size:0.86rem;">FREE</strong>`;
+        const freeThrHtml = freeThr > 0
+          ? `<div style="font-size:0.72rem; color:#15803D; font-weight:700; margin-top:2px;">Free above ₹${freeThr}</div>`
+          : '';
+
+        const minOrd = Number(z.min_order || 0);
+        const minOrdHtml = minOrd > 0
+          ? `<strong class="tabular" style="color:#0F172A; font-size:0.86rem;">₹${minOrd}</strong>`
+          : `<span style="color:var(--text-muted); font-size:0.82rem;">None</span>`;
 
         return `
           <tr>
             <td>
               <strong style="color: #0F172A; font-size: 0.92rem;">${escapeHTML(z.area_name)}</strong>
-              <div style="font-size: 0.76rem; color: #0284C7; font-weight: 700; margin-top: 2px;">Corridor: ${escapeHTML(z.corridor || z.area_name)}</div>
+              <div style="font-size: 0.74rem; color: #0284C7; font-weight: 700; margin-top: 2px;">Corridor: ${escapeHTML(z.corridor || z.area_name)}</div>
+              <div style="font-size: 0.72rem; color: var(--text-muted); margin-top: 1px; max-width: 220px; overflow: hidden; text-overflow: ellipsis; white-space: nowrap;">${escapeHTML(z.keywords || '')}</div>
             </td>
             <td class="tabular"><strong style="font-family: monospace; font-size: 0.9rem; color: #0F172A;">${escapeHTML(z.pincode || '332001')}</strong></td>
-            <td style="max-width: 280px; font-size: 0.79rem; color: var(--text-muted); line-height: 1.4;">${escapeHTML(z.keywords || '')}</td>
-            <td style="font-size: 0.84rem; font-weight: 700; color: #0F172A;">${escapeHTML(z.eta || '45-60 Mins Express Tempo')}</td>
+            <td>
+              ${feeHtml}
+              ${freeThrHtml}
+            </td>
+            <td>${minOrdHtml}</td>
+            <td>${codBadge}</td>
+            <td>
+              <div style="font-size: 0.8rem; font-weight: 700; color: #0F172A;">${escapeHTML(z.eta || '45-60 Mins Express Tempo')}</div>
+              <div style="font-size: 0.72rem; color: var(--text-muted); margin-top: 2px;">
+                <span style="background:#F1F5F9; color:#475569; padding:1px 5px; border-radius:3px; font-weight:800;">Rank ${z.priority !== undefined ? z.priority : 10}</span>
+              </div>
+            </td>
             <td>${statusBadge}</td>
             <td>
               <div class="table-actions-row">
                 <button type="button" class="btn-tbl-action ${isServiceable ? 'danger' : 'success'}" onclick="toggleDeliveryZoneStatus('${escapeHTML(z.id)}', ${isServiceable ? 0 : 1})">
-                  ${isServiceable ? 'Pause Area' : 'Enable Area'}
+                  ${isServiceable ? 'Pause' : 'Enable'}
                 </button>
                 <button type="button" class="btn-tbl-action" onclick="editDeliveryZone('${escapeHTML(z.id)}')">Edit</button>
                 <button type="button" class="btn-tbl-action danger" onclick="deleteDeliveryZone('${escapeHTML(z.id)}')">Delete</button>
@@ -14607,6 +14677,18 @@
       if (form) form.reset();
       const idEl = document.getElementById('dz-id-input');
       if (idEl) idEl.value = '';
+      const chargeEl = document.getElementById('dz-delivery-charge');
+      if (chargeEl) chargeEl.value = '0';
+      const freeEl = document.getElementById('dz-free-threshold');
+      if (freeEl) freeEl.value = '0';
+      const minEl = document.getElementById('dz-min-order');
+      if (minEl) minEl.value = '0';
+      const codEl = document.getElementById('dz-cod-available');
+      if (codEl) codEl.value = '1';
+      const prioEl = document.getElementById('dz-priority');
+      if (prioEl) prioEl.value = '10';
+      const servEl = document.getElementById('dz-serviceable');
+      if (servEl) servEl.value = '1';
       const hEl = document.getElementById('dz-form-heading');
       if (hEl) hEl.textContent = 'Add / Update Serviceable Delivery Location';
       const btnEl = document.getElementById('dz-save-btn');
@@ -14620,9 +14702,14 @@
       document.getElementById('dz-area-name').value = z.area_name || '';
       document.getElementById('dz-corridor').value = z.corridor || z.area_name || '';
       document.getElementById('dz-pincode').value = z.pincode || '332001';
-      document.getElementById('dz-keywords').value = z.keywords || '';
+      document.getElementById('dz-delivery-charge').value = z.delivery_charge !== undefined ? z.delivery_charge : 0;
+      document.getElementById('dz-free-threshold').value = z.free_delivery_threshold !== undefined ? z.free_delivery_threshold : 0;
+      document.getElementById('dz-min-order').value = z.min_order !== undefined ? z.min_order : 0;
+      document.getElementById('dz-cod-available').value = (z.cod_available === 0 || z.cod_available === '0') ? '0' : '1';
+      document.getElementById('dz-priority').value = z.priority !== undefined ? z.priority : 10;
       document.getElementById('dz-eta').value = z.eta || '45-60 Mins Express Tempo';
       document.getElementById('dz-serviceable').value = Number(z.serviceable) === 1 ? '1' : '0';
+      document.getElementById('dz-keywords').value = z.keywords || '';
       const hEl = document.getElementById('dz-form-heading');
       if (hEl) hEl.textContent = `Editing Delivery Location: ${z.area_name}`;
       const btnEl = document.getElementById('dz-save-btn');
@@ -14636,19 +14723,40 @@
       const area_name = document.getElementById('dz-area-name').value.trim();
       const corridor = document.getElementById('dz-corridor').value.trim() || area_name;
       const pincode = document.getElementById('dz-pincode').value.trim() || '332001';
-      const keywords = document.getElementById('dz-keywords').value.trim() || `${area_name.toLowerCase()}, ${corridor.toLowerCase()}, ${pincode}`;
+
+      if (!/^[1-9][0-9]{5}$/.test(pincode)) {
+        showToast('Pincode must be a valid 6-digit Indian postal code starting with 1-9 (e.g. 332001)');
+        return;
+      }
+
+      const delivery_charge = Math.max(0, parseFloat(document.getElementById('dz-delivery-charge').value) || 0);
+      const free_delivery_threshold = Math.max(0, parseFloat(document.getElementById('dz-free-threshold').value) || 0);
+      const min_order = Math.max(0, parseFloat(document.getElementById('dz-min-order').value) || 0);
+      const cod_available = parseInt(document.getElementById('dz-cod-available').value, 10);
+      const priority = parseInt(document.getElementById('dz-priority').value, 10) || 10;
       const eta = document.getElementById('dz-eta').value.trim() || '45-60 Mins Express Tempo';
       const serviceable = parseInt(document.getElementById('dz-serviceable').value, 10);
+      const keywords = document.getElementById('dz-keywords').value.trim() || `${area_name.toLowerCase()}, ${corridor.toLowerCase()}, ${pincode}`;
+
+      const payload = {
+        area_name,
+        corridor,
+        pincode,
+        delivery_charge,
+        free_delivery_threshold,
+        min_order,
+        cod_available,
+        priority,
+        eta,
+        serviceable,
+        keywords
+      };
 
       try {
         if (id) {
-          await sikarApi.put(`/api/delivery-zones/${encodeURIComponent(id)}`, {
-            area_name, corridor, pincode, keywords, eta, serviceable
-          });
+          await sikarApi.put(`/api/delivery-zones/${encodeURIComponent(id)}`, payload);
         } else {
-          await sikarApi.post('/api/delivery-zones', {
-            area_name, corridor, pincode, keywords, eta, serviceable
-          });
+          await sikarApi.post('/api/delivery-zones', payload);
         }
         await syncFromBackend();
         renderDeliveryZonesTable();

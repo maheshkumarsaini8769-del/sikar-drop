@@ -136,6 +136,7 @@ function initDatabase() {
       items_count INTEGER DEFAULT 0,
       subtotal REAL NOT NULL,
       discount REAL DEFAULT 0.0,
+      delivery_charge REAL DEFAULT 0.0,
       total REAL NOT NULL,
       payment_method TEXT DEFAULT 'COD',
       payment_status TEXT DEFAULT 'Pending',
@@ -365,6 +366,9 @@ function initDatabase() {
       eta TEXT NOT NULL DEFAULT '45-60 Mins Express Tempo',
       min_order REAL DEFAULT 0.0,
       delivery_charge REAL DEFAULT 0.0,
+      free_delivery_threshold REAL DEFAULT 0.0,
+      cod_available INTEGER DEFAULT 1,
+      priority INTEGER DEFAULT 10,
       serviceable INTEGER DEFAULT 1,
       updated_at TEXT NOT NULL
     );
@@ -784,6 +788,33 @@ function initDatabase() {
     }
   } catch (err) {
     console.warn('Payments columns migration notice:', err.message);
+  }
+
+  // Ensure delivery_zones columns exist (free_delivery_threshold, cod_available, priority)
+  try {
+    const dzCols = db.prepare("PRAGMA table_info(delivery_zones)").all().map(c => c.name);
+    const neededDzCols = [
+      ['free_delivery_threshold', "REAL DEFAULT 0.0"],
+      ['cod_available', "INTEGER DEFAULT 1"],
+      ['priority', "INTEGER DEFAULT 10"]
+    ];
+    for (const [col, colType] of neededDzCols) {
+      if (!dzCols.includes(col)) {
+        db.exec(`ALTER TABLE delivery_zones ADD COLUMN ${col} ${colType}`);
+      }
+    }
+  } catch (err) {
+    console.warn('Delivery zones columns migration notice:', err.message);
+  }
+
+  // Ensure orders delivery_charge column exists to preserve historical shipping fee
+  try {
+    const orderCols = db.prepare("PRAGMA table_info(orders)").all().map(c => c.name);
+    if (!orderCols.includes('delivery_charge')) {
+      db.exec("ALTER TABLE orders ADD COLUMN delivery_charge REAL DEFAULT 0.0");
+    }
+  } catch (err) {
+    console.warn('Orders delivery_charge column migration notice:', err.message);
   }
 
   console.log('Database tables initialized successfully');
@@ -2067,7 +2098,7 @@ function receivePurchaseTransaction({ purchaseId, actor = 'Admin' }) {
 }
 
 // 4. ATOMIC ORDER CREATION (ONLINE STOREFRONT)
-function createOnlineOrderTransaction({ orderId: customOrderId, customerName, customerPhone, loginPhone = '', deliveryPhone = '', addressPhone = '', corridor, address = '', deliveryAddress = '', items = [], subtotal, discount = 0, total, paymentMethod = 'COD', paymentStatus = '', notes = '', attribution = {} }) {
+function createOnlineOrderTransaction({ orderId: customOrderId, customerName, customerPhone, loginPhone = '', deliveryPhone = '', addressPhone = '', corridor, address = '', deliveryAddress = '', items = [], subtotal, discount = 0, deliveryCharge = 0, delivery_charge = 0, total, paymentMethod = 'COD', paymentStatus = '', notes = '', attribution = {} }) {
   const runTx = db.transaction(() => {
     const orderId = customOrderId || ('SKR-' + Math.floor(1000 + Math.random() * 9000));
     const finalAddress = address || deliveryAddress || corridor || 'Sikar';
@@ -2121,7 +2152,8 @@ function createOnlineOrderTransaction({ orderId: customOrderId, customerName, cu
 
     const finalSubtotal = subtotal !== undefined ? Number(subtotal) : computedTotal;
     const finalDiscount = Number(discount || 0);
-    const finalTotal = total !== undefined ? Number(total) : Math.max(0, finalSubtotal - finalDiscount);
+    const finalDeliveryCharge = Number(deliveryCharge !== undefined ? deliveryCharge : (delivery_charge !== undefined ? delivery_charge : 0));
+    const finalTotal = total !== undefined ? Number(total) : Math.max(0, finalSubtotal - finalDiscount + finalDeliveryCharge);
 
     // Customer record
     const cleanPrimary = (primaryPhone || '').replace(/\D/g, '');
@@ -2164,16 +2196,16 @@ function createOnlineOrderTransaction({ orderId: customOrderId, customerName, cu
     db.prepare(`
       INSERT INTO orders (
         id, customer_id, customer_name, customer_phone, login_phone, delivery_phone,
-        corridor, delivery_address, items_json, items_count, subtotal, discount, total,
+        corridor, delivery_address, items_json, items_count, subtotal, discount, delivery_charge, total,
         payment_method, payment_status, status, vehicle, order_date, delivery_time,
         notes, activity_log_json, created_at, updated_at,
         utm_source, utm_medium, utm_campaign, utm_content, utm_term, attribution_platform, session_id
       )
-      VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, 'pending', '', ?, 'Within 40 Mins', ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)
+      VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, 'pending', '', ?, 'Within 40 Mins', ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)
     `).run(
       orderId, custId, customerName, primaryPhone, finalLoginPhone, finalDeliveryPhone,
       corridor || 'Sikar', finalAddress, JSON.stringify(items), totalItemsCount,
-      finalSubtotal, finalDiscount, finalTotal, paymentMethod, finalPaymentStatus,
+      finalSubtotal, finalDiscount, finalDeliveryCharge, finalTotal, paymentMethod, finalPaymentStatus,
       now.split('T')[0], notes, activityLog, now, now,
       utmSource, utmMedium, utmCampaign, utmContent, utmTerm, attributionPlatform, sessionId
     );
@@ -2205,7 +2237,21 @@ function createOnlineOrderTransaction({ orderId: customOrderId, customerName, cu
       );
     }
 
-    return { orderId, total: finalTotal, itemsCount: totalItemsCount, status: 'pending', loginPhone: finalLoginPhone, deliveryPhone: finalDeliveryPhone, customerPhone: primaryPhone, customerName, items };
+    return {
+      orderId,
+      total: finalTotal,
+      subtotal: finalSubtotal,
+      discount: finalDiscount,
+      delivery_charge: finalDeliveryCharge,
+      deliveryCharge: finalDeliveryCharge,
+      itemsCount: totalItemsCount,
+      status: 'pending',
+      loginPhone: finalLoginPhone,
+      deliveryPhone: finalDeliveryPhone,
+      customerPhone: primaryPhone,
+      customerName,
+      items
+    };
   });
 
   return runTx();

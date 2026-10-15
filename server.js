@@ -1487,24 +1487,57 @@ app.post('/api/orders', (req, res) => {
     const corridor = String(b.corridor || b.delivery_corridor || b.deliveryCorridor || '').trim();
     const address = String(b.address || b.deliveryAddress || b.delivery_address || '').trim();
     const deliveryAddress = String(b.deliveryAddress || b.delivery_address || address || corridor || 'Sikar').trim();
+    const pincode = String(b.pincode || '').trim();
 
-    // Check delivery zone availability only if explicitly paused by admin in settings
-    const combinedLoc = `${address} ${deliveryAddress} ${corridor}`.trim();
-    if (combinedLoc) {
-      const zoneCheck = evaluateDeliveryZoneMatch(combinedLoc);
-      if (zoneCheck && zoneCheck.reason === 'paused_by_admin') {
+    let computedSubtotal = 0;
+    for (const it of sanitizedItems) {
+      computedSubtotal += Number(it.price || 0) * Number(it.quantity || it.qty || 1);
+    }
+    const subtotal = b.subtotal !== undefined ? Number(b.subtotal) : (b.subtotal_amount !== undefined ? Number(b.subtotal_amount) : computedSubtotal);
+    const discount = b.discount !== undefined ? Number(b.discount) : (b.discount_amount !== undefined ? Number(b.discount_amount) : 0);
+    const paymentMethod = String(b.paymentMethod || b.payment_method || 'COD').trim();
+
+    // Strict validation of delivery zone against admin configuration
+    const combinedLoc = `${corridor} ${address} ${deliveryAddress} ${pincode}`.trim();
+    const zoneCheck = evaluateDeliveryZoneMatch(combinedLoc, { subtotal, paymentMethod });
+
+    if (!zoneCheck.zone || !zoneCheck.available) {
+      if (zoneCheck.reason === 'paused_by_admin') {
         return res.status(400).json({
           error: zoneCheck.message || 'Delivery is currently paused in this area by Admin.',
           serviceable: false,
+          reason: 'paused_by_admin',
           activeZones: zoneCheck.activeZones
         });
       }
+      if (zoneCheck.reason === 'min_order_shortfall') {
+        return res.status(400).json({
+          error: zoneCheck.message,
+          serviceable: true,
+          reason: 'min_order_shortfall',
+          minOrder: zoneCheck.minOrder,
+          subtotal
+        });
+      }
+      if (zoneCheck.reason === 'cod_not_allowed') {
+        return res.status(400).json({
+          error: zoneCheck.message,
+          serviceable: true,
+          reason: 'cod_not_allowed'
+        });
+      }
+      return res.status(400).json({
+        error: zoneCheck.message || 'Delivery is not available in the specified location or pincode. Please select an authorized Sikar delivery area.',
+        serviceable: false,
+        reason: zoneCheck.reason || 'not_in_admin_zones',
+        activeZones: zoneCheck.activeZones
+      });
     }
 
-    const subtotal = b.subtotal !== undefined ? Number(b.subtotal) : (b.subtotal_amount !== undefined ? Number(b.subtotal_amount) : undefined);
-    const discount = b.discount !== undefined ? Number(b.discount) : (b.discount_amount !== undefined ? Number(b.discount_amount) : 0);
-    const total = b.total !== undefined ? Number(b.total) : (b.total_amount !== undefined ? Number(b.total_amount) : (b.finalAmount !== undefined ? Number(b.finalAmount) : undefined));
-    const paymentMethod = String(b.paymentMethod || b.payment_method || 'COD').trim();
+    // Backend recalculates shipping charges using trusted database configuration
+    const trustedDeliveryCharge = Number(zoneCheck.shippingFee || 0);
+    const trustedTotal = Math.max(0, subtotal - discount + trustedDeliveryCharge);
+
     const paymentStatus = String(b.paymentStatus || b.payment_status || (paymentMethod === 'UPI' ? 'Paid' : 'Pending')).trim();
     const notes = String(b.notes || b.note || '').trim();
 
@@ -1525,13 +1558,14 @@ app.post('/api/orders', (req, res) => {
       customerPhone: effectivePrimaryPhone,
       loginPhone: rawLoginPhone,
       deliveryPhone: rawDeliveryPhone,
-      corridor: corridor || 'Sikar',
+      corridor: (zoneCheck.zone && zoneCheck.zone.area_name) || corridor || 'Sikar',
       address: address || deliveryAddress,
       deliveryAddress,
       items: sanitizedItems,
       subtotal,
       discount,
-      total,
+      deliveryCharge: trustedDeliveryCharge,
+      total: trustedTotal,
       paymentMethod,
       paymentStatus,
       notes,
@@ -1542,6 +1576,8 @@ app.post('/api/orders', (req, res) => {
       success: true,
       orderId: result.orderId,
       order: result,
+      delivery_charge: trustedDeliveryCharge,
+      total: trustedTotal,
       ...result
     });
   } catch (err) {
@@ -4954,9 +4990,13 @@ app.post('/api/seo-settings', (req, res) => {
 // ==========================================
 // 18.6 SERVICEABLE DELIVERY ZONES & LOCATION CHECKER
 // ==========================================
-function evaluateDeliveryZoneMatch(rawQuery) {
+function isValidIndianPincode(pincode) {
+  return /^[1-9][0-9]{5}$/.test(String(pincode || '').trim());
+}
+
+function evaluateDeliveryZoneMatch(rawQuery, options = {}) {
   const q = String(rawQuery || '').trim().toLowerCase();
-  const allZones = db.prepare('SELECT * FROM delivery_zones ORDER BY serviceable DESC, area_name ASC').all();
+  const allZones = db.prepare('SELECT * FROM delivery_zones ORDER BY priority DESC, length(keywords) DESC, area_name ASC').all();
   const activeZones = allZones.filter(z => Number(z.serviceable) === 1);
 
   if (!q) {
@@ -4965,48 +5005,150 @@ function evaluateDeliveryZoneMatch(rawQuery) {
       reason: 'empty',
       zone: null,
       activeZones,
-      allZones
+      allZones,
+      message: 'Please provide an address, locality, or 6-digit Sikar pincode.'
     };
   }
 
-  let matchedActive = null;
-  let matchedPaused = null;
+  const pincodeMatch = q.match(/\b([1-9][0-9]{5})\b/);
+  const queryPincode = pincodeMatch ? pincodeMatch[1] : null;
+
+  // Score and rank all candidate zones
+  const scoredCandidates = [];
 
   for (const z of allZones) {
-    const tokens = [
-      String(z.area_name || '').toLowerCase(),
-      String(z.corridor || '').toLowerCase(),
-      String(z.pincode || '').toLowerCase(),
-      ...String(z.keywords || '').toLowerCase().split(',').map(k => k.trim()).filter(Boolean)
-    ].filter(t => t.length >= 3);
+    const zPin = String(z.pincode || '').trim();
+    const isExactPincodeMatch = Boolean(queryPincode && (zPin === queryPincode));
+    const areaLower = String(z.area_name || '').toLowerCase();
+    const corridorLower = String(z.corridor || '').toLowerCase();
+    const kwTokens = String(z.keywords || '').toLowerCase().split(',').map(k => k.trim()).filter(Boolean);
 
-    const isMatch = tokens.some(tok => q.includes(tok) || (q.length >= 3 && tok.includes(q)));
-    if (isMatch) {
-      if (Number(z.serviceable) === 1 && !matchedActive) {
-        matchedActive = z;
-      } else if (Number(z.serviceable) !== 1 && !matchedPaused) {
-        matchedPaused = z;
+    let isMatch = false;
+    let specificity = 0;
+
+    if (isExactPincodeMatch) {
+      isMatch = true;
+      specificity += 120;
+    }
+
+    if (q.includes(areaLower) || (areaLower.length >= 4 && areaLower.includes(q))) {
+      isMatch = true;
+      specificity += 150 + areaLower.length;
+    } else if (q.includes(corridorLower) || (corridorLower.length >= 4 && corridorLower.includes(q))) {
+      isMatch = true;
+      specificity += 100 + corridorLower.length;
+    }
+
+    for (const kw of kwTokens) {
+      if (kw.length >= 3 && (q.includes(kw) || (q.length >= 3 && kw.includes(q)))) {
+        isMatch = true;
+        specificity = Math.max(specificity, 80 + kw.length * 2);
       }
+    }
+
+    if (isMatch) {
+      // Deterministic priority rule: Zone priority multiplier + match specificity
+      const priorityScore = (Number(z.priority || 10) * 1000) + specificity;
+      scoredCandidates.push({
+        zone: z,
+        score: priorityScore,
+        specificity,
+        serviceable: Number(z.serviceable) === 1
+      });
     }
   }
 
-  if (matchedActive) {
+  // Sort candidates by total score descending
+  scoredCandidates.sort((a, b) => {
+    if (b.score !== a.score) return b.score - a.score;
+    if (b.zone.priority !== a.zone.priority) return (b.zone.priority || 0) - (a.zone.priority || 0);
+    return (a.zone.area_name || '').localeCompare(b.zone.area_name || '');
+  });
+
+  if (scoredCandidates.length > 0) {
+    const best = scoredCandidates[0].zone;
+
+    // If best matching zone is paused / disabled by admin
+    if (Number(best.serviceable) !== 1) {
+      return {
+        available: false,
+        reason: 'paused_by_admin',
+        zone: best,
+        activeZones,
+        allZones,
+        message: `Delivery is currently paused/disabled by Admin in ${best.area_name}.`
+      };
+    }
+
+    // Active serviceable zone matched
+    const deliveryCharge = Number(best.delivery_charge || 0);
+    const freeThreshold = Number(best.free_delivery_threshold || 0);
+    const minOrder = Number(best.min_order || 0);
+    const codAvailable = Number(best.cod_available !== undefined ? best.cod_available : 1);
+    const subtotalVal = options.subtotal !== undefined ? Number(options.subtotal) : undefined;
+    const payMethod = options.paymentMethod ? String(options.paymentMethod).toUpperCase().trim() : '';
+
+    let isFreeShipping = false;
+    let shippingFee = deliveryCharge;
+    if (freeThreshold > 0 && subtotalVal !== undefined && subtotalVal >= freeThreshold) {
+      shippingFee = 0;
+      isFreeShipping = true;
+    }
+
+    let minOrderViolated = false;
+    if (minOrder > 0 && subtotalVal !== undefined && subtotalVal < minOrder) {
+      minOrderViolated = true;
+    }
+
+    let codViolated = false;
+    if (payMethod === 'COD' && codAvailable === 0) {
+      codViolated = true;
+    }
+
+    let msg = '';
+    let reason = 'matched_active';
+
+    if (minOrderViolated) {
+      reason = 'min_order_shortfall';
+      msg = `Minimum order value for ${best.area_name} is Rs.${minOrder}. Current subtotal is Rs.${subtotalVal}. Add Rs.${minOrder - subtotalVal} more to proceed.`;
+    } else if (codViolated) {
+      reason = 'cod_not_allowed';
+      msg = `Cash on Delivery is disabled in ${best.area_name} by Admin policy. Please pay via UPI.`;
+    } else if (isFreeShipping) {
+      msg = `Delivery Available in ${best.area_name} (Pincode: ${best.pincode}) • Free Shipping Unlocked! ETA: ${best.eta}`;
+    } else if (shippingFee > 0) {
+      msg = `Delivery Available in ${best.area_name} (Pincode: ${best.pincode}) • Delivery Fee: Rs.${shippingFee} • ETA: ${best.eta}`;
+    } else {
+      msg = `Delivery Available in ${best.area_name} (Pincode: ${best.pincode}) • Free Delivery • ETA: ${best.eta}`;
+    }
+
     return {
-      available: true,
-      reason: 'matched_active',
-      zone: matchedActive,
+      available: !minOrderViolated && !codViolated,
+      reason,
+      zone: best,
       activeZones,
-      message: `Delivery Available in ${matchedActive.area_name} (Pincode: ${matchedActive.pincode}) • ETA: ${matchedActive.eta}`
+      allZones,
+      shippingFee,
+      deliveryCharge,
+      freeDeliveryThreshold: freeThreshold,
+      isFreeShipping,
+      minOrder,
+      minOrderViolated,
+      codAvailable: codAvailable === 1,
+      codViolated,
+      message: msg
     };
   }
 
-  if (matchedPaused) {
+  // If query had a 6-digit pincode that matched none of our configured zones
+  if (queryPincode) {
     return {
       available: false,
-      reason: 'paused_by_admin',
-      zone: matchedPaused,
+      reason: 'unsupported_pincode',
+      zone: null,
       activeZones,
-      message: `Delivery is currently paused/disabled by Admin in ${matchedPaused.area_name}.`
+      allZones,
+      message: `Delivery is not available in pincode ${queryPincode}. We currently only deliver to authorized Sikar delivery areas.`
     };
   }
 
@@ -5015,13 +5157,14 @@ function evaluateDeliveryZoneMatch(rawQuery) {
     reason: 'not_in_admin_zones',
     zone: null,
     activeZones,
-    message: `Delivery is not available in "${rawQuery}". Please enter one of our serviceable Sikar areas.`
+    allZones,
+    message: `Delivery is not available in "${rawQuery}". Please choose one of our serviceable Sikar areas.`
   };
 }
 
 app.get('/api/delivery-zones', (req, res) => {
   try {
-    const zones = db.prepare('SELECT * FROM delivery_zones ORDER BY serviceable DESC, area_name ASC').all();
+    const zones = db.prepare('SELECT * FROM delivery_zones ORDER BY priority DESC, serviceable DESC, area_name ASC').all();
     res.json(zones);
   } catch (err) {
     res.status(500).json({ error: err.message });
@@ -5030,8 +5173,10 @@ app.get('/api/delivery-zones', (req, res) => {
 
 app.get('/api/delivery-zones/check', (req, res) => {
   try {
-    const q = req.query.q || req.query.address || req.query.area || req.query.query || '';
-    const result = evaluateDeliveryZoneMatch(q);
+    const q = req.query.q || req.query.address || req.query.area || req.query.query || req.query.pincode || '';
+    const subtotal = req.query.subtotal !== undefined ? Number(req.query.subtotal) : undefined;
+    const paymentMethod = req.query.paymentMethod || req.query.payment_method || undefined;
+    const result = evaluateDeliveryZoneMatch(q, { subtotal, paymentMethod });
     res.json(result);
   } catch (err) {
     res.status(500).json({ error: err.message });
@@ -5040,23 +5185,59 @@ app.get('/api/delivery-zones/check', (req, res) => {
 
 app.post('/api/delivery-zones', (req, res) => {
   try {
-    const { id, area_name, areaName, pincode, corridor, keywords, eta, min_order, minOrder, delivery_charge, deliveryCharge, serviceable } = req.body;
+    const {
+      id,
+      area_name,
+      areaName,
+      pincode,
+      corridor,
+      keywords,
+      eta,
+      min_order,
+      minOrder,
+      delivery_charge,
+      deliveryCharge,
+      free_delivery_threshold,
+      freeDeliveryThreshold,
+      cod_available,
+      codAvailable,
+      priority,
+      serviceable
+    } = req.body;
+
     const finalArea = String(area_name || areaName || corridor || '').trim();
     if (!finalArea) return res.status(400).json({ error: 'Area / Location name is required' });
 
-    const finalCorridor = String(corridor || finalArea).trim();
     const finalPincode = String(pincode || '332001').trim();
+    if (!isValidIndianPincode(finalPincode)) {
+      return res.status(400).json({ error: 'Pincode must be a valid 6-digit Indian postal code starting with 1-9 (e.g. 332001)' });
+    }
+
+    const finalCorridor = String(corridor || finalArea).trim();
     const finalKeywords = String(keywords || `${finalArea.toLowerCase()}, ${finalCorridor.toLowerCase()}, ${finalPincode}`).trim();
     const finalEta = String(eta || '45-60 Mins Express Tempo').trim();
-    const finalMinOrder = Number(min_order !== undefined ? min_order : (minOrder || 0));
-    const finalCharge = Number(delivery_charge !== undefined ? delivery_charge : (deliveryCharge || 0));
-    const finalServiceable = (serviceable === undefined || serviceable === null) ? 1 : (serviceable ? 1 : 0);
+    const finalMinOrder = Math.max(0, Number(min_order !== undefined ? min_order : (minOrder || 0)));
+    const finalCharge = Math.max(0, Number(delivery_charge !== undefined ? delivery_charge : (deliveryCharge || 0)));
+    const finalFreeThreshold = Math.max(0, Number(free_delivery_threshold !== undefined ? free_delivery_threshold : (freeDeliveryThreshold || 0)));
+    const finalCodAvailable = (cod_available === 0 || cod_available === '0' || codAvailable === false || codAvailable === 0) ? 0 : 1;
+    const finalPriority = Number(priority !== undefined ? priority : 10);
+    const finalServiceable = (serviceable === 0 || serviceable === '0' || serviceable === false) ? 0 : 1;
     const zoneId = id || ('zone-' + finalCorridor.toLowerCase().replace(/[^a-z0-9]+/g, '-').replace(/^-|-$/g, '') + '-' + Math.floor(100 + Math.random() * 900));
     const now = new Date().toISOString();
 
+    // Prevent duplicate area_name and pincode
+    const duplicate = db.prepare('SELECT id FROM delivery_zones WHERE LOWER(area_name) = LOWER(?) AND pincode = ? AND id != ?').get(finalArea, finalPincode, zoneId);
+    if (duplicate) {
+      return res.status(400).json({ error: `A delivery zone for "${finalArea}" with pincode ${finalPincode} already exists.` });
+    }
+
     db.prepare(`
-      INSERT INTO delivery_zones (id, area_name, pincode, corridor, keywords, eta, min_order, delivery_charge, serviceable, updated_at)
-      VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?)
+      INSERT INTO delivery_zones (
+        id, area_name, pincode, corridor, keywords, eta,
+        min_order, delivery_charge, free_delivery_threshold,
+        cod_available, priority, serviceable, updated_at
+      )
+      VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)
       ON CONFLICT(id) DO UPDATE SET
         area_name = excluded.area_name,
         pincode = excluded.pincode,
@@ -5065,9 +5246,16 @@ app.post('/api/delivery-zones', (req, res) => {
         eta = excluded.eta,
         min_order = excluded.min_order,
         delivery_charge = excluded.delivery_charge,
+        free_delivery_threshold = excluded.free_delivery_threshold,
+        cod_available = excluded.cod_available,
+        priority = excluded.priority,
         serviceable = excluded.serviceable,
         updated_at = excluded.updated_at
-    `).run(zoneId, finalArea, finalPincode, finalCorridor, finalKeywords, finalEta, finalMinOrder, finalCharge, finalServiceable, now);
+    `).run(
+      zoneId, finalArea, finalPincode, finalCorridor, finalKeywords, finalEta,
+      finalMinOrder, finalCharge, finalFreeThreshold,
+      finalCodAvailable, finalPriority, finalServiceable, now
+    );
 
     const saved = db.prepare('SELECT * FROM delivery_zones WHERE id = ?').get(zoneId);
     res.status(201).json({ success: true, zone: saved });
@@ -5082,22 +5270,65 @@ app.put('/api/delivery-zones/:id', (req, res) => {
     const existing = db.prepare('SELECT * FROM delivery_zones WHERE id = ?').get(zoneId);
     if (!existing) return res.status(404).json({ error: 'Delivery zone not found' });
 
-    const { area_name, areaName, pincode, corridor, keywords, eta, min_order, minOrder, delivery_charge, deliveryCharge, serviceable } = req.body;
+    const {
+      area_name,
+      areaName,
+      pincode,
+      corridor,
+      keywords,
+      eta,
+      min_order,
+      minOrder,
+      delivery_charge,
+      deliveryCharge,
+      free_delivery_threshold,
+      freeDeliveryThreshold,
+      cod_available,
+      codAvailable,
+      priority,
+      serviceable
+    } = req.body;
+
     const finalArea = String(area_name || areaName || existing.area_name).trim();
-    const finalCorridor = String(corridor || existing.corridor || finalArea).trim();
+    if (!finalArea) return res.status(400).json({ error: 'Area / Location name is required' });
+
     const finalPincode = String(pincode || existing.pincode || '332001').trim();
+    if (!isValidIndianPincode(finalPincode)) {
+      return res.status(400).json({ error: 'Pincode must be a valid 6-digit Indian postal code starting with 1-9 (e.g. 332001)' });
+    }
+
+    const finalCorridor = String(corridor || existing.corridor || finalArea).trim();
     const finalKeywords = keywords !== undefined ? String(keywords).trim() : existing.keywords;
     const finalEta = String(eta || existing.eta || '45-60 Mins Express Tempo').trim();
-    const finalMinOrder = min_order !== undefined ? Number(min_order) : (minOrder !== undefined ? Number(minOrder) : existing.min_order);
-    const finalCharge = delivery_charge !== undefined ? Number(delivery_charge) : (deliveryCharge !== undefined ? Number(deliveryCharge) : existing.delivery_charge);
-    const finalServiceable = (serviceable === undefined || serviceable === null) ? existing.serviceable : (serviceable ? 1 : 0);
+    const finalMinOrder = Math.max(0, Number(min_order !== undefined ? min_order : (minOrder !== undefined ? minOrder : existing.min_order)));
+    const finalCharge = Math.max(0, Number(delivery_charge !== undefined ? delivery_charge : (deliveryCharge !== undefined ? deliveryCharge : existing.delivery_charge)));
+    const finalFreeThreshold = Math.max(0, Number(free_delivery_threshold !== undefined ? free_delivery_threshold : (freeDeliveryThreshold !== undefined ? freeDeliveryThreshold : (existing.free_delivery_threshold || 0))));
+    const finalCodAvailable = (cod_available !== undefined)
+      ? ((cod_available === 0 || cod_available === '0' || cod_available === false) ? 0 : 1)
+      : (codAvailable !== undefined ? (codAvailable ? 1 : 0) : (existing.cod_available !== undefined ? existing.cod_available : 1));
+    const finalPriority = Number(priority !== undefined ? priority : (existing.priority !== undefined ? existing.priority : 10));
+    const finalServiceable = (serviceable !== undefined)
+      ? ((serviceable === 0 || serviceable === '0' || serviceable === false) ? 0 : 1)
+      : existing.serviceable;
     const now = new Date().toISOString();
+
+    // Prevent duplicate area_name and pincode
+    const duplicate = db.prepare('SELECT id FROM delivery_zones WHERE LOWER(area_name) = LOWER(?) AND pincode = ? AND id != ?').get(finalArea, finalPincode, zoneId);
+    if (duplicate) {
+      return res.status(400).json({ error: `A delivery zone for "${finalArea}" with pincode ${finalPincode} already exists.` });
+    }
 
     db.prepare(`
       UPDATE delivery_zones
-      SET area_name = ?, pincode = ?, corridor = ?, keywords = ?, eta = ?, min_order = ?, delivery_charge = ?, serviceable = ?, updated_at = ?
+      SET area_name = ?, pincode = ?, corridor = ?, keywords = ?, eta = ?,
+          min_order = ?, delivery_charge = ?, free_delivery_threshold = ?,
+          cod_available = ?, priority = ?, serviceable = ?, updated_at = ?
       WHERE id = ?
-    `).run(finalArea, finalPincode, finalCorridor, finalKeywords, finalEta, finalMinOrder, finalCharge, finalServiceable, now, zoneId);
+    `).run(
+      finalArea, finalPincode, finalCorridor, finalKeywords, finalEta,
+      finalMinOrder, finalCharge, finalFreeThreshold,
+      finalCodAvailable, finalPriority, finalServiceable, now, zoneId
+    );
 
     const updated = db.prepare('SELECT * FROM delivery_zones WHERE id = ?').get(zoneId);
     res.json({ success: true, zone: updated });

@@ -1050,24 +1050,61 @@ function evaluateFrontendDeliveryMatch(rawQuery) {
 
   if (!q) return { available: false, reason: 'empty', zone: null, activeZones };
 
-  let matchedActive = null;
-  let matchedPaused = null;
-  for (const z of allZones) {
-    const tokens = [
-      String(z.area_name || '').toLowerCase(),
-      String(z.corridor || '').toLowerCase(),
-      String(z.pincode || '').toLowerCase(),
-      ...String(z.keywords || '').toLowerCase().split(',').map(k => k.trim()).filter(Boolean)
-    ].filter(t => t.length >= 3);
+  const pincodeMatch = q.match(/\b([1-9][0-9]{5})\b/);
+  const queryPincode = pincodeMatch ? pincodeMatch[1] : null;
 
-    const isMatch = tokens.some(tok => q.includes(tok) || (q.length >= 3 && tok.includes(q)));
+  const scoredCandidates = [];
+  for (const z of allZones) {
+    const zPin = String(z.pincode || '').trim();
+    const isExactPincodeMatch = Boolean(queryPincode && (zPin === queryPincode));
+    const areaLower = String(z.area_name || '').toLowerCase();
+    const corridorLower = String(z.corridor || '').toLowerCase();
+    const kwTokens = String(z.keywords || '').toLowerCase().split(',').map(k => k.trim()).filter(Boolean);
+
+    let isMatch = false;
+    let specificity = 0;
+
+    if (isExactPincodeMatch) {
+      isMatch = true;
+      specificity += 120;
+    }
+
+    if (q.includes(areaLower) || (areaLower.length >= 4 && areaLower.includes(q))) {
+      isMatch = true;
+      specificity += 150 + areaLower.length;
+    } else if (q.includes(corridorLower) || (corridorLower.length >= 4 && corridorLower.includes(q))) {
+      isMatch = true;
+      specificity += 100 + corridorLower.length;
+    }
+
+    for (const kw of kwTokens) {
+      if (kw.length >= 3 && (q.includes(kw) || (q.length >= 3 && kw.includes(q)))) {
+        isMatch = true;
+        specificity = Math.max(specificity, 80 + kw.length * 2);
+      }
+    }
+
     if (isMatch) {
-      if (Number(z.serviceable) === 1 && !matchedActive) matchedActive = z;
-      else if (Number(z.serviceable) !== 1 && !matchedPaused) matchedPaused = z;
+      const priorityScore = (Number(z.priority || 10) * 1000) + specificity;
+      scoredCandidates.push({ zone: z, score: priorityScore });
     }
   }
-  if (matchedActive) return { available: true, reason: 'matched_active', zone: matchedActive, activeZones };
-  if (matchedPaused) return { available: false, reason: 'paused_by_admin', zone: matchedPaused, activeZones };
+
+  scoredCandidates.sort((a, b) => b.score - a.score);
+
+  if (scoredCandidates.length > 0) {
+    const best = scoredCandidates[0].zone;
+    if (Number(best.serviceable) === 1) {
+      return { available: true, reason: 'matched_active', zone: best, activeZones };
+    } else {
+      return { available: false, reason: 'paused_by_admin', zone: best, activeZones };
+    }
+  }
+
+  if (queryPincode) {
+    return { available: false, reason: 'unsupported_pincode', zone: null, activeZones };
+  }
+
   return { available: false, reason: 'not_in_admin_zones', zone: null, activeZones };
 }
 
@@ -1255,7 +1292,6 @@ async function dispatchFinalWhatsAppOrder() {
       // Open WhatsApp Dispatch
       const depotPhone = '919829000000';
       const itemsList = items.map(i => `• ${i.title} x ${i.quantity} = Rs.${i.price * i.quantity}`).join('\n');
-      const total = items.reduce((a, b) => a + (b.price * b.quantity), 0);
       const normL = loginPhoneVal.replace(/\D/g, '').slice(-10);
       const normD = deliveryPhoneVal.replace(/\D/g, '').slice(-10);
       const phoneLines = (normL && normD && normL !== normD)
