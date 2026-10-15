@@ -4627,8 +4627,8 @@
 
           <!-- CATEGORY TABS -->
           <div class="bundle-tabs-nav" id="bundle-tabs-nav">
-            <button type="button" class="bundle-tab-btn active" onclick="filterBundles('all', this)">
-              <span>All Featured Deals (4)</span>
+            <button type="button" class="bundle-tab-btn active" id="btn-home-all-deals" onclick="filterBundles('all', this)">
+              <span>All Featured Deals</span>
             </button>
             <button type="button" class="bundle-tab-btn" onclick="filterBundles('wedding', this)">
               <span>Wedding &amp; Banquet</span>
@@ -4641,6 +4641,9 @@
             </button>
             <button type="button" class="bundle-tab-btn" onclick="filterBundles('kirana', this)">
               <span>Kirana Retailer Restock</span>
+            </button>
+            <button type="button" class="bundle-tab-btn" onclick="filterBundles('custom', this)">
+              <span>Custom Deals</span>
             </button>
           </div>
 
@@ -9322,15 +9325,28 @@
 
     async function loadStorefrontBundles() {
       try {
-        const res = await fetch('/api/bundles');
+        const res = await fetch('/api/bundles?_t=' + Date.now(), { cache: 'no-store' });
         if (res.ok) {
           const data = await res.json();
           if (Array.isArray(data) && data.length > 0) {
-            WHOLESALE_BUNDLES = data;
+            const cached = JSON.parse(localStorage.getItem('sikar_admin_bundles') || '[]');
+            const serverIds = new Set(data.map(b => b.id));
+            const localOnly = cached.filter(b => !serverIds.has(b.id) && b.active);
+            WHOLESALE_BUNDLES = [...localOnly, ...data];
+            localStorage.setItem('sikar_admin_bundles', JSON.stringify(WHOLESALE_BUNDLES));
           }
         }
       } catch (err) {
         console.warn('Backend bundles fallback:', err);
+        const cached = JSON.parse(localStorage.getItem('sikar_admin_bundles') || 'null');
+        if (cached && Array.isArray(cached) && cached.length > 0) {
+          WHOLESALE_BUNDLES = cached.filter(b => b.active);
+        }
+      }
+
+      const allDealsBtn = document.getElementById('btn-home-all-deals');
+      if (allDealsBtn && WHOLESALE_BUNDLES.length > 0) {
+        allDealsBtn.innerHTML = `<span>All Featured Deals (${WHOLESALE_BUNDLES.length})</span>`;
       }
       renderStorefrontBundles();
     }

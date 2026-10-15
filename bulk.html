@@ -223,11 +223,12 @@
 
         <!-- CATEGORY TABS -->
         <div class="bundle-tabs-nav" id="bundle-tabs-nav">
-          <button type="button" class="bundle-tab-btn active" onclick="filterBundles('all', this)">All Featured Deals (4)</button>
+          <button type="button" class="bundle-tab-btn active" id="btn-all-deals" onclick="filterBundles('all', this)">All Featured Deals</button>
           <button type="button" class="bundle-tab-btn" onclick="filterBundles('wedding', this)">Wedding &amp; Banquet</button>
           <button type="button" class="bundle-tab-btn" onclick="filterBundles('hostel', this)">Hostel &amp; PG Hydration</button>
           <button type="button" class="bundle-tab-btn" onclick="filterBundles('party', this)">Party &amp; Soft Drinks</button>
           <button type="button" class="bundle-tab-btn" onclick="filterBundles('kirana', this)">Kirana Retailer Restock</button>
+          <button type="button" class="bundle-tab-btn" onclick="filterBundles('custom', this)">Custom Deals</button>
         </div>
 
         <!-- BUNDLES GRID -->
@@ -721,15 +722,28 @@
 
     async function loadStorefrontBundles() {
       try {
-        const res = await fetch('/api/bundles');
+        const res = await fetch('/api/bundles?_t=' + Date.now(), { cache: 'no-store' });
         if (res.ok) {
           const data = await res.json();
           if (Array.isArray(data) && data.length > 0) {
-            WHOLESALE_BUNDLES = data;
+            const cached = JSON.parse(localStorage.getItem('sikar_admin_bundles') || '[]');
+            const serverIds = new Set(data.map(b => b.id));
+            const localOnly = cached.filter(b => !serverIds.has(b.id) && b.active);
+            WHOLESALE_BUNDLES = [...localOnly, ...data];
+            localStorage.setItem('sikar_admin_bundles', JSON.stringify(WHOLESALE_BUNDLES));
           }
         }
       } catch (err) {
         console.warn('Backend bundles fallback', err);
+        const cached = JSON.parse(localStorage.getItem('sikar_admin_bundles') || 'null');
+        if (cached && Array.isArray(cached) && cached.length > 0) {
+          WHOLESALE_BUNDLES = cached.filter(b => b.active);
+        }
+      }
+
+      const allDealsBtn = document.getElementById('btn-all-deals');
+      if (allDealsBtn && WHOLESALE_BUNDLES.length > 0) {
+        allDealsBtn.textContent = `All Featured Deals (${WHOLESALE_BUNDLES.length})`;
       }
       renderStorefrontBundles();
     }
@@ -803,14 +817,20 @@
       const bundle = WHOLESALE_BUNDLES.find(b => b.id === bundleId);
       if (!bundle) return;
       let totalAdded = 0;
-      bundle.items.forEach(it => {
-        cart[it.id] = (cart[it.id] || 0) + it.qty;
-        totalAdded += it.qty;
-      });
+      const items = Array.isArray(bundle.items) ? bundle.items : [];
+      if (items.length > 0) {
+        items.forEach(it => {
+          cart[it.id] = (cart[it.id] || 0) + (it.qty || 1);
+          totalAdded += (it.qty || 1);
+        });
+      } else {
+        cart[bundle.id] = (cart[bundle.id] || 0) + 1;
+        totalAdded = 1;
+      }
       saveCart();
       updateCartUI();
       toggleCartDrawer(true);
-      showToast(`Added "${bundle.title}" (${totalAdded} items) to your cart!`);
+      showToast(`Added "${bundle.title}" to your cart!`);
     }
 
     function orderBundleWhatsApp(bundleId) {

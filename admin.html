@@ -3164,6 +3164,7 @@
               <button type="button" class="filter-pill" onclick="filterAdminBundles('hostel', this)">Hostel &amp; PG</button>
               <button type="button" class="filter-pill" onclick="filterAdminBundles('party', this)">Party &amp; Soft Drinks</button>
               <button type="button" class="filter-pill" onclick="filterAdminBundles('kirana', this)">Kirana Restock</button>
+              <button type="button" class="filter-pill" onclick="filterAdminBundles('custom', this)">Custom Deals</button>
             </div>
             <input type="text" id="admin-bundle-search" class="portal-input" placeholder="Search bundles by name..." style="max-width: 250px; font-size: 0.82rem;" oninput="searchAdminBundles(this.value)">
           </div>
@@ -4465,18 +4466,18 @@
         </div>
 
         <div class="portal-field-group">
-          <label for="bundle-input-desc">Short Description *</label>
-          <textarea id="bundle-input-desc" class="portal-textarea" rows="2" required placeholder="Complete water & banquet setup for marriages of 200–500 guests in Sikar..."></textarea>
+          <label for="bundle-input-desc">Short Description</label>
+          <textarea id="bundle-input-desc" class="portal-textarea" rows="2" placeholder="Complete water & banquet setup for marriages of 200–500 guests in Sikar..."></textarea>
         </div>
 
         <div class="portal-form-grid-3">
           <div class="portal-field-group">
             <label for="bundle-input-price">Wholesale Price (₹) *</label>
-            <input type="number" id="bundle-input-price" class="portal-input tabular" required min="1" placeholder="4699" oninput="calcBundleModalSavings()">
+            <input type="number" id="bundle-input-price" class="portal-input tabular" required min="1" step="any" placeholder="4699" oninput="calcBundleModalSavings()">
           </div>
           <div class="portal-field-group">
-            <label for="bundle-input-mrp">Regular MRP (₹) *</label>
-            <input type="number" id="bundle-input-mrp" class="portal-input tabular" required min="1" placeholder="5860" oninput="calcBundleModalSavings()">
+            <label for="bundle-input-mrp">Regular MRP (₹)</label>
+            <input type="number" id="bundle-input-mrp" class="portal-input tabular" min="0" step="any" placeholder="5860" oninput="calcBundleModalSavings()">
           </div>
           <div class="portal-field-group">
             <label>Savings Preview</label>
@@ -4511,8 +4512,8 @@
         </div>
 
         <div class="portal-field-group">
-          <label for="bundle-input-specs">Included Specifications / Items (One item per line) *</label>
-          <textarea id="bundle-input-specs" class="portal-textarea" rows="4" required placeholder="10x Shaadi Mini Water Petis (48x 250ml Sealed)&#10;5x Bailey / Kinley 1L Packaged Cases (60 Bottles)&#10;2x Real Fruit Power Mixed Juices (24x 1L Packs)&#10;Strict Zero 20L Campers • 100% Tamper-Proof"></textarea>
+          <label for="bundle-input-specs">Included Specifications / Items (One item per line)</label>
+          <textarea id="bundle-input-specs" class="portal-textarea" rows="4" placeholder="10x Shaadi Mini Water Petis (48x 250ml Sealed)&#10;5x Bailey / Kinley 1L Packaged Cases (60 Bottles)&#10;2x Real Fruit Power Mixed Juices (24x 1L Packs)&#10;Strict Zero 20L Campers • 100% Tamper-Proof"></textarea>
         </div>
 
         <div style="display: flex; align-items: center; gap: 8px; margin-bottom: 18px;">
@@ -4992,7 +4993,7 @@
     // REAL-TIME SYNC FROM SQLITE DATABASE ON PAGE LOAD & EVENTS
     async function syncFromBackend() {
       try {
-        const [stats, orders, manualSales, deliveryZones, customers, khata, prods, cats, purchases, coupons, reviews, soc, settings] = await Promise.all([
+        const [stats, orders, manualSales, deliveryZones, customers, khata, prods, cats, purchases, coupons, reviews, soc, settings, bundles] = await Promise.all([
           sikarApi.get('/api/dashboard/stats?period=' + currentDashboardPeriod),
           sikarApi.get('/api/orders'),
           sikarApi.get('/api/manual-sales'),
@@ -5005,11 +5006,21 @@
           sikarApi.get('/api/coupons'),
           sikarApi.get('/api/reviews'),
           sikarApi.get('/api/analytics/stats'),
-          sikarApi.get('/api/settings')
+          sikarApi.get('/api/settings'),
+          sikarApi.get('/api/bundles?all=1')
         ]);
 
         if (settings) {
           initFestivalThemesFromSettings(settings);
+        }
+
+        if (bundles && Array.isArray(bundles)) {
+          const cached = JSON.parse(localStorage.getItem('sikar_admin_bundles') || '[]');
+          const serverIds = new Set(bundles.map(b => b.id));
+          const localOnly = cached.filter(b => !serverIds.has(b.id) && (String(b.id).startsWith('b-') || String(b.id).startsWith('bundle-')));
+          adminBundles = [...localOnly, ...bundles];
+          localStorage.setItem('sikar_admin_bundles', JSON.stringify(adminBundles));
+          if (currentTab === 'bundles') applyAdminBundlesRender();
         }
 
         if (prods && Array.isArray(prods)) {
@@ -7768,7 +7779,7 @@
     // =========================================================
     // 9C. WHOLESALE EVENT BUNDLES & COMMERCIAL PACKAGES CONTROLLER
     // =========================================================
-    let adminBundles = [];
+    let adminBundles = JSON.parse(localStorage.getItem('sikar_admin_bundles')) || [];
     let currentAdminBundleFilter = 'all';
     let currentAdminBundleSearch = '';
 
@@ -7777,12 +7788,21 @@
       if (!container) return;
 
       try {
-        const res = await fetch('/api/bundles?all=1');
-        if (res.ok) {
-          adminBundles = await res.json();
+        const bundles = await sikarApi.get('/api/bundles?all=1');
+        if (bundles && Array.isArray(bundles)) {
+          const cached = JSON.parse(localStorage.getItem('sikar_admin_bundles') || '[]');
+          const serverIds = new Set(bundles.map(b => b.id));
+          const localOnly = cached.filter(b => !serverIds.has(b.id) && (String(b.id).startsWith('b-') || String(b.id).startsWith('bundle-')));
+          adminBundles = [...localOnly, ...bundles];
+          localStorage.setItem('sikar_admin_bundles', JSON.stringify(adminBundles));
+        } else if (adminBundles.length === 0) {
+          adminBundles = JSON.parse(localStorage.getItem('sikar_admin_bundles') || '[]');
         }
       } catch (err) {
         console.warn('Backend bundles fetch fallback', err);
+        if (adminBundles.length === 0) {
+          adminBundles = JSON.parse(localStorage.getItem('sikar_admin_bundles') || '[]');
+        }
       }
 
       // Update KPI counters
@@ -7919,9 +7939,9 @@
       document.getElementById('bundle-input-id').value = '';
       document.getElementById('bundle-input-title').value = '';
       document.getElementById('bundle-input-category').value = 'wedding';
-      document.getElementById('bundle-input-desc').value = '';
-      document.getElementById('bundle-input-price').value = '';
-      document.getElementById('bundle-input-mrp').value = '';
+      document.getElementById('bundle-input-desc').value = 'Curated wholesale deal delivered directly to your venue in Sikar.';
+      document.getElementById('bundle-input-price').value = '3500';
+      document.getElementById('bundle-input-mrp').value = '4200';
       document.getElementById('bundle-input-badge').value = 'Wedding Favorite';
       document.getElementById('bundle-input-badgeclass').value = 'popular';
       document.getElementById('bundle-input-image').value = 'assets/cat_wedding_supply.jpg';
@@ -7971,65 +7991,116 @@
     }
 
     async function handleBundleFormSubmit(e) {
-      e.preventDefault();
+      if (e) e.preventDefault();
       const id = document.getElementById('bundle-input-id').value.trim();
       const title = document.getElementById('bundle-input-title').value.trim();
       const category = document.getElementById('bundle-input-category').value;
-      const desc = document.getElementById('bundle-input-desc').value.trim();
+      let desc = document.getElementById('bundle-input-desc').value.trim();
       const price = parseFloat(document.getElementById('bundle-input-price').value) || 0;
-      const mrp = parseFloat(document.getElementById('bundle-input-mrp').value) || price;
+      let mrp = parseFloat(document.getElementById('bundle-input-mrp').value) || 0;
       const badge = document.getElementById('bundle-input-badge').value.trim();
       const badgeClass = document.getElementById('bundle-input-badgeclass').value;
       const image = document.getElementById('bundle-input-image').value.trim() || 'assets/cat_wedding_supply.jpg';
       const specsRaw = document.getElementById('bundle-input-specs').value;
-      const specs = specsRaw.split('\n').map(s => s.trim()).filter(Boolean);
+      let specs = specsRaw.split('\n').map(s => s.trim()).filter(Boolean);
       const active = document.getElementById('bundle-input-active').checked;
 
-      const payload = {
+      if (!title || price <= 0) {
+        showToast('Please enter a package title and wholesale price.');
+        return;
+      }
+
+      if (!mrp || mrp < price) {
+        mrp = Math.round(price * 1.15);
+      }
+      if (!desc) {
+        desc = `Curated wholesale package deal for ${title}.`;
+      }
+      if (specs.length === 0) {
+        specs = ['Factory Sealed Wholesale Peti Load', '100% Tamper-Proof Depot Supply'];
+      }
+
+      const finalId = id || ('b-' + Date.now());
+      const saveAmt = Math.max(0, mrp - price);
+      const savePct = mrp > 0 ? Math.round((saveAmt / mrp) * 100) : 0;
+
+      const bundleRecord = {
+        id: finalId,
         title,
         category,
         desc,
         price,
         mrp,
+        save_amt: saveAmt,
+        save_pct: savePct,
+        saveAmt,
+        savePct,
         badge,
+        badge_class: badgeClass,
         badgeClass,
         image,
         specs,
-        active
+        active: active ? 1 : 0,
+        sort_order: 99
       };
 
-      const btn = document.getElementById('btn-save-bundle');
-      if (btn) btn.disabled = true;
+      // Optimistically update adminBundles and localStorage immediately
+      if (id) {
+        const idx = adminBundles.findIndex(b => b.id === id);
+        if (idx > -1) adminBundles[idx] = Object.assign({}, adminBundles[idx], bundleRecord);
+        else adminBundles.unshift(bundleRecord);
+      } else {
+        adminBundles.unshift(bundleRecord);
+      }
+      localStorage.setItem('sikar_admin_bundles', JSON.stringify(adminBundles));
+      applyAdminBundlesRender();
+      closeModal('bundle-modal');
+      showToast(`Event bundle "${title}" saved successfully!`);
+
+      // Persist to backend SQLite API
+      try {
+        if (id) {
+          await sikarApi.put(`/api/bundles/${encodeURIComponent(id)}`, bundleRecord);
+        } else {
+          await sikarApi.post('/api/bundles', bundleRecord);
+        }
+        await renderAdminBundles();
+      } catch (err) {
+        console.warn('Backend save bundle error:', err);
+      }
+    }
+
+    async function toggleBundleStatus(id) {
+      const b = adminBundles.find(item => item.id === id);
+      if (!b) return;
+      b.active = b.active ? 0 : 1;
+      localStorage.setItem('sikar_admin_bundles', JSON.stringify(adminBundles));
+      applyAdminBundlesRender();
+      showToast(`Bundle "${b.title}" is now ${b.active ? 'Live' : 'Paused'}.`);
 
       try {
-        let res;
-        if (id) {
-          res = await fetch(`/api/bundles/${encodeURIComponent(id)}`, {
-            method: 'PUT',
-            headers: { 'Content-Type': 'application/json' },
-            body: JSON.stringify(payload)
-          });
-        } else {
-          res = await fetch('/api/bundles', {
-            method: 'POST',
-            headers: { 'Content-Type': 'application/json' },
-            body: JSON.stringify(payload)
-          });
-        }
-
-        const data = await res.json();
-        if (res.ok) {
-          closeModal('bundle-modal');
-          showToast(`Event bundle "${title}" saved successfully!`);
-          await renderAdminBundles();
-        } else {
-          showToast(data.error || 'Failed to save event bundle');
-        }
+        await sikarApi.patch(`/api/bundles/${encodeURIComponent(id)}/toggle`);
+        await renderAdminBundles();
       } catch (err) {
-        console.error('Save bundle error', err);
-        showToast('Error saving bundle: ' + err.message);
-      } finally {
-        if (btn) btn.disabled = false;
+        console.warn('Backend toggle bundle error:', err);
+      }
+    }
+
+    async function deleteBundle(id) {
+      const b = adminBundles.find(item => item.id === id);
+      const name = b ? b.title : 'this package';
+      if (!confirm(`Are you sure you want to permanently delete event bundle "${name}"?`)) return;
+
+      adminBundles = adminBundles.filter(item => item.id !== id);
+      localStorage.setItem('sikar_admin_bundles', JSON.stringify(adminBundles));
+      applyAdminBundlesRender();
+      showToast(`Event bundle "${name}" deleted.`);
+
+      try {
+        await sikarApi.delete(`/api/bundles/${encodeURIComponent(id)}`);
+        await renderAdminBundles();
+      } catch (err) {
+        console.warn('Backend delete bundle error:', err);
       }
     }
 

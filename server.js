@@ -1759,36 +1759,55 @@ app.get('/api/bundles', (req, res) => {
 
 app.post('/api/bundles', (req, res) => {
   try {
-    const { title, category, desc, price, mrp, badge, badgeClass, image, specs, items, sort_order } = req.body;
-    if (!title || !price) return res.status(400).json({ error: 'Bundle title and price are required' });
+    const { title, category, desc, price, mrp, badge, badgeClass, badge_class, image, specs, items, sort_order, active } = req.body;
+    if (!title || price === undefined) return res.status(400).json({ error: 'Bundle title and price are required' });
 
     const numPrice = Number(price) || 0;
-    const numMrp = Number(mrp) || numPrice;
+    const numMrp = Number(mrp) || Math.round(numPrice * 1.15) || numPrice;
     const saveAmt = Math.max(0, numMrp - numPrice);
     const savePct = numMrp > 0 ? Math.round((saveAmt / numMrp) * 100) : 0;
     const id = req.body.id || ('b-' + Math.floor(1000 + Math.random() * 9000));
     const now = new Date().toISOString();
+    const finalActive = active !== undefined ? (active ? 1 : 0) : 1;
+    const finalBadgeClass = badgeClass || badge_class || 'deal';
 
-    const specsJson = Array.isArray(specs) ? JSON.stringify(specs) : (typeof specs === 'string' ? JSON.stringify(specs.split('\n').map(s => s.trim()).filter(Boolean)) : '[]');
+    const specsJson = Array.isArray(specs) ? JSON.stringify(specs) : (typeof specs === 'string' && specs.trim() ? JSON.stringify(specs.split('\n').map(s => s.trim()).filter(Boolean)) : JSON.stringify(['Factory Sealed Wholesale Peti Load', '100% Tamper-Proof Depot Supply']));
     const itemsJson = Array.isArray(items) ? JSON.stringify(items) : '[]';
 
     db.prepare(`
       INSERT INTO event_bundles (id, category, title, desc, price, mrp, save_amt, save_pct, badge, badge_class, image, specs_json, items_json, active, sort_order, updated_at)
-      VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, 1, ?, ?)
+      VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)
+      ON CONFLICT(id) DO UPDATE SET
+        category = excluded.category,
+        title = excluded.title,
+        desc = excluded.desc,
+        price = excluded.price,
+        mrp = excluded.mrp,
+        save_amt = excluded.save_amt,
+        save_pct = excluded.save_pct,
+        badge = excluded.badge,
+        badge_class = excluded.badge_class,
+        image = excluded.image,
+        specs_json = excluded.specs_json,
+        items_json = excluded.items_json,
+        active = excluded.active,
+        sort_order = excluded.sort_order,
+        updated_at = excluded.updated_at
     `).run(
       id,
       category || 'wedding',
       title.trim(),
-      desc || '',
+      desc || `Curated wholesale deal for ${title}.`,
       numPrice,
       numMrp,
       saveAmt,
       savePct,
       badge || '',
-      badgeClass || 'deal',
+      finalBadgeClass,
       image || 'assets/cat_wedding_supply.jpg',
       specsJson,
       itemsJson,
+      finalActive,
       Number(sort_order) || 99,
       now
     );
@@ -1797,10 +1816,10 @@ app.post('/api/bundles', (req, res) => {
       db.prepare(`
         INSERT INTO audit_logs (id, actor, action, module, details, created_at)
         VALUES (?, 'Admin', 'BUNDLE_CREATED', 'bundles', ?, ?)
-      `).run('AUD-' + Math.floor(100000 + Math.random() * 900000), `Created new event bundle '${title}' (₹${numPrice})`, now);
+      `).run('AUD-' + Math.floor(100000 + Math.random() * 900000), `Created or updated event bundle '${title}' (₹${numPrice})`, now);
     } catch (e) {}
 
-    res.status(201).json({ success: true, id, message: 'Event bundle created successfully' });
+    res.status(201).json({ success: true, id, message: 'Event bundle saved successfully' });
   } catch (err) {
     res.status(500).json({ error: err.message });
   }
@@ -1809,35 +1828,48 @@ app.post('/api/bundles', (req, res) => {
 app.put('/api/bundles/:id', (req, res) => {
   try {
     const { id } = req.params;
-    const { title, category, desc, price, mrp, badge, badgeClass, image, specs, items, active, sort_order } = req.body;
-    if (!title || !price) return res.status(400).json({ error: 'Title and price are required' });
+    const { title, category, desc, price, mrp, badge, badgeClass, badge_class, image, specs, items, active, sort_order } = req.body;
+    if (!title && price === undefined) return res.status(400).json({ error: 'Title or price is required' });
 
     const numPrice = Number(price) || 0;
-    const numMrp = Number(mrp) || numPrice;
+    const numMrp = Number(mrp) || Math.round(numPrice * 1.15) || numPrice;
     const saveAmt = Math.max(0, numMrp - numPrice);
     const savePct = numMrp > 0 ? Math.round((saveAmt / numMrp) * 100) : 0;
     const now = new Date().toISOString();
+    const finalBadgeClass = badgeClass || badge_class || 'deal';
 
-    const specsJson = Array.isArray(specs) ? JSON.stringify(specs) : (typeof specs === 'string' ? JSON.stringify(specs.split('\n').map(s => s.trim()).filter(Boolean)) : '[]');
-    const itemsJson = Array.isArray(items) ? JSON.stringify(items) : '[]';
+    const specsJson = Array.isArray(specs) ? JSON.stringify(specs) : (typeof specs === 'string' && specs.trim() ? JSON.stringify(specs.split('\n').map(s => s.trim()).filter(Boolean)) : null);
+    const itemsJson = Array.isArray(items) ? JSON.stringify(items) : null;
 
     const result = db.prepare(`
       UPDATE event_bundles
-      SET category = ?, title = ?, desc = ?, price = ?, mrp = ?, save_amt = ?, save_pct = ?,
-          badge = ?, badge_class = ?, image = ?, specs_json = ?, items_json = ?, active = COALESCE(?, active),
-          sort_order = COALESCE(?, sort_order), updated_at = ?
+      SET category = COALESCE(?, category),
+          title = COALESCE(?, title),
+          desc = COALESCE(?, desc),
+          price = COALESCE(?, price),
+          mrp = COALESCE(?, mrp),
+          save_amt = COALESCE(?, save_amt),
+          save_pct = COALESCE(?, save_pct),
+          badge = COALESCE(?, badge),
+          badge_class = COALESCE(?, badge_class),
+          image = COALESCE(?, image),
+          specs_json = COALESCE(?, specs_json),
+          items_json = COALESCE(?, items_json),
+          active = COALESCE(?, active),
+          sort_order = COALESCE(?, sort_order),
+          updated_at = ?
       WHERE id = ?
     `).run(
-      category || 'wedding',
-      title.trim(),
-      desc || '',
-      numPrice,
-      numMrp,
+      category || null,
+      title ? title.trim() : null,
+      desc !== undefined ? desc : null,
+      price !== undefined ? numPrice : null,
+      mrp !== undefined ? numMrp : null,
       saveAmt,
       savePct,
-      badge || '',
-      badgeClass || 'deal',
-      image || 'assets/cat_wedding_supply.jpg',
+      badge !== undefined ? badge : null,
+      finalBadgeClass,
+      image || null,
       specsJson,
       itemsJson,
       active !== undefined ? (active ? 1 : 0) : null,
@@ -1846,7 +1878,30 @@ app.put('/api/bundles/:id', (req, res) => {
       id
     );
 
-    if (result.changes === 0) return res.status(404).json({ error: 'Bundle not found' });
+    if (result.changes === 0) {
+      // Upsert fallback
+      db.prepare(`
+        INSERT INTO event_bundles (id, category, title, desc, price, mrp, save_amt, save_pct, badge, badge_class, image, specs_json, items_json, active, sort_order, updated_at)
+        VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)
+      `).run(
+        id,
+        category || 'wedding',
+        title ? title.trim() : 'Wholesale Package',
+        desc || '',
+        numPrice,
+        numMrp,
+        saveAmt,
+        savePct,
+        badge || '',
+        finalBadgeClass,
+        image || 'assets/cat_wedding_supply.jpg',
+        specsJson || JSON.stringify(['Factory Sealed Wholesale Peti Load']),
+        itemsJson || '[]',
+        active !== undefined ? (active ? 1 : 0) : 1,
+        Number(sort_order) || 99,
+        now
+      );
+    }
 
     res.json({ success: true, id, message: 'Event bundle updated successfully' });
   } catch (err) {
