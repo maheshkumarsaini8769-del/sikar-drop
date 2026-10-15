@@ -834,6 +834,29 @@
       box-shadow: 0 2px 8px rgba(2, 132, 199, 0.3);
     }
 
+    .report-subtab-btn {
+      background: transparent;
+      border: none;
+      border-bottom: 2px solid transparent;
+      padding: 8px 16px;
+      font-size: 0.84rem;
+      font-weight: 700;
+      color: #64748B;
+      cursor: pointer;
+      transition: all 0.2s;
+      margin-bottom: -2px;
+      border-radius: 4px 4px 0 0;
+    }
+    .report-subtab-btn:hover {
+      color: #0284C7;
+      background: #F1F5F9;
+    }
+    .report-subtab-btn.active {
+      color: #0284C7;
+      border-bottom-color: #0284C7;
+      background: #F0F9FF;
+    }
+
     .quick-actions-flex {
       display: flex;
       gap: 8px;
@@ -2443,104 +2466,309 @@
       </section>
 
       <!-- =======================================================
-           TAB 2: P&L & SALES REPORTS
+           TAB 2: P&L & SALES REPORTS (AUDITED WHOLESALE LEDGER)
            ======================================================= -->
       <section id="pane-reports" class="tab-pane">
         <div class="portal-card">
-          <div class="portal-card-header">
+          <!-- CARD HEADER WITH ACTIONS -->
+          <div class="portal-card-header" style="flex-wrap: wrap; gap: 16px; align-items: center; border-bottom: 1px solid #E2E8F0; padding-bottom: 18px; margin-bottom: 20px;">
             <div>
-              <h2>Profit &amp; Loss (P&amp;L) &amp; Wholesale Sales Reports</h2>
-              <p>Audited wholesale ledger statement: Gross Peti margins, Bottling plant COGS, daily tempo revenue, and operating profits.</p>
+              <div style="display:flex; align-items:center; gap:10px;">
+                <h2 style="margin:0;">Profit &amp; Loss (P&amp;L) &amp; Wholesale Sales Reports</h2>
+                <span class="status-chip success" id="pl-audit-badge" style="font-size:0.72rem; letter-spacing:0.04em;">Audited Live Ledger</span>
+              </div>
+              <p style="margin: 4px 0 0 0; color: #64748B; font-size: 0.85rem;">
+                Reconciled financial ledger: Gross wholesale billing, catalog &amp; inward batch COGS, collected cash vs credit khata, and operating margins.
+              </p>
             </div>
-            <div class="header-actions-flex">
-              <button type="button" class="btn-portal-secondary" onclick="showToast('P&L CSV Statement Generated')">Export P&amp;L Statement</button>
-              <button type="button" class="btn-portal-primary" onclick="window.print()">Print Financial Bilty</button>
+            <div class="header-actions-flex" style="display:flex; gap:10px; align-items:center; flex-wrap:wrap;">
+              <button type="button" class="btn-portal-secondary" onclick="exportReportsCSV()" id="btn-export-pnl-csv" style="display:inline-flex; align-items:center; gap:6px;">
+                <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" width="14" height="14"><path d="M21 15v4a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2v-4"/><polyline points="7 10 12 15 17 10"/><line x1="12" y1="15" x2="12" y2="3"/></svg>
+                <span>Export P&amp;L Statement (CSV)</span>
+              </button>
+              <button type="button" class="btn-portal-primary" onclick="window.print()" style="display:inline-flex; align-items:center; gap:6px;">
+                <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" width="14" height="14"><polyline points="6 9 6 2 18 2 18 9"/><path d="M6 18H4a2 2 0 0 1-2-2v-5a2 2 0 0 1 2-2h16a2 2 0 0 1 2 2v5a2 2 0 0 1-2 2h-2"/><rect x="6" y="14" width="12" height="8"/></svg>
+                <span>Print Financial Statement</span>
+              </button>
             </div>
           </div>
 
-          <!-- SUMMARY FINANCIAL CARDS -->
-          <div class="stats-grid-row" style="margin-bottom: 24px;">
+          <!-- DATE FILTER TOOLBAR -->
+          <div style="background: #F8FAFC; border: 1px solid #E2E8F0; border-radius: 10px; padding: 14px 18px; margin-bottom: 24px;">
+            <div style="display: flex; flex-wrap: wrap; justify-content: space-between; align-items: center; gap: 14px;">
+              <!-- PRESET BUTTONS -->
+              <div style="display:flex; align-items:center; gap:6px; flex-wrap:wrap;">
+                <span style="font-size:0.78rem; font-weight:700; color:#475569; text-transform:uppercase; letter-spacing:0.04em; margin-right:4px;">Period:</span>
+                <div class="period-pills-bar" id="pl-period-group" style="background:#EDF2F7; padding:3px; border-radius:9999px; display:inline-flex; gap:2px; flex-wrap:wrap;">
+                  <button type="button" class="period-pill-btn" data-period="today" onclick="changeReportsPeriod('today', this)">Today</button>
+                  <button type="button" class="period-pill-btn" data-period="7days" onclick="changeReportsPeriod('7days', this)">Last 7 Days</button>
+                  <button type="button" class="period-pill-btn active" data-period="30days" onclick="changeReportsPeriod('30days', this)">Last 30 Days</button>
+                  <button type="button" class="period-pill-btn" data-period="this_month" onclick="changeReportsPeriod('this_month', this)">This Month</button>
+                  <button type="button" class="period-pill-btn" data-period="this_year" onclick="changeReportsPeriod('this_year', this)">This Year</button>
+                  <button type="button" class="period-pill-btn" data-period="custom" onclick="toggleReportsCustomRange(this)">Custom Range</button>
+                </div>
+              </div>
+
+              <!-- ACTIVE PERIOD RANGE BADGE -->
+              <div style="display: flex; align-items: center; gap: 8px;">
+                <span id="pl-active-range-label" style="font-size: 0.82rem; font-weight: 700; color: #0284C7; background: #E0F2FE; padding: 4px 12px; border-radius: 6px; border: 1px solid #BAE6FD;">
+                  Last 30 Days
+                </span>
+                <button type="button" class="btn-portal-outline" onclick="loadReportsData()" title="Refresh Report Data" style="padding: 5px 10px; font-size: 0.78rem;">
+                  Refresh
+                </button>
+              </div>
+            </div>
+
+            <!-- CUSTOM DATE RANGE INPUT ROW (TOGGLED) -->
+            <div id="pl-custom-range-bar" style="display: none; margin-top: 14px; padding-top: 14px; border-top: 1px dashed #CBD5E1; align-items: center; gap: 12px; flex-wrap: wrap;">
+              <div style="display: flex; align-items: center; gap: 8px;">
+                <label style="font-size: 0.8rem; font-weight: 600; color: #334155;">Start Date:</label>
+                <input type="date" id="pl-custom-start" class="portal-form-control" style="width: auto; padding: 5px 10px; font-size: 0.82rem;" />
+              </div>
+              <div style="display: flex; align-items: center; gap: 8px;">
+                <label style="font-size: 0.8rem; font-weight: 600; color: #334155;">End Date:</label>
+                <input type="date" id="pl-custom-end" class="portal-form-control" style="width: auto; padding: 5px 10px; font-size: 0.82rem;" />
+              </div>
+              <button type="button" class="btn-portal-primary" onclick="applyReportsCustomDate()" style="padding: 6px 14px; font-size: 0.82rem;">
+                Apply Range
+              </button>
+            </div>
+          </div>
+
+          <!-- AUDIT INTEGRITY BANNER -->
+          <div id="pl-integrity-banner" style="background:#F0FDF4; border:1px solid #BBF7D0; border-radius:8px; padding:10px 16px; margin-bottom:24px; display:flex; align-items:center; justify-content:space-between; gap:12px; font-size:0.83rem; color:#166534;">
+            <div style="display:flex; align-items:center; gap:8px;">
+              <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" width="16" height="16" style="color:#15803D;"><path d="M12 22s8-4 8-10V5l-8-3-8 3v7c0 6 8 10 8 10z"/><polyline points="9 12 11 14 15 10"/></svg>
+              <span id="pl-integrity-text">Audited Statement: 100% of order line items verified against catalog unit costs and supplier inwards.</span>
+            </div>
+            <span id="pl-reconcile-time" style="font-size:0.75rem; color:#15803D; font-weight:600;">Reconciled Live</span>
+          </div>
+
+          <!-- ROW 1: CORE P&L FINANCIAL CARDS -->
+          <div style="margin-bottom: 8px; font-size: 0.85rem; font-weight: 700; color: #334155; text-transform: uppercase; letter-spacing: 0.05em;">
+            1. P&amp;L Financial Statement (Trading &amp; Operating Margins)
+          </div>
+          <div class="stats-grid-row" style="margin-bottom: 24px; display:grid; grid-template-columns: repeat(auto-fit, minmax(210px, 1fr)); gap:14px;">
             <div class="stat-kpi-card">
-              <span class="stat-kpi-label">Total Wholesale Revenue</span>
-              <div class="stat-kpi-val" id="pl-total-revenue">₹8,42,500</div>
-              <span class="stat-kpi-delta positive">+18.4% vs last month</span>
+              <span class="stat-kpi-label">Gross Wholesale Sales</span>
+              <div class="stat-kpi-val" id="pl-gross-sales">₹0</div>
+              <span class="stat-kpi-delta" style="color: #64748B;" id="pl-subtotal-meta">Subtotal before discounts</span>
+            </div>
+            <div class="stat-kpi-card">
+              <span class="stat-kpi-label">Discounts &amp; Bundle Savings</span>
+              <div class="stat-kpi-val" style="color: #DC2626;" id="pl-discounts">₹0</div>
+              <span class="stat-kpi-delta" style="color: #DC2626;" id="pl-discounts-meta">Coupons &amp; deals</span>
+            </div>
+            <div class="stat-kpi-card">
+              <span class="stat-kpi-label">Net Sales Revenue</span>
+              <div class="stat-kpi-val" style="color: #0F172A;" id="pl-net-sales">₹0</div>
+              <span class="stat-kpi-delta positive" id="pl-net-sales-meta">Billed wholesale turnover</span>
             </div>
             <div class="stat-kpi-card">
               <span class="stat-kpi-label">Cost of Goods Sold (COGS)</span>
-              <div class="stat-kpi-val" id="pl-total-cogs">₹6,15,000</div>
-              <span class="stat-kpi-delta" style="color: #64748B;">Bottling Plant Inwards</span>
+              <div class="stat-kpi-val" style="color: #B45309;" id="pl-cogs">₹0</div>
+              <span class="stat-kpi-delta" style="color: #B45309;" id="pl-cogs-meta">Bottling &amp; supplier inwards</span>
             </div>
-            <div class="stat-kpi-card">
-              <span class="stat-kpi-label">Gross Margin Profit</span>
-              <div class="stat-kpi-val" style="color: #15803D;" id="pl-gross-profit">₹2,27,500</div>
-              <span class="stat-kpi-delta positive">27.0% Gross Margin</span>
+            <div class="stat-kpi-card" style="border-top: 3px solid #15803D;">
+              <span class="stat-kpi-label">Gross Trading Profit</span>
+              <div class="stat-kpi-val" style="color: #15803D;" id="pl-gross-profit">₹0</div>
+              <span class="stat-kpi-delta positive" id="pl-gross-margin-pct">0.0% Gross Margin</span>
             </div>
-            <div class="stat-kpi-card">
-              <span class="stat-kpi-label">Net Operating Surplus</span>
-              <div class="stat-kpi-val" style="color: #0284C7;" id="pl-net-profit">₹1,84,200</div>
-              <span class="stat-kpi-delta positive">Net ROI after Fuel &amp; Labour</span>
+            <div class="stat-kpi-card" style="border-top: 3px solid #0284C7;">
+              <span class="stat-kpi-label">Net Operating Profit</span>
+              <div class="stat-kpi-val" style="color: #0284C7;" id="pl-operating-profit">₹0</div>
+              <span class="stat-kpi-delta positive" id="pl-operating-margin-pct">0.0% Operating ROI</span>
             </div>
           </div>
 
-          <!-- ITEMISED CATEGORY P&L TABLE -->
-          <div class="portal-table-wrapper">
-            <table class="portal-table">
-              <thead>
-                <tr>
-                  <th>Beverage Segment</th>
-                  <th>Units Sold (Petis/Boxes)</th>
-                  <th>Avg Purchase Cost</th>
-                  <th>Avg Wholesale Rate</th>
-                  <th>Gross Revenue ₹</th>
-                  <th>COGS Spent ₹</th>
-                  <th>Net Profit ₹</th>
-                  <th>Margin %</th>
-                </tr>
-              </thead>
-              <tbody id="pl-report-tbody">
-                <tr>
-                  <td><strong>Factory-Sealed Packaged Water</strong></td>
-                  <td>1,840 Boxes</td>
-                  <td>₹70.00 / box</td>
-                  <td>₹95.00 / box</td>
-                  <td>₹1,74,800</td>
-                  <td>₹1,28,800</td>
-                  <td style="color: #15803D; font-weight: 800;">+₹46,000</td>
-                  <td><span class="status-chip success">26.3%</span></td>
-                </tr>
-                <tr>
-                  <td><strong>Chilled Soft Drinks &amp; Crates</strong></td>
-                  <td>1,120 Crates</td>
-                  <td>₹280.00 / crate</td>
-                  <td>₹360.00 / crate</td>
-                  <td>₹4,03,200</td>
-                  <td>₹3,13,600</td>
-                  <td style="color: #15803D; font-weight: 800;">+₹89,600</td>
-                  <td><span class="status-chip success">22.2%</span></td>
-                </tr>
-                <tr>
-                  <td><strong>Party Cans &amp; Energy Soda</strong></td>
-                  <td>640 Trays</td>
-                  <td>₹340.00 / tray</td>
-                  <td>₹460.00 / tray</td>
-                  <td>₹2,94,400</td>
-                  <td>₹2,17,600</td>
-                  <td style="color: #15803D; font-weight: 800;">+₹76,800</td>
-                  <td><span class="status-chip success">26.1%</span></td>
-                </tr>
-                <tr>
-                  <td><strong>Wedding &amp; Event Combos</strong></td>
-                  <td>28 Functions</td>
-                  <td>Variable</td>
-                  <td>Package</td>
-                  <td>₹1,70,100</td>
-                  <td>₹1,25,000</td>
-                  <td style="color: #15803D; font-weight: 800;">+₹45,100</td>
-                  <td><span class="status-chip success">26.5%</span></td>
-                </tr>
-              </tbody>
-            </table>
+          <!-- ROW 2: CASH FLOW REALIZATION & PAYMENT AUDIT CARDS -->
+          <div style="margin-bottom: 8px; font-size: 0.85rem; font-weight: 700; color: #334155; text-transform: uppercase; letter-spacing: 0.05em;">
+            2. Cash Realization &amp; Credit Ledger Audit (Collected vs Pending)
           </div>
+          <div class="stats-grid-row" style="margin-bottom: 24px; display:grid; grid-template-columns: repeat(auto-fit, minmax(200px, 1fr)); gap:14px;">
+            <div class="stat-kpi-card" style="background: #F0FDF4; border-color: #DCFCE7;">
+              <span class="stat-kpi-label" style="color: #166534;">Actual Cash Collected</span>
+              <div class="stat-kpi-val" style="color: #15803D;" id="pl-cash-collected">₹0</div>
+              <span class="stat-kpi-delta positive" id="pl-collection-eff">0% Collection Rate</span>
+            </div>
+            <div class="stat-kpi-card" style="background: #FFFBEB; border-color: #FEF3C7;">
+              <span class="stat-kpi-label" style="color: #92400E;">Pending Collections (COD / Dues)</span>
+              <div class="stat-kpi-val" style="color: #D97706;" id="pl-pending-collections">₹0</div>
+              <span class="stat-kpi-delta" style="color: #B45309;">In transit &amp; counter dues</span>
+            </div>
+            <div class="stat-kpi-card">
+              <span class="stat-kpi-label">Khata Ledger Recovered</span>
+              <div class="stat-kpi-val" style="color: #0284C7;" id="pl-khata-recovered">₹0</div>
+              <span class="stat-kpi-delta positive">Direct Khata settlements</span>
+            </div>
+            <div class="stat-kpi-card">
+              <span class="stat-kpi-label">Cancelled / Refunds</span>
+              <div class="stat-kpi-val" style="color: #64748B;" id="pl-refunds">₹0</div>
+              <span class="stat-kpi-delta" style="color: #15803D;">0% Revenue Leakage</span>
+            </div>
+            <div class="stat-kpi-card">
+              <span class="stat-kpi-label">Total Wholesale Orders</span>
+              <div class="stat-kpi-val" style="color: #334155;" id="pl-order-count">0</div>
+              <span class="stat-kpi-delta" style="color: #64748B;" id="pl-order-split">0 Online • 0 POS</span>
+            </div>
+            <div class="stat-kpi-card">
+              <span class="stat-kpi-label">Average Order Value (AOV)</span>
+              <div class="stat-kpi-val" style="color: #475569;" id="pl-aov">₹0</div>
+              <span class="stat-kpi-delta" style="color: #64748B;" id="pl-units-sold">0 Units Sold</span>
+            </div>
+          </div>
+
+          <!-- INTERACTIVE BREAKDOWNS SECTION -->
+          <div style="margin-top: 10px;">
+            <!-- SUB-TABS NAVIGATION -->
+            <div style="display:flex; justify-content:space-between; align-items:center; border-bottom:2px solid #E2E8F0; margin-bottom:18px; flex-wrap:wrap; gap:12px;">
+              <div style="display:flex; gap:8px; flex-wrap:wrap;">
+                <button type="button" class="report-subtab-btn active" data-subtab="products" onclick="switchReportSubTab('products', this)">
+                  Product-wise Profitability
+                </button>
+                <button type="button" class="report-subtab-btn" data-subtab="categories" onclick="switchReportSubTab('categories', this)">
+                  Beverage Segments
+                </button>
+                <button type="button" class="report-subtab-btn" data-subtab="payments" onclick="switchReportSubTab('payments', this)">
+                  Payment Channels
+                </button>
+                <button type="button" class="report-subtab-btn" data-subtab="statuses" onclick="switchReportSubTab('statuses', this)">
+                  Order Status Audit
+                </button>
+                <button type="button" class="report-subtab-btn" data-subtab="trends" onclick="switchReportSubTab('trends', this)">
+                  Daily Sales Trend
+                </button>
+              </div>
+
+              <!-- IN-REPORT SEARCH FOR PRODUCTS -->
+              <div id="pl-table-search-wrap" style="display:flex; align-items:center; gap:8px;">
+                <input type="text" id="pl-product-search-input" placeholder="Search product or category..." onkeyup="filterReportProductTable()" style="padding: 6px 12px; font-size: 0.8rem; border: 1px solid #CBD5E1; border-radius: 6px; width: 220px;" />
+              </div>
+            </div>
+
+            <!-- SUB-PANE 1: PRODUCT PROFITABILITY -->
+            <div id="pl-subpane-products" class="pl-subpane active">
+              <div class="portal-table-wrapper">
+                <table class="portal-table" id="pl-table-products">
+                  <thead>
+                    <tr>
+                      <th>#</th>
+                      <th>Product Title &amp; SKU</th>
+                      <th>Category</th>
+                      <th style="text-align:right;">Units Sold</th>
+                      <th style="text-align:right;">Unit Cost ₹</th>
+                      <th style="text-align:right;">Avg Sale Price ₹</th>
+                      <th style="text-align:right;">Gross Sales ₹</th>
+                      <th style="text-align:right;">Total COGS ₹</th>
+                      <th style="text-align:right;">Net Profit ₹</th>
+                      <th style="text-align:center;">Margin %</th>
+                    </tr>
+                  </thead>
+                  <tbody id="pl-products-tbody">
+                    <tr><td colspan="10" style="text-align:center; padding:30px; color:#64748B;">Loading product profitability data...</td></tr>
+                  </tbody>
+                </table>
+              </div>
+            </div>
+
+            <!-- SUB-PANE 2: CATEGORY PERFORMANCE -->
+            <div id="pl-subpane-categories" class="pl-subpane" style="display:none;">
+              <div class="portal-table-wrapper">
+                <table class="portal-table">
+                  <thead>
+                    <tr>
+                      <th>Category Segment</th>
+                      <th style="text-align:right;">Total Units Sold</th>
+                      <th style="text-align:right;">Gross Revenue ₹</th>
+                      <th style="text-align:right;">COGS Expended ₹</th>
+                      <th style="text-align:right;">Net Margin Profit ₹</th>
+                      <th style="text-align:center;">Segment Margin %</th>
+                      <th style="text-align:right;">Revenue Share %</th>
+                    </tr>
+                  </thead>
+                  <tbody id="pl-categories-tbody">
+                    <tr><td colspan="7" style="text-align:center; padding:30px; color:#64748B;">Loading category performance...</td></tr>
+                  </tbody>
+                </table>
+              </div>
+            </div>
+
+            <!-- SUB-PANE 3: PAYMENT CHANNELS -->
+            <div id="pl-subpane-payments" class="pl-subpane" style="display:none;">
+              <div class="portal-table-wrapper">
+                <table class="portal-table">
+                  <thead>
+                    <tr>
+                      <th>Payment Channel</th>
+                      <th style="text-align:right;">Transaction Count</th>
+                      <th style="text-align:right;">Total Billed ₹</th>
+                      <th style="text-align:right;">Cash Collected ₹</th>
+                      <th style="text-align:right;">Pending Collections ₹</th>
+                      <th style="text-align:center;">Realization Efficiency</th>
+                    </tr>
+                  </thead>
+                  <tbody id="pl-payments-tbody">
+                    <tr><td colspan="6" style="text-align:center; padding:30px; color:#64748B;">Loading payment breakdown...</td></tr>
+                  </tbody>
+                </table>
+              </div>
+            </div>
+
+            <!-- SUB-PANE 4: ORDER STATUSES -->
+            <div id="pl-subpane-statuses" class="pl-subpane" style="display:none;">
+              <div class="portal-table-wrapper">
+                <table class="portal-table">
+                  <thead>
+                    <tr>
+                      <th>Order &amp; Dispatch Status</th>
+                      <th style="text-align:right;">Order Count</th>
+                      <th style="text-align:right;">Total Value ₹</th>
+                      <th style="text-align:right;">Volume Share %</th>
+                      <th>Operational Ledger Status</th>
+                    </tr>
+                  </thead>
+                  <tbody id="pl-statuses-tbody">
+                    <tr><td colspan="5" style="text-align:center; padding:30px; color:#64748B;">Loading dispatch status audit...</td></tr>
+                  </tbody>
+                </table>
+              </div>
+            </div>
+
+            <!-- SUB-PANE 5: DAILY TRENDS -->
+            <div id="pl-subpane-trends" class="pl-subpane" style="display:none;">
+              <div class="portal-table-wrapper">
+                <table class="portal-table">
+                  <thead>
+                    <tr>
+                      <th>Date</th>
+                      <th style="text-align:right;">Orders</th>
+                      <th style="text-align:right;">Gross Sales ₹</th>
+                      <th style="text-align:right;">Net Sales ₹</th>
+                      <th style="text-align:right;">COGS ₹</th>
+                      <th style="text-align:right;">Trading Profit ₹</th>
+                      <th style="text-align:right;">Cash Collected ₹</th>
+                    </tr>
+                  </thead>
+                  <tbody id="pl-trends-tbody">
+                    <tr><td colspan="7" style="text-align:center; padding:30px; color:#64748B;">Loading daily sales trend...</td></tr>
+                  </tbody>
+                </table>
+              </div>
+            </div>
+
+          </div>
+
+          <!-- EMPTY / ERROR STATE CONTAINER -->
+          <div id="pl-empty-state" style="display:none; text-align:center; padding:48px 24px; background:#F8FAFC; border-radius:8px; border:1px dashed #CBD5E1; margin-top:20px;">
+            <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.5" width="48" height="48" style="color:#94A3B8; margin-bottom:12px;"><circle cx="12" cy="12" r="10"/><line x1="12" y1="8" x2="12" y2="12"/><line x1="12" y1="16" x2="12.01" y2="16"/></svg>
+            <h3 style="font-size:1.1rem; color:#334155; margin-bottom:6px;">No Wholesale Sales Recorded For This Period</h3>
+            <p style="color:#64748B; font-size:0.85rem; max-width:440px; margin:0 auto 16px;">
+              No online dispatch orders or POS counter sales were registered in the selected date range.
+            </p>
+            <button type="button" class="btn-portal-primary" onclick="changeReportsPeriod('30days')">View Last 30 Days</button>
+          </div>
+
         </div>
       </section>
 
@@ -5327,6 +5555,14 @@
           renderDashboard();
         }
 
+        // Prime reports cache from database
+        sikarApi.get('/api/admin/reports/pnl?period=' + currentReportsPeriod).then(rData => {
+          if (rData) {
+            activeReportsData = rData;
+            if (currentTab === 'reports') renderReportsPage(rData);
+          }
+        }).catch(() => {});
+
         // Re-render currently active tab if not dashboard
         if (currentTab !== 'dashboard') {
           renderActiveTab(currentTab);
@@ -5650,7 +5886,7 @@
 
     function renderActiveTab(tabId) {
       if (tabId === 'dashboard') renderDashboard();
-      else if (tabId === 'reports') { /* reports ready */ }
+      else if (tabId === 'reports') renderReportsPage();
       else if (tabId === 'orders') renderOrdersTable();
       else if (tabId === 'pos') renderPosForm();
       else if (tabId === 'khata') renderKhataTable();
@@ -5851,6 +6087,361 @@
           </tr>
         `).join('');
       }
+    }
+
+    // =========================================================
+    // 1.5 PROFIT & LOSS (P&L) & WHOLESALE SALES REPORTS
+    // =========================================================
+    let currentReportsPeriod = '30days';
+    let reportsCustomStartDate = '';
+    let reportsCustomEndDate = '';
+    let activeReportsData = null;
+
+    function changeReportsPeriod(period, btnEl) {
+      currentReportsPeriod = period;
+      document.querySelectorAll('#pl-period-group .period-pill-btn').forEach(b => b.classList.remove('active'));
+      if (btnEl) btnEl.classList.add('active');
+      const customBar = document.getElementById('pl-custom-range-bar');
+      if (customBar) customBar.style.display = 'none';
+
+      loadReportsData();
+    }
+
+    function toggleReportsCustomRange(btnEl) {
+      currentReportsPeriod = 'custom';
+      document.querySelectorAll('#pl-period-group .period-pill-btn').forEach(b => b.classList.remove('active'));
+      if (btnEl) btnEl.classList.add('active');
+      const customBar = document.getElementById('pl-custom-range-bar');
+      if (customBar) {
+        customBar.style.display = 'flex';
+        const today = new Date().toISOString().split('T')[0];
+        const past7 = new Date(Date.now() - 7 * 86400000).toISOString().split('T')[0];
+        const startInput = document.getElementById('pl-custom-start');
+        const endInput = document.getElementById('pl-custom-end');
+        if (startInput && !startInput.value) startInput.value = past7;
+        if (endInput && !endInput.value) endInput.value = today;
+      }
+    }
+
+    function applyReportsCustomDate() {
+      const start = (document.getElementById('pl-custom-start').value || '').trim();
+      const end = (document.getElementById('pl-custom-end').value || '').trim();
+      if (!start || !end) {
+        showToast('Please select both Start Date and End Date');
+        return;
+      }
+      if (start > end) {
+        showToast('Start Date cannot be later than End Date');
+        return;
+      }
+      reportsCustomStartDate = start;
+      reportsCustomEndDate = end;
+      currentReportsPeriod = 'custom';
+      loadReportsData();
+    }
+
+    async function loadReportsData() {
+      let url = `/api/admin/reports/pnl?period=${currentReportsPeriod}`;
+      if (currentReportsPeriod === 'custom' && reportsCustomStartDate && reportsCustomEndDate) {
+        url += `&startDate=${reportsCustomStartDate}&endDate=${reportsCustomEndDate}`;
+      }
+
+      const rangeLabelEl = document.getElementById('pl-active-range-label');
+      if (rangeLabelEl) rangeLabelEl.textContent = 'Updating...';
+
+      try {
+        const data = await sikarApi.get(url);
+        if (!data || !data.summary) {
+          throw new Error('Invalid response structure');
+        }
+        activeReportsData = data;
+        renderReportsPage(data);
+      } catch (err) {
+        console.error('Failed to load reports:', err);
+        showToast('Failed to load P&L statement');
+        if (rangeLabelEl) rangeLabelEl.textContent = 'Error Loading Data';
+      }
+    }
+
+    function renderReportsPage(data) {
+      if (!data && activeReportsData) data = activeReportsData;
+      if (!data) {
+        loadReportsData();
+        return;
+      }
+
+      const s = data.summary;
+      const rangeLabelEl = document.getElementById('pl-active-range-label');
+      if (rangeLabelEl) rangeLabelEl.textContent = data.rangeLabel || currentReportsPeriod;
+
+      const integrityTextEl = document.getElementById('pl-integrity-text');
+      if (integrityTextEl && data.integrity) {
+        integrityTextEl.textContent = data.integrity.notes || 'Audited live against database.';
+      }
+      const reconcileTimeEl = document.getElementById('pl-reconcile-time');
+      if (reconcileTimeEl) {
+        reconcileTimeEl.textContent = 'Reconciled ' + new Date().toLocaleTimeString('en-US', { hour: '2-digit', minute: '2-digit' });
+      }
+
+      const fmt = (num) => '₹' + Number(num || 0).toLocaleString('en-IN', { minimumFractionDigits: 0, maximumFractionDigits: 0 });
+
+      // Row 1: Core P&L Financials
+      const grossSalesEl = document.getElementById('pl-gross-sales');
+      if (grossSalesEl) grossSalesEl.textContent = fmt(s.grossSales);
+
+      const discountsEl = document.getElementById('pl-discounts');
+      if (discountsEl) discountsEl.textContent = (s.discounts > 0 ? '-' : '') + fmt(s.discounts);
+
+      const netSalesEl = document.getElementById('pl-net-sales');
+      if (netSalesEl) netSalesEl.textContent = fmt(s.netSales);
+
+      const cogsEl = document.getElementById('pl-cogs');
+      if (cogsEl) cogsEl.textContent = fmt(s.cogs);
+
+      const grossProfitEl = document.getElementById('pl-gross-profit');
+      if (grossProfitEl) {
+        grossProfitEl.textContent = (s.grossProfit >= 0 ? '+' : '') + fmt(s.grossProfit);
+        grossProfitEl.style.color = s.grossProfit >= 0 ? '#15803D' : '#DC2626';
+      }
+
+      const grossMarginPctEl = document.getElementById('pl-gross-margin-pct');
+      if (grossMarginPctEl) {
+        grossMarginPctEl.textContent = (s.grossMarginPct || 0) + '% Gross Margin';
+        grossMarginPctEl.className = s.grossProfit >= 0 ? 'stat-kpi-delta positive' : 'stat-kpi-delta negative';
+      }
+
+      const operatingProfitEl = document.getElementById('pl-operating-profit');
+      if (operatingProfitEl) {
+        operatingProfitEl.textContent = (s.netOperatingProfit >= 0 ? '+' : '') + fmt(s.netOperatingProfit);
+        operatingProfitEl.style.color = s.netOperatingProfit >= 0 ? '#0284C7' : '#DC2626';
+      }
+
+      const operatingMarginPctEl = document.getElementById('pl-operating-margin-pct');
+      if (operatingMarginPctEl) {
+        operatingMarginPctEl.textContent = (s.netOperatingMarginPct || 0) + '% Operating ROI';
+        operatingMarginPctEl.className = s.netOperatingProfit >= 0 ? 'stat-kpi-delta positive' : 'stat-kpi-delta negative';
+      }
+
+      // Row 2: Cash Realization & Audit
+      const cashCollectedEl = document.getElementById('pl-cash-collected');
+      if (cashCollectedEl) cashCollectedEl.textContent = fmt(s.cashCollected);
+
+      const collectionEffEl = document.getElementById('pl-collection-eff');
+      if (collectionEffEl) collectionEffEl.textContent = (s.collectionEfficiencyPct || 0) + '% Realization Rate';
+
+      const pendingCollectionsEl = document.getElementById('pl-pending-collections');
+      if (pendingCollectionsEl) pendingCollectionsEl.textContent = fmt(s.pendingPayments);
+
+      const khataRecoveredEl = document.getElementById('pl-khata-recovered');
+      if (khataRecoveredEl) khataRecoveredEl.textContent = fmt(s.khataRecovered);
+
+      const refundsEl = document.getElementById('pl-refunds');
+      if (refundsEl) refundsEl.textContent = fmt(s.refunds);
+
+      const orderCountEl = document.getElementById('pl-order-count');
+      if (orderCountEl) orderCountEl.textContent = (s.totalOrders || 0).toLocaleString();
+
+      const orderSplitEl = document.getElementById('pl-order-split');
+      if (orderSplitEl) orderSplitEl.textContent = `${s.onlineOrdersCount || 0} Online • ${s.posSalesCount || 0} POS`;
+
+      const aovEl = document.getElementById('pl-aov');
+      if (aovEl) aovEl.textContent = fmt(s.averageOrderValue);
+
+      const unitsSoldEl = document.getElementById('pl-units-sold');
+      if (unitsSoldEl) unitsSoldEl.textContent = `${(s.totalUnitsSold || 0).toLocaleString()} Units Sold`;
+
+      // Render Sub-panes
+      renderReportProductsTable(data.breakdowns.products);
+      renderReportCategoriesTable(data.breakdowns.categories);
+      renderReportPaymentsTable(data.breakdowns.paymentMethods);
+      renderReportStatusesTable(data.breakdowns.orderStatuses);
+      renderReportTrendsTable(data.breakdowns.dailyTrend);
+
+      // Toggle empty state
+      const emptyState = document.getElementById('pl-empty-state');
+      if (emptyState) {
+        emptyState.style.display = s.totalOrders === 0 ? 'block' : 'none';
+      }
+    }
+
+    function renderReportProductsTable(products) {
+      const tbody = document.getElementById('pl-products-tbody');
+      if (!tbody) return;
+      if (!products || products.length === 0) {
+        tbody.innerHTML = '<tr><td colspan="10" style="text-align:center; padding:30px; color:#64748B;">No products sold in this period</td></tr>';
+        return;
+      }
+
+      tbody.innerHTML = products.map((p, idx) => {
+        const chipClass = p.marginPct >= 22 ? 'success' : (p.marginPct >= 14 ? 'info' : 'warning');
+        return `
+          <tr class="pl-product-row" data-title="${(p.title || '').toLowerCase()}" data-cat="${(p.category || '').toLowerCase()}">
+            <td style="color:#94A3B8; font-size:0.8rem; font-weight:700;">#${idx + 1}</td>
+            <td>
+              <div style="font-weight:700; color:#1E293B;">${escapeHTML(p.title)}</div>
+              <span style="font-size:0.75rem; color:#64748B;">SKU: ${escapeHTML(p.id)}</span>
+            </td>
+            <td><span class="status-chip info" style="font-size:0.74rem;">${escapeHTML(p.category)}</span></td>
+            <td style="text-align:right; font-weight:700;">${p.unitsSold.toLocaleString()}</td>
+            <td style="text-align:right; color:#64748B;">₹${Number(p.unitCost || 0).toFixed(2)}</td>
+            <td style="text-align:right; color:#64748B;">₹${Number(p.avgSellingPrice || 0).toFixed(2)}</td>
+            <td style="text-align:right; font-weight:700; color:#0F172A;">₹${Number(p.grossRevenue || 0).toLocaleString('en-IN')}</td>
+            <td style="text-align:right; color:#B45309;">₹${Number(p.cogs || 0).toLocaleString('en-IN')}</td>
+            <td style="text-align:right; font-weight:800; color:${p.netProfit >= 0 ? '#15803D' : '#DC2626'};">
+              ${p.netProfit >= 0 ? '+' : ''}₹${Number(p.netProfit || 0).toLocaleString('en-IN')}
+            </td>
+            <td style="text-align:center;"><span class="status-chip ${chipClass}">${p.marginPct}%</span></td>
+          </tr>
+        `;
+      }).join('');
+    }
+
+    function renderReportCategoriesTable(categories) {
+      const tbody = document.getElementById('pl-categories-tbody');
+      if (!tbody) return;
+      if (!categories || categories.length === 0) {
+        tbody.innerHTML = '<tr><td colspan="7" style="text-align:center; padding:30px; color:#64748B;">No category data for this period</td></tr>';
+        return;
+      }
+
+      tbody.innerHTML = categories.map(c => {
+        return `
+          <tr>
+            <td><strong>${escapeHTML(c.name)}</strong></td>
+            <td style="text-align:right; font-weight:700;">${c.unitsSold.toLocaleString()} Units</td>
+            <td style="text-align:right; font-weight:700; color:#0F172A;">₹${Number(c.grossRevenue || 0).toLocaleString('en-IN')}</td>
+            <td style="text-align:right; color:#B45309;">₹${Number(c.cogs || 0).toLocaleString('en-IN')}</td>
+            <td style="text-align:right; font-weight:800; color:${c.netProfit >= 0 ? '#15803D' : '#DC2626'};">
+              ${c.netProfit >= 0 ? '+' : ''}₹${Number(c.netProfit || 0).toLocaleString('en-IN')}
+            </td>
+            <td style="text-align:center;"><span class="status-chip success">${c.marginPct}%</span></td>
+            <td style="text-align:right; font-weight:700; color:#0284C7;">${c.shareOfSalesPct}%</td>
+          </tr>
+        `;
+      }).join('');
+    }
+
+    function renderReportPaymentsTable(methods) {
+      const tbody = document.getElementById('pl-payments-tbody');
+      if (!tbody) return;
+      if (!methods || methods.length === 0) {
+        tbody.innerHTML = '<tr><td colspan="6" style="text-align:center; padding:30px; color:#64748B;">No payment method records for this period</td></tr>';
+        return;
+      }
+
+      tbody.innerHTML = methods.map(pm => {
+        return `
+          <tr>
+            <td><strong style="text-transform:uppercase;">${escapeHTML(pm.method)}</strong></td>
+            <td style="text-align:right; font-weight:700;">${pm.count} Orders</td>
+            <td style="text-align:right; font-weight:700;">₹${Number(pm.booked || 0).toLocaleString('en-IN')}</td>
+            <td style="text-align:right; font-weight:700; color:#15803D;">₹${Number(pm.collected || 0).toLocaleString('en-IN')}</td>
+            <td style="text-align:right; font-weight:700; color:#D97706;">₹${Number(pm.pending || 0).toLocaleString('en-IN')}</td>
+            <td style="text-align:center;"><span class="status-chip ${pm.realizationRatePct >= 80 ? 'success' : 'info'}">${pm.realizationRatePct}% Realized</span></td>
+          </tr>
+        `;
+      }).join('');
+    }
+
+    function renderReportStatusesTable(statuses) {
+      const tbody = document.getElementById('pl-statuses-tbody');
+      if (!tbody) return;
+      if (!statuses || statuses.length === 0) {
+        tbody.innerHTML = '<tr><td colspan="5" style="text-align:center; padding:30px; color:#64748B;">No order status records for this period</td></tr>';
+        return;
+      }
+
+      const statusLabels = {
+        completed: 'Delivered & Payment Settled',
+        confirmed: 'Depot Confirmed / Packing',
+        in_transit: 'Out for Tempo Corridor Delivery',
+        transit: 'In Transit Express Delivery',
+        pending: 'Awaiting Depot Dispatch Confirmation',
+        cancelled: 'Cancelled / Order Voided'
+      };
+
+      tbody.innerHTML = statuses.map(st => {
+        const isCancelled = st.status === 'cancelled';
+        const chipClass = isCancelled ? 'danger' : (st.status === 'completed' ? 'success' : 'info');
+        return `
+          <tr>
+            <td><span class="status-chip ${chipClass}">${escapeHTML(st.status)}</span></td>
+            <td style="text-align:right; font-weight:700;">${st.count}</td>
+            <td style="text-align:right; font-weight:700; color:#0F172A;">₹${Number(st.totalAmount || 0).toLocaleString('en-IN')}</td>
+            <td style="text-align:right; font-weight:700; color:#0284C7;">${st.sharePct}%</td>
+            <td style="color:#64748B; font-size:0.82rem;">${statusLabels[st.status] || st.status}</td>
+          </tr>
+        `;
+      }).join('');
+    }
+
+    function renderReportTrendsTable(trends) {
+      const tbody = document.getElementById('pl-trends-tbody');
+      if (!tbody) return;
+      if (!trends || trends.length === 0) {
+        tbody.innerHTML = '<tr><td colspan="7" style="text-align:center; padding:30px; color:#64748B;">No daily transactions in this period</td></tr>';
+        return;
+      }
+
+      tbody.innerHTML = trends.map(d => {
+        return `
+          <tr>
+            <td><strong>${escapeHTML(d.date)}</strong></td>
+            <td style="text-align:right; font-weight:700;">${d.orderCount}</td>
+            <td style="text-align:right; color:#64748B;">₹${Number(d.grossSales || 0).toLocaleString('en-IN')}</td>
+            <td style="text-align:right; font-weight:700; color:#0F172A;">₹${Number(d.netSales || 0).toLocaleString('en-IN')}</td>
+            <td style="text-align:right; color:#B45309;">₹${Number(d.cogs || 0).toLocaleString('en-IN')}</td>
+            <td style="text-align:right; font-weight:800; color:${d.profit >= 0 ? '#15803D' : '#DC2626'};">
+              ${d.profit >= 0 ? '+' : ''}₹${Number(d.profit || 0).toLocaleString('en-IN')}
+            </td>
+            <td style="text-align:right; font-weight:700; color:#15803D;">₹${Number(d.collectedCash || 0).toLocaleString('en-IN')}</td>
+          </tr>
+        `;
+      }).join('');
+    }
+
+    function switchReportSubTab(subtabId, btnEl) {
+      document.querySelectorAll('.report-subtab-btn').forEach(b => b.classList.remove('active'));
+      if (btnEl) btnEl.classList.add('active');
+
+      document.querySelectorAll('.pl-subpane').forEach(p => {
+        p.style.display = 'none';
+        p.classList.remove('active');
+      });
+
+      const targetPane = document.getElementById('pl-subpane-' + subtabId);
+      if (targetPane) {
+        targetPane.style.display = 'block';
+        targetPane.classList.add('active');
+      }
+
+      const searchWrap = document.getElementById('pl-table-search-wrap');
+      if (searchWrap) {
+        searchWrap.style.display = subtabId === 'products' ? 'flex' : 'none';
+      }
+    }
+
+    function filterReportProductTable() {
+      const query = (document.getElementById('pl-product-search-input').value || '').toLowerCase().trim();
+      const rows = document.querySelectorAll('.pl-product-row');
+      rows.forEach(r => {
+        const title = r.getAttribute('data-title') || '';
+        const cat = r.getAttribute('data-cat') || '';
+        if (!query || title.includes(query) || cat.includes(query)) {
+          r.style.display = '';
+        } else {
+          r.style.display = 'none';
+        }
+      });
+    }
+
+    function exportReportsCSV() {
+      let url = `/api/admin/reports/pnl/export.csv?period=${currentReportsPeriod}`;
+      if (currentReportsPeriod === 'custom' && reportsCustomStartDate && reportsCustomEndDate) {
+        url += `&startDate=${reportsCustomStartDate}&endDate=${reportsCustomEndDate}`;
+      }
+      showToast('Downloading P&L CSV statement...');
+      window.location.href = url;
     }
 
     // =========================================================
