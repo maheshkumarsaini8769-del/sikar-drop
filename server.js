@@ -22,6 +22,7 @@ try {
 const {
   db,
   recordManualSaleTransaction,
+  refundManualSaleTransaction,
   recordKhataPaymentTransaction,
   receivePurchaseTransaction,
   createOnlineOrderTransaction,
@@ -688,7 +689,7 @@ function generatePnlReport({ period = '30days', startDate, endDate, category, pa
   `).all(start, end);
 
   const sales = db.prepare(`
-    SELECT id, customer_id, customer_name, customer_phone, items_json, subtotal, discount, total_amount, amount_received, outstanding_amount, payment_method, sale_date, created_at
+    SELECT id, customer_id, customer_name, customer_phone, items_json, subtotal, discount, total_amount, amount_received, outstanding_amount, payment_method, sale_date, created_at, status
     FROM manual_sales
     WHERE sale_date >= ? AND sale_date <= ?
     ORDER BY sale_date DESC
@@ -845,6 +846,15 @@ function generatePnlReport({ period = '30days', startDate, endDate, category, pa
   }
 
   for (const s of sales) {
+    if (s.status === 'refunded' || s.status === 'cancelled') {
+      refunds += (s.amount_received || s.total_amount || 0);
+      const stEntry = orderStatusAgg.get('refunded') || { status: 'refunded', count: 0, totalAmount: 0 };
+      stEntry.count++;
+      stEntry.totalAmount += (s.total_amount || 0);
+      orderStatusAgg.set('refunded', stEntry);
+      continue;
+    }
+
     posSalesCount++;
     grossSales += (s.subtotal || 0);
     discounts += (s.discount || 0);
@@ -1537,12 +1547,159 @@ app.post('/api/orders', (req, res) => {
 // ==========================================
 app.get('/api/manual-sales', (req, res) => {
   try {
-    const sales = db.prepare('SELECT * FROM manual_sales ORDER BY created_at DESC').all();
-    const formatted = sales.map(s => ({
-      ...s,
-      items: JSON.parse(s.items_json || '[]')
-    }));
+    const {
+      q,
+      search,
+      startDate,
+      dateFrom,
+      endDate,
+      dateTo,
+      status,
+      paymentMethod,
+      paymentStatus,
+      page,
+      limit,
+      paginated
+    } = req.query;
+
+    const searchTerm = (q || search || '').trim().toLowerCase();
+    const fromDate = (startDate || dateFrom || '').trim();
+    const toDate = (endDate || dateTo || '').trim();
+    const statusFilter = (status || 'all').trim().toLowerCase();
+    const methodFilter = (paymentMethod || 'all').trim().toLowerCase();
+    const payStatusFilter = (paymentStatus || 'all').trim().toLowerCase();
+
+    let query = 'SELECT * FROM manual_sales WHERE 1=1';
+    const params = [];
+
+    if (fromDate) {
+      query += ' AND (sale_date >= ? OR substr(created_at, 1, 10) >= ?)';
+      params.push(fromDate, fromDate);
+    }
+    if (toDate) {
+      query += ' AND (sale_date <= ? OR substr(created_at, 1, 10) <= ?)';
+      params.push(toDate, toDate);
+    }
+    if (statusFilter !== 'all') {
+      query += ' AND LOWER(status) = ?';
+      params.push(statusFilter);
+    }
+    if (methodFilter !== 'all') {
+      query += ' AND LOWER(payment_method) = ?';
+      params.push(methodFilter);
+    }
+    if (payStatusFilter === 'paid') {
+      query += ' AND outstanding_amount <= 0';
+    } else if (payStatusFilter === 'due' || payStatusFilter === 'udhar' || payStatusFilter === 'pending') {
+      query += ' AND outstanding_amount > 0';
+    }
+
+    query += ' ORDER BY created_at DESC';
+
+    const allSales = db.prepare(query).all(...params);
+
+    // Apply search filter if provided
+    let filtered = allSales;
+    if (searchTerm) {
+      filtered = allSales.filter(s => {
+        const idMatch = String(s.id || '').toLowerCase().includes(searchTerm);
+        const nameMatch = String(s.customer_name || '').toLowerCase().includes(searchTerm);
+        const phoneMatch = String(s.customer_phone || '').toLowerCase().includes(searchTerm);
+        const notesMatch = String(s.notes || '').toLowerCase().includes(searchTerm);
+        let itemsMatch = false;
+        try {
+          const items = JSON.parse(s.items_json || '[]');
+          itemsMatch = items.some(it => String(it.title || it.name || '').toLowerCase().includes(searchTerm));
+        } catch (e) {}
+        return idMatch || nameMatch || phoneMatch || notesMatch || itemsMatch;
+      });
+    }
+
+    // Compute summary metrics across filtered records
+    let totalSales = filtered.length;
+    let totalBoxes = 0;
+    let totalRevenue = 0;
+    let cashCollected = 0;
+    let outstandingBalance = 0;
+
+    const formatted = filtered.map(s => {
+      let items = [];
+      try {
+        items = JSON.parse(s.items_json || '[]');
+      } catch (e) {
+        items = [];
+      }
+      const boxes = items.reduce((sum, it) => sum + (Number(it.quantity || it.qty || 0)), 0) || 1;
+
+      if (s.status !== 'refunded') {
+        totalBoxes += boxes;
+        totalRevenue += Number(s.total_amount || 0);
+        cashCollected += Number(s.amount_received || 0);
+        outstandingBalance += Number(s.outstanding_amount || 0);
+      }
+
+      return {
+        ...s,
+        items,
+        boxes
+      };
+    });
+
+    if (paginated === 'true' || paginated === '1' || page !== undefined) {
+      const pageNum = Math.max(1, parseInt(page, 10) || 1);
+      const pageSize = Math.max(1, parseInt(limit, 10) || 20);
+      const offset = (pageNum - 1) * pageSize;
+      const paginatedSales = formatted.slice(offset, offset + pageSize);
+
+      return res.json({
+        success: true,
+        sales: paginatedSales,
+        pagination: {
+          total: totalSales,
+          page: pageNum,
+          limit: pageSize,
+          pages: Math.ceil(totalSales / pageSize) || 1
+        },
+        summary: {
+          totalSales,
+          totalBoxes,
+          totalRevenue,
+          cashCollected,
+          outstandingBalance
+        }
+      });
+    }
+
     res.json(formatted);
+  } catch (err) {
+    res.status(500).json({ error: err.message });
+  }
+});
+
+app.get('/api/manual-sales/:id', (req, res) => {
+  try {
+    const sale = db.prepare('SELECT * FROM manual_sales WHERE id = ?').get(req.params.id);
+    if (!sale) {
+      return res.status(404).json({ error: 'Manual sale not found' });
+    }
+    let items = [];
+    try {
+      items = JSON.parse(sale.items_json || '[]');
+    } catch (e) {
+      items = [];
+    }
+    const customer = sale.customer_id
+      ? db.prepare('SELECT * FROM customers WHERE id = ?').get(sale.customer_id)
+      : db.prepare('SELECT * FROM customers WHERE phone = ?').get(sale.customer_phone);
+
+    res.json({
+      success: true,
+      sale: {
+        ...sale,
+        items,
+        customer: customer || null
+      }
+    });
   } catch (err) {
     res.status(500).json({ error: err.message });
   }
@@ -1552,8 +1709,16 @@ app.post('/api/manual-sales', (req, res) => {
   try {
     const { idempotencyToken, customerId, customerName, customerPhone, items, subtotal, discount, totalAmount, amountReceived, outstandingAmount, paymentMethod, saleDate, notes, actor } = req.body;
 
-    if (!customerName || !customerPhone || !items || items.length === 0) {
+    if (!customerName || !customerPhone || !items || !Array.isArray(items) || items.length === 0) {
       return res.status(400).json({ error: 'Customer name, phone, and at least one item are required' });
+    }
+
+    // Verify valid positive quantities
+    for (const it of items) {
+      const q = Number(it.quantity || it.qty || 0);
+      if (isNaN(q) || q <= 0) {
+        return res.status(400).json({ error: `Invalid quantity for item "${it.title || 'Product'}". Must be greater than 0.` });
+      }
     }
 
     if (idempotencyToken) {
@@ -1589,6 +1754,39 @@ app.post('/api/manual-sales', (req, res) => {
     });
 
     res.status(201).json({ success: true, ...result });
+  } catch (err) {
+    res.status(400).json({ error: err.message });
+  }
+});
+
+app.post('/api/manual-sales/:id/refund', (req, res) => {
+  try {
+    const { reason, actor } = req.body;
+    if (!reason || !reason.trim()) {
+      return res.status(400).json({ error: 'Refund reason is required' });
+    }
+
+    const result = refundManualSaleTransaction({
+      saleId: req.params.id,
+      reason: reason.trim(),
+      actor: actor || 'Admin'
+    });
+
+    res.json({ success: true, ...result });
+  } catch (err) {
+    res.status(400).json({ error: err.message });
+  }
+});
+
+app.post('/api/manual-sales/:id/cancel', (req, res) => {
+  try {
+    const { reason, actor } = req.body;
+    const result = refundManualSaleTransaction({
+      saleId: req.params.id,
+      reason: (reason || 'Cancelled by operator').trim(),
+      actor: actor || 'Admin'
+    });
+    res.json({ success: true, ...result });
   } catch (err) {
     res.status(400).json({ error: err.message });
   }

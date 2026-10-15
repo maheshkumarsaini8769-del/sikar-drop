@@ -709,6 +709,24 @@ function initDatabase() {
     console.warn('Social analytics columns migration notice:', err.message);
   }
 
+  // Ensure status, refund_reason, refunded_at, and actor columns exist on manual_sales table
+  try {
+    const saleCols = db.prepare("PRAGMA table_info(manual_sales)").all().map(c => c.name);
+    const neededSaleCols = [
+      ['status', "TEXT DEFAULT 'completed'"],
+      ['refund_reason', "TEXT DEFAULT ''"],
+      ['refunded_at', "TEXT DEFAULT ''"],
+      ['actor', "TEXT DEFAULT 'Admin'"]
+    ];
+    for (const [col, colType] of neededSaleCols) {
+      if (!saleCols.includes(col)) {
+        db.exec(`ALTER TABLE manual_sales ADD COLUMN ${col} ${colType}`);
+      }
+    }
+  } catch (err) {
+    console.warn('Manual sales columns migration notice:', err.message);
+  }
+
   console.log('Database tables initialized successfully');
   seedDefaultData();
 }
@@ -1195,9 +1213,9 @@ function recordManualSaleTransaction({ idempotencyToken, customerId, customerNam
 
     // Insert Manual Sale record
     db.prepare(`
-      INSERT INTO manual_sales (id, idempotency_token, customer_id, customer_name, customer_phone, items_json, subtotal, discount, total_amount, amount_received, outstanding_amount, payment_method, sale_date, notes, created_at)
-      VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)
-    `).run(saleId, idempotencyToken || null, customerId || null, customerName, customerPhone, JSON.stringify(items), finalSubtotal, finalDiscount, finalTotal, finalReceived, finalOutstanding, paymentMethod, saleDate || now.split('T')[0], notes || '', now);
+      INSERT INTO manual_sales (id, idempotency_token, customer_id, customer_name, customer_phone, items_json, subtotal, discount, total_amount, amount_received, outstanding_amount, payment_method, sale_date, notes, created_at, status, actor)
+      VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, 'completed', ?)
+    `).run(saleId, idempotencyToken || null, customerId || null, customerName, customerPhone, JSON.stringify(items), finalSubtotal, finalDiscount, finalTotal, finalReceived, finalOutstanding, paymentMethod, saleDate || now.split('T')[0], notes || '', now, actor);
 
     // Update or Create Customer
     let cust = null;
@@ -1244,7 +1262,136 @@ function recordManualSaleTransaction({ idempotencyToken, customerId, customerNam
       VALUES (?, ?, 'MANUAL_SALE_CREATED', 'pos', ?, ?)
     `).run('AUD-' + Math.floor(100000 + Math.random() * 900000), actor, `Recorded manual sale ${saleId} for Rs.${finalTotal} (Received: Rs.${finalReceived}, Due: Rs.${finalOutstanding}) to ${customerName}`, now);
 
-    return { saleId, totalAmount: finalTotal, amountReceived: finalReceived, balanceDue: finalOutstanding, outstandingAmount: finalOutstanding };
+    return { saleId, totalAmount: finalTotal, amountReceived: finalReceived, balanceDue: finalOutstanding, outstandingAmount: finalOutstanding, actor, status: 'completed' };
+  });
+
+  return runTx();
+}
+
+// 1B. ATOMIC REFUND / CANCELLATION FOR MANUAL POS SALE
+function refundManualSaleTransaction({ saleId, reason = 'Operator refunded', actor = 'Admin' }) {
+  const runTx = db.transaction(() => {
+    const sale = db.prepare('SELECT * FROM manual_sales WHERE id = ?').get(saleId);
+    if (!sale) {
+      throw new Error(`POS Manual Sale not found: ${saleId}`);
+    }
+
+    if (sale.status === 'refunded' || sale.status === 'cancelled') {
+      throw new Error(`POS Manual Sale ${saleId} is already refunded/cancelled`);
+    }
+
+    const now = new Date().toISOString();
+    let items = [];
+    try {
+      items = JSON.parse(sale.items_json || '[]');
+    } catch (e) {
+      items = [];
+    }
+
+    let totalRestockedBoxes = 0;
+
+    // 1. Restore inventory and log movement for each item
+    for (const item of items) {
+      const pid = item.id || item.productId;
+      const pqty = Number(item.qty || item.quantity || 1);
+      if (pid && pqty > 0) {
+        const prod = db.prepare('SELECT stock, title FROM products WHERE id = ?').get(pid);
+        if (prod) {
+          const beforeStock = prod.stock;
+          const afterStock = beforeStock + pqty;
+          db.prepare('UPDATE products SET stock = ?, updated_at = ? WHERE id = ?').run(afterStock, now, pid);
+
+          db.prepare(`
+            INSERT INTO inventory_movements (id, product_id, movement_type, quantity, before_stock, after_stock, reference_id, reason, actor, created_at)
+            VALUES (?, ?, 'manual_sale_refund', ?, ?, ?, ?, ?, ?, ?)
+          `).run(
+            'MOV-' + Math.floor(100000 + Math.random() * 900000),
+            pid,
+            pqty,
+            beforeStock,
+            afterStock,
+            saleId,
+            `Stock Restored: Refund of POS Sale ${saleId} (${reason})`,
+            actor,
+            now
+          );
+
+          totalRestockedBoxes += pqty;
+        }
+      }
+    }
+
+    // 2. Mark sale as refunded
+    db.prepare(`
+      UPDATE manual_sales
+      SET status = 'refunded', refund_reason = ?, refunded_at = ?
+      WHERE id = ?
+    `).run(reason, now, saleId);
+
+    // 3. Reconcile customer balances if customer exists
+    let cust = null;
+    if (sale.customer_id) {
+      cust = db.prepare('SELECT * FROM customers WHERE id = ?').get(sale.customer_id);
+    } else if (sale.customer_phone) {
+      cust = db.prepare('SELECT * FROM customers WHERE phone = ?').get(sale.customer_phone);
+    }
+
+    if (cust) {
+      const newOrders = Math.max(0, cust.total_orders - 1);
+      const newSpend = Math.max(0, cust.lifetime_spend - Number(sale.total_amount || 0));
+      const newBalance = Math.max(0, cust.outstanding_balance - Number(sale.outstanding_amount || 0));
+      db.prepare('UPDATE customers SET total_orders = ?, lifetime_spend = ?, outstanding_balance = ?, last_activity = ? WHERE id = ?')
+        .run(newOrders, newSpend, newBalance, now, cust.id);
+    }
+
+    // 4. If sale had pending Khata entry, cancel it
+    if (Number(sale.outstanding_amount || 0) > 0) {
+      db.prepare(`
+        UPDATE khata_entries
+        SET status = 'cancelled', notes = notes || ' [Voided due to POS refund]', updated_at = ?
+        WHERE (reason LIKE ? OR notes LIKE ?) AND status = 'pending'
+      `).run(now, `%${saleId}%`, `%${saleId}%`);
+    }
+
+    // 5. If amount received was recorded, insert refund entry in payments ledger
+    if (Number(sale.amount_received || 0) > 0) {
+      db.prepare(`
+        INSERT INTO payments (id, customer_id, customer_name, customer_phone, reference_type, reference_id, amount, previous_balance, new_balance, payment_method, notes, created_at)
+        VALUES (?, ?, ?, ?, 'pos_sale_refund', ?, ?, ?, ?, ?, ?, ?)
+      `).run(
+        'PAY-' + Math.floor(100000 + Math.random() * 900000),
+        cust ? cust.id : (sale.customer_id || 'CUST-WALKIN'),
+        sale.customer_name,
+        sale.customer_phone,
+        saleId,
+        -Number(sale.amount_received || 0),
+        cust ? cust.outstanding_balance : 0,
+        Math.max(0, (cust ? cust.outstanding_balance : 0) - Number(sale.outstanding_amount || 0)),
+        sale.payment_method || 'Cash',
+        `Refund for POS Sale ${saleId}: ${reason}`,
+        now
+      );
+    }
+
+    // 6. Record in Audit Logs
+    db.prepare(`
+      INSERT INTO audit_logs (id, actor, action, module, details, created_at)
+      VALUES (?, ?, 'MANUAL_SALE_REFUNDED', 'pos', ?, ?)
+    `).run(
+      'AUD-' + Math.floor(100000 + Math.random() * 900000),
+      actor,
+      `Refunded POS sale ${saleId} (Restocked ${totalRestockedBoxes} boxes, Amount: Rs.${sale.total_amount}). Reason: ${reason}`,
+      now
+    );
+
+    return {
+      saleId,
+      status: 'refunded',
+      refundReason: reason,
+      refundedAt: now,
+      restockedBoxes: totalRestockedBoxes,
+      actor
+    };
   });
 
   return runTx();
@@ -1580,6 +1727,7 @@ initDatabase();
 module.exports = {
   db,
   recordManualSaleTransaction,
+  refundManualSaleTransaction,
   recordKhataPaymentTransaction,
   receivePurchaseTransaction,
   createOnlineOrderTransaction,

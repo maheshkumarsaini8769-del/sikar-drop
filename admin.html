@@ -1982,6 +1982,132 @@
     .stat-kpi-delta.positive {
       color: #15803D;
     }
+
+    /* POS MANUAL CASH SALE & COUNTER STYLES */
+    .pos-station-bar {
+      display: flex;
+      justify-content: space-between;
+      align-items: center;
+      background: #F8FAFC;
+      border: 1px solid var(--border-light);
+      border-radius: var(--radius-sm);
+      padding: 10px 16px;
+      margin-bottom: 20px;
+      font-size: 0.84rem;
+      flex-wrap: wrap;
+      gap: 10px;
+    }
+    .pos-station-meta {
+      display: flex;
+      align-items: center;
+      gap: 16px;
+      flex-wrap: wrap;
+    }
+    .pos-station-pill {
+      display: inline-flex;
+      align-items: center;
+      gap: 6px;
+      background: #FFFFFF;
+      border: 1px solid var(--border-light);
+      padding: 4px 10px;
+      border-radius: 999px;
+      font-weight: 700;
+      color: #334155;
+    }
+    .pos-quick-petis {
+      display: flex;
+      align-items: center;
+      gap: 8px;
+      flex-wrap: wrap;
+      margin-bottom: 16px;
+    }
+    .pos-peti-chip {
+      background: #F1F5F9;
+      border: 1px solid #CBD5E1;
+      border-radius: 6px;
+      padding: 6px 12px;
+      font-size: 0.78rem;
+      font-weight: 700;
+      color: #0F172A;
+      cursor: pointer;
+      display: inline-flex;
+      align-items: center;
+      gap: 5px;
+      transition: all 0.15s ease;
+    }
+    .pos-peti-chip:hover {
+      background: #E2E8F0;
+      border-color: #94A3B8;
+    }
+    .pos-items-table {
+      width: 100%;
+      border-collapse: collapse;
+      margin-top: 8px;
+    }
+    .pos-items-table th {
+      background: #F1F5F9;
+      padding: 8px 10px;
+      font-size: 0.74rem;
+      font-weight: 800;
+      text-transform: uppercase;
+      letter-spacing: 0.03em;
+      color: #475569;
+      border-bottom: 1px solid #CBD5E1;
+      text-align: left;
+    }
+    .pos-items-table td {
+      padding: 8px 10px;
+      border-bottom: 1px solid #E2E8F0;
+      vertical-align: middle;
+      font-size: 0.86rem;
+    }
+    .pos-stock-badge {
+      display: inline-block;
+      font-size: 0.72rem;
+      font-weight: 700;
+      padding: 2px 6px;
+      border-radius: 4px;
+    }
+    .pos-stock-badge.ok {
+      background: #DCFCE7;
+      color: #166534;
+      border: 1px solid #BBF7D0;
+    }
+    .pos-stock-badge.low {
+      background: #FEF9C3;
+      color: #854D0E;
+      border: 1px solid #FEF08A;
+    }
+    .pos-stock-badge.out {
+      background: #FEE2E2;
+      color: #991B1B;
+      border: 1px solid #FECACA;
+    }
+    .pos-calc-card {
+      background: #F8FAFC;
+      border: 1px solid var(--border-light);
+      border-radius: var(--radius-sm);
+      padding: 16px;
+    }
+    .pos-amount-btn {
+      padding: 4px 10px;
+      font-size: 0.76rem;
+      font-weight: 700;
+      border: 1px solid #CBD5E1;
+      background: #FFFFFF;
+      border-radius: 4px;
+      cursor: pointer;
+      color: #0F172A;
+      transition: background 0.15s;
+    }
+    .pos-amount-btn:hover {
+      background: #E2E8F0;
+    }
+    .badge-status.refunded {
+      background: #FEE2E2;
+      color: #DC2626;
+      border: 1px solid #FECACA;
+    }
   </style>
 </head>
 <body>
@@ -2945,7 +3071,7 @@
                 <div style="position:relative; flex:1; min-width:280px; max-width:480px;">
                   <svg style="position:absolute; left:12px; top:50%; transform:translateY(-50%); color:#94A3B8; pointer-events:none;" width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><circle cx="11" cy="11" r="8"></circle><line x1="21" y1="21" x2="16.65" y2="16.65"></line></svg>
                   <input type="text" id="orders-search-input" class="portal-input" placeholder="Search Bilty #, customer, phone, address, product..." style="padding-left:36px; padding-right:32px;" oninput="handleOrdersSearchInput(this.value)">
-                  <button type="button" id="orders-search-clear" onclick="clearOrdersSearch()" style="display:none; position:absolute; right:10px; top:50%; transform:translateY(-50%); background:none; border:none; color:#94A3B8; cursor:pointer; font-size:14px; font-weight:700;">✕</button>
+                  <button type="button" id="orders-search-clear" onclick="clearOrdersSearch()" style="display:none; position:absolute; right:10px; top:50%; transform:translateY(-50%); background:none; border:none; color:#94A3B8; cursor:pointer;"><svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5"><line x1="18" y1="6" x2="6" y2="18"></line><line x1="6" y1="6" x2="18" y2="18"></line></svg></button>
                 </div>
 
                 <!-- FULFILLMENT STATUS FILTER PILLS -->
@@ -3069,77 +3195,186 @@
       </section>
 
       <!-- =======================================================
-           TAB 3: CASE SELL (POS)
+           TAB 3: CASE SELL (POS MANUAL CASH SALE & STOCK SYNC)
            ======================================================= -->
       <section id="pane-pos" class="tab-pane">
+        <!-- COUNTER OPERATOR & STATION STATUS BAR -->
+        <div class="pos-station-bar">
+          <div class="pos-station-meta">
+            <span class="pos-station-pill">
+              <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5"><path d="M20 21v-2a4 4 0 0 0-4-4H8a4 4 0 0 0-4 4v2"></path><circle cx="12" cy="7" r="4"></circle></svg>
+              <span id="pos-operator-badge">Operator: Mahesh Kumar Saini (Super Admin)</span>
+            </span>
+            <span class="pos-station-pill">
+              <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5"><rect x="2" y="7" width="20" height="14" rx="2" ry="2"></rect><path d="M16 21V5a2 2 0 0 0-2-2h-4a2 2 0 0 0-2 2v16"></path></svg>
+              <span>Station: Mandi Main Depot Counter</span>
+            </span>
+            <span class="pos-station-pill" style="color: #15803D; border-color: #BBF7D0; background: #F0FDF4;">
+              <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5"><polyline points="20 6 9 17 4 12"></polyline></svg>
+              <span>Atomic Inventory Deductions: Active</span>
+            </span>
+          </div>
+          <div>
+            <button type="button" class="btn-portal-outline" onclick="resetPosForm()" style="padding: 5px 12px; font-size: 0.8rem;">
+              Clear / Reset Form
+            </button>
+          </div>
+        </div>
+
         <div class="portal-card">
           <div class="portal-card-header">
             <div>
-              <h2>Counter Case Sell (POS Entry)</h2>
-              <p>Manual entry automatically deducts sold boxes from inventory (e.g. 10 - 4 = 6) and logs unpaid balance to Udhar Khata.</p>
+              <h2>Counter Case Sell (POS Manual Entry)</h2>
+              <p>Record genuine wholesale offline counter sales. Automatically deducts sold boxes from live warehouse inventory and posts balances to Udhar Khata.</p>
             </div>
           </div>
 
           <form id="pos-sell-form" onsubmit="handlePosSaleSubmit(event)">
+            <input type="hidden" id="pos-idempotency-token">
+
+            <!-- 1. CUSTOMER / PARTY INFO -->
             <div class="portal-form-grid-3">
               <div class="portal-field-group">
                 <label for="pos-cust-name">Customer / Party Name *</label>
-                <input type="text" id="pos-cust-name" class="portal-input" placeholder="e.g. Mahesh Sharma" required>
+                <input type="text" id="pos-cust-name" class="portal-input" placeholder="e.g. Ramesh Shekhawat" required autocomplete="off">
               </div>
               <div class="portal-field-group">
                 <label for="pos-cust-phone">Mobile Phone (WhatsApp) *</label>
-                <input type="tel" id="pos-cust-phone" class="portal-input" placeholder="e.g. 98290 11223" required>
+                <input type="tel" id="pos-cust-phone" class="portal-input tabular" placeholder="e.g. 98290 11223" required onblur="lookupPosCustomerKhata(this.value)" autocomplete="off">
+                <div id="pos-cust-khata-hint" style="font-size: 0.76rem; color: #DC2626; margin-top: 3px; display: none;"></div>
               </div>
               <div class="portal-field-group">
                 <label for="pos-cust-corridor">Delivery / Mandi Location</label>
-                <input type="text" id="pos-cust-corridor" class="portal-input" placeholder="e.g. Piprali Road Mandi">
+                <input type="text" id="pos-cust-corridor" class="portal-input" placeholder="e.g. Piprali Road Mandi Counter">
               </div>
             </div>
 
-            <div class="portal-form-grid-3">
-              <div class="portal-field-group">
-                <label for="pos-product-select">Select Wholesale Peti Product *</label>
-                <select id="pos-product-select" class="portal-select" onchange="updatePosCalculations()" required></select>
-              </div>
-              <div class="portal-field-group">
-                <label for="pos-qty-input">Quantity of Boxes Sold (Boxes) *</label>
-                <input type="number" id="pos-qty-input" class="portal-input tabular" value="4" min="1" oninput="updatePosCalculations()" required>
-              </div>
-              <div class="portal-field-group">
-                <label for="pos-rate-input">Rate per Box ₹ (Wholesale)</label>
-                <input type="number" id="pos-rate-input" class="portal-input tabular" oninput="updatePosCalculations()" required>
+            <!-- 2. QUICK ADD POPULAR PETIS BAR -->
+            <div style="margin-top: 14px;">
+              <span style="font-size: 0.74rem; font-weight: 800; text-transform: uppercase; color: var(--text-muted); display: block; margin-bottom: 6px;">
+                Quick Add Wholesale Petis (1-Click)
+              </span>
+              <div class="pos-quick-petis" id="pos-quick-petis-container">
+                <!-- Rendered dynamically by renderPosQuickChips() -->
               </div>
             </div>
 
-            <!-- LIVE INVENTORY STATUS HINT -->
-            <div style="background: #F0FDF4; border: 1px solid #BBF7D0; border-radius: var(--radius-sm); padding: 12px 16px; margin-bottom: 20px; font-size: 0.84rem; color: #166534;" id="pos-inventory-preview-box">
-              <strong>Inventory Impact Preview:</strong>
-              <span id="pos-stock-preview-text">Selecting product...</span>
+            <!-- 3. MULTI-ITEM LINE ITEMS TABLE -->
+            <div style="background: #FFFFFF; border: 1px solid var(--border-light); border-radius: var(--radius-sm); padding: 14px; margin-top: 10px; margin-bottom: 16px;">
+              <div style="display: flex; justify-content: space-between; align-items: center; margin-bottom: 10px;">
+                <h4 style="font-size: 0.88rem; font-weight: 800; color: #0F172A; text-transform: uppercase; letter-spacing: 0.03em;">
+                  Line Items / Wholesale Boxes Sold
+                </h4>
+                <button type="button" class="btn-portal-outline" onclick="addPosLineItem()" style="padding: 4px 12px; font-size: 0.8rem; font-weight: 700;">
+                  + Add Another Peti
+                </button>
+              </div>
+
+              <div class="portal-table-wrapper" style="box-shadow: none; border: 1px solid #E2E8F0;">
+                <table class="pos-items-table">
+                  <thead>
+                    <tr>
+                      <th style="min-width: 240px;">Product &amp; Peti Spec</th>
+                      <th style="width: 140px;">Stock Available</th>
+                      <th style="width: 130px;">Wholesale Rate ₹</th>
+                      <th style="width: 140px;">Quantity (Boxes)</th>
+                      <th style="width: 130px; text-align: right;">Line Total ₹</th>
+                      <th style="width: 60px; text-align: center;">Action</th>
+                    </tr>
+                  </thead>
+                  <tbody id="pos-line-items-tbody">
+                    <!-- Dynamic line items rendered by renderPosLineItems() -->
+                  </tbody>
+                </table>
+              </div>
             </div>
 
-            <div class="portal-form-grid-3">
-              <div class="portal-field-group">
-                <label>Total Bill Amount</label>
-                <input type="text" id="pos-total-display" class="portal-input tabular" readonly style="background: #F8FAFC; font-weight: 800; font-size: 1.1rem; color: #0284C7;">
+            <!-- 4. LIVE INVENTORY IMPACT PREVIEW & WARNING -->
+            <div id="pos-inventory-alert-box" style="background: #F0FDF4; border: 1px solid #BBF7D0; border-radius: var(--radius-sm); padding: 12px 16px; margin-bottom: 18px; font-size: 0.84rem; color: #166534;">
+              <strong>Live Inventory Deduction Preview:</strong>
+              <div id="pos-stock-preview-text" style="margin-top: 4px;">Select wholesale petis above to preview warehouse stock deduction.</div>
+            </div>
+
+            <!-- 5. FINANCIAL CALCULATIONS & PAYMENT METHOD -->
+            <div style="background: #F8FAFC; border: 1px solid var(--border-light); border-radius: var(--radius-sm); padding: 16px; margin-bottom: 20px;">
+              <div class="portal-form-grid-3">
+                <div class="portal-field-group">
+                  <label>Gross Peti Subtotal</label>
+                  <input type="text" id="pos-subtotal-display" class="portal-input tabular" readonly style="background: #FFFFFF; font-weight: 700; font-size: 1rem;">
+                </div>
+                <div class="portal-field-group">
+                  <label for="pos-discount-input">Wholesale Discount ₹</label>
+                  <input type="number" id="pos-discount-input" class="portal-input tabular" value="0" min="0" oninput="updatePosCalculations()">
+                </div>
+                <div class="portal-field-group">
+                  <label>Mandi Tax / Cess</label>
+                  <input type="text" id="pos-tax-display" class="portal-input tabular" readonly value="₹0 (Tax Included)" style="background: #FFFFFF; font-size: 0.88rem; color: var(--text-muted);">
+                </div>
               </div>
-              <div class="portal-field-group">
-                <label for="pos-paid-input">Cash / UPI Amount Received ₹</label>
-                <input type="number" id="pos-paid-input" class="portal-input tabular" value="0" min="0" oninput="updatePosCalculations()" required>
+
+              <div class="portal-form-grid-3" style="margin-top: 12px;">
+                <div class="portal-field-group">
+                  <label>Final Net Bill Total</label>
+                  <input type="text" id="pos-total-display" class="portal-input tabular" readonly style="background: #EFF6FF; font-weight: 900; font-size: 1.25rem; color: #0284C7; border-color: #BAE6FD;">
+                </div>
+                <div class="portal-field-group">
+                  <label for="pos-payment-method">Payment Mode *</label>
+                  <select id="pos-payment-method" class="portal-select" onchange="handlePosPaymentMethodChange(this.value)">
+                    <option value="Cash" selected>Cash Payment</option>
+                    <option value="UPI">UPI / QR Code</option>
+                    <option value="Split">Split Payment (Cash + UPI)</option>
+                    <option value="Khata Credit">Full Khata Credit (Udhar)</option>
+                  </select>
+                </div>
+                <div class="portal-field-group">
+                  <label for="pos-paid-input">Total Amount Received ₹</label>
+                  <input type="number" id="pos-paid-input" class="portal-input tabular" value="0" min="0" oninput="handlePosPaidInputChange()" required>
+                  <div style="display: flex; gap: 4px; margin-top: 6px; flex-wrap: wrap;">
+                    <button type="button" class="pos-amount-btn" onclick="setPosPaidPreset('full')">Full Paid</button>
+                    <button type="button" class="pos-amount-btn" onclick="setPosPaidPreset(500)">₹500</button>
+                    <button type="button" class="pos-amount-btn" onclick="setPosPaidPreset(1000)">₹1,000</button>
+                    <button type="button" class="pos-amount-btn" onclick="setPosPaidPreset(2000)">₹2,000</button>
+                    <button type="button" class="pos-amount-btn" onclick="setPosPaidPreset(5000)">₹5,000</button>
+                  </div>
+                </div>
               </div>
-              <div class="portal-field-group">
-                <label>Unpaid Balance (Goes to Udhar Khata)</label>
-                <input type="text" id="pos-balance-display" class="portal-input tabular" readonly style="background: #FEF2F2; font-weight: 800; font-size: 1.1rem; color: #DC2626;">
+
+              <!-- SPLIT PAYMENT ROW (CONDITIONAL) -->
+              <div id="pos-split-payment-row" class="portal-form-grid-2" style="display: none; margin-top: 12px; background: #FFFFFF; border: 1px solid var(--border-light); padding: 12px; border-radius: var(--radius-sm);">
+                <div class="portal-field-group">
+                  <label for="pos-split-cash-input">Cash Portion ₹</label>
+                  <input type="number" id="pos-split-cash-input" class="portal-input tabular" value="0" min="0" oninput="updatePosSplitCalculations()">
+                </div>
+                <div class="portal-field-group">
+                  <label for="pos-split-upi-input">UPI Portion ₹</label>
+                  <input type="number" id="pos-split-upi-input" class="portal-input tabular" value="0" min="0" oninput="updatePosSplitCalculations()">
+                </div>
+              </div>
+
+              <div class="portal-form-grid-2" style="margin-top: 12px;">
+                <div class="portal-field-group">
+                  <label>Unpaid Balance (Posted to Udhar Khata)</label>
+                  <input type="text" id="pos-balance-display" class="portal-input tabular" readonly style="background: #FEF2F2; font-weight: 800; font-size: 1.1rem; color: #DC2626;">
+                </div>
+                <div class="portal-field-group" id="pos-due-date-group" style="display: none;">
+                  <label for="pos-due-date-input">Promise Due Date for Pending Payment *</label>
+                  <input type="date" id="pos-due-date-input" class="portal-input">
+                </div>
+              </div>
+
+              <div class="portal-field-group" style="margin-top: 12px;">
+                <label for="pos-notes-input">Counter Memo / Vehicle No. / Bilty Note</label>
+                <input type="text" id="pos-notes-input" class="portal-input" placeholder="e.g. Handover to shop tempo / Counter pickup">
               </div>
             </div>
 
-            <div class="portal-field-group" id="pos-due-date-group" style="display: none;">
-              <label for="pos-due-date-input">Promise Due Date for Pending Payment</label>
-              <input type="date" id="pos-due-date-input" class="portal-input">
+            <!-- SUBMIT BUTTON BAR -->
+            <div style="display: flex; justify-content: flex-end; gap: 12px; align-items: center;">
+              <button type="button" class="btn-portal-outline" onclick="resetPosForm()">Cancel</button>
+              <button type="submit" id="pos-submit-btn" class="btn-portal-success" style="padding: 12px 28px; font-size: 0.98rem; font-weight: 800;">
+                <span id="pos-submit-btn-text">Submit POS Sale &amp; Deduct Inventory</span>
+              </button>
             </div>
-
-            <button type="submit" class="btn-portal-success" style="padding: 12px 24px; font-size: 0.95rem;">
-              <span>Submit Case Sell &amp; Deduct Inventory</span>
-            </button>
           </form>
         </div>
 
@@ -3148,20 +3383,58 @@
           <div class="portal-card-header" style="flex-wrap: wrap; gap: 12px;">
             <div>
               <h2>Manual Sale History (Counter POS Ledger)</h2>
-              <p>Complete history of all manual counter sales, boxes sold, cash/UPI collected, and Udhar balance.</p>
+              <p>Complete audited log of offline manual sales, inventory movements, collected cash/UPI, and Udhar balances.</p>
             </div>
             <div style="display: flex; align-items: center; gap: 8px; flex-wrap: wrap;">
               <button type="button" class="btn-tbl-action active" id="pos-filter-all" onclick="setPosHistoryFilter('all', this)">All Sales</button>
+              <button type="button" class="btn-tbl-action" id="pos-filter-completed" onclick="setPosHistoryFilter('completed', this)">Completed</button>
               <button type="button" class="btn-tbl-action" id="pos-filter-paid" onclick="setPosHistoryFilter('paid', this)">Full Paid</button>
               <button type="button" class="btn-tbl-action" id="pos-filter-due" onclick="setPosHistoryFilter('due', this)">Pending Udhar</button>
-              <button type="button" class="btn-tbl-action" id="pos-filter-today" onclick="setPosHistoryFilter('today', this)">Today Only</button>
+              <button type="button" class="btn-tbl-action" id="pos-filter-refunded" onclick="setPosHistoryFilter('refunded', this)">Refunded</button>
+              <button type="button" class="btn-tbl-action" onclick="exportPosSalesCSV()" style="font-weight: 700; border-color: #0284C7; color: #0284C7;">Export CSV</button>
             </div>
+          </div>
+
+          <!-- DATE RANGE PRESETS BAR -->
+          <div style="display: flex; align-items: center; justify-content: space-between; background: #F8FAFC; border: 1px solid var(--border-light); padding: 8px 14px; border-radius: var(--radius-sm); margin-bottom: 16px; flex-wrap: wrap; gap: 10px;">
+            <div style="display: flex; align-items: center; gap: 6px; flex-wrap: wrap;">
+              <span style="font-size: 0.78rem; font-weight: 800; text-transform: uppercase; color: var(--text-muted); margin-right: 4px;">Date Range:</span>
+              <button type="button" class="btn-tbl-action active" id="pos-date-all" onclick="setPosDateFilter('all', this)">All Time</button>
+              <button type="button" class="btn-tbl-action" id="pos-date-today" onclick="setPosDateFilter('today', this)">Today</button>
+              <button type="button" class="btn-tbl-action" id="pos-date-7d" onclick="setPosDateFilter('7d', this)">7 Days</button>
+              <button type="button" class="btn-tbl-action" id="pos-date-30d" onclick="setPosDateFilter('30d', this)">30 Days</button>
+              <button type="button" class="btn-tbl-action" id="pos-date-custom" onclick="togglePosCustomDate(this)">Custom</button>
+            </div>
+
+            <div style="display: flex; align-items: center; gap: 8px;">
+              <label for="pos-filter-method-select" style="font-size: 0.78rem; font-weight: 800; text-transform: uppercase; color: var(--text-muted);">Payment:</label>
+              <select id="pos-filter-method-select" class="portal-select" style="padding: 4px 10px; font-size: 0.8rem; width: auto;" onchange="handlePosMethodFilterChange(this.value)">
+                <option value="all">All Payment Modes</option>
+                <option value="cash">Cash Only</option>
+                <option value="upi">UPI Only</option>
+                <option value="split">Split (Cash+UPI)</option>
+                <option value="khata credit">Khata Credit</option>
+              </select>
+            </div>
+          </div>
+
+          <!-- CUSTOM DATE PICKER ROW (CONDITIONAL) -->
+          <div id="pos-custom-date-row" style="display: none; align-items: center; gap: 12px; background: #FFFFFF; border: 1px solid var(--border-light); padding: 10px 14px; border-radius: var(--radius-sm); margin-bottom: 16px; flex-wrap: wrap;">
+            <div style="display: flex; align-items: center; gap: 6px;">
+              <label style="font-size: 0.8rem; font-weight: 700;">From:</label>
+              <input type="date" id="pos-custom-date-from" class="portal-input" style="padding: 4px 8px; font-size: 0.82rem;">
+            </div>
+            <div style="display: flex; align-items: center; gap: 6px;">
+              <label style="font-size: 0.8rem; font-weight: 700;">To:</label>
+              <input type="date" id="pos-custom-date-to" class="portal-input" style="padding: 4px 8px; font-size: 0.82rem;">
+            </div>
+            <button type="button" class="btn-portal-primary" onclick="applyPosCustomDateFilter()" style="padding: 5px 14px; font-size: 0.82rem;">Apply</button>
           </div>
 
           <!-- KPI SUMMARY ROW FOR MANUAL SALES -->
           <div style="display: grid; grid-template-columns: repeat(auto-fit, minmax(160px, 1fr)); gap: 12px; margin-bottom: 18px;">
             <div style="background: #F8FAFC; border: 1px solid var(--border-subtle); border-radius: var(--radius-sm); padding: 12px 14px;">
-              <span style="display: block; font-size: 0.74rem; font-weight: 700; text-transform: uppercase; color: var(--text-muted); margin-bottom: 4px;">Total Manual Sales</span>
+              <span style="display: block; font-size: 0.74rem; font-weight: 700; text-transform: uppercase; color: var(--text-muted); margin-bottom: 4px;">Total POS Sales</span>
               <strong id="pos-hist-count" class="tabular" style="font-size: 1.2rem; color: #0F172A;">0 Sales</strong>
             </div>
             <div style="background: #F0F9FF; border: 1px solid #BAE6FD; border-radius: var(--radius-sm); padding: 12px 14px;">
@@ -3184,7 +3457,7 @@
 
           <!-- SEARCH BAR -->
           <div style="margin-bottom: 16px;">
-            <input type="text" id="pos-history-search" class="portal-input" placeholder="Search manual sales by Sale ID (CS-...), Customer Name, Mobile Phone, or Product Name..." oninput="renderPosHistoryTable()">
+            <input type="text" id="pos-history-search" class="portal-input" placeholder="Search manual sales by Sale ID (CS-...), Customer Name, Mobile Phone, Product, or Operator..." oninput="handlePosSearchInput()">
           </div>
 
           <!-- MANUAL SALES HISTORY TABLE -->
@@ -3194,16 +3467,17 @@
                 <tr>
                   <th>Sale ID &amp; Date</th>
                   <th>Customer &amp; Phone</th>
-                  <th>Product &amp; Boxes Sold</th>
+                  <th>Products &amp; Boxes Sold</th>
                   <th>Total Bill ₹</th>
-                  <th>Paid (Cash/UPI) ₹</th>
+                  <th>Paid Amount ₹</th>
                   <th>Udhar Balance ₹</th>
+                  <th>Status</th>
                   <th>Actions</th>
                 </tr>
               </thead>
               <tbody id="pos-history-tbody">
                 <tr>
-                  <td colspan="7" style="text-align: center; padding: 24px; color: var(--text-muted);">Loading manual sales history...</td>
+                  <td colspan="8" style="text-align: center; padding: 24px; color: var(--text-muted);">Loading manual sales history...</td>
                 </tr>
               </tbody>
             </table>
@@ -5647,6 +5921,81 @@
     </div>
   </div>
 
+  <!-- 10E. POS PRINTABLE CASH RECEIPT MODAL -->
+  <div class="portal-modal-overlay" id="pos-receipt-modal">
+    <div class="portal-modal-card" style="max-width: 680px; width: 95%; max-height: 92vh; overflow-y: auto;">
+      <button type="button" class="modal-close-x" onclick="closeModal('pos-receipt-modal')">
+        <svg style="width:14px;height:14px;display:block;" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5"><line x1="18" y1="6" x2="6" y2="18"></line><line x1="6" y1="6" x2="18" y2="18"></line></svg>
+      </button>
+
+      <div id="pos-receipt-printable-body">
+        <!-- Rendered dynamically by renderPosReceiptModalContent() -->
+      </div>
+
+      <div style="margin-top: 20px; display: flex; justify-content: space-between; align-items: center; border-top: 1px solid var(--border-light); padding-top: 16px; flex-wrap: wrap; gap: 10px;">
+        <button type="button" class="btn-tbl-action success" id="pos-receipt-whatsapp-btn" onclick="sharePosReceiptModalWhatsApp()" style="padding: 9px 18px; font-size: 0.88rem;">
+          Send WhatsApp Receipt
+        </button>
+        <div style="display: flex; gap: 10px;">
+          <button type="button" class="btn-portal-outline" onclick="closeModal('pos-receipt-modal')">Close</button>
+          <button type="button" class="btn-portal-primary" onclick="printPosReceiptModalContent()" style="padding: 9px 20px; font-weight: 800;">
+            Print Receipt
+          </button>
+        </div>
+      </div>
+    </div>
+  </div>
+
+  <!-- 10F. POS SALE REFUND & RESTOCK MODAL -->
+  <div class="portal-modal-overlay" id="pos-refund-modal">
+    <div class="portal-modal-card" style="max-width: 520px; width: 95%;">
+      <button type="button" class="modal-close-x" onclick="closeModal('pos-refund-modal')">
+        <svg style="width:14px;height:14px;display:block;" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5"><line x1="18" y1="6" x2="6" y2="18"></line><line x1="6" y1="6" x2="18" y2="18"></line></svg>
+      </button>
+
+      <div style="text-align: center; margin-bottom: 16px;">
+        <div style="width: 48px; height: 48px; border-radius: 50%; background: #FEE2E2; color: #DC2626; display: inline-flex; align-items: center; justify-content: center; margin-bottom: 10px;">
+          <svg width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5"><path d="M3 6h18"></path><path d="M19 6v14a2 2 0 0 1-2 2H7a2 2 0 0 1-2-2V6m3 0V4a2 2 0 0 1 2-2h4a2 2 0 0 1 2 2v2"></path><line x1="10" y1="11" x2="10" y2="17"></line><line x1="14" y1="11" x2="14" y2="17"></line></svg>
+        </div>
+        <h3 style="font-family: var(--font-heading); font-size: 1.25rem; font-weight: 900; color: #0F172A; margin-bottom: 4px;">Refund &amp; Restock POS Sale</h3>
+        <p style="font-size: 0.84rem; color: var(--text-muted);" id="pos-refund-modal-subtitle">Sale #--</p>
+      </div>
+
+      <div style="background: #FFFBEB; border: 1px solid #FDE68A; border-radius: 6px; padding: 12px 14px; margin-bottom: 16px; font-size: 0.82rem; color: #92400E; line-height: 1.4;">
+        <strong>Stock Sync Impact:</strong>
+        <span id="pos-refund-restock-preview">All items will be restored to warehouse inventory atomically.</span>
+      </div>
+
+      <form onsubmit="handlePosRefundSubmit(event)">
+        <input type="hidden" id="pos-refund-sale-id">
+
+        <div class="portal-field-group" style="margin-bottom: 16px;">
+          <label for="pos-refund-reason-select">Mandatory Refund Reason *</label>
+          <select id="pos-refund-reason-select" class="portal-select" onchange="handlePosRefundReasonSelect(this)">
+            <option value="Customer returned undamaged cases">Customer returned undamaged cases</option>
+            <option value="Billing quantity mistake by operator">Billing quantity mistake by operator</option>
+            <option value="Customer changed mind before loading">Customer changed mind before loading</option>
+            <option value="Wrong product selected at counter">Wrong product selected at counter</option>
+            <option value="Payment transaction failure or dispute">Payment transaction failure or dispute</option>
+            <option value="other">Other reason (Enter below)</option>
+          </select>
+        </div>
+
+        <div class="portal-field-group" id="pos-refund-reason-custom-group" style="display: none; margin-bottom: 16px;">
+          <label for="pos-refund-reason-custom">Specify Detailed Reason *</label>
+          <input type="text" id="pos-refund-reason-custom" class="portal-input" placeholder="e.g. Broken seal discovered on unloading">
+        </div>
+
+        <div style="display: flex; justify-content: flex-end; gap: 10px;">
+          <button type="button" class="btn-portal-outline" onclick="closeModal('pos-refund-modal')">Cancel</button>
+          <button type="submit" class="btn-portal-danger" id="pos-refund-submit-btn" style="padding: 10px 20px; font-weight: 800; background: #DC2626; color: white;">
+            Confirm Refund &amp; Restore Stock
+          </button>
+        </div>
+      </form>
+    </div>
+  </div>
+
   <!-- TOAST NOTIFICATION -->
   <div class="portal-toast" id="portal-toast" onclick="this.classList.remove('show')" title="Tap to dismiss">
     <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" width="18" height="18"><polyline points="20 6 9 17 4 12"></polyline></svg>
@@ -8012,30 +8361,633 @@
     }
 
     // =========================================================
-    // 3. CASE SELL (POS)
+    // 3. CASE SELL (POS MANUAL CASH SALE & STOCK SYNC)
     // =========================================================
+    let posLineItems = [];
+    currentPosHistoryFilter = 'all';
+    let currentPosDateFilter = 'all';
+    let currentPosMethodFilter = 'all';
+    let posCustomDateStart = '';
+    let posCustomDateEnd = '';
+    let posSearchDebounceTimer = null;
+    let activePosReceiptSale = null;
+    let activePosRefundSale = null;
+
     function renderPosForm() {
-      const select = document.getElementById('pos-product-select');
-      if (!select) return;
+      // 1. Update Operator Badge
+      const opName = (currentOperator && currentOperator.name) ? currentOperator.name : 'Mahesh Kumar Saini (Super Admin)';
+      const opRole = (currentOperator && currentOperator.role) ? currentOperator.role : 'Super Admin';
+      const badgeEl = document.getElementById('pos-operator-badge');
+      if (badgeEl) badgeEl.textContent = `Operator: ${opName} (${opRole})`;
 
-      select.innerHTML = adminProducts.map(p => `
-        <option value="${p.id}" data-rate="${p.price}" data-stock="${p.stock}">
-          ${escapeHTML(p.title)} (Current Stock: ${p.stock} Boxes) • ₹${p.price}
-        </option>
-      `).join('');
+      // 2. Ensure fresh Idempotency Token
+      const tokenInput = document.getElementById('pos-idempotency-token');
+      if (tokenInput && !tokenInput.value) {
+        tokenInput.value = 'pos_' + Date.now() + '_' + Math.random().toString(36).substr(2, 9);
+      }
 
+      // 3. Render Quick Petis Chips
+      renderPosQuickChips();
+
+      // 4. Initialize Line Items if empty
+      if (!posLineItems || posLineItems.length === 0) {
+        const defaultProd = adminProducts.find(p => p.id === 'p1') || adminProducts[0];
+        if (defaultProd) {
+          posLineItems = [{
+            productId: defaultProd.id,
+            title: defaultProd.title,
+            qty: 4,
+            price: defaultProd.price
+          }];
+        }
+      }
+
+      // 5. Render Line Items & Totals
+      renderPosLineItems();
       updatePosCalculations();
+
+      // 6. Render History Table
       renderPosHistoryTable();
     }
 
+    function renderPosQuickChips() {
+      const container = document.getElementById('pos-quick-petis-container');
+      if (!container) return;
+
+      const popularSkus = ['p1', 'p2', 'p3', 'p8', 'p5', 'p4'];
+      const chips = [];
+
+      popularSkus.forEach(id => {
+        const prod = adminProducts.find(p => p.id === id);
+        if (prod) {
+          chips.push(`
+            <button type="button" class="pos-peti-chip" onclick="quickAddPosPeti('${prod.id}')" title="Click to add 1 Peti of ${escapeHTML(prod.title)}">
+              <span>+ ${escapeHTML(prod.title.split('(')[0].trim())}</span>
+              <strong style="color: #0284C7;">₹${prod.price}</strong>
+              <small style="color: ${prod.stock > 10 ? '#15803D' : (prod.stock > 0 ? '#B45309' : '#DC2626')}; font-size: 0.7rem;">(${prod.stock})</small>
+            </button>
+          `);
+        }
+      });
+
+      container.innerHTML = chips.join('');
+    }
+
+    function quickAddPosPeti(productId) {
+      const existing = posLineItems.find(it => it.productId === productId);
+      if (existing) {
+        existing.qty += 1;
+      } else {
+        const prod = adminProducts.find(p => p.id === productId);
+        if (!prod) return;
+        posLineItems.push({
+          productId: prod.id,
+          title: prod.title,
+          qty: 1,
+          price: prod.price
+        });
+      }
+      renderPosLineItems();
+      updatePosCalculations();
+      showToast('Added wholesale box to POS cart.');
+    }
+
+    function addPosLineItem() {
+      if (!adminProducts || adminProducts.length === 0) return;
+      const defaultProd = adminProducts[0];
+      posLineItems.push({
+        productId: defaultProd.id,
+        title: defaultProd.title,
+        qty: 1,
+        price: defaultProd.price
+      });
+      renderPosLineItems();
+      updatePosCalculations();
+    }
+
+    function removePosLineItem(idx) {
+      if (posLineItems.length <= 1) {
+        showToast('At least one product box must remain in the POS cart.');
+        return;
+      }
+      posLineItems.splice(idx, 1);
+      renderPosLineItems();
+      updatePosCalculations();
+    }
+
+    function onPosLineItemChange(idx, field, value) {
+      if (!posLineItems[idx]) return;
+      if (field === 'productId') {
+        const prod = adminProducts.find(p => p.id === value);
+        if (prod) {
+          posLineItems[idx].productId = prod.id;
+          posLineItems[idx].title = prod.title;
+          posLineItems[idx].price = prod.price;
+        }
+        renderPosLineItems();
+        updatePosCalculations();
+        return;
+      } else if (field === 'qty') {
+        posLineItems[idx].qty = Math.max(1, parseInt(value, 10) || 1);
+      } else if (field === 'price') {
+        posLineItems[idx].price = Math.max(0, parseFloat(value) || 0);
+      }
+      renderPosLineItems();
+      updatePosCalculations();
+    }
+
+    function stepPosLineItemQty(idx, delta) {
+      if (!posLineItems[idx]) return;
+      posLineItems[idx].qty = Math.max(1, (posLineItems[idx].qty || 1) + delta);
+      renderPosLineItems();
+      updatePosCalculations();
+    }
+
+    function renderPosLineItems() {
+      const tbody = document.getElementById('pos-line-items-tbody');
+      if (!tbody) return;
+
+      tbody.innerHTML = posLineItems.map((item, idx) => {
+        const prod = adminProducts.find(p => p.id === item.productId);
+        const currentStock = prod ? prod.stock : 0;
+        const lineTotal = (item.qty || 1) * (item.price || 0);
+
+        let stockBadge = `<span class="pos-stock-badge ok">In Stock: ${currentStock} Boxes</span>`;
+        if (currentStock <= 0) {
+          stockBadge = `<span class="pos-stock-badge out">Out of Stock (0)</span>`;
+        } else if (currentStock < item.qty) {
+          stockBadge = `<span class="pos-stock-badge out">Short: ${currentStock} Avail</span>`;
+        } else if (currentStock <= 10) {
+          stockBadge = `<span class="pos-stock-badge low">Low: ${currentStock} Left</span>`;
+        }
+
+        const optionsHtml = adminProducts.map(p => `
+          <option value="${p.id}" ${p.id === item.productId ? 'selected' : ''}>
+            ${escapeHTML(p.title)} (Stock: ${p.stock}) • ₹${p.price}
+          </option>
+        `).join('');
+
+        return `
+          <tr>
+            <td>
+              <select class="portal-select" style="padding: 6px 8px; font-size: 0.84rem;" onchange="onPosLineItemChange(${idx}, 'productId', this.value)">
+                ${optionsHtml}
+              </select>
+              ${prod && prod.spec ? `<div style="font-size: 0.72rem; color: var(--text-muted); margin-top: 3px;">${escapeHTML(prod.spec)}</div>` : ''}
+            </td>
+            <td>${stockBadge}</td>
+            <td>
+              <input type="number" class="portal-input tabular" style="padding: 6px 8px; font-size: 0.84rem;" value="${item.price}" min="0" oninput="onPosLineItemChange(${idx}, 'price', this.value)">
+            </td>
+            <td>
+              <div style="display: flex; align-items: center; gap: 4px;">
+                <button type="button" class="btn-portal-outline" style="padding: 3px 8px; font-size: 0.8rem;" onclick="stepPosLineItemQty(${idx}, -1)">-</button>
+                <input type="number" class="portal-input tabular" style="padding: 6px 8px; font-size: 0.84rem; text-align: center; width: 64px;" value="${item.qty}" min="1" oninput="onPosLineItemChange(${idx}, 'qty', this.value)">
+                <button type="button" class="btn-portal-outline" style="padding: 3px 8px; font-size: 0.8rem;" onclick="stepPosLineItemQty(${idx}, 1)">+</button>
+              </div>
+            </td>
+            <td style="text-align: right; font-weight: 800; font-size: 0.95rem; color: #0284C7;" class="tabular">
+              ₹${lineTotal.toLocaleString('en-IN')}
+            </td>
+            <td style="text-align: center;">
+              <button type="button" class="btn-tbl-action danger" style="padding: 4px 8px;" onclick="removePosLineItem(${idx})" title="Remove item" ${posLineItems.length <= 1 ? 'disabled style="opacity:0.4;"' : ''}>
+                <svg width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5"><polyline points="3 6 5 6 21 6"></polyline><path d="M19 6v14a2 2 0 0 1-2 2H7a2 2 0 0 1-2-2V6m3 0V4a2 2 0 0 1 2-2h4a2 2 0 0 1 2 2v2"></path></svg>
+              </button>
+            </td>
+          </tr>
+        `;
+      }).join('');
+    }
+
+    function updatePosCalculations() {
+      let subtotal = 0;
+      let totalBoxes = 0;
+      let hasInsufficientStock = false;
+      const previewLines = [];
+
+      for (const it of posLineItems) {
+        const prod = adminProducts.find(p => p.id === it.productId);
+        const qty = Number(it.qty || 1);
+        const price = Number(it.price || 0);
+        subtotal += (qty * price);
+        totalBoxes += qty;
+
+        const currentStock = prod ? prod.stock : 0;
+        const remaining = currentStock - qty;
+
+        if (remaining < 0) {
+          hasInsufficientStock = true;
+          previewLines.push(`<span style="color: #DC2626; font-weight: 800;">"${it.title}": Only ${currentStock} in stock (Short by ${Math.abs(remaining)} boxes)</span>`);
+        } else {
+          previewLines.push(`"${it.title}": ${currentStock} &rarr; <strong style="color: #15803D;">${remaining}</strong> remaining`);
+        }
+      }
+
+      const discInput = document.getElementById('pos-discount-input');
+      const discount = discInput ? (parseFloat(discInput.value) || 0) : 0;
+      const netTotal = Math.max(0, subtotal - discount);
+
+      const subDisplay = document.getElementById('pos-subtotal-display');
+      if (subDisplay) subDisplay.value = `₹${subtotal.toLocaleString('en-IN')}`;
+
+      const totalDisplay = document.getElementById('pos-total-display');
+      if (totalDisplay) totalDisplay.value = `₹${netTotal.toLocaleString('en-IN')}`;
+
+      // Payment method & paid input calculations
+      const methodSelect = document.getElementById('pos-payment-method');
+      const payMethod = methodSelect ? methodSelect.value : 'Cash';
+      const paidInput = document.getElementById('pos-paid-input');
+
+      if (payMethod === 'Khata Credit') {
+        if (paidInput) paidInput.value = '0';
+      } else if (payMethod === 'Cash' || payMethod === 'UPI') {
+        if (paidInput && (!paidInput.value || parseFloat(paidInput.value) === 0 || paidInput.dataset.autoFilled === '1')) {
+          paidInput.value = netTotal;
+          paidInput.dataset.autoFilled = '1';
+        }
+      }
+
+      const paidVal = paidInput ? (parseFloat(paidInput.value) || 0) : 0;
+      const balance = Math.max(0, netTotal - paidVal);
+
+      const balDisplay = document.getElementById('pos-balance-display');
+      if (balDisplay) {
+        balDisplay.value = `₹${balance.toLocaleString('en-IN')}`;
+        balDisplay.style.color = balance > 0 ? '#DC2626' : '#15803D';
+        balDisplay.style.background = balance > 0 ? '#FEF2F2' : '#F0FDF4';
+      }
+
+      // Due date toggle
+      const dueGroup = document.getElementById('pos-due-date-group');
+      if (dueGroup) {
+        if (balance > 0) {
+          dueGroup.style.display = 'block';
+          const dueDateInput = document.getElementById('pos-due-date-input');
+          if (dueDateInput && !dueDateInput.value) {
+            const nextWeek = new Date();
+            nextWeek.setDate(nextWeek.getDate() + 7);
+            dueDateInput.value = nextWeek.toISOString().split('T')[0];
+          }
+        } else {
+          dueGroup.style.display = 'none';
+        }
+      }
+
+      // Live Inventory Preview & Prevention
+      const alertBox = document.getElementById('pos-inventory-alert-box');
+      const previewText = document.getElementById('pos-stock-preview-text');
+      const submitBtn = document.getElementById('pos-submit-btn');
+      const submitText = document.getElementById('pos-submit-btn-text');
+
+      if (previewText) {
+        previewText.innerHTML = previewLines.join(' • ');
+      }
+
+      if (hasInsufficientStock) {
+        if (alertBox) {
+          alertBox.style.background = '#FEF2F2';
+          alertBox.style.borderColor = '#FECACA';
+          alertBox.style.color = '#991B1B';
+        }
+        if (submitBtn) {
+          submitBtn.disabled = true;
+          submitBtn.style.opacity = '0.6';
+          submitBtn.style.cursor = 'not-allowed';
+        }
+        if (submitText) submitText.textContent = 'Cannot Submit: Insufficient Stock';
+      } else {
+        if (alertBox) {
+          alertBox.style.background = '#F0FDF4';
+          alertBox.style.borderColor = '#BBF7D0';
+          alertBox.style.color = '#166534';
+        }
+        if (submitBtn && submitBtn.dataset.submitting !== '1') {
+          submitBtn.disabled = false;
+          submitBtn.style.opacity = '1';
+          submitBtn.style.cursor = 'pointer';
+        }
+        if (submitText && submitBtn.dataset.submitting !== '1') {
+          submitText.textContent = `Submit POS Sale & Deduct ${totalBoxes} Boxes`;
+        }
+      }
+    }
+
+    function handlePosPaymentMethodChange(val) {
+      const splitRow = document.getElementById('pos-split-payment-row');
+      const paidInput = document.getElementById('pos-paid-input');
+      const totalDisplay = document.getElementById('pos-total-display');
+      const netTotal = parseFloat((totalDisplay ? totalDisplay.value : '0').replace(/[^\d.]/g, '')) || 0;
+
+      if (val === 'Split') {
+        if (splitRow) splitRow.style.display = 'grid';
+        const half = Math.round(netTotal / 2);
+        const cashEl = document.getElementById('pos-split-cash-input');
+        const upiEl = document.getElementById('pos-split-upi-input');
+        if (cashEl) cashEl.value = half;
+        if (upiEl) upiEl.value = netTotal - half;
+        if (paidInput) {
+          paidInput.value = netTotal;
+          paidInput.readOnly = true;
+        }
+      } else {
+        if (splitRow) splitRow.style.display = 'none';
+        if (paidInput) paidInput.readOnly = false;
+        if (val === 'Khata Credit') {
+          if (paidInput) paidInput.value = '0';
+        } else {
+          if (paidInput) paidInput.value = netTotal;
+        }
+      }
+      updatePosCalculations();
+    }
+
+    function handlePosPaidInputChange() {
+      const paidInput = document.getElementById('pos-paid-input');
+      if (paidInput) paidInput.dataset.autoFilled = '0';
+      updatePosCalculations();
+    }
+
+    function updatePosSplitCalculations() {
+      const cashVal = parseFloat(document.getElementById('pos-split-cash-input').value) || 0;
+      const upiVal = parseFloat(document.getElementById('pos-split-upi-input').value) || 0;
+      const paidInput = document.getElementById('pos-paid-input');
+      if (paidInput) {
+        paidInput.value = cashVal + upiVal;
+      }
+      updatePosCalculations();
+    }
+
+    function setPosPaidPreset(val) {
+      const paidInput = document.getElementById('pos-paid-input');
+      const totalDisplay = document.getElementById('pos-total-display');
+      const netTotal = parseFloat((totalDisplay ? totalDisplay.value : '0').replace(/[^\d.]/g, '')) || 0;
+
+      if (val === 'full') {
+        if (paidInput) paidInput.value = netTotal;
+      } else {
+        if (paidInput) paidInput.value = Number(val);
+      }
+      if (paidInput) paidInput.dataset.autoFilled = '0';
+      updatePosCalculations();
+    }
+
+    function lookupPosCustomerKhata(phone) {
+      const clean = (phone || '').replace(/\D/g, '');
+      const hintEl = document.getElementById('pos-cust-khata-hint');
+      if (!hintEl) return;
+
+      if (clean.length < 10) {
+        hintEl.style.display = 'none';
+        return;
+      }
+
+      // Check in adminKhata
+      const existingKhata = (adminKhata || []).filter(k => (k.phone || '').replace(/\D/g, '').endsWith(clean.slice(-10)) && !k.paid);
+      const totalDue = existingKhata.reduce((sum, k) => sum + (Number(k.remaining_amount || k.amount || 0)), 0);
+
+      // Check customer name auto-fill if empty
+      const nameInput = document.getElementById('pos-cust-name');
+      if (nameInput && !nameInput.value.trim()) {
+        const cust = (adminCustomers || []).find(c => (c.phone || '').replace(/\D/g, '').endsWith(clean.slice(-10)));
+        if (cust) nameInput.value = cust.name;
+      }
+
+      if (totalDue > 0) {
+        hintEl.style.display = 'block';
+        hintEl.innerHTML = `Known Party with Pending Udhar: <strong>₹${totalDue.toLocaleString('en-IN')}</strong> in Khata Ledger.`;
+      } else {
+        hintEl.style.display = 'none';
+      }
+    }
+
+    function resetPosForm() {
+      const form = document.getElementById('pos-sell-form');
+      if (form) form.reset();
+
+      const tokenInput = document.getElementById('pos-idempotency-token');
+      if (tokenInput) {
+        tokenInput.value = 'pos_' + Date.now() + '_' + Math.random().toString(36).substr(2, 9);
+      }
+
+      const defaultProd = adminProducts.find(p => p.id === 'p1') || adminProducts[0];
+      if (defaultProd) {
+        posLineItems = [{
+          productId: defaultProd.id,
+          title: defaultProd.title,
+          qty: 4,
+          price: defaultProd.price
+        }];
+      } else {
+        posLineItems = [];
+      }
+
+      const splitRow = document.getElementById('pos-split-payment-row');
+      if (splitRow) splitRow.style.display = 'none';
+
+      const hintEl = document.getElementById('pos-cust-khata-hint');
+      if (hintEl) hintEl.style.display = 'none';
+
+      renderPosLineItems();
+      updatePosCalculations();
+    }
+
+    async function handlePosSaleSubmit(e) {
+      e.preventDefault();
+
+      const custName = document.getElementById('pos-cust-name').value.trim();
+      const custPhone = document.getElementById('pos-cust-phone').value.trim();
+      const corridor = document.getElementById('pos-cust-corridor').value.trim() || 'Piprali Road Mandi';
+      const notes = document.getElementById('pos-notes-input').value.trim();
+      const payMethod = document.getElementById('pos-payment-method').value;
+      const idempotencyToken = document.getElementById('pos-idempotency-token').value;
+
+      if (!custName || !custPhone) {
+        showToast('Please enter Customer Name and Phone number.');
+        return;
+      }
+
+      if (!posLineItems || posLineItems.length === 0) {
+        showToast('Please add at least one wholesale peti item.');
+        return;
+      }
+
+      // Check stock availability
+      for (const it of posLineItems) {
+        const prod = adminProducts.find(p => p.id === it.productId);
+        const qty = Number(it.qty || 1);
+        if (qty <= 0) {
+          showToast(`Invalid quantity for ${it.title}. Must be greater than 0.`);
+          return;
+        }
+        if (prod && prod.stock < qty) {
+          showToast(`Insufficient stock for "${prod.title}". Requested: ${qty}, In Stock: ${prod.stock}.`);
+          return;
+        }
+      }
+
+      let subtotal = 0;
+      let totalBoxes = 0;
+      const formattedItems = posLineItems.map(it => {
+        const prod = adminProducts.find(p => p.id === it.productId);
+        const qty = Number(it.qty || 1);
+        const price = Number(it.price || 0);
+        const lineTotal = qty * price;
+        subtotal += lineTotal;
+        totalBoxes += qty;
+
+        return {
+          productId: it.productId,
+          id: it.productId,
+          title: prod ? prod.title : it.title,
+          spec: prod ? prod.spec : '',
+          quantity: qty,
+          qty: qty,
+          price: price,
+          rate: price,
+          total: lineTotal
+        };
+      });
+
+      const discInput = document.getElementById('pos-discount-input');
+      const discount = discInput ? (parseFloat(discInput.value) || 0) : 0;
+      const netTotal = Math.max(0, subtotal - discount);
+      const paidInput = document.getElementById('pos-paid-input');
+      const paidAmount = paidInput ? (parseFloat(paidInput.value) || 0) : 0;
+      const balance = Math.max(0, netTotal - paidAmount);
+      const dueDate = document.getElementById('pos-due-date-input').value || '';
+
+      const submitBtn = document.getElementById('pos-submit-btn');
+      const submitText = document.getElementById('pos-submit-btn-text');
+
+      if (submitBtn) {
+        submitBtn.disabled = true;
+        submitBtn.dataset.submitting = '1';
+      }
+      if (submitText) submitText.textContent = 'Processing Atomic Sale & Stock Sync...';
+
+      const actorName = currentOperator ? currentOperator.name : 'Admin';
+
+      try {
+        const payload = {
+          idempotencyToken,
+          customerName: custName,
+          customerPhone: custPhone,
+          corridor,
+          items: formattedItems,
+          subtotal,
+          discount,
+          totalAmount: netTotal,
+          amountReceived: paidAmount,
+          outstandingAmount: balance,
+          paymentMethod: payMethod,
+          saleDate: new Date().toISOString().split('T')[0],
+          dueDate: balance > 0 ? dueDate : null,
+          notes: notes ? `${notes} (Counter POS: ${totalBoxes} Boxes)` : `Counter POS: ${totalBoxes} Boxes (${corridor})`,
+          actor: actorName
+        };
+
+        const res = await sikarApi.post('/api/manual-sales', payload);
+        if (res && (res.success || res.saleId)) {
+          const saleId = res.saleId;
+          await syncFromBackend();
+          resetPosForm();
+          renderPosHistoryTable();
+          showToast(`POS Sale #${saleId} recorded! ${totalBoxes} boxes deducted atomically from warehouse inventory.`);
+
+          // Open Printable Thermal / A4 Receipt Modal immediately
+          openPosReceiptModal(saleId);
+          return;
+        } else {
+          throw new Error((res && res.error) || 'Failed to record POS sale');
+        }
+      } catch (err) {
+        console.error('POS Sale Submission Error:', err);
+        showToast('Error recording POS sale: ' + (err.message || 'Network error'));
+      } finally {
+        if (submitBtn) {
+          submitBtn.disabled = false;
+          submitBtn.dataset.submitting = '0';
+        }
+        if (submitText) submitText.textContent = 'Submit POS Sale & Deduct Inventory';
+        updatePosCalculations();
+      }
+    }
+
+    // =========================================================
+    // POS HISTORY TABLE, FILTERS & MODALS
+    // =========================================================
     function setPosHistoryFilter(filter, btnEl) {
       currentPosHistoryFilter = filter;
-      ['all', 'paid', 'due', 'today'].forEach(f => {
+      ['all', 'completed', 'paid', 'due', 'refunded'].forEach(f => {
         const b = document.getElementById('pos-filter-' + f);
         if (b) b.classList.toggle('active', f === filter);
       });
       if (btnEl) btnEl.classList.add('active');
       renderPosHistoryTable();
+    }
+
+    function setPosDateFilter(dateFilter, btnEl) {
+      currentPosDateFilter = dateFilter;
+      ['all', 'today', '7d', '30d', 'custom'].forEach(f => {
+        const b = document.getElementById('pos-date-' + f);
+        if (b) b.classList.toggle('active', f === dateFilter);
+      });
+      if (btnEl) btnEl.classList.add('active');
+
+      const customRow = document.getElementById('pos-custom-date-row');
+      if (customRow && dateFilter !== 'custom') {
+        customRow.style.display = 'none';
+      }
+
+      renderPosHistoryTable();
+    }
+
+    function togglePosCustomDate(btnEl) {
+      currentPosDateFilter = 'custom';
+      ['all', 'today', '7d', '30d', 'custom'].forEach(f => {
+        const b = document.getElementById('pos-date-' + f);
+        if (b) b.classList.toggle('active', f === 'custom');
+      });
+      if (btnEl) btnEl.classList.add('active');
+
+      const customRow = document.getElementById('pos-custom-date-row');
+      if (customRow) {
+        customRow.style.display = 'flex';
+        const today = new Date().toISOString().split('T')[0];
+        const past7 = new Date(Date.now() - 7 * 86400000).toISOString().split('T')[0];
+        const fromEl = document.getElementById('pos-custom-date-from');
+        const toEl = document.getElementById('pos-custom-date-to');
+        if (fromEl && !fromEl.value) fromEl.value = past7;
+        if (toEl && !toEl.value) toEl.value = today;
+      }
+    }
+
+    function applyPosCustomDateFilter() {
+      const fromEl = document.getElementById('pos-custom-date-from');
+      const toEl = document.getElementById('pos-custom-date-to');
+      if (!fromEl || !toEl || !fromEl.value || !toEl.value) {
+        showToast('Please select both From and To dates.');
+        return;
+      }
+      if (fromEl.value > toEl.value) {
+        showToast('From date cannot be later than To date.');
+        return;
+      }
+      posCustomDateStart = fromEl.value;
+      posCustomDateEnd = toEl.value;
+      renderPosHistoryTable();
+    }
+
+    function handlePosMethodFilterChange(method) {
+      currentPosMethodFilter = (method || 'all').toLowerCase();
+      renderPosHistoryTable();
+    }
+
+    function handlePosSearchInput() {
+      clearTimeout(posSearchDebounceTimer);
+      posSearchDebounceTimer = setTimeout(() => {
+        renderPosHistoryTable();
+      }, 150);
     }
 
     function renderPosHistoryTable() {
@@ -8044,21 +8996,26 @@
 
       const salesList = Array.isArray(adminManualSales) ? adminManualSales : [];
       const todayStr = new Date().toISOString().split('T')[0];
+      const sevenDaysAgoStr = new Date(Date.now() - 7 * 86400000).toISOString().split('T')[0];
+      const thirtyDaysAgoStr = new Date(Date.now() - 30 * 86400000).toISOString().split('T')[0];
 
-      // Calculate Overall KPIs for Manual Sales
-      let totalCount = salesList.length;
+      // Calculate Overall KPIs for Active (non-refunded) Manual Sales
+      let totalCount = 0;
       let totalBoxes = 0;
       let totalBillVal = 0;
       let totalPaidVal = 0;
       let totalBalanceVal = 0;
 
       salesList.forEach(s => {
-        const items = Array.isArray(s.items) ? s.items : [];
-        const boxes = items.reduce((sum, it) => sum + (Number(it.quantity || it.qty || 0)), 0) || Number(s.itemsCount || 1);
-        totalBoxes += boxes;
-        totalBillVal += Number(s.total_amount || s.total || 0);
-        totalPaidVal += Number(s.amount_received !== undefined ? s.amount_received : (s.total_amount || 0));
-        totalBalanceVal += Number(s.outstanding_amount || 0);
+        if (s.status !== 'refunded') {
+          totalCount++;
+          const items = Array.isArray(s.items) ? s.items : [];
+          const boxes = items.reduce((sum, it) => sum + (Number(it.quantity || it.qty || 0)), 0) || Number(s.itemsCount || 1);
+          totalBoxes += boxes;
+          totalBillVal += Number(s.total_amount || s.total || 0);
+          totalPaidVal += Number(s.amount_received !== undefined ? s.amount_received : (s.total_amount || 0));
+          totalBalanceVal += Number(s.outstanding_amount || 0);
+        }
       });
 
       const elCount = document.getElementById('pos-hist-count');
@@ -8073,18 +9030,41 @@
       if (elPaid) elPaid.textContent = `₹${totalPaidVal.toLocaleString('en-IN')}`;
       if (elBal) elBal.textContent = `₹${totalBalanceVal.toLocaleString('en-IN')}`;
 
-      // Filter by tab & search query
+      // Search & Filter
       const searchInput = document.getElementById('pos-history-search');
       const q = (searchInput ? searchInput.value : '').trim().toLowerCase();
 
       const filtered = salesList.filter(s => {
+        const isRefunded = s.status === 'refunded' || s.status === 'cancelled';
         const due = Number(s.outstanding_amount || 0);
         const sDate = (s.sale_date || (s.created_at ? s.created_at.split('T')[0] : '')).trim();
 
-        if (currentPosHistoryFilter === 'paid' && due > 0) return false;
-        if (currentPosHistoryFilter === 'due' && due <= 0) return false;
-        if (currentPosHistoryFilter === 'today' && sDate !== todayStr) return false;
+        // Status Filter
+        if (currentPosHistoryFilter === 'completed' && isRefunded) return false;
+        if (currentPosHistoryFilter === 'paid' && (due > 0 || isRefunded)) return false;
+        if (currentPosHistoryFilter === 'due' && (due <= 0 || isRefunded)) return false;
+        if (currentPosHistoryFilter === 'refunded' && !isRefunded) return false;
 
+        // Date Filter
+        if (currentPosDateFilter === 'today' && sDate !== todayStr) return false;
+        if (currentPosDateFilter === '7d' && sDate < sevenDaysAgoStr) return false;
+        if (currentPosDateFilter === '30d' && sDate < thirtyDaysAgoStr) return false;
+        if (currentPosDateFilter === 'custom') {
+          if (posCustomDateStart && sDate < posCustomDateStart) return false;
+          if (posCustomDateEnd && sDate > posCustomDateEnd) return false;
+        }
+
+        // Payment Method Filter
+        if (currentPosMethodFilter !== 'all') {
+          const sMethod = String(s.payment_method || 'cash').toLowerCase();
+          if (currentPosMethodFilter === 'khata credit') {
+            if (!sMethod.includes('khata') && !sMethod.includes('credit')) return false;
+          } else if (!sMethod.includes(currentPosMethodFilter)) {
+            return false;
+          }
+        }
+
+        // Query Filter
         if (q) {
           const itemsStr = (Array.isArray(s.items) ? s.items : []).map(it => `${it.title || ''}`).join(' ').toLowerCase();
           const match =
@@ -8092,17 +9072,19 @@
             String(s.customer_name || '').toLowerCase().includes(q) ||
             String(s.customer_phone || '').toLowerCase().includes(q) ||
             String(s.notes || '').toLowerCase().includes(q) ||
+            String(s.actor || '').toLowerCase().includes(q) ||
             itemsStr.includes(q);
           if (!match) return false;
         }
+
         return true;
       });
 
       if (filtered.length === 0) {
         tbody.innerHTML = `
           <tr>
-            <td colspan="7" style="text-align: center; padding: 28px; color: var(--text-muted); font-weight: 600;">
-              No manual sales found matching the current filter. Record a Counter Case Sell above to see it here immediately.
+            <td colspan="8" style="text-align: center; padding: 28px; color: var(--text-muted); font-weight: 600;">
+              No manual sales found matching current filters.
             </td>
           </tr>
         `;
@@ -8110,11 +9092,12 @@
       }
 
       tbody.innerHTML = filtered.map(s => {
+        const isRefunded = s.status === 'refunded' || s.status === 'cancelled';
         const items = Array.isArray(s.items) ? s.items : [];
         const boxes = items.reduce((sum, it) => sum + (Number(it.quantity || it.qty || 0)), 0) || 1;
         const itemLines = items.length > 0
-          ? items.map(it => `<strong>${Number(it.quantity || it.qty || 1)} Boxes</strong> × ${escapeHTML(it.title || 'Product')} <span style="color:var(--text-muted); font-size:0.76rem;">(@ ₹${Number(it.price || it.rate || 0)}/Box)</span>`).join('<br>')
-          : escapeHTML(s.notes || 'Counter Case Sale');
+          ? items.map(it => `<strong>${Number(it.quantity || it.qty || 1)} Boxes</strong> &times; ${escapeHTML(it.title || 'Product')} <span style="color:var(--text-muted); font-size:0.76rem;">(@ ₹${Number(it.price || it.rate || 0)})</span>`).join('<br>')
+          : escapeHTML(s.notes || 'Counter Wholesale Sale');
 
         const sDate = s.sale_date || (s.created_at ? s.created_at.split('T')[0] : todayStr);
         const sTime = s.created_at ? new Date(s.created_at).toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' }) : '';
@@ -8122,42 +9105,201 @@
         const paidAmt = Number(s.amount_received !== undefined ? s.amount_received : billAmt);
         const dueAmt = Number(s.outstanding_amount || 0);
         const payMethod = String(s.payment_method || 'Cash').toUpperCase();
+        const actorName = s.actor || 'Admin';
 
-        const dueBadge = dueAmt > 0
-          ? `<span style="display:inline-block; background:#FEF2F2; color:#DC2626; border:1px solid #FECACA; font-weight:800; font-size:0.78rem; padding:3px 8px; border-radius:999px;">₹${dueAmt.toLocaleString('en-IN')} Udhar</span>`
-          : `<span style="display:inline-block; background:#F0FDF4; color:#15803D; border:1px solid #BBF7D0; font-weight:800; font-size:0.78rem; padding:3px 8px; border-radius:999px;">Paid (₹0)</span>`;
+        let statusBadge = `<span class="badge-status completed">Completed</span>`;
+        if (isRefunded) {
+          statusBadge = `<span class="badge-status refunded" title="Refunded: ${escapeHTML(s.refund_reason || 'By Operator')}">Refunded</span>`;
+        }
+
+        let dueBadge = `<span style="display:inline-block; background:#F0FDF4; color:#15803D; border:1px solid #BBF7D0; font-weight:800; font-size:0.76rem; padding:2px 7px; border-radius:999px;">₹0 Due</span>`;
+        if (dueAmt > 0 && !isRefunded) {
+          dueBadge = `<span style="display:inline-block; background:#FEF2F2; color:#DC2626; border:1px solid #FECACA; font-weight:800; font-size:0.76rem; padding:2px 7px; border-radius:999px;">₹${dueAmt.toLocaleString('en-IN')} Udhar</span>`;
+        } else if (isRefunded) {
+          dueBadge = `<span style="color: var(--text-muted); font-size: 0.76rem;">Voided</span>`;
+        }
 
         return `
-          <tr>
+          <tr style="${isRefunded ? 'opacity: 0.72; background: #FFF5F5;' : ''}">
             <td>
               <strong style="color: #0284C7; font-family: monospace; font-size: 0.9rem;">${escapeHTML(s.id)}</strong>
-              <div style="font-size: 0.76rem; color: var(--text-muted); margin-top: 2px;">${escapeHTML(sDate)}${sTime ? ' • ' + escapeHTML(sTime) : ''}</div>
+              <div style="font-size: 0.76rem; color: var(--text-muted); margin-top: 2px;">${escapeHTML(sDate)}${sTime ? ' &bull; ' + escapeHTML(sTime) : ''}</div>
+              <div style="font-size: 0.7rem; color: #64748B;">By: ${escapeHTML(actorName)}</div>
             </td>
             <td>
               <strong style="color: #0F172A; cursor: pointer; text-decoration: underline;" onclick="openCustomerHistory('${escapeHTML(s.customer_id || s.customer_phone)}')" title="View Customer History">${escapeHTML(s.customer_name || 'Walk-in Party')}</strong>
               <div style="font-size: 0.78rem; color: #0369A1; font-weight: 700; margin-top: 2px;">${escapeHTML(s.customer_phone || '')}</div>
-              ${s.notes ? `<div style="font-size: 0.73rem; color: var(--text-muted); margin-top: 2px;">${escapeHTML(s.notes)}</div>` : ''}
+              ${s.notes ? `<div style="font-size: 0.72rem; color: var(--text-muted); margin-top: 2px;">${escapeHTML(s.notes)}</div>` : ''}
             </td>
             <td>
               <div style="font-size: 0.84rem; color: #0F172A; line-height: 1.4;">${itemLines}</div>
-              <span style="display:inline-block; margin-top:4px; background:#E0F2FE; color:#0369A1; font-size:0.72rem; font-weight:800; padding:1px 6px; border-radius:4px;">Total: ${boxes} Boxes Deducted</span>
+              <span style="display:inline-block; margin-top:4px; background:#E0F2FE; color:#0369A1; font-size:0.72rem; font-weight:800; padding:1px 6px; border-radius:4px;">${boxes} Boxes Deducted</span>
+              ${isRefunded && s.refund_reason ? `<div style="font-size: 0.73rem; color: #DC2626; margin-top: 3px;"><strong>Refund Reason:</strong> ${escapeHTML(s.refund_reason)}</div>` : ''}
             </td>
-            <td class="tabular"><strong style="font-size: 0.95rem; color: #0F172A;">₹${billAmt.toLocaleString('en-IN')}</strong></td>
+            <td class="tabular">
+              <strong style="font-size: 0.95rem; color: #0F172A;">₹${billAmt.toLocaleString('en-IN')}</strong>
+              ${s.discount > 0 ? `<div style="font-size:0.72rem; color:#15803D;">Disc: -₹${Number(s.discount).toLocaleString('en-IN')}</div>` : ''}
+            </td>
             <td class="tabular">
               <strong style="color: #15803D;">₹${paidAmt.toLocaleString('en-IN')}</strong>
               <div style="font-size: 0.72rem; color: var(--text-muted); font-weight: 700;">Via ${escapeHTML(payMethod)}</div>
             </td>
             <td class="tabular">${dueBadge}</td>
+            <td>${statusBadge}</td>
             <td>
               <div class="table-actions-row">
-                <button type="button" class="btn-tbl-action success" onclick="sendPosSaleWhatsApp('${escapeHTML(s.id)}')" title="Send WhatsApp Receipt">WhatsApp Slip</button>
-                <button type="button" class="btn-tbl-action" onclick="printPosSaleReceipt('${escapeHTML(s.id)}')" title="Print POS Receipt">Print</button>
+                <button type="button" class="btn-tbl-action" onclick="openPosReceiptModal('${escapeHTML(s.id)}')" title="View / Print Official Receipt">Receipt</button>
+                <button type="button" class="btn-tbl-action success" onclick="sendPosSaleWhatsApp('${escapeHTML(s.id)}')" title="Share Receipt on WhatsApp">WhatsApp</button>
                 <button type="button" class="btn-tbl-action" onclick="openCustomerHistory('${escapeHTML(s.customer_id || s.customer_phone)}')" title="Open Customer Ledger">Ledger</button>
+                ${!isRefunded ? `
+                  <button type="button" class="btn-tbl-action danger" onclick="openPosRefundModal('${escapeHTML(s.id)}')" title="Refund sale and restore boxes to inventory">Refund</button>
+                ` : ''}
               </div>
             </td>
           </tr>
         `;
       }).join('');
+    }
+
+    // =========================================================
+    // POS RECEIPT MODAL & PRINTING
+    // =========================================================
+    function openPosReceiptModal(saleId) {
+      const s = (adminManualSales || []).find(x => x.id === saleId);
+      if (!s) {
+        showToast('Sale record not found.');
+        return;
+      }
+      activePosReceiptSale = s;
+      renderPosReceiptModalContent(s);
+      openModal('pos-receipt-modal');
+    }
+
+    function renderPosReceiptModalContent(s) {
+      const bodyEl = document.getElementById('pos-receipt-printable-body');
+      if (!bodyEl) return;
+
+      const items = Array.isArray(s.items) ? s.items : [];
+      const billAmt = Number(s.total_amount || 0);
+      const subtotalAmt = Number(s.subtotal !== undefined ? s.subtotal : billAmt);
+      const discountAmt = Number(s.discount || 0);
+      const paidAmt = Number(s.amount_received !== undefined ? s.amount_received : billAmt);
+      const dueAmt = Number(s.outstanding_amount || 0);
+      const sDate = s.sale_date || (s.created_at ? s.created_at.split('T')[0] : new Date().toISOString().split('T')[0]);
+      const sTime = s.created_at ? new Date(s.created_at).toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' }) : '';
+      const actorName = s.actor || 'Admin';
+
+      bodyEl.innerHTML = `
+        <div style="font-family: Arial, sans-serif; color: #0F172A; padding: 10px;">
+          <!-- RECEIPT HEADER -->
+          <div style="display: flex; justify-content: space-between; align-items: flex-start; border-bottom: 2px solid #0284C7; padding-bottom: 12px; margin-bottom: 16px;">
+            <div>
+              <h2 style="font-family: var(--font-heading); font-size: 1.35rem; font-weight: 900; margin: 0; color: #0284C7;">SIKAR DROP WHOLESALE DEPOT</h2>
+              <div style="font-size: 0.78rem; font-weight: 800; color: #334155; margin-top: 2px;">DIRECT FACTORY WHOLESALE BEVERAGE SUPPLY</div>
+              <div style="font-size: 0.76rem; color: #64748B; margin-top: 2px;">Piprali &amp; Nawalgarh Road Junction, Sikar (Raj.) 332001</div>
+              <div style="font-size: 0.76rem; color: #64748B;">Mandi License: SKR-WHL-2024 • Helpline: +91 98290 00000</div>
+            </div>
+            <div style="text-align: right;">
+              <div style="font-size: 0.72rem; font-weight: 800; text-transform: uppercase; color: #64748B;">CASH MEMO / POS RECEIPT</div>
+              <div style="font-size: 1.2rem; font-weight: 900; color: #0284C7; font-family: monospace;">${escapeHTML(s.id)}</div>
+              <div style="font-size: 0.8rem; color: #334155; margin-top: 2px;">Date: <strong>${escapeHTML(sDate)}</strong></div>
+              ${sTime ? `<div style="font-size: 0.75rem; color: #64748B;">Time: ${escapeHTML(sTime)}</div>` : ''}
+              <div style="font-size: 0.74rem; color: #475569; margin-top: 2px;">Operator: <strong>${escapeHTML(actorName)}</strong></div>
+            </div>
+          </div>
+
+          <!-- BUYER & PARTY DETAILS -->
+          <div style="display: grid; grid-template-columns: 1fr 1fr; gap: 14px; background: #F8FAFC; border: 1px solid var(--border-light); padding: 12px; border-radius: 6px; margin-bottom: 16px; font-size: 0.84rem;">
+            <div>
+              <div style="font-size: 0.72rem; font-weight: 800; text-transform: uppercase; color: #64748B;">BILL TO (PARTY):</div>
+              <strong style="font-size: 0.95rem; color: #0F172A; display: block; margin-top: 2px;">${escapeHTML(s.customer_name || 'Counter Customer')}</strong>
+              <div style="color: #0369A1; font-weight: 700; margin-top: 2px;">Mobile: ${escapeHTML(s.customer_phone || 'N/A')}</div>
+            </div>
+            <div>
+              <div style="font-size: 0.72rem; font-weight: 800; text-transform: uppercase; color: #64748B;">STATION &amp; PAYMENT:</div>
+              <div style="color: #334155; margin-top: 2px;">Counter Station: Mandi Main Depot</div>
+              <div style="color: #334155;">Payment Mode: <strong>${escapeHTML(String(s.payment_method || 'Cash').toUpperCase())}</strong></div>
+              ${s.status === 'refunded' ? `<div style="color: #DC2626; font-weight: 800; margin-top: 2px;">STATUS: REFUNDED / RESTOCKED</div>` : ''}
+            </div>
+          </div>
+
+          <!-- LINE ITEMS TABLE -->
+          <table style="width: 100%; border-collapse: collapse; margin-bottom: 16px; font-size: 0.86rem;">
+            <thead>
+              <tr style="background: #F1F5F9; border-bottom: 2px solid #CBD5E1;">
+                <th style="padding: 8px 10px; text-align: left; font-size: 0.76rem; text-transform: uppercase; color: #475569;">Wholesale Product &amp; Peti Spec</th>
+                <th style="padding: 8px 10px; text-align: center; font-size: 0.76rem; text-transform: uppercase; color: #475569;">Boxes</th>
+                <th style="padding: 8px 10px; text-align: right; font-size: 0.76rem; text-transform: uppercase; color: #475569;">Rate/Box ₹</th>
+                <th style="padding: 8px 10px; text-align: right; font-size: 0.76rem; text-transform: uppercase; color: #475569;">Total ₹</th>
+              </tr>
+            </thead>
+            <tbody>
+              ${items.map(it => `
+                <tr style="border-bottom: 1px solid #E2E8F0;">
+                  <td style="padding: 8px 10px;">
+                    <strong>${escapeHTML(it.title || 'Product Box')}</strong>
+                    ${it.spec ? `<div style="font-size: 0.72rem; color: #64748B;">${escapeHTML(it.spec)}</div>` : ''}
+                  </td>
+                  <td style="padding: 8px 10px; text-align: center; font-weight: 700;">${Number(it.quantity || it.qty || 1)}</td>
+                  <td style="padding: 8px 10px; text-align: right;">₹${Number(it.price || it.rate || 0).toLocaleString('en-IN')}</td>
+                  <td style="padding: 8px 10px; text-align: right; font-weight: 800;">₹${Number(it.total || 0).toLocaleString('en-IN')}</td>
+                </tr>
+              `).join('')}
+            </tbody>
+          </table>
+
+          <!-- TOTALS BREAKDOWN -->
+          <div style="display: flex; justify-content: flex-end; margin-bottom: 16px;">
+            <div style="width: 280px; font-size: 0.88rem; line-height: 1.7;">
+              <div style="display: flex; justify-content: space-between;">
+                <span style="color: #64748B;">Gross Peti Subtotal:</span>
+                <strong>₹${subtotalAmt.toLocaleString('en-IN')}</strong>
+              </div>
+              ${discountAmt > 0 ? `
+                <div style="display: flex; justify-content: space-between; color: #15803D;">
+                  <span>Wholesale Discount:</span>
+                  <strong>-₹${discountAmt.toLocaleString('en-IN')}</strong>
+                </div>
+              ` : ''}
+              <div style="display: flex; justify-content: space-between; border-top: 2px solid #0F172A; padding-top: 6px; font-size: 1.05rem;">
+                <strong>Net Payable Total:</strong>
+                <strong style="color: #0284C7;">₹${billAmt.toLocaleString('en-IN')}</strong>
+              </div>
+              <div style="display: flex; justify-content: space-between; color: #15803D;">
+                <span>Amount Paid (${escapeHTML(String(s.payment_method || 'Cash').toUpperCase())}):</span>
+                <strong>₹${paidAmt.toLocaleString('en-IN')}</strong>
+              </div>
+              <div style="display: flex; justify-content: space-between; color: ${dueAmt > 0 ? '#DC2626' : '#15803D'}; font-weight: 800;">
+                <span>${dueAmt > 0 ? 'Pending Udhar Balance:' : 'Payment Balance Due:'}</span>
+                <span>₹${dueAmt.toLocaleString('en-IN')}</span>
+              </div>
+            </div>
+          </div>
+
+          <!-- FOOTER & OFFICIAL SEAL -->
+          <div style="border-top: 1px dashed var(--border-subtle); padding-top: 12px; display: flex; justify-content: space-between; align-items: flex-end; font-size: 0.74rem; color: #64748B;">
+            <div>
+              <strong>Depot Quality Guarantee:</strong><br>
+              100% Genuine factory-sealed branded petis only. We do not accept or refill 20L camper jars.<br>
+              Goods once unsealed at counter cannot be returned.
+            </div>
+            <div style="text-align: center; border: 1.5px solid #0284C7; padding: 6px 12px; border-radius: 6px; color: #0284C7; font-weight: 800;">
+              SIKAR DROP WHOLESALE<br>
+              [OFFICIAL COUNTER SEAL]
+            </div>
+          </div>
+        </div>
+      `;
+    }
+
+    function printPosReceiptModalContent() {
+      if (!activePosReceiptSale) return;
+      printPosSaleReceipt(activePosReceiptSale.id);
+    }
+
+    function sharePosReceiptModalWhatsApp() {
+      if (!activePosReceiptSale) return;
+      sendPosSaleWhatsApp(activePosReceiptSale.id);
     }
 
     function sendPosSaleWhatsApp(saleId) {
@@ -8166,25 +9308,26 @@
       const cleanPhone = String(s.customer_phone || '').replace(/\D/g, '');
       const targetPhone = cleanPhone.length >= 10 ? ('91' + cleanPhone.slice(-10)) : '9198290XXXXX';
       const items = Array.isArray(s.items) ? s.items : [];
-      const itemLines = items.map(it => `- ${it.quantity || it.qty || 1} Boxes x ${it.title} (@ Rs.${it.price || it.rate || 0}) = Rs.${it.total || 0}`).join('\n');
+      const itemLines = items.map(it => `- ${it.quantity || it.qty || 1} Boxes x ${it.title} (@ Rs.${it.price || it.rate || 0}) = Rs.${it.total || (Number(it.qty || 1) * Number(it.price || 0))}`).join('\n');
       const billAmt = Number(s.total_amount || 0);
       const paidAmt = Number(s.amount_received !== undefined ? s.amount_received : billAmt);
       const dueAmt = Number(s.outstanding_amount || 0);
 
       const msg = [
-        `*SIKAR DROP WHOLESALE DEPOT - POS RECEIPT*`,
+        `*SIKAR DROP WHOLESALE DEPOT - POS CASH MEMO*`,
         `Receipt No: *${s.id}*`,
         `Date: ${s.sale_date || new Date().toISOString().split('T')[0]}`,
-        `Customer: *${s.customer_name}* (${s.customer_phone})`,
+        `Buyer: *${s.customer_name}* (${s.customer_phone})`,
+        `Operator: ${s.actor || 'Admin'}`,
         `--------------------------------`,
-        `*Items Sold:*`,
+        `*Items Sold (Wholesale Cases):*`,
         itemLines || s.notes || 'Counter Case Sale',
         `--------------------------------`,
         `*Total Bill:* Rs.${billAmt.toLocaleString('en-IN')}`,
         `*Paid (${String(s.payment_method || 'Cash').toUpperCase()}):* Rs.${paidAmt.toLocaleString('en-IN')}`,
         dueAmt > 0 ? `*Pending Balance (Udhar Khata):* Rs.${dueAmt.toLocaleString('en-IN')}` : `*Payment Status:* FULL PAID (Rs.0 Due)`,
         `--------------------------------`,
-        `Thank you for purchasing from Sikar Drop Wholesale Hub!`
+        `Thank you for purchasing from Sikar Drop Wholesale Depot!`
       ].join('\n');
 
       window.open(`https://wa.me/${targetPhone}?text=${encodeURIComponent(msg)}`, '_blank', 'noopener');
@@ -8193,70 +9336,98 @@
     function printPosSaleReceipt(saleId) {
       const s = (adminManualSales || []).find(x => x.id === saleId);
       if (!s) return;
+
       const items = Array.isArray(s.items) ? s.items : [];
+      const billAmt = Number(s.total_amount || 0);
+      const subtotalAmt = Number(s.subtotal !== undefined ? s.subtotal : billAmt);
+      const discountAmt = Number(s.discount || 0);
+      const paidAmt = Number(s.amount_received !== undefined ? s.amount_received : billAmt);
+      const dueAmt = Number(s.outstanding_amount || 0);
+      const sDate = s.sale_date || (s.created_at ? s.created_at.split('T')[0] : '');
+      const sTime = s.created_at ? new Date(s.created_at).toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' }) : '';
+      const actorName = s.actor || 'Admin';
+
       const rowsHtml = items.map(it => `
         <tr>
-          <td style="padding:8px; border-bottom:1px solid #E2E8F0;">${escapeHTML(it.title || 'Product')}</td>
-          <td style="padding:8px; border-bottom:1px solid #E2E8F0; text-align:center;">${Number(it.quantity || it.qty || 1)} Boxes</td>
-          <td style="padding:8px; border-bottom:1px solid #E2E8F0; text-align:right;">₹${Number(it.price || it.rate || 0).toLocaleString('en-IN')}</td>
-          <td style="padding:8px; border-bottom:1px solid #E2E8F0; text-align:right; font-weight:700;">₹${Number(it.total || 0).toLocaleString('en-IN')}</td>
+          <td style="padding: 8px; border-bottom: 1px solid #E2E8F0;">
+            <strong>${escapeHTML(it.title || 'Product Box')}</strong>
+            ${it.spec ? `<div style="font-size: 11px; color: #64748B;">${escapeHTML(it.spec)}</div>` : ''}
+          </td>
+          <td style="padding: 8px; border-bottom: 1px solid #E2E8F0; text-align: center;">${Number(it.quantity || it.qty || 1)} Boxes</td>
+          <td style="padding: 8px; border-bottom: 1px solid #E2E8F0; text-align: right;">₹${Number(it.price || it.rate || 0).toLocaleString('en-IN')}</td>
+          <td style="padding: 8px; border-bottom: 1px solid #E2E8F0; text-align: right; font-weight: 700;">₹${Number(it.total || (Number(it.qty || 1) * Number(it.price || 0))).toLocaleString('en-IN')}</td>
         </tr>
       `).join('');
 
-      const billAmt = Number(s.total_amount || 0);
-      const paidAmt = Number(s.amount_received !== undefined ? s.amount_received : billAmt);
-      const dueAmt = Number(s.outstanding_amount || 0);
-
-      const w = window.open('', '_blank', 'width=720,height=680');
+      const w = window.open('', '_blank', 'width=740,height=720');
       if (!w) {
-        showToast('Pop-up blocked! Please allow pop-ups to print receipt.');
+        showToast('Pop-up blocked! Please allow pop-ups to print the receipt.');
         return;
       }
+
       w.document.write(`
         <!DOCTYPE html>
         <html>
         <head>
-          <title>POS Receipt ${escapeHTML(s.id)} - Sikar Drop</title>
+          <title>POS Receipt ${escapeHTML(s.id)} - Sikar Drop Wholesale Depot</title>
           <style>
-            body { font-family: Arial, sans-serif; color: #0F172A; padding: 28px; max-width: 640px; margin: 0 auto; }
-            .hdr { display: flex; justify-content: space-between; border-bottom: 2px solid #0284C7; padding-bottom: 14px; margin-bottom: 18px; }
-            table { width: 100%; border-collapse: collapse; margin: 16px 0; font-size: 14px; }
+            body { font-family: Arial, sans-serif; color: #0F172A; padding: 24px; max-width: 660px; margin: 0 auto; line-height: 1.4; }
+            .hdr { display: flex; justify-content: space-between; border-bottom: 2px solid #0284C7; padding-bottom: 12px; margin-bottom: 16px; }
+            table { width: 100%; border-collapse: collapse; margin: 14px 0; font-size: 13px; }
             th { background: #F1F5F9; padding: 8px; text-align: left; border-bottom: 2px solid #CBD5E1; }
-            .tot-box { margin-top: 16px; border-top: 2px solid #0F172A; padding-top: 12px; text-align: right; font-size: 15px; line-height: 1.7; }
+            .tot-box { margin-top: 14px; border-top: 2px solid #0F172A; padding-top: 10px; text-align: right; font-size: 14px; line-height: 1.6; }
+            @media print { body { padding: 0; } }
           </style>
         </head>
         <body>
           <div class="hdr">
             <div>
-              <h2 style="margin:0; color:#0284C7;">SIKAR DROP WHOLESALE HUB</h2>
-              <div style="font-size:12px; color:#475569; margin-top:4px;">Piprali & Nawalgarh Road Junction, Sikar (Raj.)</div>
+              <h2 style="margin: 0; color: #0284C7; font-size: 20px;">SIKAR DROP WHOLESALE DEPOT</h2>
+              <div style="font-size: 12px; color: #475569; margin-top: 3px;">Piprali & Nawalgarh Road Junction, Sikar (Raj.) 332001</div>
+              <div style="font-size: 11px; color: #64748B;">Mandi License: SKR-WHL-2024 • Helpline: +91 98290 00000</div>
             </div>
-            <div style="text-align:right;">
-              <strong style="font-size:16px;">COUNTER POS RECEIPT</strong>
-              <div style="font-size:13px; color:#0284C7; font-weight:700;">#${escapeHTML(s.id)}</div>
-              <div style="font-size:12px; color:#64748B;">Date: ${escapeHTML(s.sale_date || '')}</div>
+            <div style="text-align: right;">
+              <div style="font-size: 11px; font-weight: bold; color: #64748B;">COUNTER POS CASH MEMO</div>
+              <div style="font-size: 16px; color: #0284C7; font-weight: 900;">#${escapeHTML(s.id)}</div>
+              <div style="font-size: 12px; color: #334155;">Date: ${escapeHTML(sDate)}${sTime ? ' ' + escapeHTML(sTime) : ''}</div>
+              <div style="font-size: 11px; color: #64748B;">Operator: ${escapeHTML(actorName)}</div>
             </div>
           </div>
-          <div style="font-size:14px; margin-bottom:14px;">
-            <strong>Customer / Party:</strong> ${escapeHTML(s.customer_name)} (${escapeHTML(s.customer_phone)})<br>
-            ${s.notes ? `<strong>Note:</strong> ${escapeHTML(s.notes)}` : ''}
+
+          <div style="font-size: 13px; margin-bottom: 12px; background: #F8FAFC; border: 1px solid #E2E8F0; padding: 10px; border-radius: 4px;">
+            <strong>Buyer / Party:</strong> ${escapeHTML(s.customer_name)} (${escapeHTML(s.customer_phone)})<br>
+            <strong>Payment Mode:</strong> ${escapeHTML(String(s.payment_method || 'Cash').toUpperCase())}<br>
+            ${s.notes ? `<strong>Notes:</strong> ${escapeHTML(s.notes)}` : ''}
           </div>
+
           <table>
             <thead>
               <tr>
                 <th>Product Description</th>
-                <th style="text-align:center;">Qty (Boxes)</th>
-                <th style="text-align:right;">Rate/Box</th>
-                <th style="text-align:right;">Total</th>
+                <th style="text-align: center;">Boxes</th>
+                <th style="text-align: right;">Rate/Box</th>
+                <th style="text-align: right;">Line Total</th>
               </tr>
             </thead>
             <tbody>${rowsHtml}</tbody>
           </table>
+
           <div class="tot-box">
-            <div>Total Bill Amount: <strong>₹${billAmt.toLocaleString('en-IN')}</strong></div>
-            <div style="color:#15803D;">Paid (${escapeHTML(String(s.payment_method || 'Cash').toUpperCase())}): <strong>₹${paidAmt.toLocaleString('en-IN')}</strong></div>
-            <div style="color:${dueAmt > 0 ? '#DC2626' : '#15803D'};">Pending Udhar Balance: <strong>₹${dueAmt.toLocaleString('en-IN')}</strong></div>
+            <div>Subtotal: <strong>₹${subtotalAmt.toLocaleString('en-IN')}</strong></div>
+            ${discountAmt > 0 ? `<div style="color: #15803D;">Discount: <strong>-₹${discountAmt.toLocaleString('en-IN')}</strong></div>` : ''}
+            <div style="font-size: 16px;">Net Bill Amount: <strong>₹${billAmt.toLocaleString('en-IN')}</strong></div>
+            <div style="color: #15803D;">Amount Paid: <strong>₹${paidAmt.toLocaleString('en-IN')}</strong></div>
+            <div style="color: ${dueAmt > 0 ? '#DC2626' : '#15803D'}; font-weight: bold;">
+              ${dueAmt > 0 ? 'Pending Udhar Balance: ' : 'Balance Due: '}
+              <strong>₹${dueAmt.toLocaleString('en-IN')}</strong>
+            </div>
           </div>
+
+          <div style="border-top: 1px dashed #CBD5E1; padding-top: 10px; margin-top: 20px; font-size: 11px; color: #64748B; display: flex; justify-content: space-between;">
+            <div>100% Genuine factory-sealed bottles only. Zero camper jars policy.</div>
+            <div style="font-weight: bold; color: #0284C7;">Authorized Sikar Depot Seal</div>
+          </div>
+
           <script>window.onload = function() { window.print(); };<\/script>
         </body>
         </html>
@@ -8264,205 +9435,141 @@
       w.document.close();
     }
 
-    function updatePosCalculations() {
-      const select = document.getElementById('pos-product-select');
-      const rateInput = document.getElementById('pos-rate-input');
-      const qtyInput = document.getElementById('pos-qty-input');
-      const paidInput = document.getElementById('pos-paid-input');
-      const totalDisplay = document.getElementById('pos-total-display');
-      const balDisplay = document.getElementById('pos-balance-display');
-      const previewText = document.getElementById('pos-stock-preview-text');
-      const dueGroup = document.getElementById('pos-due-date-group');
+    // =========================================================
+    // POS REFUND / CANCELLATION WORKFLOW & STOCK RESTOCK
+    // =========================================================
+    function openPosRefundModal(saleId) {
+      const s = (adminManualSales || []).find(x => x.id === saleId);
+      if (!s) {
+        showToast('Sale not found.');
+        return;
+      }
+      activePosRefundSale = s;
 
-      if (!select || !select.selectedOptions[0]) return;
+      document.getElementById('pos-refund-sale-id').value = s.id;
+      document.getElementById('pos-refund-modal-subtitle').textContent = `Sale #${s.id} • ${s.customer_name} • ₹${Number(s.total_amount || 0).toLocaleString('en-IN')}`;
 
-      const opt = select.selectedOptions[0];
-      const defaultRate = parseFloat(opt.getAttribute('data-rate')) || 0;
-      const currentStock = parseInt(opt.getAttribute('data-stock'), 10) || 0;
+      const items = Array.isArray(s.items) ? s.items : [];
+      const restockList = items.map(it => `+${Number(it.quantity || it.qty || 1)} Boxes of "${escapeHTML(it.title || 'Product')}"`).join(', ');
 
-      if (!rateInput.value || parseFloat(rateInput.value) === 0) {
-        rateInput.value = defaultRate;
+      const previewEl = document.getElementById('pos-refund-restock-preview');
+      if (previewEl) {
+        previewEl.innerHTML = `Stock to be restored: <strong>${restockList || 'All sold boxes'}</strong> will be returned to live warehouse inventory atomically. Outstanding Udhar balance (if any) will be voided.`;
       }
 
-      const rate = parseFloat(rateInput.value) || 0;
-      const qty = parseInt(qtyInput.value, 10) || 0;
-      const total = qty * rate;
-      totalDisplay.value = `₹${total.toLocaleString('en-IN')}`;
+      const selectEl = document.getElementById('pos-refund-reason-select');
+      if (selectEl) selectEl.value = 'Customer returned undamaged cases';
 
-      const paid = parseFloat(paidInput.value) || 0;
-      const balance = Math.max(0, total - paid);
-      balDisplay.value = `₹${balance.toLocaleString('en-IN')}`;
+      const customGroup = document.getElementById('pos-refund-reason-custom-group');
+      if (customGroup) customGroup.style.display = 'none';
 
-      // Inventory prediction
-      const remaining = currentStock - qty;
-      if (remaining < 0) {
-        previewText.innerHTML = `<span style="color:#DC2626; font-weight:800;">Warning: Only ${currentStock} boxes in stock! Cannot fulfill ${qty} boxes without supplier purchase.</span>`;
-      } else {
-        previewText.innerHTML = `Stock before: <strong>${currentStock}</strong> boxes &rarr; Stock after sell: <strong style="color:#15803D;">${remaining}</strong> boxes remaining.`;
-      }
+      openModal('pos-refund-modal');
+    }
 
-      // Show due date if balance > 0
-      if (balance > 0) {
-        dueGroup.style.display = 'block';
-        if (!document.getElementById('pos-due-date-input').value) {
-          const nextWeek = new Date();
-          nextWeek.setDate(nextWeek.getDate() + 7);
-          document.getElementById('pos-due-date-input').value = nextWeek.toISOString().split('T')[0];
-        }
-      } else {
-        dueGroup.style.display = 'none';
+    function handlePosRefundReasonSelect(selectEl) {
+      const customGroup = document.getElementById('pos-refund-reason-custom-group');
+      if (customGroup) {
+        customGroup.style.display = selectEl.value === 'other' ? 'block' : 'none';
       }
     }
 
-    async function handlePosSaleSubmit(e) {
+    async function handlePosRefundSubmit(e) {
       e.preventDefault();
+      const saleId = document.getElementById('pos-refund-sale-id').value;
+      const selectEl = document.getElementById('pos-refund-reason-select');
+      let reason = selectEl ? selectEl.value : '';
 
-      const custName = document.getElementById('pos-cust-name').value.trim();
-      const custPhone = document.getElementById('pos-cust-phone').value.trim();
-      const corridor = document.getElementById('pos-cust-corridor').value.trim() || 'Piprali Road Mandi';
-      const select = document.getElementById('pos-product-select');
-      const opt = select.selectedOptions[0];
-      const prodId = opt.value;
-      const prod = adminProducts.find(p => p.id === prodId);
-
-      if (!prod) return;
-
-      const qty = parseInt(document.getElementById('pos-qty-input').value, 10) || 0;
-      const rate = parseFloat(document.getElementById('pos-rate-input').value) || prod.price;
-      const total = qty * rate;
-      const paid = parseFloat(document.getElementById('pos-paid-input').value) || 0;
-      const balance = Math.max(0, total - paid);
-      const dueDate = document.getElementById('pos-due-date-input').value || new Date().toISOString().split('T')[0];
-
-      if (prod.stock < qty) {
-        if (!confirm(`Warning: Only ${prod.stock} boxes are available in stock. Proceed anyway?`)) {
-          return;
-        }
+      if (reason === 'other') {
+        const customInput = document.getElementById('pos-refund-reason-custom');
+        reason = customInput ? customInput.value.trim() : '';
       }
 
-      const submitBtn = e.target.querySelector('button[type="submit"]');
+      if (!reason) {
+        showToast('Please provide a refund reason.');
+        return;
+      }
+
+      const submitBtn = document.getElementById('pos-refund-submit-btn');
       if (submitBtn) {
         submitBtn.disabled = true;
-        submitBtn.textContent = 'Recording Sale...';
+        submitBtn.textContent = 'Processing Atomic Refund...';
       }
 
-      const idempotencyToken = 'pos_' + Date.now() + '_' + Math.random().toString(36).substr(2, 9);
+      const actorName = currentOperator ? currentOperator.name : 'Admin';
 
       try {
-        const payload = {
-          customerName: custName,
-          customerPhone: custPhone,
-          corridor: corridor,
-          items: [{
-            productId: prodId,
-            title: prod.title,
-            quantity: qty,
-            price: rate,
-            total: total
-          }],
-          amountReceived: paid,
-          paymentMethod: 'cash',
-          dueDate: balance > 0 ? dueDate : null,
-          notes: `Counter POS: ${qty} Boxes ${prod.title} (${corridor})`,
-          idempotencyToken: idempotencyToken,
-          actor: currentOperator ? currentOperator.name : 'Admin'
-        };
+        const res = await sikarApi.post(`/api/manual-sales/${encodeURIComponent(saleId)}/refund`, {
+          reason: reason,
+          actor: actorName
+        });
 
-        const res = await sikarApi.post('/api/manual-sales', payload);
         if (res && res.success) {
+          closeModal('pos-refund-modal');
           await syncFromBackend();
-          document.getElementById('pos-sell-form').reset();
-          renderPosForm();
           renderPosHistoryTable();
-          showToast(`Sale #${res.saleId} recorded! ${qty} boxes deducted atomically & added to Manual Sale History.`);
-          return;
+          showToast(`POS Sale #${saleId} refunded successfully. ${res.restockedBoxes || ''} boxes returned to live warehouse stock.`);
+        } else {
+          throw new Error((res && res.error) || 'Refund failed');
         }
       } catch (err) {
-        console.warn('Backend manual sale failed, falling back locally', err);
+        console.error('POS Refund Error:', err);
+        showToast('Refund error: ' + (err.message || 'Server error'));
       } finally {
         if (submitBtn) {
           submitBtn.disabled = false;
-          submitBtn.textContent = 'Submit Case Sell & Deduct Inventory';
+          submitBtn.textContent = 'Confirm Refund & Restore Stock';
         }
       }
+    }
 
-      // 1. DEDUCT INVENTORY
-      prod.stock = Math.max(0, prod.stock - qty);
-      localStorage.setItem('sikar_admin_products', JSON.stringify(adminProducts));
-
-      // 2. RECORD LOCAL MANUAL SALE & ORDER
-      const saleId = `CS-${Math.floor(100000 + Math.random() * 900000)}`;
-      const localSale = {
-        id: saleId,
-        customer_name: custName,
-        customer_phone: custPhone,
-        items: [{ productId: prodId, title: prod.title, quantity: qty, price: rate, total: total }],
-        total_amount: total,
-        amount_received: paid,
-        outstanding_amount: balance,
-        payment_method: 'cash',
-        sale_date: new Date().toISOString().split('T')[0],
-        notes: `Counter POS: ${qty} Boxes ${prod.title} (${corridor})`,
-        created_at: new Date().toISOString()
-      };
-      adminManualSales.unshift(localSale);
-      localStorage.setItem('sikar_admin_manual_sales', JSON.stringify(adminManualSales));
-
-      const orderId = `POS-${Math.floor(1000 + Math.random() * 9000)}`;
-      const newOrder = {
-        id: orderId,
-        customer: custName,
-        phone: custPhone,
-        corridor: corridor,
-        itemsCount: qty,
-        itemsDesc: `${qty} Boxes ${prod.title}`,
-        total: total,
-        status: 'completed',
-        vehicle: 'RJ-23-GA-4821',
-        time: new Date().toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' })
-      };
-      adminOrders.unshift(newOrder);
-      localStorage.setItem('sikar_admin_orders', JSON.stringify(adminOrders));
-
-      // 3. LOG BALANCE TO UDHAR KHATA IF BALANCE > 0
-      if (balance > 0) {
-        const newKhata = {
-          id: `k-${Date.now()}`,
-          customer: custName,
-          phone: custPhone,
-          amount: balance,
-          dueDate: dueDate,
-          note: `Counter POS: ${qty} Boxes ${prod.title}`,
-          paid: false
-        };
-        adminKhata.unshift(newKhata);
-        localStorage.setItem('sikar_admin_khata', JSON.stringify(adminKhata));
+    // =========================================================
+    // EXPORT POS SALES CSV
+    // =========================================================
+    function exportPosSalesCSV() {
+      const salesList = Array.isArray(adminManualSales) ? adminManualSales : [];
+      if (salesList.length === 0) {
+        showToast('No manual sales to export.');
+        return;
       }
 
-      // 4. UPDATE OR ADD CUSTOMER
-      const existingCust = adminCustomers.find(c => c.phone.replace(/\s/g, '') === custPhone.replace(/\s/g, ''));
-      if (existingCust) {
-        existingCust.ordersCount = (existingCust.ordersCount || 1) + 1;
-        existingCust.lifetimeSpend = (existingCust.lifetimeSpend || 0) + total;
-        existingCust.lastOrder = new Date().toISOString().split('T')[0];
-      } else {
-        adminCustomers.unshift({
-          name: custName,
-          phone: custPhone,
-          corridor: corridor,
-          ordersCount: 1,
-          lifetimeSpend: total,
-          lastOrder: new Date().toISOString().split('T')[0]
-        });
-      }
-      localStorage.setItem('sikar_admin_customers', JSON.stringify(adminCustomers));
+      const headers = ['Sale ID', 'Date', 'Time', 'Customer Name', 'Phone', 'Products Sold', 'Total Boxes', 'Gross Subtotal', 'Discount', 'Net Bill Amount', 'Amount Paid', 'Balance Due', 'Payment Method', 'Status', 'Operator', 'Notes'];
 
-      // Reset Form & Update
-      document.getElementById('pos-sell-form').reset();
-      renderPosForm();
-      renderPosHistoryTable();
-      renderDashboard();
-      showToast(`Sale #${saleId} recorded! ${qty} boxes deducted from inventory.`);
+      const rows = salesList.map(s => {
+        const items = Array.isArray(s.items) ? s.items : [];
+        const boxes = items.reduce((sum, it) => sum + (Number(it.quantity || it.qty || 0)), 0) || 1;
+        const itemsText = items.map(it => `${it.quantity || it.qty || 1}x ${it.title} (@Rs.${it.price || it.rate || 0})`).join('; ');
+        const sDate = s.sale_date || (s.created_at ? s.created_at.split('T')[0] : '');
+        const sTime = s.created_at ? new Date(s.created_at).toLocaleTimeString() : '';
+
+        return [
+          s.id,
+          sDate,
+          sTime,
+          `"${(s.customer_name || '').replace(/"/g, '""')}"`,
+          `"${(s.customer_phone || '').replace(/"/g, '""')}"`,
+          `"${itemsText.replace(/"/g, '""')}"`,
+          boxes,
+          s.subtotal !== undefined ? s.subtotal : s.total_amount,
+          s.discount || 0,
+          s.total_amount || 0,
+          s.amount_received !== undefined ? s.amount_received : s.total_amount,
+          s.outstanding_amount || 0,
+          s.payment_method || 'Cash',
+          s.status || 'completed',
+          s.actor || 'Admin',
+          `"${(s.notes || '').replace(/"/g, '""')}"`
+        ].join(',');
+      });
+
+      const csvContent = 'data:text/csv;charset=utf-8,' + [headers.join(','), ...rows].join('\n');
+      const encodedUri = encodeURI(csvContent);
+      const link = document.createElement('a');
+      link.setAttribute('href', encodedUri);
+      link.setAttribute('download', `sikar_drop_pos_sales_${new Date().toISOString().split('T')[0]}.csv`);
+      document.body.appendChild(link);
+      link.click();
+      document.body.removeChild(link);
+      showToast('POS Sales Ledger exported as CSV.');
     }
 
     // =========================================================
