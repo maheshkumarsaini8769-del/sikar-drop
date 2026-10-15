@@ -9335,8 +9335,15 @@
             deliveryAddress: area + ' - ' + note,
             items: orderItemsPayload,
             couponCode: couponCodeUsed || null,
-            notes: note
+            notes: note,
+            attribution: window.SikarAnalytics && typeof window.SikarAnalytics.getAttributionPayload === 'function'
+              ? window.SikarAnalytics.getAttributionPayload()
+              : {}
           })
+        }).then(() => {
+          if (window.SikarAnalytics && typeof window.SikarAnalytics.trackPurchase === 'function') {
+            window.SikarAnalytics.trackPurchase(orderId, totalAmountNum);
+          }
         }).catch(err => console.warn('Backend order sync warning:', err));
       } catch (e) {
         console.warn('Backend order sync caught:', e);
@@ -10104,13 +10111,17 @@
         localStorage.setItem('sikar_admin_social_clicks', JSON.stringify(adminSocialClicks));
         updateAdminMetrics();
       }
-      try {
-        fetch('/api/analytics/track', {
-          method: 'POST',
-          headers: { 'Content-Type': 'application/json' },
-          body: JSON.stringify({ channel: platform, page: window.location.pathname })
-        }).catch(() => {});
-      } catch (e) {}
+      if (window.SikarAnalytics && typeof window.SikarAnalytics.trackOutboundClick === 'function') {
+        window.SikarAnalytics.trackOutboundClick(platform);
+      } else {
+        try {
+          fetch('/api/analytics/track', {
+            method: 'POST',
+            headers: { 'Content-Type': 'application/json' },
+            body: JSON.stringify({ actionType: 'click_button', platform: platform, sourcePage: window.location.pathname })
+          }).catch(() => {});
+        } catch (e) {}
+      }
     }
 
     // ==========================================
@@ -13368,5 +13379,7 @@
     </button>
   </nav>
 
+  <!-- STOREFRONT CLIENT ENGINE & ATTRIBUTION TRACKING -->
+  <script src="assets/site.js"></script>
 </body>
 </html>

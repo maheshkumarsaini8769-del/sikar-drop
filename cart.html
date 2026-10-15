@@ -670,7 +670,10 @@
           payment_status: payMethod === 'UPI' ? 'Paid' : 'Pending',
           notes: notes,
           couponCode: pageAppliedCoupon ? pageAppliedCoupon.code : null,
-          coupon_code: pageAppliedCoupon ? pageAppliedCoupon.code : null
+          coupon_code: pageAppliedCoupon ? pageAppliedCoupon.code : null,
+          attribution: window.SikarAnalytics && typeof window.SikarAnalytics.getAttributionPayload === 'function'
+            ? window.SikarAnalytics.getAttributionPayload()
+            : {}
         };
 
         const res = await fetch('/api/orders', {
@@ -685,6 +688,9 @@
         }
 
         const orderId = data.orderId || data.id || (data.order && data.order.orderId);
+        if (window.SikarAnalytics && typeof window.SikarAnalytics.trackPurchase === 'function') {
+          window.SikarAnalytics.trackPurchase(orderId, finalAmount);
+        }
 
         // Sync into local adminOrders cache if present
         try {

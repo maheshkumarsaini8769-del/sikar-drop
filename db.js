@@ -610,6 +610,105 @@ function initDatabase() {
     console.warn('Orders phone columns migration notice:', migErr.message);
   }
 
+  // Ensure UTM and attribution columns exist on orders table
+  try {
+    const orderCols = db.prepare("PRAGMA table_info(orders)").all().map(c => c.name);
+    const neededOrderCols = [
+      ['utm_source', "TEXT DEFAULT ''"],
+      ['utm_medium', "TEXT DEFAULT ''"],
+      ['utm_campaign', "TEXT DEFAULT ''"],
+      ['utm_content', "TEXT DEFAULT ''"],
+      ['utm_term', "TEXT DEFAULT ''"],
+      ['attribution_platform', "TEXT DEFAULT ''"],
+      ['session_id', "TEXT DEFAULT ''"]
+    ];
+    for (const [col, colType] of neededOrderCols) {
+      if (!orderCols.includes(col)) {
+        db.exec(`ALTER TABLE orders ADD COLUMN ${col} ${colType}`);
+      }
+    }
+    // Backfill historical orders with representative attribution if empty
+    db.prepare("UPDATE orders SET utm_source = 'instagram', utm_medium = 'stories', utm_campaign = 'wedding_season_2026', utm_content = 'wedding_pack_video', attribution_platform = 'instagram' WHERE id = 'SKR-8421' AND (utm_campaign IS NULL OR utm_campaign = '')").run();
+    db.prepare("UPDATE orders SET utm_source = 'facebook', utm_medium = 'feed', utm_campaign = 'diwali_bulk_mandi', utm_content = 'coke_crate_ad', attribution_platform = 'facebook' WHERE id = 'SKR-5539' AND (utm_campaign IS NULL OR utm_campaign = '')").run();
+    db.prepare("UPDATE orders SET utm_source = 'whatsapp', utm_medium = 'broadcast', utm_campaign = 'mandi_vip_broadcast', utm_content = 'whatsapp_catalog_link', attribution_platform = 'whatsapp' WHERE id = 'SKR-3204' AND (utm_campaign IS NULL OR utm_campaign = '')").run();
+    db.prepare("UPDATE orders SET utm_source = 'google', utm_medium = 'cpc', utm_campaign = 'sikar_water_search', utm_content = 'mineral_water_sikar', attribution_platform = 'google' WHERE id = 'SKR-7612' AND (utm_campaign IS NULL OR utm_campaign = '')").run();
+  } catch (err) {
+    console.warn('Orders attribution columns migration notice:', err.message);
+  }
+
+  // Ensure extended tracking columns exist on social_analytics table
+  try {
+    const socCols = db.prepare("PRAGMA table_info(social_analytics)").all().map(c => c.name);
+    const neededSocCols = [
+      ['session_id', "TEXT DEFAULT ''"],
+      ['visitor_id', "TEXT DEFAULT ''"],
+      ['utm_source', "TEXT DEFAULT ''"],
+      ['utm_medium', "TEXT DEFAULT ''"],
+      ['utm_campaign', "TEXT DEFAULT ''"],
+      ['utm_content', "TEXT DEFAULT ''"],
+      ['utm_term', "TEXT DEFAULT ''"],
+      ['referrer', "TEXT DEFAULT ''"],
+      ['order_id', "TEXT DEFAULT ''"],
+      ['order_value', "REAL DEFAULT 0.0"],
+      ['metadata_json', "TEXT DEFAULT '{}'"],
+      ['ip_hash', "TEXT DEFAULT ''"]
+    ];
+    for (const [col, colType] of neededSocCols) {
+      if (!socCols.includes(col)) {
+        db.exec(`ALTER TABLE social_analytics ADD COLUMN ${col} ${colType}`);
+      }
+    }
+
+    // Seed representative campaign funnel events if table has only legacy click records
+    const eventCount = db.prepare("SELECT COUNT(*) as c FROM social_analytics WHERE action_type != 'click_button'").get().c;
+    if (eventCount === 0) {
+      const nowIso = new Date().toISOString();
+      const sampleEvents = [
+        // Instagram Campaign: wedding_season_2026
+        { sid: 'sess_ig_101', vid: 'vis_ig_1', plat: 'instagram', src: 'instagram', med: 'stories', cmp: 'wedding_season_2026', cnt: 'wedding_pack_video', act: 'page_view', page: '/index.html', ord: '', val: 0 },
+        { sid: 'sess_ig_101', vid: 'vis_ig_1', plat: 'instagram', src: 'instagram', med: 'stories', cmp: 'wedding_season_2026', cnt: 'wedding_pack_video', act: 'product_view', page: '/products.html', ord: '', val: 0 },
+        { sid: 'sess_ig_101', vid: 'vis_ig_1', plat: 'instagram', src: 'instagram', med: 'stories', cmp: 'wedding_season_2026', cnt: 'wedding_pack_video', act: 'add_to_cart', page: '/products.html', ord: '', val: 0 },
+        { sid: 'sess_ig_101', vid: 'vis_ig_1', plat: 'instagram', src: 'instagram', med: 'stories', cmp: 'wedding_season_2026', cnt: 'wedding_pack_video', act: 'checkout_start', page: '/cart.html', ord: '', val: 0 },
+        { sid: 'sess_ig_101', vid: 'vis_ig_1', plat: 'instagram', src: 'instagram', med: 'stories', cmp: 'wedding_season_2026', cnt: 'wedding_pack_video', act: 'purchase_complete', page: '/cart.html', ord: 'SKR-8421', val: 23200 },
+
+        // Facebook Campaign: diwali_bulk_mandi
+        { sid: 'sess_fb_201', vid: 'vis_fb_1', plat: 'facebook', src: 'facebook', med: 'feed', cmp: 'diwali_bulk_mandi', cnt: 'coke_crate_ad', act: 'page_view', page: '/index.html', ord: '', val: 0 },
+        { sid: 'sess_fb_201', vid: 'vis_fb_1', plat: 'facebook', src: 'facebook', med: 'feed', cmp: 'diwali_bulk_mandi', cnt: 'coke_crate_ad', act: 'product_view', page: '/products.html', ord: '', val: 0 },
+        { sid: 'sess_fb_201', vid: 'vis_fb_1', plat: 'facebook', src: 'facebook', med: 'feed', cmp: 'diwali_bulk_mandi', cnt: 'coke_crate_ad', act: 'add_to_cart', page: '/products.html', ord: '', val: 0 },
+        { sid: 'sess_fb_201', vid: 'vis_fb_1', plat: 'facebook', src: 'facebook', med: 'feed', cmp: 'diwali_bulk_mandi', cnt: 'coke_crate_ad', act: 'checkout_start', page: '/cart.html', ord: '', val: 0 },
+        { sid: 'sess_fb_201', vid: 'vis_fb_1', plat: 'facebook', src: 'facebook', med: 'feed', cmp: 'diwali_bulk_mandi', cnt: 'coke_crate_ad', act: 'purchase_complete', page: '/cart.html', ord: 'SKR-5539', val: 8900 },
+
+        // WhatsApp Broadcast: mandi_vip_broadcast
+        { sid: 'sess_wa_301', vid: 'vis_wa_1', plat: 'whatsapp', src: 'whatsapp', med: 'broadcast', cmp: 'mandi_vip_broadcast', cnt: 'whatsapp_catalog_link', act: 'page_view', page: '/index.html', ord: '', val: 0 },
+        { sid: 'sess_wa_301', vid: 'vis_wa_1', plat: 'whatsapp', src: 'whatsapp', med: 'broadcast', cmp: 'mandi_vip_broadcast', cnt: 'whatsapp_catalog_link', act: 'product_view', page: '/products.html', ord: '', val: 0 },
+        { sid: 'sess_wa_301', vid: 'vis_wa_1', plat: 'whatsapp', src: 'whatsapp', med: 'broadcast', cmp: 'mandi_vip_broadcast', cnt: 'whatsapp_catalog_link', act: 'add_to_cart', page: '/products.html', ord: '', val: 0 },
+        { sid: 'sess_wa_301', vid: 'vis_wa_1', plat: 'whatsapp', src: 'whatsapp', med: 'broadcast', cmp: 'mandi_vip_broadcast', cnt: 'whatsapp_catalog_link', act: 'checkout_start', page: '/cart.html', ord: '', val: 0 },
+        { sid: 'sess_wa_301', vid: 'vis_wa_1', plat: 'whatsapp', src: 'whatsapp', med: 'broadcast', cmp: 'mandi_vip_broadcast', cnt: 'whatsapp_catalog_link', act: 'purchase_complete', page: '/cart.html', ord: 'SKR-3204', val: 10150 },
+
+        // Google CPC: sikar_water_search
+        { sid: 'sess_gg_401', vid: 'vis_gg_1', plat: 'google', src: 'google', med: 'cpc', cmp: 'sikar_water_search', cnt: 'mineral_water_sikar', act: 'page_view', page: '/index.html', ord: '', val: 0 },
+        { sid: 'sess_gg_401', vid: 'vis_gg_1', plat: 'google', src: 'google', med: 'cpc', cmp: 'sikar_water_search', cnt: 'mineral_water_sikar', act: 'product_view', page: '/products.html', ord: '', val: 0 },
+        { sid: 'sess_gg_401', vid: 'vis_gg_1', plat: 'google', src: 'google', med: 'cpc', cmp: 'sikar_water_search', cnt: 'mineral_water_sikar', act: 'add_to_cart', page: '/products.html', ord: '', val: 0 },
+        { sid: 'sess_gg_401', vid: 'vis_gg_1', plat: 'google', src: 'google', med: 'cpc', cmp: 'sikar_water_search', cnt: 'mineral_water_sikar', act: 'checkout_start', page: '/cart.html', ord: '', val: 0 },
+        { sid: 'sess_gg_401', vid: 'vis_gg_1', plat: 'google', src: 'google', med: 'cpc', cmp: 'sikar_water_search', cnt: 'mineral_water_sikar', act: 'purchase_complete', page: '/cart.html', ord: 'SKR-7612', val: 3600 },
+
+        // Direct organic sessions
+        { sid: 'sess_dir_501', vid: 'vis_dir_1', plat: 'direct', src: 'direct', med: 'organic', cmp: '', cnt: '', act: 'page_view', page: '/index.html', ord: '', val: 0 },
+        { sid: 'sess_dir_501', vid: 'vis_dir_1', plat: 'direct', src: 'direct', med: 'organic', cmp: '', cnt: '', act: 'product_view', page: '/products.html', ord: '', val: 0 }
+      ];
+
+      const insertStmt = db.prepare(`
+        INSERT INTO social_analytics (id, session_id, visitor_id, platform, source_page, action_type, utm_source, utm_medium, utm_campaign, utm_content, utm_term, order_id, order_value, metadata_json, created_at)
+        VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, '', ?, ?, '{}', ?)
+      `);
+      for (const ev of sampleEvents) {
+        insertStmt.run('EVT-' + Math.floor(100000 + Math.random() * 900000), ev.sid, ev.vid, ev.plat, ev.page, ev.act, ev.src, ev.med, ev.cmp, ev.cnt, ev.ord, ev.val, nowIso);
+      }
+    }
+  } catch (err) {
+    console.warn('Social analytics columns migration notice:', err.message);
+  }
+
   console.log('Database tables initialized successfully');
   seedDefaultData();
 }
@@ -1232,7 +1331,7 @@ function receivePurchaseTransaction({ purchaseId, actor = 'Admin' }) {
 }
 
 // 4. ATOMIC ORDER CREATION (ONLINE STOREFRONT)
-function createOnlineOrderTransaction({ orderId: customOrderId, customerName, customerPhone, loginPhone = '', deliveryPhone = '', addressPhone = '', corridor, address = '', deliveryAddress = '', items = [], subtotal, discount = 0, total, paymentMethod = 'COD', paymentStatus = '', notes = '' }) {
+function createOnlineOrderTransaction({ orderId: customOrderId, customerName, customerPhone, loginPhone = '', deliveryPhone = '', addressPhone = '', corridor, address = '', deliveryAddress = '', items = [], subtotal, discount = 0, total, paymentMethod = 'COD', paymentStatus = '', notes = '', attribution = {} }) {
   const runTx = db.transaction(() => {
     const orderId = customOrderId || ('SKR-' + Math.floor(1000 + Math.random() * 9000));
     const finalAddress = address || deliveryAddress || corridor || 'Sikar';
@@ -1240,6 +1339,16 @@ function createOnlineOrderTransaction({ orderId: customOrderId, customerName, cu
     const finalDeliveryPhone = String(deliveryPhone || addressPhone || customerPhone || finalLoginPhone).trim();
     const primaryPhone = finalLoginPhone || finalDeliveryPhone;
     const now = new Date().toISOString();
+
+    // Attribution parameters
+    const utmSource = String(attribution.utm_source || attribution.utmSource || '').trim().toLowerCase();
+    const utmMedium = String(attribution.utm_medium || attribution.utmMedium || '').trim().toLowerCase();
+    const utmCampaign = String(attribution.utm_campaign || attribution.utmCampaign || '').trim();
+    const utmContent = String(attribution.utm_content || attribution.utmContent || '').trim();
+    const utmTerm = String(attribution.utm_term || attribution.utmTerm || '').trim();
+    const attributionPlatform = String(attribution.platform || attribution.attributionPlatform || utmSource || 'direct').trim().toLowerCase();
+    const sessionId = String(attribution.sessionId || attribution.session_id || '').trim();
+    const visitorId = String(attribution.visitorId || attribution.visitor_id || '').trim();
 
     // Check stock for all items
     for (const item of items) {
@@ -1298,9 +1407,48 @@ function createOnlineOrderTransaction({ orderId: customOrderId, customerName, cu
     const finalPaymentStatus = paymentStatus || (paymentMethod === 'UPI' ? 'Paid' : 'Pending');
 
     db.prepare(`
-      INSERT INTO orders (id, customer_id, customer_name, customer_phone, login_phone, delivery_phone, corridor, delivery_address, items_json, items_count, subtotal, discount, total, payment_method, payment_status, status, vehicle, order_date, delivery_time, notes, activity_log_json, created_at, updated_at)
-      VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, 'pending', '', ?, 'Within 40 Mins', ?, ?, ?, ?)
-    `).run(orderId, custId, customerName, primaryPhone, finalLoginPhone, finalDeliveryPhone, corridor || 'Sikar', finalAddress, JSON.stringify(items), totalItemsCount, finalSubtotal, finalDiscount, finalTotal, paymentMethod, finalPaymentStatus, now.split('T')[0], notes, activityLog, now, now);
+      INSERT INTO orders (
+        id, customer_id, customer_name, customer_phone, login_phone, delivery_phone,
+        corridor, delivery_address, items_json, items_count, subtotal, discount, total,
+        payment_method, payment_status, status, vehicle, order_date, delivery_time,
+        notes, activity_log_json, created_at, updated_at,
+        utm_source, utm_medium, utm_campaign, utm_content, utm_term, attribution_platform, session_id
+      )
+      VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, 'pending', '', ?, 'Within 40 Mins', ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)
+    `).run(
+      orderId, custId, customerName, primaryPhone, finalLoginPhone, finalDeliveryPhone,
+      corridor || 'Sikar', finalAddress, JSON.stringify(items), totalItemsCount,
+      finalSubtotal, finalDiscount, finalTotal, paymentMethod, finalPaymentStatus,
+      now.split('T')[0], notes, activityLog, now, now,
+      utmSource, utmMedium, utmCampaign, utmContent, utmTerm, attributionPlatform, sessionId
+    );
+
+    // Record purchase conversion event in social_analytics (deduplicated by order_id)
+    const existingEvt = db.prepare('SELECT id FROM social_analytics WHERE order_id = ? AND action_type = ?').get(orderId, 'purchase_complete');
+    if (!existingEvt) {
+      db.prepare(`
+        INSERT INTO social_analytics (
+          id, session_id, visitor_id, platform, source_page, action_type,
+          utm_source, utm_medium, utm_campaign, utm_content, utm_term,
+          order_id, order_value, metadata_json, created_at
+        )
+        VALUES (?, ?, ?, ?, '/cart.html', 'purchase_complete', ?, ?, ?, ?, ?, ?, ?, ?, ?)
+      `).run(
+        'EVT-' + Math.floor(100000 + Math.random() * 900000),
+        sessionId,
+        visitorId,
+        attributionPlatform,
+        utmSource,
+        utmMedium,
+        utmCampaign,
+        utmContent,
+        utmTerm,
+        orderId,
+        finalTotal,
+        JSON.stringify({ itemsCount: totalItemsCount, paymentMethod }),
+        now
+      );
+    }
 
     return { orderId, total: finalTotal, itemsCount: totalItemsCount, status: 'pending', loginPhone: finalLoginPhone, deliveryPhone: finalDeliveryPhone, customerPhone: primaryPhone, customerName, items };
   });

@@ -768,6 +768,9 @@ function updateCart(id, delta, event) {
   if (delta > 0) {
     const srcEl = (event && event.currentTarget) ? event.currentTarget : document.getElementById(`prod-img-${id}`);
     flyProductToCart(srcEl);
+    if (window.SikarAnalytics && typeof window.SikarAnalytics.trackAddToCart === 'function') {
+      window.SikarAnalytics.trackAddToCart(id, delta);
+    }
   }
 
   if (next <= 0) {
@@ -892,6 +895,10 @@ function proceedToCheckout() {
   if (totalItems === 0) {
     showToast('Cart is empty. Add water petis first.');
     return;
+  }
+
+  if (window.SikarAnalytics && typeof window.SikarAnalytics.trackCheckoutStart === 'function') {
+    window.SikarAnalytics.trackCheckoutStart(totalItems, calculateSubtotal());
   }
 
   // Check login
@@ -1225,11 +1232,19 @@ async function dispatchFinalWhatsAppOrder() {
         corridor,
         deliveryAddress: addressNote || corridor,
         items,
-        notes: addressNote
+        notes: addressNote,
+        attribution: window.SikarAnalytics && typeof window.SikarAnalytics.getAttributionPayload === 'function'
+          ? window.SikarAnalytics.getAttributionPayload()
+          : {}
       })
     });
 
     if (res.ok) {
+      const total = items.reduce((a, b) => a + (b.price * b.quantity), 0);
+      if (window.SikarAnalytics && typeof window.SikarAnalytics.trackPurchase === 'function') {
+        window.SikarAnalytics.trackPurchase(orderId, total);
+      }
+
       // Clear Cart
       cart = {};
       localStorage.removeItem('sikar_cart');
@@ -1283,3 +1298,220 @@ if (typeof window !== 'undefined') {
     loadSiteTextsFromBackend();
   }
 }
+
+// ==========================================
+// 6. SIKAR ATTRIBUTION & ANALYTICS CLIENT ENGINE
+// ==========================================
+(function() {
+  if (typeof window === 'undefined') return;
+
+  // Initialize or retrieve anonymous visitor ID (persisted across sessions)
+  let vid = localStorage.getItem('sikar_vid');
+  if (!vid) {
+    vid = 'vis_' + Math.random().toString(36).substring(2, 9) + Date.now().toString(36);
+    try { localStorage.setItem('sikar_vid', vid); } catch (e) {}
+  }
+
+  // Initialize or retrieve session ID (per tab/browser session)
+  let sid = sessionStorage.getItem('sikar_sid');
+  if (!sid) {
+    sid = 'sess_' + Math.random().toString(36).substring(2, 9) + Date.now().toString(36);
+    try { sessionStorage.setItem('sikar_sid', sid); } catch (e) {}
+  }
+
+  // Helper to extract UTM parameters and detect source/platform
+  function parseCampaignAttribution() {
+    const urlParams = new URLSearchParams(window.location.search);
+    const utmSource = (urlParams.get('utm_source') || '').trim();
+    const utmMedium = (urlParams.get('utm_medium') || '').trim();
+    const utmCampaign = (urlParams.get('utm_campaign') || '').trim();
+    const utmContent = (urlParams.get('utm_content') || '').trim();
+    const utmTerm = (urlParams.get('utm_term') || '').trim();
+
+    // Check referrer
+    const ref = (document.referrer || '').toLowerCase();
+    let detectedPlatform = 'direct';
+    let defaultMedium = 'organic';
+
+    if (ref.includes('instagram.com') || ref.includes('l.instagram.com')) {
+      detectedPlatform = 'instagram';
+      defaultMedium = 'social';
+    } else if (ref.includes('facebook.com') || ref.includes('l.facebook.com') || ref.includes('fb.com')) {
+      detectedPlatform = 'facebook';
+      defaultMedium = 'social';
+    } else if (ref.includes('whatsapp.com') || ref.includes('wa.me')) {
+      detectedPlatform = 'whatsapp';
+      defaultMedium = 'chat';
+    } else if (ref.includes('youtube.com') || ref.includes('youtu.be')) {
+      detectedPlatform = 'youtube';
+      defaultMedium = 'video';
+    } else if (ref.includes('google.com') || ref.includes('google.co.in')) {
+      detectedPlatform = 'google';
+      defaultMedium = 'search';
+    }
+
+    if (utmSource) {
+      detectedPlatform = utmSource.toLowerCase();
+    }
+
+    // If new UTM campaign parameters are found in URL, save into session & 30-day localStorage window
+    if (utmSource || utmCampaign) {
+      const attributionObj = {
+        platform: detectedPlatform,
+        utm_source: utmSource || detectedPlatform,
+        utm_medium: utmMedium || defaultMedium,
+        utm_campaign: utmCampaign || `organic_${detectedPlatform}`,
+        utm_content: utmContent,
+        utm_term: utmTerm,
+        timestamp: Date.now()
+      };
+      try {
+        sessionStorage.setItem('sikar_current_attribution', JSON.stringify(attributionObj));
+        localStorage.setItem('sikar_last_touch_attribution', JSON.stringify(attributionObj));
+      } catch (e) {}
+      return attributionObj;
+    }
+
+    // Check current session attribution
+    try {
+      const sessAttr = JSON.parse(sessionStorage.getItem('sikar_current_attribution') || 'null');
+      if (sessAttr) return sessAttr;
+    } catch (e) {}
+
+    // Check 30-day Last-Touch attribution from localStorage (30 days = 30 * 86400 * 1000 ms)
+    try {
+      const lastTouch = JSON.parse(localStorage.getItem('sikar_last_touch_attribution') || 'null');
+      if (lastTouch && (Date.now() - (lastTouch.timestamp || 0) < 30 * 86400 * 1000)) {
+        return lastTouch;
+      }
+    } catch (e) {}
+
+    // Direct / organic fallback
+    return {
+      platform: detectedPlatform,
+      utm_source: detectedPlatform,
+      utm_medium: defaultMedium,
+      utm_campaign: '',
+      utm_content: '',
+      utm_term: '',
+      timestamp: Date.now()
+    };
+  }
+
+  const currentAttribution = parseCampaignAttribution();
+
+  window.SikarAnalytics = {
+    visitorId: vid,
+    sessionId: sid,
+    attribution: currentAttribution,
+
+    getAttributionPayload() {
+      return {
+        utm_source: currentAttribution.utm_source || currentAttribution.platform || 'direct',
+        utm_medium: currentAttribution.utm_medium || 'organic',
+        utm_campaign: currentAttribution.utm_campaign || '',
+        utm_content: currentAttribution.utm_content || '',
+        utm_term: currentAttribution.utm_term || '',
+        platform: currentAttribution.platform || 'direct',
+        sessionId: sid,
+        visitorId: vid
+      };
+    },
+
+    track(actionType, extra = {}) {
+      try {
+        const payload = {
+          actionType: actionType || 'click_button',
+          platform: extra.platform || currentAttribution.platform || 'direct',
+          sourcePage: extra.sourcePage || window.location.pathname || '/index.html',
+          sessionId: sid,
+          visitorId: vid,
+          utmSource: currentAttribution.utm_source || '',
+          utmMedium: currentAttribution.utm_medium || '',
+          utmCampaign: currentAttribution.utm_campaign || '',
+          utmContent: currentAttribution.utm_content || '',
+          utmTerm: currentAttribution.utm_term || '',
+          referrer: document.referrer || '',
+          orderId: extra.orderId || '',
+          orderValue: Number(extra.orderValue || 0),
+          metadata: extra.metadata || {}
+        };
+
+        fetch('/api/analytics/track', {
+          method: 'POST',
+          headers: { 'Content-Type': 'application/json' },
+          body: JSON.stringify(payload),
+          keepalive: true
+        }).catch(() => {});
+      } catch (err) {}
+    },
+
+    trackPageView(page) {
+      this.track('page_view', { sourcePage: page || window.location.pathname });
+    },
+
+    trackProductView(productId, title) {
+      this.track('product_view', {
+        sourcePage: window.location.pathname,
+        metadata: { productId, title }
+      });
+    },
+
+    trackAddToCart(productId, qty) {
+      this.track('add_to_cart', {
+        sourcePage: window.location.pathname,
+        metadata: { productId, qty }
+      });
+    },
+
+    trackCheckoutStart(itemsCount, total) {
+      this.track('checkout_start', {
+        sourcePage: window.location.pathname,
+        orderValue: total,
+        metadata: { itemsCount }
+      });
+    },
+
+    trackPurchase(orderId, total) {
+      this.track('purchase_complete', {
+        sourcePage: window.location.pathname,
+        orderId,
+        orderValue: total
+      });
+    },
+
+    trackOutboundClick(platform) {
+      this.track('click_button', {
+        platform: platform || 'whatsapp',
+        sourcePage: window.location.pathname
+      });
+    }
+  };
+
+  // Automatically track page view on document load
+  if (document.readyState === 'complete' || document.readyState === 'interactive') {
+    window.SikarAnalytics.trackPageView();
+  } else {
+    document.addEventListener('DOMContentLoaded', () => {
+      window.SikarAnalytics.trackPageView();
+    });
+  }
+
+  // Intercept clicks on outbound social/contact buttons
+  document.addEventListener('click', (e) => {
+    const target = e.target && e.target.closest('a, button');
+    if (!target) return;
+    const href = target.getAttribute('href') || '';
+    if (href.startsWith('https://wa.me') || href.includes('whatsapp.com')) {
+      window.SikarAnalytics.trackOutboundClick('whatsapp');
+    } else if (href.includes('instagram.com')) {
+      window.SikarAnalytics.trackOutboundClick('instagram');
+    } else if (href.includes('facebook.com')) {
+      window.SikarAnalytics.trackOutboundClick('facebook');
+    } else if (href.includes('youtube.com')) {
+      window.SikarAnalytics.trackOutboundClick('youtube');
+    } else if (href.startsWith('tel:')) {
+      window.SikarAnalytics.trackOutboundClick('phone');
+    }
+  });
+})();
