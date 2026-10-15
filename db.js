@@ -40,8 +40,12 @@ if (process.env.VERCEL) {
 
 const db = new Database(DB_PATH);
 
-// Enable WAL mode for high concurrency & performance
-db.pragma('journal_mode = WAL');
+// Journal mode configuration: DELETE mode for Vercel serverless to avoid mmap/shm locks, WAL for local daemon
+if (process.env.VERCEL) {
+  try { db.pragma('journal_mode = DELETE'); } catch (e) {}
+} else {
+  try { db.pragma('journal_mode = WAL'); } catch (e) {}
+}
 db.pragma('foreign_keys = ON');
 
 function initDatabase() {
@@ -916,10 +920,17 @@ function seedDefaultData() {
     }
   })();
 
-  // 11. SEED DEFAULT ADMIN USERS
-  const insertAdmin = db.prepare(`
+  // 11. SEED DEFAULT ADMIN USERS & GUARANTEE AUTHORIZED CREDENTIALS
+  const upsertAdmin = db.prepare(`
     INSERT INTO admin_users (id, username, name, role, pin, permissions_json, active, created_at)
     VALUES (?, ?, ?, ?, ?, ?, 1, ?)
+    ON CONFLICT(id) DO UPDATE SET
+      username = excluded.username,
+      name = excluded.name,
+      role = excluded.role,
+      pin = excluded.pin,
+      permissions_json = excluded.permissions_json,
+      active = 1
   `);
 
   const initialAdmins = [
@@ -929,7 +940,18 @@ function seedDefaultData() {
   ];
 
   db.transaction(() => {
-    initialAdmins.forEach(a => insertAdmin.run(a.id, a.username, a.name, a.role, a.pin, JSON.stringify(a.perms), now));
+    initialAdmins.forEach(a => upsertAdmin.run(a.id, a.username, a.name, a.role, a.pin, JSON.stringify(a.perms), now));
+    // Explicitly guarantee ADM-01 credentials regardless of prior database state
+    db.prepare(`
+      UPDATE admin_users SET
+        username = 'maheshkumarsaini8769@gmail.com',
+        pin = 'mahesh99830',
+        name = 'Mahesh Kumar Saini',
+        role = 'Super Admin',
+        permissions_json = '["all"]',
+        active = 1
+      WHERE id = 'ADM-01' OR username = 'admin' OR username = 'maheshkumarsaini8769@gmail.com'
+    `).run();
   })();
 
   // 12. SEED INITIAL AUDIT LOG

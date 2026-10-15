@@ -10709,7 +10709,7 @@
       renderAdminProductsTable();
       renderAdminGauges();
       updateAdminMetrics();
-      showToast(delta > 0 ? `${prod.title} stock +${delta} badha aur Purchases me add ho gaya!` : `Stock updated for ${prod.title}: ${prod.stock} Petis`);
+      showToast(delta > 0 ? `${prod.title} stock +${delta} boxes added to purchases ledger!` : `Stock updated for ${prod.title}: ${prod.stock} Boxes`);
     }
 
     function openAddPurchaseModal() {
@@ -10946,7 +10946,7 @@
       const image = document.getElementById('cat-image-select').value;
 
       if (!name) {
-        showToast('Kripya category name enter karein');
+        showToast('Please enter category name');
         return;
       }
 
@@ -11638,7 +11638,7 @@
       renderAdminGauges();
       updateAdminMetrics();
       closeAdminProdModal();
-      showToast(`Product "${title}" catalog & live website me add ho gaya!`);
+      showToast(`Product "${title}" saved to catalog and live on website!`);
 
       // Persist to backend SQLite API
       try {
@@ -11740,7 +11740,7 @@
       tbody.innerHTML = enquiries.map(e => {
         const isDone = e.status === 'replied' || e.status === 'quoted' || e.status === 'done';
         const cleanPhone = (e.phone || '').replace(/[^0-9]/g, '').slice(-10);
-        const waGreeting = encodeURIComponent(`Namaste ${e.name} ji! Sikar Drop Wholesale Depot se regarding your enquiry: ${e.subject || 'Bulk Supply'}. Aapko kitni petis ki delivery chahiye?`);
+        const waGreeting = encodeURIComponent(`Hello ${e.name}! Sikar Drop Wholesale Depot here regarding your enquiry: ${e.subject || 'Bulk Supply'}. How many boxes/petis do you require?`);
         return `
           <tr>
             <td><strong style="color:#0B192C;">${escapeHTML(e.name)}</strong></td>

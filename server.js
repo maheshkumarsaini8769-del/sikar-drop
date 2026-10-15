@@ -50,6 +50,14 @@ app.use((req, res, next) => {
   next();
 });
 
+// Force fresh responses for all API endpoints to guarantee instant real-time synchronization
+app.use('/api', (req, res, next) => {
+  res.setHeader('Cache-Control', 'no-store, no-cache, must-revalidate, proxy-revalidate');
+  res.setHeader('Pragma', 'no-cache');
+  res.setHeader('Expires', '0');
+  next();
+});
+
 // ==========================================
 // 1. DYNAMIC SEO: SITEMAP & ROBOTS.TXT
 // ==========================================
@@ -892,7 +900,7 @@ app.post('/api/khata/:id/remind', (req, res) => {
     // Build WhatsApp Message Payload
     const cleanPhone = entry.customer_phone.replace(/[^0-9]/g, '');
     const formattedPhone = cleanPhone.startsWith('91') ? cleanPhone : ('91' + cleanPhone);
-    const msg = `Namaste ${entry.customer_name} ji, Sikar Drop Depot se reminder: Aapka pending bill amount Rs.${entry.remaining_amount} (${entry.reason || 'Water & Drinks Supply'}) due date ${entry.due_date || 'jaldi'} tak pay karein. UPI / Cash delivery accept ki jaati hai. Helpline: +91 98290 XXXXX. Dhanyawad!`;
+    const msg = `Hello ${entry.customer_name}, reminder from Sikar Drop Wholesale Depot: Your pending balance of Rs.${entry.remaining_amount} (${entry.reason || 'Water & Drinks Supply'}) is due by ${entry.due_date || 'the agreed date'}. UPI and cash payments are accepted. Helpline: +91 98290 XXXXX. Thank you!`;
     const waLink = `https://wa.me/${formattedPhone}?text=${encodeURIComponent(msg)}`;
 
     res.json({ success: true, whatsappUrl: waLink, message: msg, remindedAt: now });
@@ -1080,18 +1088,49 @@ app.get('/api/products', (req, res) => {
 
 app.post('/api/products', (req, res) => {
   try {
-    const { id, title, sku, category, price, mrp, cost, stock, lowStockThreshold, spec, image, description, displayOrder } = req.body;
-    if (!title || !price || !category) return res.status(400).json({ error: 'Title, price, and category are required' });
+    const { id, title, sku, category, price, mrp, cost, stock, lowStockThreshold, spec, image, description, displayOrder, active } = req.body;
+    if (!title || price === undefined || !category) return res.status(400).json({ error: 'Title, price, and category are required' });
 
     const finalId = id || ('p_' + Date.now());
     const now = new Date().toISOString();
     const finalSku = sku || ('SKR-' + Math.floor(1000 + Math.random() * 9000));
     const finalOrder = displayOrder !== undefined ? Number(displayOrder) : 0;
+    const finalActive = active !== undefined ? Number(active) : 1;
 
     db.prepare(`
       INSERT INTO products (id, sku, title, category, price, mrp, cost, stock, low_stock_threshold, spec, image, description, active, display_order, created_at, updated_at)
-      VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, 1, ?, ?, ?)
-    `).run(finalId, finalSku, title, category, Number(price), Number(mrp || price), Number(cost || (price * 0.75)), parseInt(stock, 10) || 0, parseInt(lowStockThreshold, 10) || 10, spec || '', image || 'assets/prod_bisleri_1l.jpg', description || '', finalOrder, now, now);
+      VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)
+      ON CONFLICT(id) DO UPDATE SET
+        title = excluded.title,
+        category = excluded.category,
+        price = excluded.price,
+        mrp = excluded.mrp,
+        cost = excluded.cost,
+        stock = excluded.stock,
+        low_stock_threshold = excluded.low_stock_threshold,
+        spec = excluded.spec,
+        image = excluded.image,
+        description = excluded.description,
+        active = excluded.active,
+        updated_at = excluded.updated_at
+    `).run(
+      finalId,
+      finalSku,
+      title,
+      category,
+      Number(price),
+      Number(mrp || price),
+      Number(cost !== undefined ? cost : (price * 0.75)),
+      parseInt(stock, 10) || 50,
+      parseInt(lowStockThreshold, 10) || 10,
+      spec || 'Factory Sealed Peti',
+      image || 'assets/prod_bisleri_1l.jpg',
+      description || '',
+      finalActive,
+      finalOrder,
+      now,
+      now
+    );
 
     res.status(201).json({ success: true, id: finalId });
   } catch (err) {
@@ -1104,7 +1143,7 @@ app.put('/api/products/:id', (req, res) => {
     const { title, category, price, mrp, cost, stock, lowStockThreshold, spec, image, description, active } = req.body;
     const now = new Date().toISOString();
 
-    db.prepare(`
+    const info = db.prepare(`
       UPDATE products SET
         title = COALESCE(?, title),
         category = COALESCE(?, category),
@@ -1119,7 +1158,45 @@ app.put('/api/products/:id', (req, res) => {
         active = COALESCE(?, active),
         updated_at = ?
       WHERE id = ?
-    `).run(title, category, price !== undefined ? Number(price) : null, mrp !== undefined ? Number(mrp) : null, cost !== undefined ? Number(cost) : null, stock !== undefined ? parseInt(stock, 10) : null, lowStockThreshold !== undefined ? parseInt(lowStockThreshold, 10) : null, spec, image, description, active !== undefined ? Number(active) : null, now, req.params.id);
+    `).run(
+      title,
+      category,
+      price !== undefined ? Number(price) : null,
+      mrp !== undefined ? Number(mrp) : null,
+      cost !== undefined ? Number(cost) : null,
+      stock !== undefined ? parseInt(stock, 10) : null,
+      lowStockThreshold !== undefined ? parseInt(lowStockThreshold, 10) : null,
+      spec,
+      image,
+      description,
+      active !== undefined ? Number(active) : null,
+      now,
+      req.params.id
+    );
+
+    if (info.changes === 0) {
+      // If product did not exist, insert it as an upsert guarantee
+      const finalSku = 'SKR-' + Math.floor(1000 + Math.random() * 9000);
+      db.prepare(`
+        INSERT INTO products (id, sku, title, category, price, mrp, cost, stock, low_stock_threshold, spec, image, description, active, display_order, created_at, updated_at)
+        VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, 1, 0, ?, ?)
+      `).run(
+        req.params.id,
+        finalSku,
+        title || 'Wholesale Product',
+        category || 'water',
+        Number(price || 150),
+        Number(mrp || price || 180),
+        Number(cost !== undefined ? cost : ((price || 150) * 0.75)),
+        parseInt(stock, 10) || 50,
+        parseInt(lowStockThreshold, 10) || 10,
+        spec || 'Factory Sealed Peti',
+        image || 'assets/prod_bisleri_1l.jpg',
+        description || '',
+        now,
+        now
+      );
+    }
 
     res.json({ success: true, id: req.params.id });
   } catch (err) {
@@ -1149,7 +1226,16 @@ app.delete('/api/products/:id', (req, res) => {
 
 app.post('/api/products/bulk-price', (req, res) => {
   try {
-    const { mode, value, category, apply = false } = req.body; // mode: pct_increase, pct_decrease, fixed_increase, fixed_discount
+    let { mode, value, category, apply = false, action, percentage } = req.body;
+    // Harmonize action & percentage from admin UI
+    if (!mode && action) {
+      mode = action === 'markup' ? 'pct_increase' : 'pct_decrease';
+    }
+    if (value === undefined && percentage !== undefined) {
+      value = percentage;
+    }
+    const shouldApply = apply || (action !== undefined);
+
     if (!mode || value === undefined) return res.status(400).json({ error: 'Mode and value are required' });
 
     let query = 'SELECT id, title, price, mrp, cost, category FROM products WHERE active = 1';
@@ -1184,7 +1270,7 @@ app.post('/api/products/bulk-price', (req, res) => {
       };
     });
 
-    if (apply) {
+    if (shouldApply) {
       const now = new Date().toISOString();
       db.transaction(() => {
         previews.forEach(item => {
@@ -1197,7 +1283,7 @@ app.post('/api/products/bulk-price', (req, res) => {
       })();
     }
 
-    res.json({ success: true, count: previews.length, applied: apply, previews });
+    res.json({ success: true, count: previews.length, applied: shouldApply, previews });
   } catch (err) {
     res.status(400).json({ error: err.message });
   }
