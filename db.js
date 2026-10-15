@@ -1210,7 +1210,7 @@ function receivePurchaseTransaction({ purchaseId, actor = 'Admin' }) {
 }
 
 // 4. ATOMIC ORDER CREATION (ONLINE STOREFRONT)
-function createOnlineOrderTransaction({ orderId: customOrderId, customerName, customerPhone, loginPhone = '', deliveryPhone = '', addressPhone = '', corridor, address = '', deliveryAddress = '', items = [], subtotal, discount = 0, total, paymentMethod = 'COD', notes = '' }) {
+function createOnlineOrderTransaction({ orderId: customOrderId, customerName, customerPhone, loginPhone = '', deliveryPhone = '', addressPhone = '', corridor, address = '', deliveryAddress = '', items = [], subtotal, discount = 0, total, paymentMethod = 'COD', paymentStatus = '', notes = '' }) {
   const runTx = db.transaction(() => {
     const orderId = customOrderId || ('SKR-' + Math.floor(1000 + Math.random() * 9000));
     const finalAddress = address || deliveryAddress || corridor || 'Sikar';
@@ -1273,12 +1273,14 @@ function createOnlineOrderTransaction({ orderId: customOrderId, customerName, cu
       { status: 'pending', timestamp: now, actor: 'Customer', note: 'Order placed on website' }
     ]);
 
+    const finalPaymentStatus = paymentStatus || (paymentMethod === 'UPI' ? 'Paid' : 'Pending');
+
     db.prepare(`
       INSERT INTO orders (id, customer_id, customer_name, customer_phone, login_phone, delivery_phone, corridor, delivery_address, items_json, items_count, subtotal, discount, total, payment_method, payment_status, status, vehicle, order_date, delivery_time, notes, activity_log_json, created_at, updated_at)
-      VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, 'Pending', 'pending', '', ?, 'Within 40 Mins', ?, ?, ?, ?)
-    `).run(orderId, custId, customerName, primaryPhone, finalLoginPhone, finalDeliveryPhone, corridor || 'Sikar', finalAddress, JSON.stringify(items), totalItemsCount, finalSubtotal, finalDiscount, finalTotal, paymentMethod, now.split('T')[0], notes, activityLog, now, now);
+      VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, 'pending', '', ?, 'Within 40 Mins', ?, ?, ?, ?)
+    `).run(orderId, custId, customerName, primaryPhone, finalLoginPhone, finalDeliveryPhone, corridor || 'Sikar', finalAddress, JSON.stringify(items), totalItemsCount, finalSubtotal, finalDiscount, finalTotal, paymentMethod, finalPaymentStatus, now.split('T')[0], notes, activityLog, now, now);
 
-    return { orderId, total: finalTotal, itemsCount: totalItemsCount, status: 'pending', loginPhone: finalLoginPhone, deliveryPhone: finalDeliveryPhone, customerPhone: primaryPhone };
+    return { orderId, total: finalTotal, itemsCount: totalItemsCount, status: 'pending', loginPhone: finalLoginPhone, deliveryPhone: finalDeliveryPhone, customerPhone: primaryPhone, customerName, items };
   });
 
   return runTx();

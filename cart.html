@@ -640,16 +640,37 @@
 
       try {
         const orderPayload = {
+          customerName: name,
           customer_name: name,
+          customerPhone: phone,
           customer_phone: phone,
-          address: `${corridor} - ${address}`,
-          items: items,
+          loginPhone: phone,
+          deliveryPhone: phone,
+          corridor: corridor,
+          delivery_corridor: corridor,
+          address: address,
+          deliveryAddress: `${corridor} - ${address}`,
+          items: items.map(it => ({
+            id: it.id,
+            productId: it.id,
+            title: it.title,
+            price: it.price,
+            qty: it.quantity,
+            quantity: it.quantity,
+            total: it.price * it.quantity
+          })),
+          subtotal: total,
+          discount: discount,
+          discount_amount: discount,
+          total: finalAmount,
           total_amount: finalAmount,
+          paymentMethod: payMethod,
           payment_method: payMethod,
+          paymentStatus: payMethod === 'UPI' ? 'Paid' : 'Pending',
           payment_status: payMethod === 'UPI' ? 'Paid' : 'Pending',
           notes: notes,
-          coupon_code: pageAppliedCoupon ? pageAppliedCoupon.code : null,
-          discount_amount: discount
+          couponCode: pageAppliedCoupon ? pageAppliedCoupon.code : null,
+          coupon_code: pageAppliedCoupon ? pageAppliedCoupon.code : null
         };
 
         const res = await fetch('/api/orders', {
@@ -659,7 +680,29 @@
         });
 
         const data = await res.json();
-        const orderId = data.orderId || ('SKR-' + Math.floor(100000 + Math.random() * 900000));
+        if (!res.ok || !data.success) {
+          throw new Error(data.error || 'Failed to place order. Please check details and try again.');
+        }
+
+        const orderId = data.orderId || data.id || (data.order && data.order.orderId);
+
+        // Sync into local adminOrders cache if present
+        try {
+          const localOrders = JSON.parse(localStorage.getItem('sikar_admin_orders') || '[]');
+          localOrders.unshift({
+            id: orderId,
+            customer: name,
+            phone: phone,
+            corridor: corridor,
+            itemsCount: items.reduce((s, it) => s + (it.quantity || 1), 0),
+            itemsDesc: items.map(it => `${it.title} (${it.quantity || 1} Box)`).join(', '),
+            total: finalAmount,
+            status: 'pending',
+            vehicle: 'RJ-23-GA-4821',
+            time: new Date().toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' })
+          });
+          localStorage.setItem('sikar_admin_orders', JSON.stringify(localOrders));
+        } catch (e) {}
 
         // Format WhatsApp slip
         let waText = `*SIKAR DROP — WHOLESALE DISPATCH ORDER*\n`;
@@ -684,12 +727,12 @@
         // Show confirmation and trigger WhatsApp
         alert(`Order ${orderId} confirmed successfully! Dispatching to Sikar Drop tempo delivery.`);
         window.open(`https://wa.me/919829000000?text=${encodeURIComponent(waText)}`, '_blank');
-        window.location.href = `/track?id=${encodeURIComponent(orderId)}`;
+        window.location.href = `/track.html?id=${encodeURIComponent(orderId)}`;
       } catch (err) {
         console.error('Order submission error:', err);
-        alert('Order recorded locally. Opening WhatsApp to dispatch directly to warehouse.');
-        localStorage.setItem('sikar_cart', '{}');
-        window.location.href = '/products';
+        alert(err.message || 'Failed to place order. Please check details and try again.');
+        btn.disabled = false;
+        btn.innerHTML = '<span>CONFIRM &amp; DISPATCH ORDER</span><svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2"><line x1="5" y1="12" x2="19" y2="12"></line><polyline points="12 5 19 12 12 19"></polyline></svg>';
       }
     }
   </script>

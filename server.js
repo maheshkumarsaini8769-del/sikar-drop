@@ -558,46 +558,81 @@ app.get('/api/orders/:id', (req, res) => {
 
 app.post('/api/orders', (req, res) => {
   try {
-    const { orderId, customerName, customerPhone, loginPhone, deliveryPhone, addressPhone, login_phone, delivery_phone, corridor, address, deliveryAddress, items, subtotal, discount, total, paymentMethod, notes } = req.body;
-    const effectiveLoginPhone = (loginPhone || login_phone || customerPhone || deliveryPhone || delivery_phone || '').trim();
-    const effectiveDeliveryPhone = (deliveryPhone || delivery_phone || addressPhone || customerPhone || effectiveLoginPhone).trim();
-    const effectivePrimaryPhone = effectiveLoginPhone || effectiveDeliveryPhone;
+    const b = req.body || {};
+    const finalCustomerName = String(b.customerName || b.customer_name || b.name || b.customer || '').trim();
+    const rawLoginPhone = String(b.loginPhone || b.login_phone || b.customerPhone || b.customer_phone || b.phone || b.deliveryPhone || b.delivery_phone || '').trim();
+    const rawDeliveryPhone = String(b.deliveryPhone || b.delivery_phone || b.addressPhone || b.address_phone || b.customerPhone || b.customer_phone || b.phone || rawLoginPhone).trim();
+    const effectivePrimaryPhone = rawLoginPhone || rawDeliveryPhone;
 
-    if (!customerName || !effectivePrimaryPhone || !items || items.length === 0) {
+    const rawItems = Array.isArray(b.items) ? b.items : [];
+    if (!finalCustomerName || !effectivePrimaryPhone || rawItems.length === 0) {
       return res.status(400).json({ error: 'Customer name, phone, and items are required' });
     }
 
-    // Validate delivery area/address against Admin's serviceable delivery zones
-    const combinedLoc = `${address || ''} ${deliveryAddress || ''} ${corridor || ''}`.trim();
+    // Sanitize items
+    const sanitizedItems = rawItems.map(it => {
+      const pid = it.id || it.productId || '';
+      const pqty = Number(it.qty !== undefined ? it.qty : (it.quantity !== undefined ? it.quantity : 1));
+      const pprice = Number(it.price || 0);
+      return {
+        id: pid,
+        productId: pid,
+        title: it.title || it.name || 'Wholesale Peti',
+        price: pprice,
+        qty: pqty,
+        quantity: pqty,
+        total: pprice * pqty
+      };
+    });
+
+    const corridor = String(b.corridor || b.delivery_corridor || b.deliveryCorridor || '').trim();
+    const address = String(b.address || b.deliveryAddress || b.delivery_address || '').trim();
+    const deliveryAddress = String(b.deliveryAddress || b.delivery_address || address || corridor || 'Sikar').trim();
+
+    // Check delivery zone availability only if explicitly paused by admin in settings
+    const combinedLoc = `${address} ${deliveryAddress} ${corridor}`.trim();
     if (combinedLoc) {
       const zoneCheck = evaluateDeliveryZoneMatch(combinedLoc);
-      if (zoneCheck.activeZones && zoneCheck.activeZones.length > 0 && !zoneCheck.available) {
+      if (zoneCheck && zoneCheck.reason === 'paused_by_admin') {
         return res.status(400).json({
-          error: zoneCheck.message || 'Delivery is not available in this area. Please select an Admin-approved Sikar delivery location.',
+          error: zoneCheck.message || 'Delivery is currently paused in this area by Admin.',
           serviceable: false,
           activeZones: zoneCheck.activeZones
         });
       }
     }
 
+    const subtotal = b.subtotal !== undefined ? Number(b.subtotal) : (b.subtotal_amount !== undefined ? Number(b.subtotal_amount) : undefined);
+    const discount = b.discount !== undefined ? Number(b.discount) : (b.discount_amount !== undefined ? Number(b.discount_amount) : 0);
+    const total = b.total !== undefined ? Number(b.total) : (b.total_amount !== undefined ? Number(b.total_amount) : (b.finalAmount !== undefined ? Number(b.finalAmount) : undefined));
+    const paymentMethod = String(b.paymentMethod || b.payment_method || 'COD').trim();
+    const paymentStatus = String(b.paymentStatus || b.payment_status || (paymentMethod === 'UPI' ? 'Paid' : 'Pending')).trim();
+    const notes = String(b.notes || b.note || '').trim();
+
     const result = createOnlineOrderTransaction({
-      orderId,
-      customerName,
+      orderId: b.orderId || b.order_id,
+      customerName: finalCustomerName,
       customerPhone: effectivePrimaryPhone,
-      loginPhone: effectiveLoginPhone,
-      deliveryPhone: effectiveDeliveryPhone,
-      corridor,
+      loginPhone: rawLoginPhone,
+      deliveryPhone: rawDeliveryPhone,
+      corridor: corridor || 'Sikar',
       address: address || deliveryAddress,
       deliveryAddress,
-      items,
+      items: sanitizedItems,
       subtotal,
-      discount: discount || 0,
+      discount,
       total,
-      paymentMethod: paymentMethod || 'COD',
+      paymentMethod,
+      paymentStatus,
       notes
     });
 
-    res.status(201).json({ success: true, order: result, ...result });
+    res.status(201).json({
+      success: true,
+      orderId: result.orderId,
+      order: result,
+      ...result
+    });
   } catch (err) {
     res.status(400).json({ error: err.message });
   }

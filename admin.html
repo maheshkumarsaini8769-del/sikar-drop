@@ -4425,7 +4425,7 @@
         <input type="hidden" id="reply-review-index">
         <div class="portal-field-group">
           <label for="reply-text-input">Official Sikar Drop Depot Reply Text *</label>
-          <textarea id="reply-text-input" class="portal-textarea" rows="4" placeholder="e.g. Dhanyawad ji! Sikar Drop hamesha 100% factory sealed bottles supply karta hai." required></textarea>
+          <textarea id="reply-text-input" class="portal-textarea" rows="4" placeholder="e.g. Thank you! Sikar Drop always supplies 100% factory-sealed bottles." required></textarea>
         </div>
         <button type="submit" class="btn-portal-primary" style="width: 100%; justify-content: center;">Publish Reply to Live Store</button>
       </form>
@@ -5948,7 +5948,7 @@
         closeModal('manual-online-order-modal');
         await syncFromBackend();
         renderOrdersTable();
-        showToast(`Online Order ${orderId} successfully create ho gaya! Tracking live hai.`);
+        showToast(`Online Order ${orderId} created successfully. Live tracking active.`);
         switchTab('orders');
       } catch (err) {
         console.error(err);
@@ -6851,7 +6851,7 @@
         renderInventoryTable();
         renderPurchasesTable();
         renderDashboard();
-        showToast(`${p.title} stock +${delta} boxes badha aur Purchase inward record ho gaya!`);
+        showToast(`${p.title} stock increased by +${delta} boxes and purchase recorded.`);
 
         try {
           await sikarApi.post('/api/purchases', {
@@ -7001,7 +7001,7 @@
       renderInventoryTable();
       renderPurchasesTable();
       renderDashboard();
-      showToast(`Supplier purchase recorded! ${prod.title} stock +${qty} boxes ho gaya.`);
+      showToast(`Supplier purchase recorded. ${prod.title} stock increased by +${qty} boxes.`);
 
       // 2. Persist to backend SQLite API
       try {
@@ -7350,21 +7350,21 @@
         closeModal('product-modal');
         await syncFromBackend();
         renderProductsTable();
-        showToast(`Product '${title}' save ho gaya aur live website par add ho gaya!`);
+        showToast(`Product '${title}' saved successfully and live on website.`);
       } catch (err) {
         console.error(err);
-        showToast('Product saved locally! Backend sync note: ' + err.message);
+        showToast('Product saved locally. Backend sync note: ' + err.message);
         closeModal('product-modal');
       }
     }
 
     async function deleteProduct(id) {
-      if (confirm('Aap ye product catalog se delete karna chahte hain?')) {
+      if (confirm('Are you sure you want to delete this product from the catalog?')) {
         try {
           await sikarApi.delete(`/api/products/${id}`);
           await syncFromBackend();
           renderProductsTable();
-          showToast('Product successfully delete ho gaya!');
+          showToast('Product deleted successfully.');
         } catch (err) {
           console.error(err);
           showToast('Error deleting product: ' + err.message);
@@ -7482,7 +7482,7 @@
       renderCategoriesTable();
       populateCategorySelectDropdown();
       closeModal('category-modal');
-      showToast(`Category '${name}' save ho gayi aur website par live hai!`);
+      showToast(`Category '${name}' saved successfully and live on website.`);
 
       try {
         if (editId) {
@@ -8500,7 +8500,7 @@
         localStorage.setItem('sikar_admin_reviews', JSON.stringify(adminReviews));
         renderReviewsTable();
         closeModal('review-reply-modal');
-        showToast('Official depot reply live storefront aur table par publish ho gaya!');
+        showToast('Official depot reply published successfully.');
 
         // 2. Persist to backend database
         try {
