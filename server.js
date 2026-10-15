@@ -1032,7 +1032,35 @@ app.post('/api/inventory/adjust', (req, res) => {
 // ==========================================
 app.get('/api/purchases', (req, res) => {
   try {
-    const purchases = db.prepare('SELECT * FROM purchases ORDER BY created_at DESC').all();
+    const { date, startDate, endDate, supplier, search } = req.query;
+    let query = 'SELECT * FROM purchases WHERE 1=1';
+    const params = [];
+
+    if (date) {
+      query += ' AND (invoice_date = ? OR date(created_at) = ?)';
+      params.push(date, date);
+    }
+    if (startDate && endDate) {
+      query += ' AND ((invoice_date BETWEEN ? AND ?) OR (date(created_at) BETWEEN ? AND ?))';
+      params.push(startDate, endDate, startDate, endDate);
+    } else if (startDate) {
+      query += ' AND (invoice_date >= ? OR date(created_at) >= ?)';
+      params.push(startDate, startDate);
+    } else if (endDate) {
+      query += ' AND (invoice_date <= ? OR date(created_at) <= ?)';
+      params.push(endDate, endDate);
+    }
+    if (supplier) {
+      query += ' AND supplier_name LIKE ?';
+      params.push(`%${supplier}%`);
+    }
+    if (search) {
+      query += ' AND (supplier_name LIKE ? OR product_title LIKE ? OR bill_no LIKE ? OR id LIKE ?)';
+      params.push(`%${search}%`, `%${search}%`, `%${search}%`, `%${search}%`);
+    }
+
+    query += ' ORDER BY COALESCE(invoice_date, date(created_at)) DESC, created_at DESC';
+    const purchases = db.prepare(query).all(...params);
     res.json(purchases);
   } catch (err) {
     res.status(500).json({ error: err.message });

@@ -2851,19 +2851,70 @@
           <!-- SUMMARY PURCHASES METRICS -->
           <div class="stats-grid-row" style="margin-bottom: 24px;">
             <div class="stat-kpi-card">
-              <span class="stat-kpi-label">Total Inward This Month</span>
-              <div class="stat-kpi-val">1,480 Petis</div>
-              <span class="stat-kpi-delta positive">All Factory-Sealed</span>
+              <span class="stat-kpi-label">Total Inward (This Month)</span>
+              <div class="stat-kpi-val" id="pur-stat-month-boxes">0 Boxes</div>
+              <span class="stat-kpi-delta positive" id="pur-stat-month-sub">Factory-Sealed Inventory</span>
             </div>
             <div class="stat-kpi-card">
               <span class="stat-kpi-label">Total Spend on Inwards</span>
-              <div class="stat-kpi-val">₹5,18,000</div>
-              <span class="stat-kpi-delta">Paid via Direct RTGS</span>
+              <div class="stat-kpi-val" id="pur-stat-total-spend">₹0</div>
+              <span class="stat-kpi-delta" id="pur-stat-total-sub">Direct Bank &amp; Cash</span>
             </div>
             <div class="stat-kpi-card">
               <span class="stat-kpi-label">Active Plant Vendors</span>
-              <div class="stat-kpi-val" style="color: #0284C7;">4 Vendors</div>
-              <span class="stat-kpi-delta">Bisleri, Coca-Cola, Kinley, Real</span>
+              <div class="stat-kpi-val" style="color: #0284C7;" id="pur-stat-vendors-count">0 Vendors</div>
+              <span class="stat-kpi-delta" id="pur-stat-vendors-sub">Verified Suppliers</span>
+            </div>
+          </div>
+
+          <!-- PURCHASES DATE & KEYWORD FILTER TOOLBAR -->
+          <div style="background: #FFFFFF; border: 1px solid var(--border-subtle); border-radius: var(--radius-sm); padding: 14px 18px; margin-bottom: 20px; box-shadow: var(--shadow-sm);">
+            <div style="display: flex; flex-wrap: wrap; gap: 14px; align-items: center; justify-content: space-between;">
+              <!-- Quick Filter Pills -->
+              <div style="display: flex; gap: 6px; flex-wrap: wrap;" id="purchase-quick-filters">
+                <button type="button" class="btn-tbl-action active" id="pur-flt-all" onclick="setPurchaseQuickFilter('all', this)">All Dates</button>
+                <button type="button" class="btn-tbl-action" id="pur-flt-today" onclick="setPurchaseQuickFilter('today', this)">Today</button>
+                <button type="button" class="btn-tbl-action" id="pur-flt-yesterday" onclick="setPurchaseQuickFilter('yesterday', this)">Yesterday</button>
+                <button type="button" class="btn-tbl-action" id="pur-flt-week" onclick="setPurchaseQuickFilter('week', this)">This Week</button>
+                <button type="button" class="btn-tbl-action" id="pur-flt-month" onclick="setPurchaseQuickFilter('month', this)">This Month</button>
+              </div>
+
+              <!-- Date Picker & Search Controls -->
+              <div style="display: flex; gap: 12px; flex-wrap: wrap; align-items: center;">
+                <!-- Specific Date Picker -->
+                <div style="display: flex; align-items: center; gap: 6px;">
+                  <label for="purchase-filter-date" style="font-size: 0.8rem; font-weight: 700; color: var(--text-muted); white-space: nowrap;">Check Specific Date:</label>
+                  <input type="date" id="purchase-filter-date" class="portal-input" style="padding: 5px 10px; font-size: 0.82rem; width: auto;" onchange="onPurchaseSpecificDateChange(this.value)">
+                </div>
+
+                <!-- Date Range (From - To) -->
+                <div style="display: flex; align-items: center; gap: 6px;">
+                  <label style="font-size: 0.8rem; font-weight: 700; color: var(--text-muted); white-space: nowrap;">Range:</label>
+                  <input type="date" id="purchase-filter-from" class="portal-input" style="padding: 5px 10px; font-size: 0.82rem; width: auto;" title="From Date" onchange="onPurchaseRangeChange()">
+                  <span style="font-size: 0.8rem; color: var(--text-muted);">-</span>
+                  <input type="date" id="purchase-filter-to" class="portal-input" style="padding: 5px 10px; font-size: 0.82rem; width: auto;" title="To Date" onchange="onPurchaseRangeChange()">
+                </div>
+
+                <!-- Keyword Search -->
+                <div style="display: flex; align-items: center; gap: 6px;">
+                  <input type="text" id="purchase-filter-search" class="portal-input" placeholder="Search supplier, bill, product..." style="padding: 5px 10px; font-size: 0.82rem; min-width: 170px;" oninput="applyPurchaseFilters()">
+                </div>
+
+                <!-- Reset Button -->
+                <button type="button" class="btn-portal-outline" style="padding: 5px 12px; font-size: 0.82rem;" onclick="resetPurchaseFilters()">Reset</button>
+              </div>
+            </div>
+
+            <!-- Active Filter Status Bar -->
+            <div style="margin-top: 10px; padding-top: 10px; border-top: 1px solid var(--border-subtle); display: flex; flex-wrap: wrap; justify-content: space-between; align-items: center; gap: 8px; font-size: 0.82rem;">
+              <div id="purchase-filter-msg" style="color: var(--text-muted);">
+                Showing all supplier inwards
+              </div>
+              <div style="display: flex; gap: 16px; font-weight: 700;">
+                <span id="purchase-filter-count" style="color: #0F172A;">0 Inwards</span>
+                <span id="purchase-filter-boxes" style="color: #0284C7;">0 Boxes</span>
+                <span id="purchase-filter-total" style="color: #15803D;">Total: ₹0</span>
+              </div>
             </div>
           </div>
 
@@ -4198,7 +4249,11 @@
       <p style="font-size: 0.82rem; color: var(--text-muted); margin-bottom: 18px;">Adding a purchase entry automatically INCREMENTS inventory stock.</p>
 
       <form onsubmit="handlePurchaseSubmit(event)">
-        <div class="portal-form-grid-2">
+        <div class="portal-form-grid-3">
+          <div class="portal-field-group">
+            <label for="pur-date">Purchase / Invoice Date *</label>
+            <input type="date" id="pur-date" class="portal-input" required>
+          </div>
           <div class="portal-field-group">
             <label for="pur-supplier">Bottling Plant / Supplier Name *</label>
             <input type="text" id="pur-supplier" class="portal-input" placeholder="e.g. Bisleri Plant Jaipur" required>
@@ -4221,7 +4276,7 @@
           </div>
           <div class="portal-field-group">
             <label for="pur-cost">Cost per Box ₹ *</label>
-            <input type="number" id="pur-cost" class="portal-input tabular" min="1" value="14" oninput="calcPurTotal()" required>
+            <input type="number" id="pur-cost" class="portal-input tabular" min="1" step="any" value="14" oninput="calcPurTotal()" required>
           </div>
           <div class="portal-field-group">
             <label>Total Bill Amount ₹</label>
@@ -5105,7 +5160,7 @@
             qty: p.qty,
             cost: p.unit_cost || p.cost,
             total: p.total_cost || p.total,
-            date: p.invoice_date || p.date,
+            date: p.invoice_date || (p.created_at ? p.created_at.split('T')[0] : (p.date || '')),
             billNo: p.bill_no || p.billNo,
             status: p.status
           }));
@@ -6966,9 +7021,149 @@
       }
     }
 
+    // =========================================================
+    // PURCHASES FILTERING & MANAGEMENT
+    // =========================================================
+    let purchaseFilterState = {
+      quick: 'all',          // 'all', 'today', 'yesterday', 'week', 'month'
+      specificDate: '',      // 'YYYY-MM-DD'
+      fromDate: '',          // 'YYYY-MM-DD'
+      toDate: '',            // 'YYYY-MM-DD'
+      search: ''             // string
+    };
+
+    function getPurchaseDateYMD(p) {
+      if (!p) return '';
+      const raw = p.date || p.invoice_date || p.invoiceDate || (p.created_at ? p.created_at.split('T')[0] : '');
+      if (!raw) return '';
+      if (/^\d{4}-\d{2}-\d{2}$/.test(raw)) return raw;
+      if (raw.includes('T')) return raw.split('T')[0];
+      const d = new Date(raw);
+      if (!isNaN(d.getTime())) {
+        const y = d.getFullYear();
+        const m = String(d.getMonth() + 1).padStart(2, '0');
+        const day = String(d.getDate()).padStart(2, '0');
+        return `${y}-${m}-${day}`;
+      }
+      return '';
+    }
+
+    function formatPurchaseDate(p) {
+      const ymd = getPurchaseDateYMD(p);
+      if (!ymd) return escapeHTML(p.date || 'Recent');
+      const parts = ymd.split('-');
+      if (parts.length === 3) {
+        const y = parts[0];
+        const m = parseInt(parts[1], 10) - 1;
+        const d = parts[2];
+        const months = ['Jan','Feb','Mar','Apr','May','Jun','Jul','Aug','Sep','Oct','Nov','Dec'];
+        const monthName = months[m] || parts[1];
+        return `${d} ${monthName} ${y}`;
+      }
+      return escapeHTML(ymd);
+    }
+
+    function setPurchaseQuickFilter(filterKey, btnEl) {
+      purchaseFilterState.quick = filterKey;
+      purchaseFilterState.specificDate = '';
+      purchaseFilterState.fromDate = '';
+      purchaseFilterState.toDate = '';
+
+      const specificInput = document.getElementById('purchase-filter-date');
+      if (specificInput) specificInput.value = '';
+      const fromInput = document.getElementById('purchase-filter-from');
+      if (fromInput) fromInput.value = '';
+      const toInput = document.getElementById('purchase-filter-to');
+      if (toInput) toInput.value = '';
+
+      ['all', 'today', 'yesterday', 'week', 'month'].forEach(f => {
+        const b = document.getElementById('pur-flt-' + f);
+        if (b) b.classList.toggle('active', f === filterKey);
+      });
+      if (btnEl) btnEl.classList.add('active');
+
+      renderPurchasesTable();
+    }
+
+    function onPurchaseSpecificDateChange(val) {
+      purchaseFilterState.specificDate = val ? val.trim() : '';
+      purchaseFilterState.quick = '';
+      purchaseFilterState.fromDate = '';
+      purchaseFilterState.toDate = '';
+
+      const fromInput = document.getElementById('purchase-filter-from');
+      if (fromInput) fromInput.value = '';
+      const toInput = document.getElementById('purchase-filter-to');
+      if (toInput) toInput.value = '';
+
+      ['all', 'today', 'yesterday', 'week', 'month'].forEach(f => {
+        const b = document.getElementById('pur-flt-' + f);
+        if (b) b.classList.remove('active');
+      });
+
+      renderPurchasesTable();
+    }
+
+    function onPurchaseRangeChange() {
+      const fromVal = document.getElementById('purchase-filter-from') ? document.getElementById('purchase-filter-from').value : '';
+      const toVal = document.getElementById('purchase-filter-to') ? document.getElementById('purchase-filter-to').value : '';
+
+      purchaseFilterState.fromDate = fromVal;
+      purchaseFilterState.toDate = toVal;
+      purchaseFilterState.specificDate = '';
+      purchaseFilterState.quick = '';
+
+      const specificInput = document.getElementById('purchase-filter-date');
+      if (specificInput) specificInput.value = '';
+
+      ['all', 'today', 'yesterday', 'week', 'month'].forEach(f => {
+        const b = document.getElementById('pur-flt-' + f);
+        if (b) b.classList.remove('active');
+      });
+
+      renderPurchasesTable();
+    }
+
+    function applyPurchaseFilters() {
+      const searchEl = document.getElementById('purchase-filter-search');
+      purchaseFilterState.search = searchEl ? searchEl.value.trim().toLowerCase() : '';
+      renderPurchasesTable();
+    }
+
+    function resetPurchaseFilters() {
+      purchaseFilterState = {
+        quick: 'all',
+        specificDate: '',
+        fromDate: '',
+        toDate: '',
+        search: ''
+      };
+      const specificInput = document.getElementById('purchase-filter-date');
+      if (specificInput) specificInput.value = '';
+      const fromInput = document.getElementById('purchase-filter-from');
+      if (fromInput) fromInput.value = '';
+      const toInput = document.getElementById('purchase-filter-to');
+      if (toInput) toInput.value = '';
+      const searchInput = document.getElementById('purchase-filter-search');
+      if (searchInput) searchInput.value = '';
+
+      ['all', 'today', 'yesterday', 'week', 'month'].forEach(f => {
+        const b = document.getElementById('pur-flt-' + f);
+        if (b) b.classList.toggle('active', f === 'all');
+      });
+
+      renderPurchasesTable();
+    }
+
     function openPurchaseModal() {
       const select = document.getElementById('pur-product');
-      select.innerHTML = adminProducts.map(p => `<option value="${p.id}" data-cost="${p.cost || 14}">${escapeHTML(p.title)}</option>`).join('');
+      if (select) {
+        select.innerHTML = adminProducts.map(p => `<option value="${p.id}" data-cost="${p.cost || 14}">${escapeHTML(p.title)}</option>`).join('');
+      }
+      const dateEl = document.getElementById('pur-date');
+      if (dateEl) {
+        dateEl.value = new Date().toISOString().split('T')[0];
+      }
       onPurProductChange();
       openModal('purchase-add-modal');
     }
@@ -6994,22 +7189,147 @@
       const tbody = document.getElementById('purchases-table-tbody');
       if (!tbody) return;
 
-      if (!adminPurchases || adminPurchases.length === 0) {
-        tbody.innerHTML = '<tr><td colspan="8" style="text-align:center; padding:24px; color:var(--text-muted);">No supplier inwards recorded yet.</td></tr>';
+      const purchases = Array.isArray(adminPurchases) ? adminPurchases : [];
+
+      // Calculate overall KPIs
+      const now = new Date();
+      const currentYearMonth = `${now.getFullYear()}-${String(now.getMonth() + 1).padStart(2, '0')}`;
+      let monthBoxes = 0;
+      let totalSpend = 0;
+      const vendorsSet = new Set();
+
+      purchases.forEach(p => {
+        const qty = Number(p.qty) || 0;
+        const total = Number(p.total) || (qty * (Number(p.cost) || 0));
+        const ymd = getPurchaseDateYMD(p);
+        if (ymd && ymd.startsWith(currentYearMonth)) {
+          monthBoxes += qty;
+        }
+        totalSpend += total;
+        if (p.supplier) vendorsSet.add(p.supplier.trim().toLowerCase());
+      });
+
+      const monthBoxesEl = document.getElementById('pur-stat-month-boxes');
+      if (monthBoxesEl) monthBoxesEl.textContent = `${monthBoxes.toLocaleString('en-IN')} Boxes`;
+
+      const totalSpendEl = document.getElementById('pur-stat-total-spend');
+      if (totalSpendEl) totalSpendEl.textContent = `₹${totalSpend.toLocaleString('en-IN')}`;
+
+      const vendorsEl = document.getElementById('pur-stat-vendors-count');
+      if (vendorsEl) vendorsEl.textContent = `${vendorsSet.size} Vendors`;
+
+      // Now apply filters
+      const today = new Date();
+      const todayYMD = `${today.getFullYear()}-${String(today.getMonth() + 1).padStart(2, '0')}-${String(today.getDate()).padStart(2, '0')}`;
+
+      const yesterday = new Date(today);
+      yesterday.setDate(yesterday.getDate() - 1);
+      const yesterdayYMD = `${yesterday.getFullYear()}-${String(yesterday.getMonth() + 1).padStart(2, '0')}-${String(yesterday.getDate()).padStart(2, '0')}`;
+
+      const weekAgo = new Date(today);
+      weekAgo.setDate(weekAgo.getDate() - 7);
+      const weekAgoYMD = `${weekAgo.getFullYear()}-${String(weekAgo.getMonth() + 1).padStart(2, '0')}-${String(weekAgo.getDate()).padStart(2, '0')}`;
+
+      let filterDescription = 'Showing all supplier inwards';
+
+      const filtered = purchases.filter(p => {
+        const ymd = getPurchaseDateYMD(p);
+
+        // 1. Specific date filter
+        if (purchaseFilterState.specificDate) {
+          filterDescription = `Showing inwards for date: ${purchaseFilterState.specificDate}`;
+          if (ymd !== purchaseFilterState.specificDate) return false;
+        }
+        // 2. Custom date range
+        else if (purchaseFilterState.fromDate || purchaseFilterState.toDate) {
+          const from = purchaseFilterState.fromDate || '1970-01-01';
+          const to = purchaseFilterState.toDate || '2099-12-31';
+          filterDescription = `Showing inwards between ${from} and ${to}`;
+          if (!ymd || ymd < from || ymd > to) return false;
+        }
+        // 3. Quick filter
+        else if (purchaseFilterState.quick === 'today') {
+          filterDescription = `Showing today's inwards (${todayYMD})`;
+          if (ymd !== todayYMD) return false;
+        } else if (purchaseFilterState.quick === 'yesterday') {
+          filterDescription = `Showing yesterday's inwards (${yesterdayYMD})`;
+          if (ymd !== yesterdayYMD) return false;
+        } else if (purchaseFilterState.quick === 'week') {
+          filterDescription = `Showing inwards from past 7 days`;
+          if (!ymd || ymd < weekAgoYMD || ymd > todayYMD) return false;
+        } else if (purchaseFilterState.quick === 'month') {
+          filterDescription = `Showing inwards for this month (${currentYearMonth})`;
+          if (!ymd || !ymd.startsWith(currentYearMonth)) return false;
+        }
+
+        // 4. Keyword search
+        if (purchaseFilterState.search) {
+          const s = purchaseFilterState.search;
+          const matchSup = (p.supplier || '').toLowerCase().includes(s);
+          const matchBill = (p.billNo || '').toLowerCase().includes(s);
+          const matchProd = (p.productTitle || '').toLowerCase().includes(s);
+          const matchId = (p.id || '').toLowerCase().includes(s);
+          if (!matchSup && !matchBill && !matchProd && !matchId) return false;
+        }
+
+        return true;
+      });
+
+      // Update Filter Status Elements
+      let filteredBoxes = 0;
+      let filteredTotal = 0;
+      filtered.forEach(p => {
+        const qty = Number(p.qty) || 0;
+        filteredBoxes += qty;
+        filteredTotal += Number(p.total) || (qty * (Number(p.cost) || 0));
+      });
+
+      const filterMsgEl = document.getElementById('purchase-filter-msg');
+      if (filterMsgEl) filterMsgEl.textContent = `${filterDescription} (${filtered.length} found)`;
+
+      const filterCountEl = document.getElementById('purchase-filter-count');
+      if (filterCountEl) filterCountEl.textContent = `${filtered.length} Inwards`;
+
+      const filterBoxesEl = document.getElementById('purchase-filter-boxes');
+      if (filterBoxesEl) filterBoxesEl.textContent = `${filteredBoxes.toLocaleString('en-IN')} Boxes`;
+
+      const filterTotalEl = document.getElementById('purchase-filter-total');
+      if (filterTotalEl) filterTotalEl.textContent = `Total: ₹${filteredTotal.toLocaleString('en-IN')}`;
+
+      // Render table rows
+      if (filtered.length === 0) {
+        tbody.innerHTML = `
+          <tr>
+            <td colspan="8" style="text-align:center; padding:32px 16px; color:var(--text-muted);">
+              <div style="font-size:0.95rem; font-weight:700; margin-bottom:6px; color:#475569;">No supplier inward records found for the selected criteria.</div>
+              <div style="font-size:0.82rem; margin-bottom:12px;">Try selecting another date or clearing your active filters.</div>
+              <button type="button" class="btn-portal-outline" style="padding:6px 14px; font-size:0.8rem;" onclick="resetPurchaseFilters()">Clear Filter &amp; Show All</button>
+            </td>
+          </tr>
+        `;
         return;
       }
 
-      tbody.innerHTML = adminPurchases.map(p => {
+      tbody.innerHTML = filtered.map(p => {
         const isReceived = p.status === 'received';
+        const formattedDate = formatPurchaseDate(p);
+        const ymd = getPurchaseDateYMD(p);
+        const total = Number(p.total) || (Number(p.qty || 0) * Number(p.cost || 0));
         return `
           <tr>
-            <td><code>${escapeHTML(p.id)}</code></td>
-            <td>${escapeHTML(p.date || 'Recent')}</td>
-            <td><strong>${escapeHTML(p.supplier)}</strong></td>
+            <td>
+              <code>${escapeHTML(p.id)}</code>
+              ${p.billNo ? `<div style="font-size:0.75rem; color:var(--text-muted); margin-top:2px;">Bill: ${escapeHTML(p.billNo)}</div>` : ''}
+            </td>
+            <td>
+              <strong>${formattedDate}</strong>
+              ${ymd ? `<div style="font-size:0.75rem; color:var(--text-muted);">${ymd}</div>` : ''}
+            </td>
+            <td><strong>${escapeHTML(p.supplier || 'Plant Depot')}</strong></td>
             <td>${escapeHTML(p.productTitle || 'Water Petis')}</td>
             <td><strong>${p.qty} Boxes</strong></td>
             <td class="tabular">₹${p.cost}</td>
-            <td class="tabular" style="font-weight:800;">₹${(p.total || (p.qty * p.cost)).toLocaleString('en-IN')}</td>
+            <td class="tabular" style="font-weight:800; color:#0F172A;">₹${total.toLocaleString('en-IN')}</td>
             <td>
               ${isReceived ?
                 '<span class="badge-status completed">Stock Inwarded</span>' :
@@ -7045,6 +7365,7 @@
 
     async function handlePurchaseSubmit(e) {
       e.preventDefault();
+      const dateVal = (document.getElementById('pur-date') && document.getElementById('pur-date').value) || new Date().toISOString().split('T')[0];
       const supplier = document.getElementById('pur-supplier').value.trim() || 'Bisleri Plant Jaipur';
       const billNo = document.getElementById('pur-billno').value.trim() || `BILL-${Date.now().toString().slice(-4)}`;
       const prodId = document.getElementById('pur-product').value;
@@ -7075,7 +7396,7 @@
         qty: qty,
         cost: cost,
         total: total,
-        date: new Date().toISOString().split('T')[0],
+        date: dateVal,
         billNo: billNo,
         status: 'received'
       });
@@ -7096,6 +7417,7 @@
           qty: qty,
           unitCost: cost,
           billNo: billNo,
+          invoiceDate: dateVal,
           autoReceive: true,
           actor: currentOperator ? currentOperator.name : 'Admin'
         });
@@ -9362,6 +9684,10 @@
       if (e.key === 'sikar_admin_users') {
         adminUsers = JSON.parse(e.newValue) || DEFAULT_USERS;
         if (currentTab === 'users') renderUsersTable();
+      }
+      if (e.key === 'sikar_admin_purchases') {
+        adminPurchases = JSON.parse(e.newValue) || DEFAULT_PURCHASES;
+        if (currentTab === 'purchases') renderPurchasesTable();
       }
     });
 

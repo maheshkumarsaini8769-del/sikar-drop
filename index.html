@@ -12310,7 +12310,7 @@
         }
 
         try {
-          const purchRes = await fetch('/api/purchases');
+          const purchRes = await fetch('/api/purchases?_t=' + Date.now(), { cache: 'no-store' });
           if (purchRes && purchRes.ok) {
             const purchs = await purchRes.json();
             if (Array.isArray(purchs) && purchs.length > 0) {
@@ -12323,7 +12323,7 @@
                 qty: p.qty,
                 cost: p.unit_cost || p.cost,
                 total: p.total_cost || p.total,
-                date: p.invoice_date || p.date,
+                date: p.invoice_date || (p.created_at ? p.created_at.split('T')[0] : (p.date || '')),
                 billNo: p.bill_no || p.billNo,
                 status: p.status
               }));
