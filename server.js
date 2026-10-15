@@ -24,10 +24,16 @@ const {
   recordManualSaleTransaction,
   refundManualSaleTransaction,
   recordKhataPaymentTransaction,
+  reversePaymentTransaction,
+  adjustKhataEntryTransaction,
+  verifyPaymentTransaction,
   receivePurchaseTransaction,
   createOnlineOrderTransaction,
   updateOrderStatusTransaction,
-  getCustomerProfileAndHistory
+  getCustomerProfileAndHistory,
+  getCustomerStatement,
+  reconcileKhataBalances,
+  fixReconciliationDiscrepancies
 } = require('./db.js');
 
 const app = express();
@@ -2172,20 +2178,129 @@ app.post('/api/customers', (req, res) => {
 });
 
 // ==========================================
-// 7. KHATA & CUSTOMER DUES (OUTSTANDING PAYMENTS)
+// 7. KHATA & CUSTOMER DUES (OUTSTANDING PAYMENTS LEDGER)
 // ==========================================
 app.get('/api/khata', (req, res) => {
   try {
-    const { status } = req.query;
-    let query = 'SELECT * FROM khata_entries';
+    const { status, q, search, customer_id, customerId, from, to } = req.query;
+    const searchTerm = (q || search || '').trim().toLowerCase();
+    const custId = customer_id || customerId;
+    const todayStr = new Date().toISOString().split('T')[0];
+
+    let query = 'SELECT * FROM khata_entries WHERE 1=1';
     const params = [];
-    if (status && status !== 'all') {
-      query += ' WHERE status = ?';
-      params.push(status);
+
+    if (custId) {
+      query += ' AND customer_id = ?';
+      params.push(custId);
     }
+
+    if (status && status !== 'all') {
+      if (status === 'overdue') {
+        query += " AND remaining_amount > 0 AND due_date != '' AND due_date < ? AND status != 'settled' AND status != 'cancelled' AND status != 'reversed'";
+        params.push(todayStr);
+      } else if (status === 'due_today') {
+        query += " AND remaining_amount > 0 AND due_date = ? AND status != 'settled' AND status != 'cancelled' AND status != 'reversed'";
+        params.push(todayStr);
+      } else if (status === 'active' || status === 'unpaid') {
+        query += " AND remaining_amount > 0 AND status != 'settled' AND status != 'cancelled' AND status != 'reversed'";
+      } else {
+        query += ' AND status = ?';
+        params.push(status);
+      }
+    }
+
+    if (from) {
+      query += ' AND (created_at >= ? OR due_date >= ?)';
+      params.push(from, from);
+    }
+    if (to) {
+      query += ' AND (created_at <= ? OR due_date <= ?)';
+      params.push(to + 'T23:59:59.999Z', to);
+    }
+
     query += ' ORDER BY due_date ASC, created_at DESC';
-    const entries = db.prepare(query).all(...params);
-    res.json(entries);
+    const rawEntries = db.prepare(query).all(...params);
+
+    // Apply keyword search
+    let entries = rawEntries;
+    if (searchTerm) {
+      entries = rawEntries.filter(k => {
+        const idMatch = (k.id || '').toLowerCase().includes(searchTerm);
+        const nameMatch = (k.customer_name || '').toLowerCase().includes(searchTerm);
+        const phoneMatch = (k.customer_phone || '').replace(/\D/g, '').includes(searchTerm.replace(/\D/g, ''));
+        const reasonMatch = (k.reason || '').toLowerCase().includes(searchTerm);
+        const orderMatch = (k.order_id || '').toLowerCase().includes(searchTerm);
+        return idMatch || nameMatch || phoneMatch || reasonMatch || orderMatch;
+      });
+    }
+
+    // Attach latest payment info and ageing
+    const formatted = entries.map(k => {
+      const isOverdue = k.remaining_amount > 0 && k.due_date && k.due_date < todayStr && k.status !== 'settled';
+      const isDueToday = k.remaining_amount > 0 && k.due_date && k.due_date === todayStr && k.status !== 'settled';
+
+      let daysOverdue = 0;
+      if (isOverdue && k.due_date) {
+        const diffMs = new Date(todayStr).getTime() - new Date(k.due_date).getTime();
+        daysOverdue = Math.max(1, Math.round(diffMs / (1000 * 60 * 60 * 24)));
+      }
+
+      // Latest payment reference
+      const lastPay = db.prepare(`
+        SELECT id, amount, payment_method, reference_number, receipt_no, created_at
+        FROM payments
+        WHERE reference_id = ? AND is_reversed = 0
+        ORDER BY created_at DESC LIMIT 1
+      `).get(k.id);
+
+      return {
+        ...k,
+        amount: Number(k.amount || 0),
+        paid_amount: Number(k.paid_amount || 0),
+        remaining_amount: Number(k.remaining_amount || 0),
+        adjustment_amount: Number(k.adjustment_amount || 0),
+        isOverdue,
+        isDueToday,
+        daysOverdue,
+        lastPayment: lastPay || null
+      };
+    });
+
+    // Summary calculations across entire database
+    const allActive = db.prepare("SELECT * FROM khata_entries WHERE status != 'cancelled' AND status != 'reversed'").all();
+    let totalDues = 0;
+    let totalRecovered = 0;
+    let overdueCount = 0;
+    let settledCount = 0;
+    const activeCustomerIds = new Set();
+
+    allActive.forEach(k => {
+      const rem = Number(k.remaining_amount || 0);
+      const paid = Number(k.paid_amount || 0);
+      totalDues += rem;
+      totalRecovered += paid;
+      if (rem > 0) {
+        activeCustomerIds.add(k.customer_id);
+        if (k.due_date && k.due_date < todayStr) {
+          overdueCount++;
+        }
+      } else {
+        settledCount++;
+      }
+    });
+
+    res.json({
+      entries: formatted,
+      summary: {
+        totalDues,
+        totalRecovered,
+        activeDebtorsCount: activeCustomerIds.size,
+        overdueCount,
+        settledCount,
+        totalEntries: rawEntries.length
+      }
+    });
   } catch (err) {
     res.status(500).json({ error: err.message });
   }
@@ -2193,27 +2308,69 @@ app.get('/api/khata', (req, res) => {
 
 app.post('/api/khata', (req, res) => {
   try {
-    const { customerId, customerName, customerPhone, amount, reason, dueDate, reminderDate, notes } = req.body;
-    if (!customerName || !customerPhone || !amount) return res.status(400).json({ error: 'Customer name, phone, and amount are required' });
+    const { customerId, customerName, customerPhone, amount, reason, dueDate, reminderDate, notes, orderId, originType } = req.body;
+    if (!customerName || !customerPhone || !amount) {
+      return res.status(400).json({ error: 'Customer name, phone, and amount are required' });
+    }
 
+    const numAmount = Number(amount);
+    if (isNaN(numAmount) || numAmount <= 0) {
+      return res.status(400).json({ error: 'Amount must be greater than zero' });
+    }
+
+    const { actor, role } = checkCustomerAdminRole(req);
     const id = 'KH-' + Math.floor(100000 + Math.random() * 900000);
     const now = new Date().toISOString();
 
     db.transaction(() => {
-      db.prepare(`
-        INSERT INTO khata_entries (id, customer_id, customer_name, customer_phone, amount, paid_amount, remaining_amount, reason, due_date, reminder_date, status, notes, created_at, updated_at)
-        VALUES (?, ?, ?, ?, ?, 0, ?, ?, ?, ?, 'pending', ?, ?, ?)
-      `).run(id, customerId || 'WALK-IN', customerName, customerPhone, amount, amount, reason || 'Credit Supply', dueDate || '', reminderDate || '', notes || '', now, now);
-
-      // Update customer balance
-      let cust = customerId ? db.prepare('SELECT id FROM customers WHERE id = ?').get(customerId) : null;
-      if (!cust) cust = db.prepare('SELECT id FROM customers WHERE phone = ?').get(customerPhone);
-      if (cust) {
-        db.prepare('UPDATE customers SET outstanding_balance = outstanding_balance + ?, last_activity = ? WHERE id = ?').run(amount, now, cust.id);
+      // Find or create customer
+      let cust = customerId ? db.prepare('SELECT id, outstanding_balance FROM customers WHERE id = ?').get(customerId) : null;
+      if (!cust) {
+        const clean = customerPhone.replace(/\D/g, '');
+        cust = db.prepare("SELECT id, outstanding_balance FROM customers WHERE REPLACE(phone, ' ', '') = ?").get(clean);
       }
+      const finalCustId = cust ? cust.id : (customerId || ('CUST-' + Math.floor(1000 + Math.random() * 9000)));
+
+      if (!cust) {
+        db.prepare(`
+          INSERT INTO customers (id, name, phone, verified, customer_type, total_orders, lifetime_spend, outstanding_balance, created_at, last_activity)
+          VALUES (?, ?, ?, 1, 'registered', 0, 0, ?, ?, ?)
+        `).run(finalCustId, customerName, customerPhone, numAmount, now, now);
+      } else {
+        db.prepare('UPDATE customers SET outstanding_balance = outstanding_balance + ?, last_activity = ? WHERE id = ?')
+          .run(numAmount, now, cust.id);
+      }
+
+      db.prepare(`
+        INSERT INTO khata_entries (
+          id, customer_id, customer_name, customer_phone, amount, paid_amount, remaining_amount,
+          reason, due_date, reminder_date, status, notes, order_id, origin_type, authorized_by, created_at, updated_at
+        ) VALUES (?, ?, ?, ?, ?, 0, ?, ?, ?, ?, 'pending', ?, ?, ?, ?, ?, ?)
+      `).run(
+        id,
+        finalCustId,
+        customerName,
+        customerPhone,
+        numAmount,
+        numAmount,
+        reason || 'Wholesale Goods Credit',
+        dueDate || '',
+        reminderDate || '',
+        notes || '',
+        orderId || '',
+        originType || 'manual',
+        actor || 'Admin',
+        now,
+        now
+      );
+
+      db.prepare(`
+        INSERT INTO audit_logs (id, actor, action, module, details, created_at)
+        VALUES (?, ?, 'KHATA_ENTRY_CREATED', 'khata', ?, ?)
+      `).run('AUD-' + Math.floor(100000 + Math.random() * 900000), actor || 'Admin', `Created khata credit entry ${id} of Rs.${numAmount} for ${customerName} (${finalCustId}). Reason: ${reason || 'Wholesale Credit'}`, now);
     })();
 
-    res.status(201).json({ success: true, id });
+    res.status(201).json({ success: true, id, amount: numAmount });
   } catch (err) {
     res.status(400).json({ error: err.message });
   }
@@ -2221,30 +2378,301 @@ app.post('/api/khata', (req, res) => {
 
 app.post('/api/khata/pay', (req, res) => {
   try {
-    const { khataId, amountPaid, paymentMethod, notes, actor } = req.body;
-    if (!khataId || !amountPaid) return res.status(400).json({ error: 'Khata ID and amount are required' });
+    const { khataId, amountPaid, paymentMethod, referenceNumber, notes, verificationStatus } = req.body;
+    if (!khataId || !amountPaid) {
+      return res.status(400).json({ error: 'Khata ID and amount are required' });
+    }
+
+    const { actor, role } = checkCustomerAdminRole(req);
+    const opId = req.headers['x-operator-id'] || 'ADM-01';
 
     const result = recordKhataPaymentTransaction({
       khataId,
       amountPaid: Number(amountPaid),
       paymentMethod: paymentMethod || 'Cash',
-      notes,
-      actor: actor || 'Admin'
+      referenceNumber: referenceNumber || '',
+      notes: notes || '',
+      operatorId: opId,
+      actor: actor || 'Admin',
+      verificationStatus: verificationStatus || 'verified'
     });
 
-    res.json({ 
-      success: true, 
-      ...result, 
-      remainingDue: result.remaining, 
-      settled: result.newStatus === 'settled' 
+    res.json({
+      success: true,
+      paymentId: result.paymentId,
+      receiptNo: result.receiptNo,
+      payment: {
+        id: result.paymentId,
+        receipt_no: result.receiptNo,
+        amount: result.amountPaid,
+        created_at: result.timestamp
+      },
+      ...result,
+      remainingDue: result.remaining,
+      settled: result.newStatus === 'settled'
     });
   } catch (err) {
     res.status(400).json({ error: err.message });
   }
 });
 
+app.post('/api/payments/:id/verify', (req, res) => {
+  try {
+    const { isSuper, actor, role } = checkCustomerAdminRole(req);
+    if (!isSuper && !role.includes('accountant')) {
+      return res.status(403).json({ error: 'Access Denied: Super Admin or Accountant authorization required to verify payments' });
+    }
+
+    const result = verifyPaymentTransaction({
+      paymentId: req.params.id,
+      actor: actor || 'Super Admin'
+    });
+
+    res.json(result);
+  } catch (err) {
+    res.status(400).json({ error: err.message });
+  }
+});
+
+app.post('/api/payments/:id/reverse', (req, res) => {
+  try {
+    const { isSuper, actor, role } = checkCustomerAdminRole(req);
+    if (!isSuper && !role.includes('accountant')) {
+      return res.status(403).json({ error: 'Access Denied: Super Admin authorization required to reverse recorded payments' });
+    }
+
+    const { reason } = req.body;
+    if (!reason || !reason.trim()) {
+      return res.status(400).json({ error: 'Valid reversal reason is required' });
+    }
+
+    const opId = req.headers['x-operator-id'] || 'ADM-01';
+    const result = reversePaymentTransaction({
+      paymentId: req.params.id,
+      reason: reason.trim(),
+      actor: actor || 'Super Admin',
+      operatorId: opId
+    });
+
+    res.json(result);
+  } catch (err) {
+    res.status(400).json({ error: err.message });
+  }
+});
+
+app.post('/api/khata/:id/adjust', (req, res) => {
+  try {
+    const { isSuper, actor, role } = checkCustomerAdminRole(req);
+    if (!isSuper && !role.includes('accountant')) {
+      return res.status(403).json({ error: 'Access Denied: Super Admin or Accountant authorization required to adjust ledger' });
+    }
+
+    const { adjustmentAmount, reason } = req.body;
+    if (!adjustmentAmount || !reason) {
+      return res.status(400).json({ error: 'Adjustment amount and reason are required' });
+    }
+
+    const opId = req.headers['x-operator-id'] || 'ADM-01';
+    const result = adjustKhataEntryTransaction({
+      khataId: req.params.id,
+      adjustmentAmount: Number(adjustmentAmount),
+      reason: reason.trim(),
+      actor: actor || 'Super Admin',
+      operatorId: opId
+    });
+
+    res.json(result);
+  } catch (err) {
+    res.status(400).json({ error: err.message });
+  }
+});
+
+app.get('/api/khata/statement/:customerId', (req, res) => {
+  try {
+    const { fromDate, toDate, from, to } = req.query;
+    const statement = getCustomerStatement({
+      customerId: req.params.customerId,
+      fromDate: fromDate || from,
+      toDate: toDate || to
+    });
+
+    if (!statement) {
+      return res.status(404).json({ error: 'Customer not found' });
+    }
+
+    res.json({
+      success: true,
+      ...statement,
+      timeline: statement.statement,
+      summary: {
+        ...statement.summary,
+        closingBalance: statement.summary ? (statement.summary.netCalculatedBalance !== undefined ? statement.summary.netCalculatedBalance : statement.summary.recordedOutstandingBalance) : 0
+      }
+    });
+  } catch (err) {
+    res.status(500).json({ error: err.message });
+  }
+});
+
+app.get('/api/khata/receipt/:paymentId', (req, res) => {
+  try {
+    const pid = req.params.paymentId;
+    let payment = db.prepare('SELECT * FROM payments WHERE id = ? OR receipt_no = ?').get(pid, pid);
+    if (!payment) {
+      return res.status(404).json({ error: 'Payment receipt not found' });
+    }
+
+    const customer = db.prepare('SELECT * FROM customers WHERE id = ?').get(payment.customer_id);
+    const khata = payment.reference_id ? db.prepare('SELECT * FROM khata_entries WHERE id = ?').get(payment.reference_id) : null;
+
+    res.json({
+      success: true,
+      receiptNo: payment.receipt_no || ('RCP-' + payment.id.replace(/\D/g, '')),
+      paymentId: payment.id,
+      timestamp: payment.created_at,
+      payment: {
+        id: payment.id,
+        receipt_no: payment.receipt_no || ('RCP-' + payment.id.replace(/\D/g, '')),
+        amount: payment.amount,
+        payment_method: payment.payment_method,
+        reference_number: payment.reference_number,
+        verification_status: payment.verification_status,
+        is_reversed: payment.is_reversed,
+        operator_name: payment.operator_name,
+        created_at: payment.created_at,
+        notes: payment.notes
+      },
+      khata: khata ? {
+        id: khata.id,
+        customer_name: khata.customer_name,
+        customer_phone: khata.customer_phone,
+        reason: khata.reason,
+        remaining_amount: khata.remaining_amount,
+        notes: khata.notes
+      } : {
+        customer_name: payment.customer_name,
+        customer_phone: payment.customer_phone,
+        reason: payment.notes,
+        remaining_amount: payment.new_balance
+      },
+      customer: {
+        id: customer ? customer.id : payment.customer_id,
+        name: customer ? customer.name : payment.customer_name,
+        phone: customer ? customer.phone : payment.customer_phone,
+        corridor: customer ? customer.corridor : 'Piprali Road Mandi',
+        address: customer ? customer.address : 'Sikar Wholesale Market'
+      },
+      amountPaid: payment.amount,
+      previousBalance: payment.previous_balance,
+      remainingBalance: payment.new_balance,
+      paymentMethod: payment.payment_method,
+      referenceNumber: payment.reference_number || 'N/A',
+      operator: payment.operator_name || 'Authorized Cashier',
+      notes: payment.notes || 'Payment Received',
+      khataReason: khata ? khata.reason : 'Wholesale Goods Supply'
+    });
+  } catch (err) {
+    res.status(500).json({ error: err.message });
+  }
+});
+
+app.get('/api/khata/reconcile', (req, res) => {
+  try {
+    const report = reconcileKhataBalances();
+    res.json({
+      success: true,
+      ...report,
+      summary: report
+    });
+  } catch (err) {
+    res.status(500).json({ error: err.message });
+  }
+});
+
+app.post('/api/khata/reconcile/fix', (req, res) => {
+  try {
+    const { isSuper, actor } = checkCustomerAdminRole(req);
+    if (!isSuper) {
+      return res.status(403).json({ error: 'Access Denied: Super Admin role required to fix reconciliation discrepancies' });
+    }
+
+    const result = fixReconciliationDiscrepancies({ actor: actor || 'Super Admin' });
+    res.json(result);
+  } catch (err) {
+    res.status(500).json({ error: err.message });
+  }
+});
+
+app.get('/api/khata/export.csv', (req, res) => {
+  try {
+    const { isSuper, actor, role } = checkCustomerAdminRole(req);
+    const todayStr = new Date().toISOString().split('T')[0];
+    const entries = db.prepare("SELECT * FROM khata_entries ORDER BY due_date ASC, created_at DESC").all();
+
+    const csvHeaders = [
+      'Khata ID',
+      'Party Name',
+      'Mobile Phone',
+      'Origin Type',
+      'Order Reference',
+      'Original Principal (Rs)',
+      'Payments Received (Rs)',
+      'Adjustments (Rs)',
+      'Remaining Balance (Rs)',
+      'Promise Due Date',
+      'Ageing Status',
+      'Settlement Status',
+      'Authorized By',
+      'Notes',
+      'Created Date'
+    ];
+
+    const rows = entries.map(k => {
+      const isOverdue = k.remaining_amount > 0 && k.due_date && k.due_date < todayStr && k.status !== 'settled';
+      const ageingStatus = isOverdue ? 'Overdue' : (k.remaining_amount <= 0 ? 'Settled' : 'Active');
+
+      // Mask phone for staff mode if not super admin
+      const phoneDisplay = !isSuper && k.customer_phone
+        ? (k.customer_phone.length >= 10 ? k.customer_phone.replace(/(\d{5})\d{5}/, '$1*****') : '*****')
+        : k.customer_phone;
+
+      return [
+        `"${k.id}"`,
+        `"${(k.customer_name || '').replace(/"/g, '""')}"`,
+        `"${phoneDisplay}"`,
+        `"${k.origin_type || 'manual'}"`,
+        `"${k.order_id || k.reason || ''}"`,
+        Number(k.amount || 0),
+        Number(k.paid_amount || 0),
+        Number(k.adjustment_amount || 0),
+        Number(k.remaining_amount || 0),
+        `"${k.due_date || 'N/A'}"`,
+        `"${ageingStatus}"`,
+        `"${k.status || 'pending'}"`,
+        `"${k.authorized_by || 'Admin'}"`,
+        `"${(k.notes || '').replace(/"/g, '""')}"`,
+        `"${k.created_at ? k.created_at.split('T')[0] : ''}"`
+      ].join(',');
+    });
+
+    // Log export audit
+    const now = new Date().toISOString();
+    db.prepare(`
+      INSERT INTO audit_logs (id, actor, action, module, details, created_at)
+      VALUES (?, ?, 'KHATA_DATA_EXPORTED', 'khata', ?, ?)
+    `).run('AUD-' + Math.floor(100000 + Math.random() * 900000), actor || 'Super Admin', `Exported ${entries.length} Khata Ledger records as CSV`, now);
+
+    res.setHeader('Content-Type', 'text/csv; charset=utf-8');
+    res.setHeader('Content-Disposition', `attachment; filename="sikar_drop_khata_ledger_${todayStr}.csv"`);
+    res.send([csvHeaders.join(','), ...rows].join('\n'));
+  } catch (err) {
+    res.status(500).json({ error: err.message });
+  }
+});
+
 app.post('/api/khata/:id/remind', (req, res) => {
   try {
+    const { isSuper, actor, role } = checkCustomerAdminRole(req);
     const { id } = req.params;
     const entry = db.prepare('SELECT * FROM khata_entries WHERE id = ?').get(id);
     if (!entry) return res.status(404).json({ error: 'Khata entry not found' });
@@ -2252,10 +2680,16 @@ app.post('/api/khata/:id/remind', (req, res) => {
     const now = new Date().toISOString();
     db.prepare('UPDATE khata_entries SET whatsapp_reminded_at = ?, updated_at = ? WHERE id = ?').run(now, now, id);
 
+    // Audit log reminder
+    db.prepare(`
+      INSERT INTO audit_logs (id, actor, action, module, details, created_at)
+      VALUES (?, ?, 'PAYMENT_REMINDER_SENT', 'khata', ?, ?)
+    `).run('AUD-' + Math.floor(100000 + Math.random() * 900000), actor || 'Admin', `Sent WhatsApp payment reminder to ${entry.customer_name} (${entry.customer_phone}) for pending due of Rs.${entry.remaining_amount}`, now);
+
     // Build WhatsApp Message Payload
     const cleanPhone = entry.customer_phone.replace(/[^0-9]/g, '');
     const formattedPhone = cleanPhone.startsWith('91') ? cleanPhone : ('91' + cleanPhone);
-    const msg = `Hello ${entry.customer_name}, reminder from Sikar Drop Wholesale Depot: Your pending balance of Rs.${entry.remaining_amount} (${entry.reason || 'Water & Drinks Supply'}) is due by ${entry.due_date || 'the agreed date'}. UPI and cash payments are accepted. Helpline: +91 98290 XXXXX. Thank you!`;
+    const msg = `Hello ${entry.customer_name}, reminder from Sikar Drop Wholesale Depot: Your pending balance of Rs.${entry.remaining_amount} (${entry.reason || 'Water & Drinks Supply'}) is due by ${entry.due_date || 'the agreed date'}. UPI and cash payments are accepted. Depot Counter: Piprali Road Mandi, Sikar. Thank you!`;
     const waLink = `https://wa.me/${formattedPhone}?text=${encodeURIComponent(msg)}`;
 
     res.json({ success: true, whatsappUrl: waLink, message: msg, remindedAt: now });

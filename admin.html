@@ -3489,38 +3489,122 @@
            TAB 4: UDHAR KHATA
            ======================================================= -->
       <section id="pane-khata" class="tab-pane">
+        <!-- 1. KHATA EXECUTIVE METRICS BANNER -->
+        <div class="stats-grid-row" style="margin-bottom: 20px;" id="khata-kpi-summary-row">
+          <div class="stat-kpi-card" style="border-top: 3px solid #DC2626;">
+            <span class="stat-kpi-label">Total Outstanding Udhar</span>
+            <div class="stat-kpi-val tabular" style="color: #DC2626;" id="khata-kpi-total-dues">₹0</div>
+            <span class="stat-kpi-delta" style="color: #DC2626;" id="khata-kpi-total-dues-sub">Active Wholesale Receivables</span>
+          </div>
+          <div class="stat-kpi-card" style="border-top: 3px solid #0284C7;">
+            <span class="stat-kpi-label">Active Debtors</span>
+            <div class="stat-kpi-val tabular" style="color: #0284C7;" id="khata-kpi-active-accounts">0 Parties</div>
+            <span class="stat-kpi-delta" id="khata-kpi-active-accounts-sub">Parties with &gt; 0 Balance</span>
+          </div>
+          <div class="stat-kpi-card" style="border-top: 3px solid #EA580C;">
+            <span class="stat-kpi-label">Overdue Accounts</span>
+            <div class="stat-kpi-val tabular" style="color: #EA580C;" id="khata-kpi-overdue-count">0 Overdue</div>
+            <span class="stat-kpi-delta" style="color: #EA580C;" id="khata-kpi-overdue-sub">Promise Date Elapsed</span>
+          </div>
+          <div class="stat-kpi-card" style="border-top: 3px solid #D97706;">
+            <span class="stat-kpi-label">Due Today</span>
+            <div class="stat-kpi-val tabular" style="color: #D97706;" id="khata-kpi-due-today-count">0 Today</div>
+            <span class="stat-kpi-delta" id="khata-kpi-due-today-sub">Promise Due Today</span>
+          </div>
+          <div class="stat-kpi-card" style="border-top: 3px solid #15803D;">
+            <span class="stat-kpi-label">Recoveries &amp; Collections</span>
+            <div class="stat-kpi-val tabular" style="color: #15803D;" id="khata-kpi-total-recovered">₹0</div>
+            <span class="stat-kpi-delta positive" id="khata-kpi-total-recovered-sub">Total Payments Received</span>
+          </div>
+          <div class="stat-kpi-card" style="border-top: 3px solid #7C3AED;">
+            <span class="stat-kpi-label">Settled / Closed</span>
+            <div class="stat-kpi-val tabular" style="color: #7C3AED;" id="khata-kpi-settled-count">0 Accounts</div>
+            <span class="stat-kpi-delta positive" id="khata-kpi-settled-sub">Fully Cleared Ledgers</span>
+          </div>
+        </div>
+
         <div class="portal-card">
           <div class="portal-card-header">
             <div>
-              <h2>Udhar Khata (Pending Payments Ledger)</h2>
-              <p>Keep track of balances, due dates and send 1-click WhatsApp payment reminders.</p>
+              <h2>Udhar Khata &amp; Pending Payments Ledger</h2>
+              <p>Keep track of customer balances, partial receipts, verified payments, non-destructive audit corrections, and 1-click statements.</p>
             </div>
-            <button type="button" class="btn-portal-primary" onclick="openAddKhataModal()">+ Add Khata Entry</button>
+            <div style="display: flex; gap: 8px; flex-wrap: wrap; align-items: center;">
+              <button type="button" class="btn-portal-outline" onclick="openKhataReconcileModal()" style="display: inline-flex; align-items: center; gap: 6px;" title="Check and align customer balances against khata ledger">
+                <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5"><path d="M21.5 2v6h-6M21.34 15.57a10 10 0 1 1-.57-8.38l5.67-5.67"/></svg>
+                <span>Reconcile Balances</span>
+              </button>
+              <button type="button" class="btn-portal-outline" onclick="exportKhataCSV()" style="display: inline-flex; align-items: center; gap: 6px;" title="Export khata ledger to CSV with audit details">
+                <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5"><path d="M21 15v4a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2v-4"></path><polyline points="7 10 12 15 17 10"></polyline><line x1="12" y1="15" x2="12" y2="3"></line></svg>
+                <span>Export Ledger CSV</span>
+              </button>
+              <button type="button" class="btn-portal-primary" onclick="openAddKhataModal()" style="display: inline-flex; align-items: center; gap: 6px;">
+                <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5"><line x1="12" y1="5" x2="12" y2="19"></line><line x1="5" y1="12" x2="19" y2="12"></line></svg>
+                <span>+ Add Khata Entry</span>
+              </button>
+            </div>
           </div>
 
           <!-- DUE NOTIFICATION BANNER -->
-          <div class="khata-alert-banner" id="khata-due-alert-banner">
+          <div class="khata-alert-banner" id="khata-due-alert-banner" style="margin-bottom: 18px;">
             <div class="khata-alert-content">
               <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5"><circle cx="12" cy="12" r="10"></circle><line x1="12" y1="8" x2="12" y2="12"></line><line x1="12" y1="16" x2="12.01" y2="16"></line></svg>
               <div>
-                <strong>Payment Reminder Alert: Due Today / Overdue</strong>
+                <strong>Payment Reminder Alert: Due Today / Overdue Accounts</strong>
                 <span id="khata-due-summary-text">Loading ledger alerts...</span>
               </div>
             </div>
-            <button type="button" class="btn-tbl-action danger" onclick="highlightOverdueKhata()">View Due Now</button>
+            <div style="display: flex; gap: 8px;">
+              <button type="button" class="btn-tbl-action danger" onclick="filterDueKhataNow()">Filter Due Now</button>
+            </div>
+          </div>
+
+          <!-- TOOLBAR: SEARCH & STATUS FILTER TABS -->
+          <div style="background: #FFFFFF; border: 1px solid var(--border-subtle); border-radius: var(--radius-sm); padding: 14px 18px; margin-bottom: 20px; box-shadow: var(--shadow-sm);">
+            <div style="display: flex; flex-wrap: wrap; gap: 14px; align-items: center; justify-content: space-between;">
+              <!-- Filter tabs -->
+              <div style="display: flex; gap: 6px; flex-wrap: wrap;" id="khata-filter-tabs">
+                <button type="button" class="btn-tbl-action active" id="khata-flt-active" onclick="setKhataFilter('active', this)">Active Outstanding</button>
+                <button type="button" class="btn-tbl-action" id="khata-flt-overdue" onclick="setKhataFilter('overdue', this)">Overdue Accounts</button>
+                <button type="button" class="btn-tbl-action" id="khata-flt-due-today" onclick="setKhataFilter('due_today', this)">Due Today</button>
+                <button type="button" class="btn-tbl-action" id="khata-flt-settled" onclick="setKhataFilter('settled', this)">Settled / Cleared</button>
+                <button type="button" class="btn-tbl-action" id="khata-flt-all" onclick="setKhataFilter('all', this)">All Ledger Rows</button>
+              </div>
+
+              <!-- Date filters & Search -->
+              <div style="display: flex; gap: 10px; align-items: center; flex-wrap: wrap;">
+                <div style="display: flex; align-items: center; gap: 4px;">
+                  <label for="khata-filter-from" style="font-size: 0.76rem; font-weight: 700; color: var(--text-muted); text-transform: uppercase;">From</label>
+                  <input type="date" id="khata-filter-from" class="portal-input" style="padding: 4px 8px; font-size: 0.82rem; height: 32px;" onchange="applyKhataDateFilter()">
+                </div>
+                <div style="display: flex; align-items: center; gap: 4px;">
+                  <label for="khata-filter-to" style="font-size: 0.76rem; font-weight: 700; color: var(--text-muted); text-transform: uppercase;">To</label>
+                  <input type="date" id="khata-filter-to" class="portal-input" style="padding: 4px 8px; font-size: 0.82rem; height: 32px;" onchange="applyKhataDateFilter()">
+                </div>
+                <button type="button" class="btn-tbl-action" onclick="clearKhataDateFilter()" title="Clear date filter" style="height: 32px; padding: 0 10px;">Clear Dates</button>
+
+                <!-- Search input -->
+                <div style="position: relative; min-width: 240px;">
+                  <input type="text" id="khata-search-input" class="portal-input" placeholder="Search customer, phone, order, KH-ID..." style="padding-left: 32px; height: 34px; font-size: 0.82rem;" oninput="handleKhataSearch(this.value)">
+                  <svg style="position: absolute; left: 10px; top: 10px; width: 14px; height: 14px; color: var(--text-muted);" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5"><circle cx="11" cy="11" r="8"></circle><line x1="21" y1="21" x2="16.65" y2="16.65"></line></svg>
+                </div>
+              </div>
+            </div>
           </div>
 
           <div class="portal-table-wrapper">
             <table class="portal-table">
               <thead>
                 <tr>
-                  <th>Customer Name</th>
-                  <th>Phone Number</th>
-                  <th>Pending Balance ₹</th>
-                  <th>Promise Due Date</th>
-                  <th>Order Note</th>
+                  <th>Khata ID &amp; Date</th>
+                  <th>Customer &amp; Contact</th>
+                  <th>Origin &amp; Reason</th>
+                  <th style="text-align: right;">Original Due ₹</th>
+                  <th style="text-align: right;">Paid Amount ₹</th>
+                  <th style="text-align: right;">Remaining Due ₹</th>
+                  <th>Due Date &amp; Ageing</th>
                   <th>Status</th>
-                  <th>Actions</th>
+                  <th style="text-align: center;">Actions</th>
                 </tr>
               </thead>
               <tbody id="khata-table-tbody"></tbody>
@@ -5291,81 +5375,453 @@
     <div class="portal-modal-card">
       <button type="button" class="modal-close-x" onclick="closeModal('khata-add-modal')"><svg style="width:14px;height:14px;display:block;" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5"><line x1="18" y1="6" x2="6" y2="18"></line><line x1="6" y1="6" x2="18" y2="18"></line></svg></button>
       <h3 style="font-family: var(--font-heading); font-size: 1.3rem; font-weight: 900; margin-bottom: 4px;">Record Pending Udhar Khata Entry</h3>
-      <p style="font-size: 0.82rem; color: var(--text-muted); margin-bottom: 18px;">Set customer promise due date to trigger collection reminders.</p>
+      <p style="font-size: 0.82rem; color: var(--text-muted); margin-bottom: 18px;">Set customer promise due date to trigger automated collection reminders.</p>
 
       <form onsubmit="handleKhataAddSubmit(event)">
         <div class="portal-form-grid-2">
           <div class="portal-field-group">
             <label for="k-add-name">Customer / Establishment Name *</label>
-            <input type="text" id="k-add-name" class="portal-input" required>
+            <input type="text" id="k-add-name" class="portal-input" list="khata-cust-datalist" placeholder="Select or type customer name" oninput="handleKhataCustomerSelect(this.value)" required>
+            <datalist id="khata-cust-datalist"></datalist>
           </div>
           <div class="portal-field-group">
             <label for="k-add-phone">Mobile Phone (WhatsApp) *</label>
-            <input type="tel" id="k-add-phone" class="portal-input" required>
+            <input type="tel" id="k-add-phone" class="portal-input" placeholder="e.g. 9829011223" required>
           </div>
         </div>
         <div class="portal-form-grid-2">
           <div class="portal-field-group">
             <label for="k-add-amount">Pending Balance Amount ₹ *</label>
-            <input type="number" id="k-add-amount" class="portal-input tabular" min="1" required>
+            <input type="number" id="k-add-amount" class="portal-input tabular" min="1" step="any" placeholder="0.00" required>
           </div>
           <div class="portal-field-group">
             <label for="k-add-duedate">Promise Due Date *</label>
             <input type="date" id="k-add-duedate" class="portal-input" required>
           </div>
         </div>
-        <div class="portal-field-group">
-          <label for="k-add-note">Order Notes / Bill Reference</label>
-          <input type="text" id="k-add-note" class="portal-input" placeholder="e.g. 10 Boxes Bisleri 1L Balance">
+        <div class="portal-form-grid-2">
+          <div class="portal-field-group">
+            <label for="k-add-note">Order Notes / Bill Reference *</label>
+            <input type="text" id="k-add-note" class="portal-input" placeholder="e.g. 10 Boxes Bisleri 1L Balance" required>
+          </div>
+          <div class="portal-field-group">
+            <label for="k-add-order-id">Linked Order ID (Optional)</label>
+            <input type="text" id="k-add-order-id" class="portal-input" placeholder="e.g. CS-123456 or ORD-987654">
+          </div>
         </div>
-        <button type="submit" class="btn-portal-primary" style="width: 100%; justify-content: center;">Save to Ledger</button>
+        <button type="submit" class="btn-portal-primary" id="k-add-submit-btn" style="width: 100%; justify-content: center; margin-top: 10px;">Save to Ledger</button>
       </form>
     </div>
   </div>
 
   <!-- 2B. RECORD KHATA PAYMENT MODAL -->
   <div class="portal-modal-overlay" id="khata-pay-modal">
-    <div class="portal-modal-card">
+    <div class="portal-modal-card" style="max-width: 600px; width: 94%;">
       <button type="button" class="modal-close-x" onclick="closeModal('khata-pay-modal')"><svg style="width:14px;height:14px;display:block;" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5"><line x1="18" y1="6" x2="6" y2="18"></line><line x1="6" y1="6" x2="18" y2="18"></line></svg></button>
-      <h3 style="font-family: var(--font-heading); font-size: 1.3rem; font-weight: 900; margin-bottom: 4px;">Record Khata Payment</h3>
-      <p style="font-size: 0.82rem; color: var(--text-muted); margin-bottom: 18px;" id="khata-pay-subtitle">Clear outstanding debt via Cash, UPI, or Bank Transfer.</p>
+      <h3 style="font-family: var(--font-heading); font-size: 1.3rem; font-weight: 900; margin-bottom: 4px;">Record Khata Payment Receipt</h3>
+      <p style="font-size: 0.82rem; color: var(--text-muted); margin-bottom: 18px;" id="khata-pay-subtitle">Receive full or partial settlement with automatic receipt voucher generation.</p>
 
       <form onsubmit="handleKhataPaymentSubmit(event)">
         <input type="hidden" id="khata-pay-id">
+        <input type="hidden" id="khata-pay-raw-due">
+
         <div class="portal-form-grid-2">
           <div class="portal-field-group">
             <label>Customer Name</label>
-            <input type="text" id="khata-pay-name" class="portal-input" readonly style="background:#F8FAFC;">
+            <input type="text" id="khata-pay-name" class="portal-input" readonly style="background:#F8FAFC; font-weight:700;">
           </div>
           <div class="portal-field-group">
             <label>Current Outstanding Due ₹</label>
-            <input type="text" id="khata-pay-current-due" class="portal-input tabular" readonly style="background:#FEF2F2; font-weight:800; color:#DC2626;">
+            <input type="text" id="khata-pay-current-due" class="portal-input tabular" readonly style="background:#FEF2F2; font-weight:900; color:#DC2626; font-size:1.1rem;">
           </div>
         </div>
+
+        <!-- Quick Amount Selection Shortcuts -->
+        <div style="margin-bottom: 14px;">
+          <label style="font-size: 0.78rem; font-weight: 700; color: var(--text-muted); display: block; margin-bottom: 6px;">Quick Amount Presets</label>
+          <div style="display: flex; gap: 6px; flex-wrap: wrap;">
+            <button type="button" class="btn-tbl-action" onclick="setKhataQuickAmount('full')">Full Due</button>
+            <button type="button" class="btn-tbl-action" onclick="setKhataQuickAmount('half')">50% Half</button>
+            <button type="button" class="btn-tbl-action" onclick="setKhataQuickAmount(500)">₹500</button>
+            <button type="button" class="btn-tbl-action" onclick="setKhataQuickAmount(1000)">₹1,000</button>
+            <button type="button" class="btn-tbl-action" onclick="setKhataQuickAmount(2000)">₹2,000</button>
+          </div>
+        </div>
+
         <div class="portal-form-grid-2">
           <div class="portal-field-group">
             <label for="khata-pay-amount">Amount Received Now ₹ *</label>
-            <input type="number" id="khata-pay-amount" class="portal-input tabular" min="1" step="any" required>
+            <input type="number" id="khata-pay-amount" class="portal-input tabular" min="1" step="any" placeholder="0.00" oninput="updateKhataPayRemainingPreview()" required>
           </div>
           <div class="portal-field-group">
             <label for="khata-pay-method">Payment Mode *</label>
             <select id="khata-pay-method" class="portal-select">
-              <option value="Cash">Cash at Counter / Tempo</option>
+              <option value="Cash" selected>Cash at Counter / Tempo</option>
               <option value="UPI">UPI (PhonePe / GPay / Paytm)</option>
-              <option value="Bank Transfer">Bank Transfer / NEFT</option>
+              <option value="Bank Transfer">Bank Transfer / NEFT / IMPS</option>
               <option value="Cheque">Cheque</option>
             </select>
           </div>
         </div>
+
+        <!-- Live Remaining Preview Strip -->
+        <div id="khata-pay-preview-strip" style="background: #F1F5F9; border: 1px solid #CBD5E1; border-radius: 6px; padding: 10px 14px; margin-bottom: 14px; display: flex; justify-content: space-between; align-items: center; font-size: 0.85rem;">
+          <span>Remaining Debt After Payment:</span>
+          <strong id="khata-pay-preview-remaining" class="tabular" style="font-size: 1.05rem; color: #15803D;">₹0</strong>
+        </div>
+
+        <div class="portal-form-grid-2">
+          <div class="portal-field-group">
+            <label for="khata-pay-ref">Reference / UTR / Cheque No.</label>
+            <input type="text" id="khata-pay-ref" class="portal-input" placeholder="e.g. UTR 4291823901 or Cheque #849201">
+          </div>
+          <div class="portal-field-group">
+            <label for="khata-pay-verification">Verification Status *</label>
+            <select id="khata-pay-verification" class="portal-select">
+              <option value="verified" selected>Verified (Immediate Ledger Credit)</option>
+              <option value="unverified">Unverified (Pending Bank / Cheque Clearance)</option>
+            </select>
+          </div>
+        </div>
+
         <div class="portal-field-group">
-          <label for="khata-pay-notes">Payment Notes / Receipt Ref</label>
+          <label for="khata-pay-notes">Payment Notes / Driver Info</label>
           <input type="text" id="khata-pay-notes" class="portal-input" placeholder="e.g. Paid in cash to tempo driver Suresh">
         </div>
+
         <div style="display:flex; justify-content:flex-end; gap:10px; margin-top:20px;">
           <button type="button" class="btn-portal-outline" onclick="closeModal('khata-pay-modal')">Cancel</button>
-          <button type="submit" class="btn-portal-success">Record Payment &amp; Update Ledger</button>
+          <button type="submit" class="btn-portal-success" id="khata-pay-submit-btn">Record Payment &amp; Generate Receipt</button>
         </div>
       </form>
+    </div>
+  </div>
+
+  <!-- 2C. PAYMENT RECEIPT VOUCHER MODAL -->
+  <div class="portal-modal-overlay" id="payment-receipt-modal">
+    <div class="portal-modal-card" style="max-width: 620px; width: 94%;">
+      <button type="button" class="modal-close-x" onclick="closeModal('payment-receipt-modal')"><svg style="width:14px;height:14px;display:block;" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5"><line x1="18" y1="6" x2="6" y2="18"></line><line x1="6" y1="6" x2="18" y2="18"></line></svg></button>
+
+      <div id="payment-receipt-print-area">
+        <!-- Printable Voucher Card Header -->
+        <div style="border-bottom: 2px solid #0284C7; padding-bottom: 12px; margin-bottom: 14px; display: flex; justify-content: space-between; align-items: flex-start;">
+          <div>
+            <h2 style="margin: 0; color: #0284C7; font-size: 1.25rem; font-family: var(--font-heading); font-weight: 900;">SIKAR DROP WHOLESALE DEPOT</h2>
+            <div style="font-size: 0.78rem; color: #475569; margin-top: 2px;">Piprali &amp; Nawalgarh Road Junction, Sikar (Raj.) 332001</div>
+            <div style="font-size: 0.74rem; color: #64748B;">Mandi License: SKR-WHL-2024 &bull; Helpline: +91 98290 00000</div>
+          </div>
+          <div style="text-align: right;">
+            <div style="font-size: 0.72rem; font-weight: 800; color: #64748B; text-transform: uppercase;">Payment Voucher</div>
+            <div style="font-size: 1.15rem; color: #0284C7; font-weight: 900; font-family: var(--font-mono);" id="rcp-voucher-no">RCP-000000</div>
+            <div style="font-size: 0.76rem; color: #334155;" id="rcp-date-time">-</div>
+          </div>
+        </div>
+
+        <!-- Party & Payment Mode Details -->
+        <div style="display: grid; grid-template-columns: 1fr 1fr; gap: 10px; background: #F8FAFC; border: 1px solid #E2E8F0; border-radius: 6px; padding: 12px; margin-bottom: 14px; font-size: 0.82rem;">
+          <div>
+            <div style="color: var(--text-muted); font-size: 0.74rem; text-transform: uppercase; font-weight: 700;">Received From</div>
+            <strong style="font-size: 0.95rem; display: block; margin-top: 2px;" id="rcp-cust-name">-</strong>
+            <span style="color: #475569;" id="rcp-cust-phone">-</span>
+            <div style="font-size: 0.72rem; color: var(--text-muted); margin-top: 2px;" id="rcp-cust-id">-</div>
+          </div>
+          <div>
+            <div style="color: var(--text-muted); font-size: 0.74rem; text-transform: uppercase; font-weight: 700;">Payment Information</div>
+            <div style="margin-top: 2px;"><strong>Mode:</strong> <span id="rcp-pay-method">-</span></div>
+            <div><strong>Ref / UTR:</strong> <span id="rcp-ref-no" style="font-family: var(--font-mono);">-</span></div>
+            <div><strong>Status:</strong> <span id="rcp-status-badge" class="badge-status completed">Verified</span></div>
+          </div>
+        </div>
+
+        <!-- Reason / Account Info -->
+        <div style="font-size: 0.82rem; margin-bottom: 14px; background: #FFFFFF; border: 1px dashed #CBD5E1; border-radius: 6px; padding: 8px 12px;">
+          <strong>Khata / Account Note:</strong> <span id="rcp-account-note">-</span>
+        </div>
+
+        <!-- Financial Breakdown Table -->
+        <table style="width: 100%; border-collapse: collapse; margin-bottom: 14px; font-size: 0.84rem;">
+          <thead>
+            <tr style="background: #F1F5F9; border-bottom: 2px solid #CBD5E1;">
+              <th style="padding: 8px; text-align: left;">Description</th>
+              <th style="padding: 8px; text-align: right;">Amount ₹</th>
+            </tr>
+          </thead>
+          <tbody>
+            <tr style="border-bottom: 1px solid #E2E8F0;">
+              <td style="padding: 8px;">Previous Outstanding Dues</td>
+              <td style="padding: 8px; text-align: right; font-family: var(--font-mono);" id="rcp-prev-due">₹0</td>
+            </tr>
+            <tr style="border-bottom: 2px solid #0F172A; background: #F0FDF4;">
+              <td style="padding: 10px 8px; font-weight: 800; color: #15803D;">Amount Received &amp; Credited</td>
+              <td style="padding: 10px 8px; text-align: right; font-weight: 900; font-size: 1.15rem; color: #15803D; font-family: var(--font-mono);" id="rcp-amount-paid">₹0</td>
+            </tr>
+            <tr style="background: #FEF2F2;">
+              <td style="padding: 8px; font-weight: 700;">Remaining Balance Balance Due</td>
+              <td style="padding: 8px; text-align: right; font-weight: 800; color: #DC2626; font-family: var(--font-mono);" id="rcp-remaining-due">₹0</td>
+            </tr>
+          </tbody>
+        </table>
+
+        <!-- Amount In Words -->
+        <div style="font-size: 0.8rem; margin-bottom: 14px; padding: 8px 12px; background: #F8FAFC; border-radius: 4px; border: 1px solid #E2E8F0;">
+          <strong>Amount in Words:</strong> <span id="rcp-amount-words" style="font-style: italic;">Zero Rupees Only</span>
+        </div>
+
+        <!-- Cashier / Authorized Signatory Footer -->
+        <div style="display: flex; justify-content: space-between; align-items: flex-end; margin-top: 20px; padding-top: 10px; border-top: 1px solid #E2E8F0; font-size: 0.78rem; color: #64748B;">
+          <div>
+            <div>Authorized Cashier: <strong id="rcp-operator-name" style="color: #0F172A;">Admin</strong></div>
+            <div style="font-size: 0.72rem;">System-generated audit-compliant voucher.</div>
+          </div>
+          <div style="text-align: right;">
+            <div style="border-top: 1px solid #94A3B8; width: 140px; margin-bottom: 4px;"></div>
+            <span>Authorized Signature</span>
+          </div>
+        </div>
+      </div>
+
+      <!-- Action Buttons -->
+      <div style="display: flex; justify-content: flex-end; gap: 8px; margin-top: 20px; flex-wrap: wrap;">
+        <button type="button" class="btn-portal-outline" onclick="closeModal('payment-receipt-modal')">Close</button>
+        <button type="button" class="btn-portal-outline" onclick="sharePaymentReceiptWhatsApp()" style="display: inline-flex; align-items: center; gap: 6px;">
+          <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5"><path d="M21 11.5a8.38 8.38 0 0 1-.9 3.8 8.5 8.5 0 0 1-7.6 4.7 8.38 8.38 0 0 1-3.8-.9L3 21l1.9-5.7a8.38 8.38 0 0 1-.9-3.8 8.5 8.5 0 0 1 4.7-7.6 8.38 8.38 0 0 1 3.8-.9h.5a8.48 8.48 0 0 1 8 8v.5z"/></svg>
+          <span>WhatsApp Receipt</span>
+        </button>
+        <button type="button" class="btn-portal-primary" onclick="printPaymentReceipt()" style="display: inline-flex; align-items: center; gap: 6px;">
+          <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5"><polyline points="6 9 6 2 18 2 18 9"></polyline><path d="M6 18H4a2 2 0 0 1-2-2v-5a2 2 0 0 1 2-2h16a2 2 0 0 1 2 2v5a2 2 0 0 1-2 2h-2"></path><rect x="6" y="14" width="12" height="8"></rect></svg>
+          <span>Print Receipt Voucher</span>
+        </button>
+      </div>
+    </div>
+  </div>
+
+  <!-- 2D. CUSTOMER KHATA STATEMENT MODAL -->
+  <div class="portal-modal-overlay" id="khata-statement-modal">
+    <div class="portal-modal-card" style="max-width: 900px; width: 95%; max-height: 92vh; overflow-y: auto;">
+      <button type="button" class="modal-close-x" onclick="closeModal('khata-statement-modal')"><svg style="width:14px;height:14px;display:block;" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5"><line x1="18" y1="6" x2="6" y2="18"></line><line x1="6" y1="6" x2="18" y2="18"></line></svg></button>
+
+      <!-- Statement Header -->
+      <div style="border-bottom: 2px solid #0284C7; padding-bottom: 12px; margin-bottom: 14px; display: flex; justify-content: space-between; align-items: flex-start; flex-wrap: wrap; gap: 10px;">
+        <div>
+          <div style="font-size: 0.74rem; font-weight: 800; color: #0284C7; text-transform: uppercase;">Wholesale Customer Statement</div>
+          <h2 style="margin: 2px 0 0 0; font-size: 1.3rem; font-family: var(--font-heading);" id="stmt-customer-name">Customer Name</h2>
+          <div style="font-size: 0.8rem; color: #475569; margin-top: 2px;">
+            Phone: <span id="stmt-customer-phone" style="font-family: var(--font-mono);">-</span> &bull; ID: <span id="stmt-customer-id">-</span>
+          </div>
+        </div>
+        <div style="display: flex; gap: 8px; align-items: center; flex-wrap: wrap;">
+          <button type="button" class="btn-portal-outline" onclick="exportCustomerStatementCSV()" style="font-size: 0.8rem; padding: 4px 10px;">Export CSV</button>
+          <button type="button" class="btn-portal-primary" onclick="printCustomerStatement()" style="font-size: 0.8rem; padding: 4px 10px;">Print Statement</button>
+        </div>
+      </div>
+
+      <!-- Date Range Toolbar Inside Statement -->
+      <div style="background: #F8FAFC; border: 1px solid #E2E8F0; border-radius: 6px; padding: 10px 14px; margin-bottom: 16px; display: flex; justify-content: space-between; align-items: center; flex-wrap: wrap; gap: 10px;">
+        <div style="display: flex; gap: 10px; align-items: center; flex-wrap: wrap;">
+          <div style="display: flex; align-items: center; gap: 4px;">
+            <label for="stmt-date-from" style="font-size: 0.75rem; font-weight: 700; color: var(--text-muted);">From:</label>
+            <input type="date" id="stmt-date-from" class="portal-input" style="height: 30px; font-size: 0.8rem; padding: 2px 8px;">
+          </div>
+          <div style="display: flex; align-items: center; gap: 4px;">
+            <label for="stmt-date-to" style="font-size: 0.75rem; font-weight: 700; color: var(--text-muted);">To:</label>
+            <input type="date" id="stmt-date-to" class="portal-input" style="height: 30px; font-size: 0.8rem; padding: 2px 8px;">
+          </div>
+          <button type="button" class="btn-tbl-action active" onclick="applyStatementDateFilter()">Apply Filter</button>
+          <button type="button" class="btn-tbl-action" onclick="resetStatementDateFilter()">Reset Dates</button>
+        </div>
+        <div style="font-size: 0.76rem; color: var(--text-muted);" id="stmt-entries-count">0 transactions loaded</div>
+      </div>
+
+      <!-- Financial Summary Strip (3 KPI Cards) -->
+      <div class="stats-grid-row" style="margin-bottom: 18px; grid-template-columns: repeat(auto-fit, minmax(160px, 1fr));">
+        <div class="stat-kpi-card" style="border-top: 3px solid #0284C7;">
+          <span class="stat-kpi-label">Total Invoiced / Debits</span>
+          <div class="stat-kpi-val tabular" style="color: #0284C7;" id="stmt-kpi-debits">₹0</div>
+          <span class="stat-kpi-delta">Supplies &amp; Charges</span>
+        </div>
+        <div class="stat-kpi-card" style="border-top: 3px solid #15803D;">
+          <span class="stat-kpi-label">Total Received / Credits</span>
+          <div class="stat-kpi-val tabular" style="color: #15803D;" id="stmt-kpi-credits">₹0</div>
+          <span class="stat-kpi-delta positive">Receipts &amp; Waivers</span>
+        </div>
+        <div class="stat-kpi-card" style="border-top: 3px solid #DC2626;">
+          <span class="stat-kpi-label">Closing Outstanding Balance</span>
+          <div class="stat-kpi-val tabular" style="color: #DC2626;" id="stmt-kpi-balance">₹0</div>
+          <span class="stat-kpi-delta" style="color: #DC2626;">Current Balance Due</span>
+        </div>
+      </div>
+
+      <!-- Chronological Running Balance Ledger Table -->
+      <div class="portal-table-wrapper" style="max-height: 400px; overflow-y: auto;">
+        <table class="portal-table">
+          <thead>
+            <tr>
+              <th>Date &amp; Time</th>
+              <th>Transaction Type</th>
+              <th>Reference / Voucher</th>
+              <th style="text-align: right;">Debit (+) ₹</th>
+              <th style="text-align: right;">Credit (-) ₹</th>
+              <th style="text-align: right;">Running Balance ₹</th>
+              <th>Notes &amp; Operator</th>
+              <th style="text-align: center;">Action</th>
+            </tr>
+          </thead>
+          <tbody id="stmt-table-tbody">
+            <tr><td colspan="8" style="text-align:center; padding:20px; color:var(--text-muted);">Loading customer statement...</td></tr>
+          </tbody>
+        </table>
+      </div>
+
+      <div style="display:flex; justify-content:flex-end; gap:10px; margin-top:16px;">
+        <button type="button" class="btn-portal-outline" onclick="closeModal('khata-statement-modal')">Close Statement</button>
+      </div>
+    </div>
+  </div>
+
+  <!-- 2E. AUTHORIZED KHATA ADJUSTMENT / WAIVER MODAL -->
+  <div class="portal-modal-overlay" id="khata-adjust-modal">
+    <div class="portal-modal-card" style="max-width: 520px; width: 94%;">
+      <button type="button" class="modal-close-x" onclick="closeModal('khata-adjust-modal')"><svg style="width:14px;height:14px;display:block;" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5"><line x1="18" y1="6" x2="6" y2="18"></line><line x1="6" y1="6" x2="18" y2="18"></line></svg></button>
+      <h3 style="font-family: var(--font-heading); font-size: 1.3rem; font-weight: 900; margin-bottom: 4px;">Authorized Balance Adjustment / Waiver</h3>
+      <p style="font-size: 0.82rem; color: var(--text-muted); margin-bottom: 18px;">Apply authorized discount, damaged goods waiver, or correction. Audit log entry is permanently retained.</p>
+
+      <form onsubmit="handleKhataAdjustSubmit(event)">
+        <input type="hidden" id="khata-adj-id">
+        <div class="portal-field-group">
+          <label>Customer Account</label>
+          <input type="text" id="khata-adj-customer" class="portal-input" readonly style="background:#F8FAFC;">
+        </div>
+        <div class="portal-form-grid-2">
+          <div class="portal-field-group">
+            <label>Current Remaining Due ₹</label>
+            <input type="text" id="khata-adj-current-due" class="portal-input tabular" readonly style="background:#FEF2F2; font-weight:800; color:#DC2626;">
+          </div>
+          <div class="portal-field-group">
+            <label for="khata-adj-amount">Adjustment Amount ₹ *</label>
+            <input type="number" id="khata-adj-amount" class="portal-input tabular" min="1" step="any" required>
+          </div>
+        </div>
+        <div class="portal-field-group">
+          <label for="khata-adj-reason">Mandatory Audit Justification / Reason *</label>
+          <input type="text" id="khata-adj-reason" class="portal-input" placeholder="e.g. Authorized 5% bulk waiver / Damaged crate return credit" required>
+        </div>
+        <div class="portal-field-group">
+          <label>Authorized Operator</label>
+          <input type="text" id="khata-adj-operator" class="portal-input" readonly style="background:#F8FAFC;">
+        </div>
+
+        <div style="background:#FEF3C7; border:1px solid #F59E0B; border-radius:6px; padding:10px 12px; margin-top:12px; font-size:0.78rem; color:#92400E;">
+          <strong>Audit Warning:</strong> This operation decreases customer pending debt and creates an immutable audit trail entry with your operator credentials.
+        </div>
+
+        <div style="display:flex; justify-content:flex-end; gap:10px; margin-top:20px;">
+          <button type="button" class="btn-portal-outline" onclick="closeModal('khata-adjust-modal')">Cancel</button>
+          <button type="submit" class="btn-portal-primary" id="khata-adj-submit-btn">Apply Adjustment &amp; Update Ledger</button>
+        </div>
+      </form>
+    </div>
+  </div>
+
+  <!-- 2F. AUTHORIZED PAYMENT REVERSAL MODAL -->
+  <div class="portal-modal-overlay" id="khata-reverse-modal">
+    <div class="portal-modal-card" style="max-width: 520px; width: 94%;">
+      <button type="button" class="modal-close-x" onclick="closeModal('khata-reverse-modal')"><svg style="width:14px;height:14px;display:block;" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5"><line x1="18" y1="6" x2="6" y2="18"></line><line x1="6" y1="6" x2="18" y2="18"></line></svg></button>
+      <h3 style="font-family: var(--font-heading); font-size: 1.3rem; font-weight: 900; margin-bottom: 4px; color: #DC2626;">Authorized Payment Reversal / Void</h3>
+      <p style="font-size: 0.82rem; color: var(--text-muted); margin-bottom: 18px;">Safely reverse a dishonoured cheque, bounced UPI, or entry error. Original payment record is retained with VOID status.</p>
+
+      <form onsubmit="handleKhataPaymentReverseSubmit(event)">
+        <input type="hidden" id="khata-rev-payment-id">
+
+        <div class="portal-form-grid-2">
+          <div class="portal-field-group">
+            <label>Payment / Voucher ID</label>
+            <input type="text" id="khata-rev-voucher-id" class="portal-input" readonly style="background:#F8FAFC; font-family:var(--font-mono);">
+          </div>
+          <div class="portal-field-group">
+            <label>Payment Amount ₹</label>
+            <input type="text" id="khata-rev-amount" class="portal-input tabular" readonly style="background:#FEF2F2; font-weight:800; color:#DC2626;">
+          </div>
+        </div>
+
+        <div class="portal-field-group">
+          <label>Customer Name</label>
+          <input type="text" id="khata-rev-cust-name" class="portal-input" readonly style="background:#F8FAFC;">
+        </div>
+
+        <div class="portal-field-group">
+          <label for="khata-rev-reason">Mandatory Reversal Reason *</label>
+          <input type="text" id="khata-rev-reason" class="portal-input" placeholder="e.g. Cheque dishonoured / Counter operator duplicate entry" required>
+        </div>
+
+        <div style="background:#FEF2F2; border:1px solid #F87171; border-radius:6px; padding:10px 12px; margin-top:12px; font-size:0.78rem; color:#991B1B;">
+          <strong>Notice:</strong> Reversing will restore this amount back to the customer's pending debt. Compensating reversal voucher will be recorded.
+        </div>
+
+        <div style="display:flex; justify-content:flex-end; gap:10px; margin-top:20px;">
+          <button type="button" class="btn-portal-outline" onclick="closeModal('khata-reverse-modal')">Cancel</button>
+          <button type="submit" class="btn-portal-primary" style="background:#DC2626; border-color:#DC2626;" id="khata-rev-submit-btn">Confirm Authorized Reversal</button>
+        </div>
+      </form>
+    </div>
+  </div>
+
+  <!-- 2G. KHATA RECONCILIATION HEALTH MODAL -->
+  <div class="portal-modal-overlay" id="khata-reconcile-modal">
+    <div class="portal-modal-card" style="max-width: 740px; width: 95%;">
+      <button type="button" class="modal-close-x" onclick="closeModal('khata-reconcile-modal')"><svg style="width:14px;height:14px;display:block;" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5"><line x1="18" y1="6" x2="6" y2="18"></line><line x1="6" y1="6" x2="18" y2="18"></line></svg></button>
+      <h3 style="font-family: var(--font-heading); font-size: 1.3rem; font-weight: 900; margin-bottom: 4px;">Ledger Reconciliation Health Center</h3>
+      <p style="font-size: 0.82rem; color: var(--text-muted); margin-bottom: 18px;">Verify and reconcile wholesale customer account balances against active khata ledger dues.</p>
+
+      <!-- Reconcile Summary Cards -->
+      <div class="stats-grid-row" style="margin-bottom: 18px; grid-template-columns: repeat(auto-fit, minmax(150px, 1fr));">
+        <div class="stat-kpi-card" style="border-top: 3px solid #0284C7;">
+          <span class="stat-kpi-label">Customer Balances</span>
+          <div class="stat-kpi-val tabular" style="color: #0284C7;" id="rec-cust-total">₹0</div>
+          <span class="stat-kpi-delta">Customer Table Total</span>
+        </div>
+        <div class="stat-kpi-card" style="border-top: 3px solid #15803D;">
+          <span class="stat-kpi-label">Active Khata Total</span>
+          <div class="stat-kpi-val tabular" style="color: #15803D;" id="rec-khata-total">₹0</div>
+          <span class="stat-kpi-delta">Remaining Due Rows</span>
+        </div>
+        <div class="stat-kpi-card" style="border-top: 3px solid #7C3AED;">
+          <span class="stat-kpi-label">Reconciliation Status</span>
+          <div class="stat-kpi-val" style="font-size: 1.05rem;" id="rec-status-badge">Checking...</div>
+          <span class="stat-kpi-delta" id="rec-diff-label">0 Discrepancies</span>
+        </div>
+      </div>
+
+      <!-- Discrepancy Table -->
+      <div id="rec-discrepancy-section" style="display: none; margin-bottom: 18px;">
+        <h4 style="font-size: 0.9rem; font-weight: 800; color: #DC2626; margin-bottom: 8px;">Detected Account Discrepancies</h4>
+        <div class="portal-table-wrapper" style="max-height: 240px; overflow-y: auto;">
+          <table class="portal-table">
+            <thead>
+              <tr>
+                <th>Customer ID</th>
+                <th>Customer Name</th>
+                <th style="text-align: right;">Customer Balance ₹</th>
+                <th style="text-align: right;">Khata Ledger ₹</th>
+                <th style="text-align: right;">Difference ₹</th>
+              </tr>
+            </thead>
+            <tbody id="rec-discrepancy-tbody"></tbody>
+          </table>
+        </div>
+      </div>
+
+      <div id="rec-ok-section" style="display: none; background: #F0FDF4; border: 1px solid #86EFAC; border-radius: 6px; padding: 14px; text-align: center; margin-bottom: 18px;">
+        <strong style="color: #15803D; font-size: 0.95rem; display: block;">All Customer Ledgers are 100% Fully Reconciled!</strong>
+        <span style="font-size: 0.8rem; color: #166534;">Zero discrepancies between customer master balances and active khata entries.</span>
+      </div>
+
+      <div style="display: flex; justify-content: space-between; align-items: center; flex-wrap: wrap; gap: 10px;">
+        <button type="button" class="btn-portal-primary" id="rec-fix-btn" onclick="handleFixReconciliation()" style="display: inline-flex; align-items: center; gap: 6px;">
+          <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5"><path d="M21.5 2v6h-6M21.34 15.57a10 10 0 1 1-.57-8.38l5.67-5.67"/></svg>
+          <span>Auto-Reconcile &amp; Synchronize Discrepancies</span>
+        </button>
+        <button type="button" class="btn-portal-outline" onclick="closeModal('khata-reconcile-modal')">Close</button>
+      </div>
     </div>
   </div>
 
@@ -6472,18 +6928,42 @@
           localStorage.setItem('sikar_admin_customers', JSON.stringify(adminCustomers));
           if (currentTab === 'customers') renderCustomersList();
         }
-        if (khata && Array.isArray(khata) && khata.length > 0) {
-          adminKhata = khata.map(k => ({
-            id: k.id,
-            customer: k.customer_name || k.customer,
-            phone: k.customer_phone || k.phone,
-            amount: k.remaining_amount !== undefined ? k.remaining_amount : k.amount,
-            totalAmount: k.amount,
-            dueDate: k.due_date || k.dueDate,
-            note: k.reason || k.note || 'Credit Beverage Supply',
-            paid: k.status === 'settled'
-          }));
-          localStorage.setItem('sikar_admin_khata', JSON.stringify(adminKhata));
+        if (khata) {
+          const khataList = Array.isArray(khata) ? khata : (khata.entries || []);
+          if (khataList.length > 0) {
+            adminKhata = khataList.map(k => ({
+              id: k.id,
+              customer_id: k.customer_id || '',
+              customer: k.customer_name || k.customer,
+              customer_name: k.customer_name || k.customer,
+              phone: k.customer_phone || k.phone,
+              customer_phone: k.customer_phone || k.phone,
+              amount: k.remaining_amount !== undefined ? k.remaining_amount : k.amount,
+              original_amount: k.amount,
+              paid_amount: k.paid_amount || 0,
+              remaining_amount: k.remaining_amount !== undefined ? k.remaining_amount : k.amount,
+              dueDate: k.due_date || k.dueDate || '',
+              due_date: k.due_date || k.dueDate || '',
+              note: k.reason || k.note || 'Credit Beverage Supply',
+              reason: k.reason || k.note || 'Credit Beverage Supply',
+              status: k.status,
+              order_id: k.order_id || '',
+              origin_type: k.origin_type || 'manual',
+              adjustment_amount: k.adjustment_amount || 0,
+              adjustment_reason: k.adjustment_reason || '',
+              isOverdue: k.isOverdue,
+              isDueToday: k.isDueToday,
+              daysOverdue: k.daysOverdue || 0,
+              lastPayment: k.lastPayment || null,
+              paid: k.status === 'settled' || (k.remaining_amount !== undefined ? k.remaining_amount <= 0 : false),
+              created_at: k.created_at || ''
+            }));
+            localStorage.setItem('sikar_admin_khata', JSON.stringify(adminKhata));
+            if (currentTab === 'khata') renderKhataTable();
+          }
+          if (khata.summary) {
+            adminKhataSummary = khata.summary;
+          }
         }
         if (purchases && Array.isArray(purchases) && purchases.length > 0) {
           const localPurchases = JSON.parse(localStorage.getItem('sikar_admin_purchases') || '[]');
@@ -6903,7 +7383,7 @@
       else if (tabId === 'reports') renderReportsPage();
       else if (tabId === 'orders') { renderOrdersTable(); fetchOrdersFromBackend(); }
       else if (tabId === 'pos') renderPosForm();
-      else if (tabId === 'khata') renderKhataTable();
+      else if (tabId === 'khata') { renderKhataTable(); fetchKhataFromBackend(); }
       else if (tabId === 'customers') { renderCustomersList(); fetchCustomersFromBackend(); }
       else if (tabId === 'inventory') renderInventoryTable();
       else if (tabId === 'purchases') renderPurchasesTable();
@@ -9687,57 +10167,254 @@
     }
 
     // =========================================================
-    // 4. UDHAR KHATA
+    // 4. UDHAR KHATA (PENDING PAYMENTS LEDGER)
     // =========================================================
-    function renderKhataTable() {
+    let currentKhataFilter = 'active'; // 'active', 'overdue', 'due_today', 'settled', 'all'
+    let khataSearchQuery = '';
+    let khataDateFrom = '';
+    let khataDateTo = '';
+    let adminKhataSummary = null;
+    let activeReceiptData = null;
+    let activeStatementCustomerId = null;
+    let activeStatementCustomerName = null;
+    let activeStatementCustomerPhone = null;
+    let activeStatementData = null;
+
+    // Helper: Convert number to Indian English currency words
+    function inWords(num) {
+      if (num === null || num === undefined || isNaN(num) || num <= 0) return 'Zero Rupees Only';
+      const a = ['', 'One ', 'Two ', 'Three ', 'Four ', 'Five ', 'Six ', 'Seven ', 'Eight ', 'Nine ', 'Ten ', 'Eleven ', 'Twelve ', 'Thirteen ', 'Fourteen ', 'Fifteen ', 'Sixteen ', 'Seventeen ', 'Eighteen ', 'Nineteen '];
+      const b = ['', '', 'Twenty', 'Thirty', 'Forty', 'Fifty', 'Sixty', 'Seventy', 'Eighty', 'Ninety'];
+
+      const n = ('000000000' + Math.floor(num)).substr(-9).match(/^(\d{2})(\d{2})(\d{2})(\d{1})(\d{2})$/);
+      if (!n) return 'Rupees Only';
+      let str = '';
+      str += (Number(n[1]) !== 0) ? (a[Number(n[1])] || b[n[1][0]] + ' ' + a[n[1][1]]) + 'Crore ' : '';
+      str += (Number(n[2]) !== 0) ? (a[Number(n[2])] || b[n[2][0]] + ' ' + a[n[2][1]]) + 'Lakh ' : '';
+      str += (Number(n[3]) !== 0) ? (a[Number(n[3])] || b[n[3][0]] + ' ' + a[n[3][1]]) + 'Thousand ' : '';
+      str += (Number(n[4]) !== 0) ? (a[Number(n[4])] || b[n[4][0]] + ' ' + a[n[4][1]]) + 'Hundred ' : '';
+      str += (Number(n[5]) !== 0) ? ((str !== '') ? 'and ' : '') + (a[Number(n[5])] || b[n[5][0]] + ' ' + a[n[5][1]]) : '';
+      return (str.trim() ? str.trim() : 'Zero') + ' Rupees Only';
+    }
+
+    async function fetchKhataFromBackend() {
+      try {
+        const params = new URLSearchParams();
+        if (currentKhataFilter !== 'all') params.append('status', currentKhataFilter);
+        if (khataSearchQuery) params.append('search', khataSearchQuery);
+        if (khataDateFrom) params.append('from', khataDateFrom);
+        if (khataDateTo) params.append('to', khataDateTo);
+
+        const res = await sikarApi.get(`/api/khata?${params.toString()}`);
+        if (res && res.entries) {
+          adminKhata = res.entries.map(k => ({
+            id: k.id,
+            customer_id: k.customer_id || '',
+            customer: k.customer_name || k.customer,
+            customer_name: k.customer_name || k.customer,
+            phone: k.customer_phone || k.phone,
+            customer_phone: k.customer_phone || k.phone,
+            amount: k.remaining_amount !== undefined ? k.remaining_amount : k.amount,
+            original_amount: k.amount,
+            paid_amount: k.paid_amount || 0,
+            remaining_amount: k.remaining_amount !== undefined ? k.remaining_amount : k.amount,
+            due_date: k.due_date || k.dueDate || '',
+            dueDate: k.due_date || k.dueDate || '',
+            reason: k.reason || k.note || 'Credit Beverage Supply',
+            note: k.reason || k.note || 'Credit Beverage Supply',
+            status: k.status,
+            order_id: k.order_id || '',
+            origin_type: k.origin_type || 'manual',
+            adjustment_amount: k.adjustment_amount || 0,
+            adjustment_reason: k.adjustment_reason || '',
+            isOverdue: k.isOverdue,
+            isDueToday: k.isDueToday,
+            daysOverdue: k.daysOverdue || 0,
+            lastPayment: k.lastPayment || null,
+            paid: k.status === 'settled' || (k.remaining_amount !== undefined ? k.remaining_amount <= 0 : false),
+            created_at: k.created_at || ''
+          }));
+          if (res.summary) adminKhataSummary = res.summary;
+          localStorage.setItem('sikar_admin_khata', JSON.stringify(adminKhata));
+          renderKhataTable();
+        }
+      } catch (err) {
+        console.warn('Backend khata fetch error', err);
+        renderKhataTable();
+      }
+    }
+
+    function renderKhataTable(query) {
+      if (query !== undefined) {
+        khataSearchQuery = (query || '').trim();
+      }
+
       const tbody = document.getElementById('khata-table-tbody');
       if (!tbody) return;
 
       const todayStr = new Date().toISOString().split('T')[0];
-      const unpaid = adminKhata.filter(k => !k.paid);
-      const dueCount = unpaid.filter(k => k.dueDate <= todayStr).length;
+
+      // 1. Executive Summary KPIs
+      const activeEntries = adminKhata.filter(k => !k.paid && (k.remaining_amount === undefined || k.remaining_amount > 0));
+      const totalOutstanding = adminKhataSummary ? adminKhataSummary.totalDues : activeEntries.reduce((sum, k) => sum + (k.remaining_amount !== undefined ? k.remaining_amount : (k.amount || 0)), 0);
+      const totalRecovered = adminKhataSummary ? adminKhataSummary.totalRecovered : adminKhata.reduce((sum, k) => sum + (k.paid_amount || 0), 0);
+      const activeDebtors = adminKhataSummary ? adminKhataSummary.activeDebtorsCount : new Set(activeEntries.map(k => (k.phone || k.customer || '').trim())).size;
+      const overdueList = adminKhata.filter(k => !k.paid && (k.isOverdue || (k.dueDate && k.dueDate < todayStr)));
+      const dueTodayList = adminKhata.filter(k => !k.paid && (k.isDueToday || (k.dueDate && k.dueDate === todayStr)));
+      const settledCount = adminKhataSummary ? adminKhataSummary.settledCount : adminKhata.filter(k => k.paid || k.status === 'settled').length;
+
+      // Update KPI DOM
+      const kpiTotalDues = document.getElementById('khata-kpi-total-dues');
+      if (kpiTotalDues) kpiTotalDues.textContent = `₹${totalOutstanding.toLocaleString('en-IN')}`;
+
+      const kpiActiveAcc = document.getElementById('khata-kpi-active-accounts');
+      if (kpiActiveAcc) kpiActiveAcc.textContent = `${activeDebtors} Parties`;
+
+      const kpiOverdue = document.getElementById('khata-kpi-overdue-count');
+      if (kpiOverdue) kpiOverdue.textContent = `${overdueList.length} Overdue`;
+
+      const kpiDueToday = document.getElementById('khata-kpi-due-today-count');
+      if (kpiDueToday) kpiDueToday.textContent = `${dueTodayList.length} Today`;
+
+      const kpiRecovered = document.getElementById('khata-kpi-total-recovered');
+      if (kpiRecovered) kpiRecovered.textContent = `₹${totalRecovered.toLocaleString('en-IN')}`;
+
+      const kpiSettled = document.getElementById('khata-kpi-settled-count');
+      if (kpiSettled) kpiSettled.textContent = `${settledCount} Accounts`;
 
       // Update Due Alert Banner
       const summaryText = document.getElementById('khata-due-summary-text');
       const badge = document.getElementById('badge-khata-due');
-      if (dueCount > 0) {
-        summaryText.textContent = `${dueCount} customer account(s) have pending payments due or overdue. Send 1-click WhatsApp reminders!`;
-        badge.textContent = `${dueCount} Due`;
-        badge.style.display = 'inline-block';
+      const totalDueAlerts = overdueList.length + dueTodayList.length;
+
+      if (totalDueAlerts > 0) {
+        if (summaryText) {
+          summaryText.textContent = `${overdueList.length} account(s) overdue and ${dueTodayList.length} account(s) due today. Send 1-click WhatsApp reminders or record receipts.`;
+        }
+        if (badge) {
+          badge.textContent = `${totalDueAlerts} Due`;
+          badge.style.display = 'inline-block';
+        }
       } else {
-        summaryText.textContent = 'All customer accounts are up to date. No payments due today.';
-        badge.textContent = '0 Due';
-        badge.style.display = 'none';
+        if (summaryText) {
+          summaryText.textContent = 'All customer accounts are up to date. Zero payments currently overdue.';
+        }
+        if (badge) {
+          badge.textContent = '0 Due';
+          badge.style.display = 'none';
+        }
       }
 
-      if (adminKhata.length === 0) {
-        tbody.innerHTML = '<tr><td colspan="7" style="text-align:center; padding:30px; color:var(--text-muted);">No ledger entries found.</td></tr>';
+      // 2. Filter Table Entries
+      let filtered = [...adminKhata];
+
+      // Status tab filter
+      if (currentKhataFilter === 'active') {
+        filtered = filtered.filter(k => !k.paid && (k.remaining_amount === undefined || k.remaining_amount > 0));
+      } else if (currentKhataFilter === 'overdue') {
+        filtered = filtered.filter(k => !k.paid && (k.isOverdue || (k.dueDate && k.dueDate < todayStr)));
+      } else if (currentKhataFilter === 'due_today') {
+        filtered = filtered.filter(k => !k.paid && (k.isDueToday || (k.dueDate && k.dueDate === todayStr)));
+      } else if (currentKhataFilter === 'settled') {
+        filtered = filtered.filter(k => k.paid || k.status === 'settled' || (k.remaining_amount !== undefined && k.remaining_amount <= 0));
+      }
+
+      // Search query filter
+      if (khataSearchQuery) {
+        const q = khataSearchQuery.toLowerCase();
+        filtered = filtered.filter(k =>
+          (k.customer || '').toLowerCase().includes(q) ||
+          (k.phone || '').includes(q) ||
+          (k.id || '').toLowerCase().includes(q) ||
+          (k.order_id || '').toLowerCase().includes(q) ||
+          (k.note || '').toLowerCase().includes(q) ||
+          (k.customer_id || '').toLowerCase().includes(q)
+        );
+      }
+
+      // Date range filter
+      if (khataDateFrom) {
+        filtered = filtered.filter(k => (k.created_at || k.dueDate || '') >= khataDateFrom);
+      }
+      if (khataDateTo) {
+        filtered = filtered.filter(k => (k.created_at || k.dueDate || '') <= khataDateTo + 'T23:59:59');
+      }
+
+      if (filtered.length === 0) {
+        tbody.innerHTML = '<tr><td colspan="9" style="text-align:center; padding:36px; color:var(--text-muted); font-size:0.9rem;">No matching ledger entries found for selected filter criteria.</td></tr>';
         return;
       }
 
-      tbody.innerHTML = adminKhata.map(k => {
-        const isOverdue = !k.paid && k.dueDate < todayStr;
-        const isDueToday = !k.paid && k.dueDate === todayStr;
+      tbody.innerHTML = filtered.map(k => {
+        const isSettled = k.paid || k.status === 'settled' || (k.remaining_amount !== undefined && k.remaining_amount <= 0);
+        const isOverdue = !isSettled && (k.isOverdue || (k.dueDate && k.dueDate < todayStr));
+        const isDueToday = !isSettled && (k.isDueToday || (k.dueDate && k.dueDate === todayStr));
 
-        let statusBadge = '<span class="badge-status completed">Paid</span>';
+        let statusBadge = '<span class="badge-status completed">Settled</span>';
         if (isOverdue) statusBadge = '<span class="badge-status cancelled">Overdue</span>';
         else if (isDueToday) statusBadge = '<span class="badge-status pending">Due Today</span>';
-        else if (!k.paid) statusBadge = '<span class="badge-status confirmed">Upcoming</span>';
+        else if (k.paid_amount > 0 && !isSettled) statusBadge = '<span class="badge-status pending">Partial Paid</span>';
+        else if (!isSettled) statusBadge = '<span class="badge-status confirmed">Upcoming</span>';
+
+        const remAmount = k.remaining_amount !== undefined ? k.remaining_amount : k.amount;
+        const origAmount = k.original_amount !== undefined ? k.original_amount : (k.amount + (k.paid_amount || 0));
+        const formattedCreatedDate = k.created_at ? new Date(k.created_at).toLocaleDateString('en-IN', { day: 'numeric', month: 'short', year: 'numeric' }) : 'Direct Entry';
 
         return `
-          <tr style="${isOverdue || isDueToday ? 'background: #FFF5F5;' : ''}">
-            <td><strong>${escapeHTML(k.customer)}</strong></td>
-            <td>${escapeHTML(k.phone)}</td>
-            <td class="tabular"><strong style="color: ${k.paid ? '#15803D' : '#DC2626'}; font-size:1.02rem;">₹${(k.amount || 0).toLocaleString('en-IN')}</strong></td>
-            <td><code>${escapeHTML(k.dueDate || 'N/A')}</code></td>
-            <td><small style="color:var(--text-muted);">${escapeHTML(k.note || 'Beverage Balance')}</small></td>
-            <td>${statusBadge}</td>
+          <tr style="${isOverdue ? 'background: #FFF5F5;' : (isDueToday ? 'background: #FFFBEB;' : '')}">
             <td>
-              <div style="display:flex; gap:6px;">
-                ${!k.paid ? `
-                  <button type="button" class="btn-tbl-action success" onclick="sendKhataReminder('${k.id}', '${k.phone}', '${escapeHTML(k.customer)}', ${k.amount})">WhatsApp Alert</button>
-                  <button type="button" class="btn-tbl-action" onclick="openRecordKhataPayment('${k.id}')">Record Payment</button>
-                ` : `<span style="font-size:0.8rem; color:#15803D; font-weight:700;">Cleared</span>`}
+              <strong style="font-family: var(--font-mono); color: var(--primary); font-size: 0.88rem;">${escapeHTML(k.id)}</strong>
+              <div style="font-size: 0.74rem; color: var(--text-muted); margin-top: 2px;">${escapeHTML(formattedCreatedDate)}</div>
+              ${k.order_id ? `<span class="badge-status confirmed" style="font-size: 0.68rem; padding: 1px 6px; margin-top: 3px; display: inline-block;">Ref: ${escapeHTML(k.order_id)}</span>` : ''}
+            </td>
+            <td>
+              <strong style="font-size: 0.92rem; display: block; color: var(--text-main);">${escapeHTML(k.customer_name || k.customer)}</strong>
+              <a href="tel:${escapeHTML(k.customer_phone || k.phone)}" style="font-size: 0.8rem; color: #0284C7; font-family: var(--font-mono); text-decoration: none;">${escapeHTML(k.customer_phone || k.phone)}</a>
+              ${k.customer_id ? `<span style="font-size: 0.72rem; color: var(--text-muted); display: block;">ID: ${escapeHTML(k.customer_id)}</span>` : ''}
+            </td>
+            <td style="max-width: 200px;">
+              <span style="font-size: 0.84rem; color: #334155; display: block;">${escapeHTML(k.reason || k.note || 'Beverage Credit Supply')}</span>
+              ${k.origin_type === 'pos' ? `<span class="badge-status pending" style="font-size: 0.66rem; padding: 1px 5px; margin-top: 2px; display: inline-block;">POS Counter Sale</span>` : ''}
+              ${k.origin_type === 'online' ? `<span class="badge-status confirmed" style="font-size: 0.66rem; padding: 1px 5px; margin-top: 2px; display: inline-block;">Online Order</span>` : ''}
+              ${k.adjustment_amount > 0 ? `<div style="font-size: 0.72rem; color: #854D0E; margin-top: 2px;">Adj: -₹${k.adjustment_amount} (${escapeHTML(k.adjustment_reason || 'Waiver')})</div>` : ''}
+            </td>
+            <td class="tabular" style="text-align: right; font-size: 0.9rem; font-weight: 600; color: #475569;">
+              ₹${(origAmount || 0).toLocaleString('en-IN')}
+            </td>
+            <td class="tabular" style="text-align: right;">
+              <span style="color: #15803D; font-weight: 700; font-size: 0.92rem;">₹${(k.paid_amount || 0).toLocaleString('en-IN')}</span>
+              ${k.lastPayment && k.lastPayment.id ? `
+                <div style="margin-top: 2px;">
+                  <button type="button" class="btn-tbl-action" style="font-size: 0.68rem; padding: 1px 6px;" onclick="openPaymentReceiptModal('${k.lastPayment.id}')" title="View official receipt voucher">
+                    Receipt
+                  </button>
+                </div>
+              ` : ''}
+            </td>
+            <td class="tabular" style="text-align: right;">
+              <strong style="color: ${isSettled ? '#15803D' : '#DC2626'}; font-size: 1.05rem; font-weight: 800;">
+                ₹${(remAmount || 0).toLocaleString('en-IN')}
+              </strong>
+            </td>
+            <td>
+              ${k.dueDate ? `
+                <code style="font-size: 0.8rem;">${escapeHTML(k.dueDate)}</code>
+                ${isOverdue ? `<div style="font-size: 0.72rem; color: #DC2626; font-weight: 800; margin-top: 2px;">Overdue (${k.daysOverdue || 1}d)</div>` : ''}
+                ${isDueToday ? `<div style="font-size: 0.72rem; color: #D97706; font-weight: 800; margin-top: 2px;">Due Today</div>` : ''}
+                ${!isOverdue && !isDueToday && !isSettled ? `<div style="font-size: 0.72rem; color: var(--text-muted); margin-top: 2px;">Upcoming</div>` : ''}
+              ` : `<span style="font-size: 0.78rem; color: var(--text-muted);">No Date Set</span>`}
+            </td>
+            <td>${statusBadge}</td>
+            <td style="text-align: center;">
+              <div style="display: flex; gap: 4px; justify-content: center; flex-wrap: wrap;">
+                ${!isSettled ? `
+                  <button type="button" class="btn-tbl-action success" onclick="openRecordKhataPayment('${k.id}')" title="Record partial or full payment receipt">+ Pay</button>
+                  <button type="button" class="btn-tbl-action outline" onclick="sendKhataReminder('${k.id}', '${k.phone}', '${escapeHTML(k.customer)}', ${remAmount})" title="Send authorized WhatsApp payment alert">Alert</button>
+                ` : `<span style="font-size: 0.75rem; color: #15803D; font-weight: 700; padding: 4px 6px;">Settled</span>`}
+                <button type="button" class="btn-tbl-action" onclick="openCustomerStatementModal('${k.customer_id}', '${escapeHTML(k.customer)}', '${k.phone}')" title="View full running-balance customer ledger statement">Statement</button>
+                ${!isSettled ? `
+                  <button type="button" class="btn-tbl-action" style="color: #854D0E; border-color: #FDE68A;" onclick="openKhataAdjustModal('${k.id}')" title="Authorized balance waiver or correction">Adjust</button>
+                ` : ''}
               </div>
             </td>
           </tr>
@@ -9745,6 +10422,46 @@
       }).join('');
     }
 
+    // Filter toolbar buttons
+    function setKhataFilter(filterType, btnEl) {
+      currentKhataFilter = filterType;
+      const tabs = document.querySelectorAll('#khata-filter-tabs .btn-tbl-action');
+      tabs.forEach(t => t.classList.remove('active'));
+      if (btnEl) btnEl.classList.add('active');
+      fetchKhataFromBackend();
+    }
+
+    function handleKhataSearch(query) {
+      khataSearchQuery = (query || '').trim();
+      renderKhataTable();
+    }
+
+    function applyKhataDateFilter() {
+      khataDateFrom = document.getElementById('khata-filter-from').value;
+      khataDateTo = document.getElementById('khata-filter-to').value;
+      fetchKhataFromBackend();
+    }
+
+    function clearKhataDateFilter() {
+      khataDateFrom = '';
+      khataDateTo = '';
+      const fromEl = document.getElementById('khata-filter-from');
+      const toEl = document.getElementById('khata-filter-to');
+      if (fromEl) fromEl.value = '';
+      if (toEl) toEl.value = '';
+      fetchKhataFromBackend();
+    }
+
+    function filterDueKhataNow() {
+      const overdueBtn = document.getElementById('khata-flt-overdue');
+      if (overdueBtn) setKhataFilter('overdue', overdueBtn);
+    }
+
+    function highlightOverdueKhata() {
+      filterDueKhataNow();
+    }
+
+    // WhatsApp Reminder with server-side audit logging
     async function sendKhataReminder(khataId, phone, name, amount) {
       try {
         const res = await sikarApi.post('/api/khata/' + encodeURIComponent(khataId) + '/remind');
@@ -9763,63 +10480,33 @@
       showToast(`WhatsApp payment reminder generated for ${name}!`);
     }
 
-    function openRecordKhataPayment(khataId) {
-      const item = adminKhata.find(k => k.id === khataId);
-      if (!item) return;
-
-      document.getElementById('khata-pay-id').value = item.id;
-      document.getElementById('khata-pay-name').value = item.customer;
-      document.getElementById('khata-pay-current-due').value = `₹${(item.amount || 0).toLocaleString('en-IN')}`;
-      document.getElementById('khata-pay-amount').value = item.amount || '';
-      document.getElementById('khata-pay-notes').value = `Payment for ${item.note || 'Beverage ledger'}`;
-      openModal('khata-pay-modal');
+    // -------------------------------------------------------------
+    // ADD KHATA ENTRY
+    // -------------------------------------------------------------
+    function populateKhataCustomerSuggestions() {
+      const datalist = document.getElementById('khata-cust-datalist');
+      if (!datalist || !adminCustomers || !Array.isArray(adminCustomers)) return;
+      datalist.innerHTML = adminCustomers.map(c => `<option value="${escapeHTML(c.name)}">${escapeHTML(c.phone || '')}</option>`).join('');
     }
 
-    async function handleKhataPaymentSubmit(e) {
-      e.preventDefault();
-      const khataId = document.getElementById('khata-pay-id').value;
-      const amountPaid = parseFloat(document.getElementById('khata-pay-amount').value) || 0;
-      const paymentMethod = document.getElementById('khata-pay-method').value;
-      const notes = document.getElementById('khata-pay-notes').value.trim();
-
-      if (!khataId || amountPaid <= 0) return;
-
-      try {
-        const res = await sikarApi.post('/api/khata/pay', {
-          khataId,
-          amountPaid,
-          paymentMethod,
-          notes,
-          actor: currentOperator ? currentOperator.name : 'Admin'
-        });
-        if (res && res.success) {
-          closeModal('khata-pay-modal');
-          await syncFromBackend();
-          showToast(`Payment of ₹${amountPaid.toLocaleString('en-IN')} recorded! Ledger updated.`);
-          return;
-        }
-      } catch (err) {
-        console.warn('Backend khata pay failed, fallback locally', err);
+    function handleKhataCustomerSelect(val) {
+      if (!val || !adminCustomers) return;
+      const found = adminCustomers.find(c => c.name.toLowerCase() === val.toLowerCase());
+      if (found && found.phone) {
+        const phoneEl = document.getElementById('k-add-phone');
+        if (phoneEl) phoneEl.value = found.phone;
       }
-
-      // Local fallback
-      const item = adminKhata.find(k => k.id === khataId);
-      if (item) {
-        item.amount = Math.max(0, (item.amount || 0) - amountPaid);
-        if (item.amount === 0) item.paid = true;
-        localStorage.setItem('sikar_admin_khata', JSON.stringify(adminKhata));
-      }
-      closeModal('khata-pay-modal');
-      renderKhataTable();
-      renderDashboard();
-      showToast(`Payment of ₹${amountPaid.toLocaleString('en-IN')} recorded.`);
-    }
-
-    function markKhataPaid(khataId) {
-      openRecordKhataPayment(khataId);
     }
 
     function openAddKhataModal() {
+      populateKhataCustomerSuggestions();
+      const form = document.querySelector('#khata-add-modal form');
+      if (form) form.reset();
+      // Set default promise due date to 7 days from now
+      const d = new Date();
+      d.setDate(d.getDate() + 7);
+      const dueDateEl = document.getElementById('k-add-duedate');
+      if (dueDateEl) dueDateEl.value = d.toISOString().split('T')[0];
       openModal('khata-add-modal');
     }
 
@@ -9829,7 +10516,19 @@
       const phone = document.getElementById('k-add-phone').value.trim();
       const amount = parseFloat(document.getElementById('k-add-amount').value) || 0;
       const dueDate = document.getElementById('k-add-duedate').value;
-      const note = document.getElementById('k-add-note').value.trim() || 'Manual Khata Entry';
+      const note = document.getElementById('k-add-note').value.trim() || 'Credit Supply';
+      const orderId = (document.getElementById('k-add-order-id')?.value || '').trim();
+
+      if (amount <= 0) {
+        showToast('Please enter a valid pending amount greater than 0.');
+        return;
+      }
+
+      const submitBtn = document.getElementById('k-add-submit-btn');
+      if (submitBtn) {
+        submitBtn.disabled = true;
+        submitBtn.textContent = 'Saving...';
+      }
 
       try {
         const res = await sikarApi.post('/api/khata', {
@@ -9837,37 +10536,750 @@
           customerPhone: phone,
           amount: amount,
           dueDate: dueDate,
-          reason: note
+          reason: note,
+          notes: note,
+          orderId: orderId,
+          originType: orderId ? 'pos' : 'manual'
         });
         if (res && res.success) {
           closeModal('khata-add-modal');
           await syncFromBackend();
-          showToast(`Udhar Khata entry recorded for ${name}!`);
+          await fetchKhataFromBackend();
+          showToast(`Udhar Khata entry of ₹${amount.toLocaleString('en-IN')} recorded for ${name}!`);
           return;
         }
       } catch (err) {
         console.warn('Backend khata add fallback', err);
+        showToast('Error recording khata: ' + (err.message || 'Server error'));
+      } finally {
+        if (submitBtn) {
+          submitBtn.disabled = false;
+          submitBtn.textContent = 'Save to Ledger';
+        }
       }
-
-      adminKhata.unshift({
-        id: `k-${Date.now()}`,
-        customer: name,
-        phone: phone,
-        amount: amount,
-        dueDate: dueDate,
-        note: note,
-        paid: false
-      });
-
-      localStorage.setItem('sikar_admin_khata', JSON.stringify(adminKhata));
-      closeModal('khata-add-modal');
-      renderKhataTable();
-      renderDashboard();
-      showToast(`Udhar Khata entry recorded for ${name}!`);
     }
 
-    function highlightOverdueKhata() {
-      document.querySelector('#khata-table-tbody tr[style*="background"]')?.scrollIntoView({ behavior: 'smooth' });
+    // -------------------------------------------------------------
+    // RECORD PAYMENT & RECEIPT VOUCHER WORKFLOW
+    // -------------------------------------------------------------
+    function openRecordKhataPayment(khataId) {
+      const item = adminKhata.find(k => k.id === khataId);
+      if (!item) return;
+
+      const currentDue = item.remaining_amount !== undefined ? item.remaining_amount : item.amount;
+      document.getElementById('khata-pay-id').value = item.id;
+      document.getElementById('khata-pay-raw-due').value = currentDue;
+      document.getElementById('khata-pay-name').value = `${item.customer_name || item.customer} (${item.customer_phone || item.phone})`;
+      document.getElementById('khata-pay-current-due').value = `₹${currentDue.toLocaleString('en-IN')}`;
+      document.getElementById('khata-pay-amount').value = currentDue;
+      document.getElementById('khata-pay-amount').max = currentDue;
+      document.getElementById('khata-pay-ref').value = '';
+      document.getElementById('khata-pay-verification').value = 'verified';
+      document.getElementById('khata-pay-notes').value = `Receipt for ${item.reason || item.note || 'Beverage ledger'}`;
+
+      updateKhataPayRemainingPreview();
+      openModal('khata-pay-modal');
+    }
+
+    function setKhataQuickAmount(preset) {
+      const rawDue = parseFloat(document.getElementById('khata-pay-raw-due').value) || 0;
+      let target = rawDue;
+      if (preset === 'full') target = rawDue;
+      else if (preset === 'half') target = Math.round(rawDue / 2);
+      else if (typeof preset === 'number') target = Math.min(preset, rawDue);
+
+      const amtInput = document.getElementById('khata-pay-amount');
+      if (amtInput) {
+        amtInput.value = target;
+        updateKhataPayRemainingPreview();
+      }
+    }
+
+    function updateKhataPayRemainingPreview() {
+      const rawDue = parseFloat(document.getElementById('khata-pay-raw-due').value) || 0;
+      const amtPaid = parseFloat(document.getElementById('khata-pay-amount').value) || 0;
+      const rem = Math.max(0, rawDue - amtPaid);
+
+      const remEl = document.getElementById('khata-pay-preview-remaining');
+      if (remEl) {
+        remEl.textContent = `₹${rem.toLocaleString('en-IN')}`;
+        remEl.style.color = rem === 0 ? '#15803D' : '#DC2626';
+      }
+    }
+
+    async function handleKhataPaymentSubmit(e) {
+      e.preventDefault();
+      const khataId = document.getElementById('khata-pay-id').value;
+      const rawDue = parseFloat(document.getElementById('khata-pay-raw-due').value) || 0;
+      const amountPaid = parseFloat(document.getElementById('khata-pay-amount').value) || 0;
+      const paymentMethod = document.getElementById('khata-pay-method').value;
+      const referenceNumber = document.getElementById('khata-pay-ref').value.trim();
+      const verificationStatus = document.getElementById('khata-pay-verification').value;
+      const notes = document.getElementById('khata-pay-notes').value.trim();
+
+      if (!khataId || amountPaid <= 0) {
+        showToast('Please enter a valid payment amount greater than zero.');
+        return;
+      }
+      if (amountPaid > rawDue) {
+        showToast(`Payment amount (₹${amountPaid}) cannot exceed remaining balance (₹${rawDue}).`);
+        return;
+      }
+
+      const submitBtn = document.getElementById('khata-pay-submit-btn');
+      if (submitBtn) {
+        submitBtn.disabled = true;
+        submitBtn.textContent = 'Processing Payment...';
+      }
+
+      try {
+        const res = await sikarApi.post('/api/khata/pay', {
+          khataId,
+          amountPaid,
+          paymentMethod,
+          referenceNumber,
+          verificationStatus,
+          notes,
+          actor: currentOperator ? currentOperator.name : 'Counter Admin',
+          operatorId: currentOperator ? currentOperator.id : 'ADM-01',
+          operatorName: currentOperator ? currentOperator.name : 'Counter Admin'
+        });
+
+        if (res && res.success) {
+          closeModal('khata-pay-modal');
+          await syncFromBackend();
+          await fetchKhataFromBackend();
+          showToast(`Payment of ₹${amountPaid.toLocaleString('en-IN')} recorded successfully!`);
+
+          // Automatically pop open printable receipt voucher
+          const payId = res.paymentId || (res.payment && res.payment.id);
+          if (payId) {
+            openPaymentReceiptModal(payId);
+          }
+          return;
+        }
+      } catch (err) {
+        console.warn('Backend khata pay failed', err);
+        showToast('Payment failed: ' + (err.message || 'Server error'));
+      } finally {
+        if (submitBtn) {
+          submitBtn.disabled = false;
+          submitBtn.textContent = 'Record Payment & Generate Receipt';
+        }
+      }
+    }
+
+    // -------------------------------------------------------------
+    // PAYMENT RECEIPT VOUCHER VIEW & PRINTING
+    // -------------------------------------------------------------
+    async function openPaymentReceiptModal(paymentId) {
+      if (!paymentId) return;
+
+      try {
+        const data = await sikarApi.get(`/api/khata/receipt/${encodeURIComponent(paymentId)}`);
+        if (!data || !data.success) {
+          showToast('Could not load payment receipt voucher.');
+          return;
+        }
+
+        activeReceiptData = data;
+        const p = data.payment;
+        const k = data.khata || {};
+        const c = data.customer || {};
+
+        document.getElementById('rcp-voucher-no').textContent = p.receipt_no || p.id;
+        document.getElementById('rcp-date-time').textContent = new Date(p.created_at).toLocaleString('en-IN', {
+          day: 'numeric', month: 'short', year: 'numeric', hour: '2-digit', minute: '2-digit'
+        });
+        document.getElementById('rcp-cust-name').textContent = c.name || k.customer_name || 'Counter Customer';
+        document.getElementById('rcp-cust-phone').textContent = c.phone || k.customer_phone || '-';
+        document.getElementById('rcp-cust-id').textContent = c.id ? `Customer ID: ${c.id}` : '';
+        document.getElementById('rcp-pay-method').textContent = p.payment_method || 'Cash';
+        document.getElementById('rcp-ref-no').textContent = p.reference_number || 'N/A (Direct Cash)';
+
+        const statusBadge = document.getElementById('rcp-status-badge');
+        if (statusBadge) {
+          if (p.is_reversed) {
+            statusBadge.className = 'badge-status cancelled';
+            statusBadge.textContent = 'REVERSED / VOID';
+          } else if (p.verification_status === 'unverified') {
+            statusBadge.className = 'badge-status pending';
+            statusBadge.textContent = 'Pending Clearance';
+          } else {
+            statusBadge.className = 'badge-status completed';
+            statusBadge.textContent = 'Verified & Credited';
+          }
+        }
+
+        document.getElementById('rcp-account-note').textContent = k.reason || k.notes || p.notes || 'Wholesale Supply Dues';
+
+        const prevDue = (k.remaining_amount !== undefined ? k.remaining_amount : 0) + (p.is_reversed ? 0 : p.amount);
+        const remDue = k.remaining_amount !== undefined ? k.remaining_amount : 0;
+
+        document.getElementById('rcp-prev-due').textContent = `₹${prevDue.toLocaleString('en-IN')}`;
+        document.getElementById('rcp-amount-paid').textContent = `₹${(p.amount || 0).toLocaleString('en-IN')}`;
+        document.getElementById('rcp-remaining-due').textContent = `₹${remDue.toLocaleString('en-IN')}`;
+        document.getElementById('rcp-amount-words').textContent = inWords(p.amount);
+        document.getElementById('rcp-operator-name').textContent = p.operator_name || (currentOperator ? currentOperator.name : 'Admin');
+
+        openModal('payment-receipt-modal');
+      } catch (err) {
+        console.error('Error fetching payment receipt voucher', err);
+        showToast('Failed to load payment voucher: ' + err.message);
+      }
+    }
+
+    function printPaymentReceipt() {
+      if (!activeReceiptData) return;
+      const p = activeReceiptData.payment;
+      const k = activeReceiptData.khata || {};
+      const c = activeReceiptData.customer || {};
+
+      const prevDue = (k.remaining_amount !== undefined ? k.remaining_amount : 0) + (p.is_reversed ? 0 : p.amount);
+      const remDue = k.remaining_amount !== undefined ? k.remaining_amount : 0;
+      const pDate = new Date(p.created_at).toLocaleString('en-IN', { day: 'numeric', month: 'short', year: 'numeric', hour: '2-digit', minute: '2-digit' });
+
+      const w = window.open('', '_blank', 'width=700,height=750');
+      if (!w) {
+        showToast('Popup blocker prevented opening print window. Please allow popups.');
+        return;
+      }
+
+      w.document.write(`
+        <!DOCTYPE html>
+        <html>
+        <head>
+          <title>Payment Receipt ${escapeHTML(p.receipt_no || p.id)} - Sikar Drop Wholesale</title>
+          <style>
+            body { font-family: Arial, sans-serif; color: #0F172A; padding: 24px; max-width: 640px; margin: 0 auto; line-height: 1.4; }
+            .hdr { display: flex; justify-content: space-between; border-bottom: 2px solid #0284C7; padding-bottom: 12px; margin-bottom: 16px; }
+            table { width: 100%; border-collapse: collapse; margin: 14px 0; font-size: 13px; }
+            th { background: #F1F5F9; padding: 8px; text-align: left; border-bottom: 2px solid #CBD5E1; }
+            td { padding: 8px; border-bottom: 1px solid #E2E8F0; }
+            .tot-box { margin-top: 14px; border-top: 2px solid #0F172A; padding-top: 10px; text-align: right; font-size: 14px; line-height: 1.6; }
+            @media print { body { padding: 0; } }
+          </style>
+        </head>
+        <body>
+          <div class="hdr">
+            <div>
+              <h2 style="margin: 0; color: #0284C7; font-size: 20px;">SIKAR DROP WHOLESALE DEPOT</h2>
+              <div style="font-size: 12px; color: #475569; margin-top: 3px;">Piprali &amp; Nawalgarh Road Junction, Sikar (Raj.) 332001</div>
+              <div style="font-size: 11px; color: #64748B;">Mandi License: SKR-WHL-2024 &bull; Helpline: +91 98290 00000</div>
+            </div>
+            <div style="text-align: right;">
+              <div style="font-size: 11px; font-weight: bold; color: #64748B; text-transform: uppercase;">OFFICIAL PAYMENT VOUCHER</div>
+              <div style="font-size: 16px; color: #0284C7; font-weight: 900;">${escapeHTML(p.receipt_no || p.id)}</div>
+              <div style="font-size: 12px; color: #334155;">Date: ${escapeHTML(pDate)}</div>
+              <div style="font-size: 11px; color: #64748B;">Operator: ${escapeHTML(p.operator_name || 'Admin')}</div>
+            </div>
+          </div>
+
+          <div style="font-size: 13px; margin-bottom: 12px; background: #F8FAFC; border: 1px solid #E2E8F0; padding: 10px; border-radius: 4px;">
+            <strong>Received From:</strong> ${escapeHTML(c.name || k.customer_name || 'Customer')} (${escapeHTML(c.phone || k.customer_phone || '-')})<br>
+            <strong>Payment Mode:</strong> ${escapeHTML(String(p.payment_method || 'Cash').toUpperCase())}<br>
+            <strong>Reference / UTR:</strong> ${escapeHTML(p.reference_number || 'Cash Voucher')}<br>
+            <strong>Khata Reference:</strong> ${escapeHTML(k.reason || k.notes || p.notes || 'Wholesale Dues')}
+          </div>
+
+          <table>
+            <thead>
+              <tr>
+                <th>Description</th>
+                <th style="text-align: right;">Amount ₹</th>
+              </tr>
+            </thead>
+            <tbody>
+              <tr>
+                <td>Previous Outstanding Balance</td>
+                <td style="text-align: right; font-family: monospace;">₹${prevDue.toLocaleString('en-IN')}</td>
+              </tr>
+              <tr style="background: #F0FDF4; font-weight: bold;">
+                <td style="color: #15803D;">Amount Received &amp; Credited</td>
+                <td style="text-align: right; color: #15803D; font-size: 15px; font-family: monospace;">₹${p.amount.toLocaleString('en-IN')}</td>
+              </tr>
+              <tr style="background: #FEF2F2; font-weight: bold;">
+                <td>Remaining Balance Outstanding</td>
+                <td style="text-align: right; color: #DC2626; font-family: monospace;">₹${remDue.toLocaleString('en-IN')}</td>
+              </tr>
+            </tbody>
+          </table>
+
+          <div style="font-size: 12px; margin: 12px 0; background: #F8FAFC; border: 1px solid #E2E8F0; padding: 8px; border-radius: 4px;">
+            <strong>Amount in Words:</strong> <em>${escapeHTML(inWords(p.amount))}</em>
+          </div>
+
+          <div style="display: flex; justify-content: space-between; align-items: flex-end; margin-top: 40px; padding-top: 10px; border-top: 1px solid #E2E8F0; font-size: 12px; color: #64748B;">
+            <div>
+              <div>Computer Generated Audit Voucher</div>
+              <div>Authorized Cashier: ${escapeHTML(p.operator_name || 'Admin')}</div>
+            </div>
+            <div style="text-align: right;">
+              <div style="border-top: 1px solid #94A3B8; width: 140px; margin-bottom: 4px;"></div>
+              Authorized Cashier Signature
+            </div>
+          </div>
+        </body>
+        </html>
+      `);
+      w.document.close();
+      w.focus();
+      setTimeout(() => { w.print(); }, 250);
+    }
+
+    function sharePaymentReceiptWhatsApp() {
+      if (!activeReceiptData) return;
+      const p = activeReceiptData.payment;
+      const k = activeReceiptData.khata || {};
+      const c = activeReceiptData.customer || {};
+
+      const phone = (c.phone || k.customer_phone || '').replace(/[^0-9]/g, '');
+      const remDue = k.remaining_amount !== undefined ? k.remaining_amount : 0;
+      const msg = encodeURIComponent(
+        `*SIKAR DROP WHOLESALE DEPOT - PAYMENT RECEIPT*\n` +
+        `Receipt No: ${p.receipt_no || p.id}\n` +
+        `Party: ${c.name || k.customer_name}\n` +
+        `Amount Received: ₹${p.amount.toLocaleString('en-IN')} via ${p.payment_method}\n` +
+        `Remaining Outstanding Balance: ₹${remDue.toLocaleString('en-IN')}\n` +
+        `Thank you for your business!`
+      );
+
+      window.open(`https://wa.me/91${phone.slice(-10)}?text=${msg}`, '_blank');
+      showToast('WhatsApp receipt share launched.');
+    }
+
+    // -------------------------------------------------------------
+    // CUSTOMER-WISE LEDGER STATEMENT WORKFLOW
+    // -------------------------------------------------------------
+    async function openCustomerStatementModal(customerId, customerName, customerPhone) {
+      activeStatementCustomerId = customerId;
+      activeStatementCustomerName = customerName;
+      activeStatementCustomerPhone = customerPhone;
+
+      document.getElementById('stmt-customer-name').textContent = customerName || 'Wholesale Buyer';
+      document.getElementById('stmt-customer-phone').textContent = customerPhone || '-';
+      document.getElementById('stmt-customer-id').textContent = customerId || 'Direct Party';
+
+      document.getElementById('stmt-date-from').value = '';
+      document.getElementById('stmt-date-to').value = '';
+
+      openModal('khata-statement-modal');
+      await fetchCustomerStatement();
+    }
+
+    async function fetchCustomerStatement(from, to) {
+      const tbody = document.getElementById('stmt-table-tbody');
+      if (tbody) tbody.innerHTML = '<tr><td colspan="8" style="text-align:center; padding:24px; color:var(--text-muted);">Loading ledger timeline...</td></tr>';
+
+      try {
+        const params = new URLSearchParams();
+        if (from) params.append('from', from);
+        if (to) params.append('to', to);
+        if (activeStatementCustomerPhone) params.append('phone', activeStatementCustomerPhone);
+
+        const url = `/api/khata/statement/${encodeURIComponent(activeStatementCustomerId || 'all')}?${params.toString()}`;
+        const data = await sikarApi.get(url);
+
+        if (!data || !data.success) {
+          if (tbody) tbody.innerHTML = '<tr><td colspan="8" style="text-align:center; padding:20px; color:#DC2626;">Failed to load statement.</td></tr>';
+          return;
+        }
+
+        activeStatementData = data;
+        const s = data.summary || { totalDebits: 0, totalCredits: 0, closingBalance: 0, entriesCount: 0 };
+
+        document.getElementById('stmt-kpi-debits').textContent = `₹${(s.totalDebits || 0).toLocaleString('en-IN')}`;
+        document.getElementById('stmt-kpi-credits').textContent = `₹${(s.totalCredits || 0).toLocaleString('en-IN')}`;
+        const closeEl = document.getElementById('stmt-kpi-balance');
+        closeEl.textContent = `₹${(s.closingBalance || 0).toLocaleString('en-IN')}`;
+        closeEl.style.color = (s.closingBalance || 0) > 0 ? '#DC2626' : '#15803D';
+
+        document.getElementById('stmt-entries-count').textContent = `${data.timeline ? data.timeline.length : 0} transactions recorded`;
+
+        if (!data.timeline || data.timeline.length === 0) {
+          tbody.innerHTML = '<tr><td colspan="8" style="text-align:center; padding:24px; color:var(--text-muted);">No ledger transactions recorded for this wholesale party in the selected timeframe.</td></tr>';
+          return;
+        }
+
+        tbody.innerHTML = data.timeline.map(row => {
+          const dateStr = row.date ? new Date(row.date).toLocaleString('en-IN', {
+            day: 'numeric', month: 'short', year: 'numeric', hour: '2-digit', minute: '2-digit'
+          }) : '-';
+
+          let badgeClass = 'confirmed';
+          if (row.type === 'payment') badgeClass = 'completed';
+          else if (row.type === 'pos_sale' || row.type === 'direct_khata') badgeClass = 'pending';
+          else if (row.type === 'payment_reversal') badgeClass = 'cancelled';
+          else if (row.type === 'khata_adjustment') badgeClass = 'warning';
+
+          return `
+            <tr>
+              <td style="font-size: 0.78rem; color: #475569;">${escapeHTML(dateStr)}</td>
+              <td><span class="badge-status ${badgeClass}" style="font-size: 0.7rem;">${escapeHTML(row.typeLabel || row.type)}</span></td>
+              <td style="font-family: var(--font-mono); font-size: 0.82rem;">${escapeHTML(row.reference || '-')}</td>
+              <td class="tabular" style="text-align: right; font-weight: 700; color: ${row.debit > 0 ? '#DC2626' : '#94A3B8'};">
+                ${row.debit > 0 ? `₹${row.debit.toLocaleString('en-IN')}` : '-'}
+              </td>
+              <td class="tabular" style="text-align: right; font-weight: 700; color: ${row.credit > 0 ? '#15803D' : '#94A3B8'};">
+                ${row.credit > 0 ? `₹${row.credit.toLocaleString('en-IN')}` : '-'}
+              </td>
+              <td class="tabular" style="text-align: right; font-weight: 800; font-size: 0.95rem; color: ${row.runningBalance > 0 ? '#DC2626' : '#15803D'};">
+                ₹${(row.runningBalance || 0).toLocaleString('en-IN')}
+              </td>
+              <td style="font-size: 0.78rem; max-width: 180px;">
+                <div style="color: #334155;">${escapeHTML(row.notes || '-')}</div>
+                <div style="font-size: 0.7rem; color: var(--text-muted);">By: ${escapeHTML(row.operator || 'System')}</div>
+              </td>
+              <td style="text-align: center;">
+                <div style="display: flex; gap: 4px; justify-content: center;">
+                  ${row.payment_id ? `
+                    <button type="button" class="btn-tbl-action" style="font-size: 0.68rem; padding: 2px 6px;" onclick="openPaymentReceiptModal('${row.payment_id}')">Voucher</button>
+                    ${!row.is_reversed ? `
+                      <button type="button" class="btn-tbl-action danger" style="font-size: 0.68rem; padding: 2px 6px;" onclick="openPaymentReverseModal('${row.payment_id}', '${escapeHTML(row.reference)}', ${row.credit}, '${escapeHTML(activeStatementCustomerName)}')">Reverse</button>
+                    ` : ''}
+                  ` : '-'}
+                </div>
+              </td>
+            </tr>
+          `;
+        }).join('');
+      } catch (err) {
+        console.error('Error fetching customer statement', err);
+        if (tbody) tbody.innerHTML = '<tr><td colspan="8" style="text-align:center; padding:20px; color:#DC2626;">Error: ' + escapeHTML(err.message) + '</td></tr>';
+      }
+    }
+
+    function applyStatementDateFilter() {
+      const from = document.getElementById('stmt-date-from').value;
+      const to = document.getElementById('stmt-date-to').value;
+      fetchCustomerStatement(from, to);
+    }
+
+    function resetStatementDateFilter() {
+      document.getElementById('stmt-date-from').value = '';
+      document.getElementById('stmt-date-to').value = '';
+      fetchCustomerStatement();
+    }
+
+    function printCustomerStatement() {
+      if (!activeStatementData) return;
+      const s = activeStatementData.summary || {};
+      const t = activeStatementData.timeline || [];
+
+      const w = window.open('', '_blank', 'width=800,height=800');
+      if (!w) return;
+
+      const rowsHtml = t.map(r => `
+        <tr>
+          <td>${new Date(r.date).toLocaleDateString('en-IN')}</td>
+          <td>${escapeHTML(r.typeLabel || r.type)}</td>
+          <td>${escapeHTML(r.reference || '-')}</td>
+          <td style="text-align:right;">${r.debit > 0 ? '₹' + r.debit.toLocaleString('en-IN') : '-'}</td>
+          <td style="text-align:right;">${r.credit > 0 ? '₹' + r.credit.toLocaleString('en-IN') : '-'}</td>
+          <td style="text-align:right; font-weight:bold;">₹${(r.runningBalance || 0).toLocaleString('en-IN')}</td>
+        </tr>
+      `).join('');
+
+      w.document.write(`
+        <!DOCTYPE html>
+        <html>
+        <head>
+          <title>Wholesale Ledger Statement - ${escapeHTML(activeStatementCustomerName)}</title>
+          <style>
+            body { font-family: Arial, sans-serif; color: #0F172A; padding: 24px; max-width: 760px; margin: 0 auto; line-height: 1.4; font-size: 13px; }
+            .hdr { display: flex; justify-content: space-between; border-bottom: 2px solid #0284C7; padding-bottom: 12px; margin-bottom: 16px; }
+            table { width: 100%; border-collapse: collapse; margin: 14px 0; font-size: 12px; }
+            th { background: #F1F5F9; padding: 6px; text-align: left; border-bottom: 2px solid #CBD5E1; }
+            td { padding: 6px; border-bottom: 1px solid #E2E8F0; }
+            .sum-box { display: flex; justify-content: space-between; background: #F8FAFC; border: 1px solid #CBD5E1; padding: 10px; margin-bottom: 14px; border-radius: 4px; }
+            @media print { body { padding: 0; } }
+          </style>
+        </head>
+        <body>
+          <div class="hdr">
+            <div>
+              <h2 style="margin: 0; color: #0284C7;">SIKAR DROP WHOLESALE DEPOT</h2>
+              <div>Piprali &amp; Nawalgarh Road, Sikar (Raj.) &bull; Phone: +91 98290 00000</div>
+            </div>
+            <div style="text-align: right;">
+              <h3 style="margin: 0;">CUSTOMER LEDGER STATEMENT</h3>
+              <div>Date: ${new Date().toLocaleDateString('en-IN')}</div>
+            </div>
+          </div>
+          <div style="margin-bottom: 12px;">
+            <strong>Party Name:</strong> ${escapeHTML(activeStatementCustomerName)} &bull; <strong>Phone:</strong> ${escapeHTML(activeStatementCustomerPhone || '-')}
+          </div>
+          <div class="sum-box">
+            <div>Total Invoiced: <strong>₹${(s.totalDebits || 0).toLocaleString('en-IN')}</strong></div>
+            <div>Total Received: <strong style="color:#15803D;">₹${(s.totalCredits || 0).toLocaleString('en-IN')}</strong></div>
+            <div>Closing Balance Due: <strong style="color:#DC2626;">₹${(s.closingBalance || 0).toLocaleString('en-IN')}</strong></div>
+          </div>
+          <table>
+            <thead>
+              <tr>
+                <th>Date</th><th>Type</th><th>Reference</th><th style="text-align:right;">Debit ₹</th><th style="text-align:right;">Credit ₹</th><th style="text-align:right;">Balance ₹</th>
+              </tr>
+            </thead>
+            <tbody>${rowsHtml}</tbody>
+          </table>
+        </body>
+        </html>
+      `);
+      w.document.close();
+      w.focus();
+      setTimeout(() => { w.print(); }, 250);
+    }
+
+    function exportCustomerStatementCSV() {
+      if (!activeStatementData || !activeStatementData.timeline) {
+        showToast('No statement data to export.');
+        return;
+      }
+      const headers = ['Date', 'Transaction Type', 'Reference', 'Debit', 'Credit', 'Running Balance', 'Notes', 'Operator'];
+      const rows = activeStatementData.timeline.map(r => [
+        `"${r.date ? r.date.split('T')[0] : ''}"`,
+        `"${r.typeLabel || r.type}"`,
+        `"${r.reference || ''}"`,
+        r.debit || 0,
+        r.credit || 0,
+        r.runningBalance || 0,
+        `"${(r.notes || '').replace(/"/g, '""')}"`,
+        `"${r.operator || ''}"`
+      ]);
+      const csvContent = [headers.join(','), ...rows.map(r => r.join(','))].join('\n');
+      const blob = new Blob([csvContent], { type: 'text/csv;charset=utf-8;' });
+      const url = URL.createObjectURL(blob);
+      const a = document.createElement('a');
+      a.href = url;
+      a.download = `statement_${activeStatementCustomerId || 'party'}_${Date.now()}.csv`;
+      document.body.appendChild(a);
+      a.click();
+      document.body.removeChild(a);
+      showToast('Customer statement CSV downloaded.');
+    }
+
+    // -------------------------------------------------------------
+    // AUTHORIZED BALANCE ADJUSTMENT / WAIVER WORKFLOW
+    // -------------------------------------------------------------
+    function openKhataAdjustModal(khataId) {
+      const item = adminKhata.find(k => k.id === khataId);
+      if (!item) return;
+
+      const currentDue = item.remaining_amount !== undefined ? item.remaining_amount : item.amount;
+      document.getElementById('khata-adj-id').value = item.id;
+      document.getElementById('khata-adj-customer').value = `${item.customer_name || item.customer} (${item.customer_phone || item.phone}) - Khata #${item.id}`;
+      document.getElementById('khata-adj-current-due').value = `₹${currentDue.toLocaleString('en-IN')}`;
+      document.getElementById('khata-adj-amount').value = '';
+      document.getElementById('khata-adj-amount').max = currentDue;
+      document.getElementById('khata-adj-reason').value = '';
+      document.getElementById('khata-adj-operator').value = currentOperator ? currentOperator.name : 'Super Admin';
+
+      openModal('khata-adjust-modal');
+    }
+
+    async function handleKhataAdjustSubmit(e) {
+      e.preventDefault();
+      const khataId = document.getElementById('khata-adj-id').value;
+      const amount = parseFloat(document.getElementById('khata-adj-amount').value) || 0;
+      const reason = document.getElementById('khata-adj-reason').value.trim();
+
+      if (!khataId || amount <= 0) {
+        showToast('Please enter an adjustment amount greater than zero.');
+        return;
+      }
+      if (!reason) {
+        showToast('Audit reason is required for balance adjustment.');
+        return;
+      }
+
+      const submitBtn = document.getElementById('khata-adj-submit-btn');
+      if (submitBtn) {
+        submitBtn.disabled = true;
+        submitBtn.textContent = 'Applying Adjustment...';
+      }
+
+      try {
+        const res = await sikarApi.post(`/api/khata/${encodeURIComponent(khataId)}/adjust`, {
+          adjustmentAmount: amount,
+          reason: reason,
+          actor: currentOperator ? currentOperator.name : 'Super Admin',
+          operatorId: currentOperator ? currentOperator.id : 'ADM-01'
+        });
+
+        if (res && res.success) {
+          closeModal('khata-adjust-modal');
+          await syncFromBackend();
+          await fetchKhataFromBackend();
+          showToast(`Adjustment of ₹${amount.toLocaleString('en-IN')} applied with audit logging.`);
+          return;
+        }
+      } catch (err) {
+        console.error('Error applying khata adjustment', err);
+        showToast('Adjustment failed: ' + (err.message || 'Server error'));
+      } finally {
+        if (submitBtn) {
+          submitBtn.disabled = false;
+          submitBtn.textContent = 'Apply Adjustment & Update Ledger';
+        }
+      }
+    }
+
+    // -------------------------------------------------------------
+    // AUTHORIZED PAYMENT REVERSAL / VOID WORKFLOW
+    // -------------------------------------------------------------
+    function openPaymentReverseModal(paymentId, voucherNo, amount, customerName) {
+      document.getElementById('khata-rev-payment-id').value = paymentId;
+      document.getElementById('khata-rev-voucher-id').value = voucherNo || paymentId;
+      document.getElementById('khata-rev-amount').value = `₹${(amount || 0).toLocaleString('en-IN')}`;
+      document.getElementById('khata-rev-cust-name').value = customerName || 'Party';
+      document.getElementById('khata-rev-reason').value = '';
+
+      openModal('khata-reverse-modal');
+    }
+
+    async function handleKhataPaymentReverseSubmit(e) {
+      e.preventDefault();
+      const paymentId = document.getElementById('khata-rev-payment-id').value;
+      const reason = document.getElementById('khata-rev-reason').value.trim();
+
+      if (!paymentId || !reason) {
+        showToast('Payment ID and mandatory reversal reason are required.');
+        return;
+      }
+
+      const submitBtn = document.getElementById('khata-rev-submit-btn');
+      if (submitBtn) {
+        submitBtn.disabled = true;
+        submitBtn.textContent = 'Reversing Payment...';
+      }
+
+      try {
+        const res = await sikarApi.post(`/api/payments/${encodeURIComponent(paymentId)}/reverse`, {
+          reason: reason,
+          actor: currentOperator ? currentOperator.name : 'Super Admin',
+          operatorId: currentOperator ? currentOperator.id : 'ADM-01'
+        });
+
+        if (res && res.success) {
+          closeModal('khata-reverse-modal');
+          await syncFromBackend();
+          await fetchKhataFromBackend();
+          if (activeStatementCustomerId) {
+            await fetchCustomerStatement();
+          }
+          showToast('Payment successfully reversed and compensated in ledger.');
+          return;
+        }
+      } catch (err) {
+        console.error('Error reversing payment', err);
+        showToast('Reversal failed: ' + (err.message || 'Server error'));
+      } finally {
+        if (submitBtn) {
+          submitBtn.disabled = false;
+          submitBtn.textContent = 'Confirm Authorized Reversal';
+        }
+      }
+    }
+
+    // -------------------------------------------------------------
+    // RECONCILIATION HEALTH CENTER & 1-CLICK DISCREPANCY SYNC
+    // -------------------------------------------------------------
+    async function openKhataReconcileModal() {
+      openModal('khata-reconcile-modal');
+      await checkKhataReconciliation();
+    }
+
+    async function checkKhataReconciliation() {
+      const statusBadge = document.getElementById('rec-status-badge');
+      const diffLabel = document.getElementById('rec-diff-label');
+      const discSection = document.getElementById('rec-discrepancy-section');
+      const okSection = document.getElementById('rec-ok-section');
+      const fixBtn = document.getElementById('rec-fix-btn');
+
+      if (statusBadge) statusBadge.textContent = 'Checking...';
+
+      try {
+        const res = await sikarApi.get('/api/khata/reconcile');
+        if (!res || !res.success) {
+          if (statusBadge) statusBadge.textContent = 'Error Checking';
+          return;
+        }
+
+        const s = res.summary || {};
+        document.getElementById('rec-cust-total').textContent = `₹${(s.totalCustomerDues || 0).toLocaleString('en-IN')}`;
+        document.getElementById('rec-khata-total').textContent = `₹${(s.totalKhataDues || 0).toLocaleString('en-IN')}`;
+
+        if (res.isFullyReconciled) {
+          statusBadge.innerHTML = '<span style="color:#15803D; font-weight:800;">100% Fully Reconciled</span>';
+          if (diffLabel) diffLabel.textContent = '0 Discrepancies';
+          if (discSection) discSection.style.display = 'none';
+          if (okSection) okSection.style.display = 'block';
+          if (fixBtn) fixBtn.style.display = 'none';
+        } else {
+          statusBadge.innerHTML = '<span style="color:#DC2626; font-weight:800;">Discrepancy Detected</span>';
+          if (diffLabel) diffLabel.textContent = `${s.discrepancyCount || 0} Account(s) Differ`;
+          if (discSection) discSection.style.display = 'block';
+          if (okSection) okSection.style.display = 'none';
+          if (fixBtn) fixBtn.style.display = 'inline-flex';
+
+          const tbody = document.getElementById('rec-discrepancy-tbody');
+          if (tbody && res.discrepancies) {
+            tbody.innerHTML = res.discrepancies.map(d => `
+              <tr>
+                <td><code>${escapeHTML(d.customerId)}</code></td>
+                <td><strong>${escapeHTML(d.customerName)}</strong></td>
+                <td class="tabular" style="text-align:right;">₹${d.customerTableBalance.toLocaleString('en-IN')}</td>
+                <td class="tabular" style="text-align:right;">₹${d.khataLedgerSum.toLocaleString('en-IN')}</td>
+                <td class="tabular" style="text-align:right; font-weight:800; color:#DC2626;">₹${Math.abs(d.difference).toLocaleString('en-IN')}</td>
+              </tr>
+            `).join('');
+          }
+        }
+      } catch (err) {
+        console.error('Error in reconciliation check', err);
+        if (statusBadge) statusBadge.textContent = 'Check Failed';
+      }
+    }
+
+    async function handleFixReconciliation() {
+      const fixBtn = document.getElementById('rec-fix-btn');
+      if (fixBtn) {
+        fixBtn.disabled = true;
+        fixBtn.textContent = 'Synchronizing Balances...';
+      }
+
+      try {
+        const res = await sikarApi.post('/api/khata/reconcile/fix', {
+          actor: currentOperator ? currentOperator.name : 'Super Admin'
+        });
+
+        if (res && res.success) {
+          showToast(`Reconciliation complete! Synchronized ${res.fixedCount || 0} accounts.`);
+          await syncFromBackend();
+          await fetchKhataFromBackend();
+          await checkKhataReconciliation();
+          return;
+        }
+      } catch (err) {
+        console.error('Error fixing reconciliation', err);
+        showToast('Auto-reconciliation error: ' + (err.message || 'Server error'));
+      } finally {
+        if (fixBtn) {
+          fixBtn.disabled = false;
+          fixBtn.textContent = 'Auto-Reconcile & Synchronize Discrepancies';
+        }
+      }
+    }
+
+    // -------------------------------------------------------------
+    // EXPORT KHATA CSV WITH AUDIT TRAIL
+    // -------------------------------------------------------------
+    function exportKhataCSV() {
+      const isSuper = currentOperator && (currentOperator.role === 'Super Admin' || currentOperator.perms === 'all');
+      const mask = isSuper ? 'false' : 'true';
+      const role = currentOperator ? currentOperator.role : 'Admin';
+      window.location.href = `/api/khata/export.csv?mask=${mask}&role=${encodeURIComponent(role)}`;
+      showToast('Audited Khata ledger CSV download initiated.');
     }
 
     // =========================================================

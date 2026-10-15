@@ -746,6 +746,46 @@ function initDatabase() {
     console.warn('Customer columns migration notice:', err.message);
   }
 
+  // Ensure khata_entries columns exist
+  try {
+    const khataCols = db.prepare("PRAGMA table_info(khata_entries)").all().map(c => c.name);
+    const neededKhataCols = [
+      ['order_id', "TEXT DEFAULT ''"],
+      ['origin_type', "TEXT DEFAULT 'manual'"],
+      ['adjustment_amount', "REAL DEFAULT 0.0"],
+      ['adjustment_reason', "TEXT DEFAULT ''"],
+      ['authorized_by', "TEXT DEFAULT 'Admin'"]
+    ];
+    for (const [col, colType] of neededKhataCols) {
+      if (!khataCols.includes(col)) {
+        db.exec(`ALTER TABLE khata_entries ADD COLUMN ${col} ${colType}`);
+      }
+    }
+  } catch (err) {
+    console.warn('Khata columns migration notice:', err.message);
+  }
+
+  // Ensure payments columns exist
+  try {
+    const payCols = db.prepare("PRAGMA table_info(payments)").all().map(c => c.name);
+    const neededPayCols = [
+      ['reference_number', "TEXT DEFAULT ''"],
+      ['operator_id', "TEXT DEFAULT 'ADM-01'"],
+      ['operator_name', "TEXT DEFAULT 'Admin'"],
+      ['verification_status', "TEXT DEFAULT 'verified'"],
+      ['receipt_no', "TEXT DEFAULT ''"],
+      ['reversal_id', "TEXT DEFAULT ''"],
+      ['is_reversed', "INTEGER DEFAULT 0"]
+    ];
+    for (const [col, colType] of neededPayCols) {
+      if (!payCols.includes(col)) {
+        db.exec(`ALTER TABLE payments ADD COLUMN ${col} ${colType}`);
+      }
+    }
+  } catch (err) {
+    console.warn('Payments columns migration notice:', err.message);
+  }
+
   console.log('Database tables initialized successfully');
   seedDefaultData();
 }
@@ -1417,39 +1457,569 @@ function refundManualSaleTransaction({ saleId, reason = 'Operator refunded', act
 }
 
 // 2. ATOMIC KHATA PAYMENT SETTLEMENT
-function recordKhataPaymentTransaction({ khataId, customerId, amountPaid, paymentMethod = 'Cash', notes = '', actor = 'Admin' }) {
+function recordKhataPaymentTransaction({
+  khataId,
+  customerId,
+  amountPaid,
+  paymentMethod = 'Cash',
+  referenceNumber = '',
+  notes = '',
+  operatorId = 'ADM-01',
+  actor = 'Admin',
+  verificationStatus = 'verified'
+}) {
   const runTx = db.transaction(() => {
     const khata = db.prepare('SELECT * FROM khata_entries WHERE id = ?').get(khataId);
     if (!khata) throw new Error('Khata entry not found');
+    if (khata.status === 'cancelled' || khata.status === 'reversed') {
+      throw new Error(`Cannot record payment on a ${khata.status} khata ledger entry`);
+    }
+
+    const payAmount = Number(amountPaid);
+    if (isNaN(payAmount) || payAmount <= 0) {
+      throw new Error('Payment amount must be greater than zero');
+    }
+
+    const currentRemaining = Number(khata.remaining_amount !== undefined ? khata.remaining_amount : (khata.amount - (khata.paid_amount || 0)));
+    if (payAmount > currentRemaining + 0.001) {
+      throw new Error(`Payment amount (Rs.${payAmount}) exceeds remaining balance of Rs.${currentRemaining}`);
+    }
+
+    // Duplicate submission prevention
+    const thirtySecsAgo = new Date(Date.now() - 30000).toISOString();
+    const existingDup = db.prepare(`
+      SELECT id FROM payments
+      WHERE reference_id = ? AND amount = ? AND (reference_number = ? OR (reference_number = '' AND created_at >= ?))
+    `).get(khataId, payAmount, referenceNumber || 'NONE', thirtySecsAgo);
+    if (existingDup && referenceNumber) {
+      throw new Error('Duplicate payment detected with reference number ' + referenceNumber);
+    }
 
     const customer = db.prepare('SELECT * FROM customers WHERE id = ?').get(khata.customer_id);
     const now = new Date().toISOString();
+    const isVerified = verificationStatus === 'verified';
 
-    const newPaid = khata.paid_amount + amountPaid;
-    const remaining = Math.max(0, khata.amount - newPaid);
-    const newStatus = remaining <= 0 ? 'settled' : 'partially_paid';
+    const newPaid = Number(khata.paid_amount || 0) + (isVerified ? payAmount : 0);
+    const newRemaining = Math.max(0, currentRemaining - (isVerified ? payAmount : 0));
+    let newStatus = khata.status;
+    if (isVerified) {
+      newStatus = newRemaining <= 0 ? 'settled' : 'partially_paid';
+    }
 
-    db.prepare('UPDATE khata_entries SET paid_amount = ?, remaining_amount = ?, status = ?, updated_at = ? WHERE id = ?')
-      .run(newPaid, remaining, newStatus, now, khataId);
+    db.prepare(`
+      UPDATE khata_entries
+      SET paid_amount = ?, remaining_amount = ?, status = ?, updated_at = ?
+      WHERE id = ?
+    `).run(newPaid, newRemaining, newStatus, now, khataId);
 
-    if (customer) {
-      const newCustBal = Math.max(0, customer.outstanding_balance - amountPaid);
+    if (customer && isVerified) {
+      const newCustBal = Math.max(0, (customer.outstanding_balance || 0) - payAmount);
       db.prepare('UPDATE customers SET outstanding_balance = ?, last_activity = ? WHERE id = ?')
         .run(newCustBal, now, customer.id);
     }
 
     const payId = 'PAY-' + Math.floor(100000 + Math.random() * 900000);
+    const receiptNo = 'RCP-' + Math.floor(100000 + Math.random() * 900000);
+
     db.prepare(`
-      INSERT INTO payments (id, customer_id, customer_name, customer_phone, reference_type, reference_id, amount, previous_balance, new_balance, payment_method, notes, created_at)
-      VALUES (?, ?, ?, ?, 'khata_repayment', ?, ?, ?, ?, ?, ?, ?)
-    `).run(payId, khata.customer_id, khata.customer_name, khata.customer_phone, khataId, amountPaid, customer ? customer.outstanding_balance : 0, customer ? Math.max(0, customer.outstanding_balance - amountPaid) : 0, paymentMethod, notes || `Repayment for ${khata.reason}`, now);
+      INSERT INTO payments (
+        id, customer_id, customer_name, customer_phone, reference_type, reference_id,
+        amount, previous_balance, new_balance, payment_method, reference_number,
+        operator_id, operator_name, verification_status, receipt_no, notes, created_at
+      ) VALUES (?, ?, ?, ?, 'khata_repayment', ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)
+    `).run(
+      payId,
+      khata.customer_id,
+      khata.customer_name,
+      khata.customer_phone,
+      khataId,
+      payAmount,
+      currentRemaining,
+      newRemaining,
+      paymentMethod,
+      referenceNumber || '',
+      operatorId || 'ADM-01',
+      actor || 'Admin',
+      verificationStatus,
+      receiptNo,
+      notes || `Repayment for ${khata.reason || khataId}`,
+      now
+    );
 
     db.prepare(`
       INSERT INTO audit_logs (id, actor, action, module, details, created_at)
       VALUES (?, ?, 'KHATA_PAYMENT_RECORDED', 'khata', ?, ?)
-    `).run('AUD-' + Math.floor(100000 + Math.random() * 900000), actor, `Recorded repayment of ₹${amountPaid} for khata ${khataId} from ${khata.customer_name}. Remaining due: ₹${remaining}`, now);
+    `).run(
+      'AUD-' + Math.floor(100000 + Math.random() * 900000),
+      actor,
+      `Recorded ${verificationStatus} repayment of Rs.${payAmount} (${paymentMethod}, Ref: ${referenceNumber || 'N/A'}, Receipt: ${receiptNo}) for khata ${khataId} from ${khata.customer_name}. Remaining due: Rs.${newRemaining}`,
+      now
+    );
 
-    return { khataId, amountPaid, remaining, newStatus };
+    return {
+      paymentId: payId,
+      receiptNo,
+      khataId,
+      amountPaid: payAmount,
+      previousBalance: currentRemaining,
+      remaining: newRemaining,
+      newStatus,
+      paymentMethod,
+      referenceNumber,
+      verificationStatus,
+      timestamp: now
+    };
+  });
+
+  return runTx();
+}
+
+function verifyPaymentTransaction({ paymentId, actor = 'Super Admin' }) {
+  const runTx = db.transaction(() => {
+    const payment = db.prepare('SELECT * FROM payments WHERE id = ?').get(paymentId);
+    if (!payment) throw new Error('Payment record not found');
+    if (payment.verification_status === 'verified') throw new Error('Payment is already verified');
+    if (payment.is_reversed === 1) throw new Error('Cannot verify a reversed payment');
+
+    const now = new Date().toISOString();
+
+    // Mark payment as verified
+    db.prepare('UPDATE payments SET verification_status = ?, notes = notes || ? WHERE id = ?')
+      .run('verified', ` [Verified by ${actor} on ${now.split('T')[0]}]`, paymentId);
+
+    // Apply deduction to khata entry if applicable
+    if (payment.reference_id && String(payment.reference_id).startsWith('KH-')) {
+      const khata = db.prepare('SELECT * FROM khata_entries WHERE id = ?').get(payment.reference_id);
+      if (khata) {
+        const newPaid = (khata.paid_amount || 0) + payment.amount;
+        const newRemaining = Math.max(0, (khata.remaining_amount || khata.amount) - payment.amount);
+        const newStatus = newRemaining <= 0 ? 'settled' : 'partially_paid';
+        db.prepare('UPDATE khata_entries SET paid_amount = ?, remaining_amount = ?, status = ?, updated_at = ? WHERE id = ?')
+          .run(newPaid, newRemaining, newStatus, now, khata.id);
+      }
+    }
+
+    // Apply deduction to customer balance
+    if (payment.customer_id) {
+      const cust = db.prepare('SELECT * FROM customers WHERE id = ?').get(payment.customer_id);
+      if (cust) {
+        const newBal = Math.max(0, (cust.outstanding_balance || 0) - payment.amount);
+        db.prepare('UPDATE customers SET outstanding_balance = ?, last_activity = ? WHERE id = ?')
+          .run(newBal, now, cust.id);
+      }
+    }
+
+    db.prepare(`
+      INSERT INTO audit_logs (id, actor, action, module, details, created_at)
+      VALUES (?, ?, 'PAYMENT_VERIFIED', 'khata', ?, ?)
+    `).run('AUD-' + Math.floor(100000 + Math.random() * 900000), actor, `Verified payment ${paymentId} of Rs.${payment.amount} (${payment.payment_method}, Ref: ${payment.reference_number || 'N/A'}) for ${payment.customer_name}`, now);
+
+    return { success: true, paymentId, status: 'verified' };
+  });
+
+  return runTx();
+}
+
+function reversePaymentTransaction({ paymentId, reason, actor = 'Super Admin', operatorId = 'ADM-01' }) {
+  const runTx = db.transaction(() => {
+    const payment = db.prepare('SELECT * FROM payments WHERE id = ?').get(paymentId);
+    if (!payment) throw new Error('Payment transaction not found');
+    if (payment.is_reversed === 1) throw new Error('This payment has already been reversed');
+    if (!reason || !reason.trim()) throw new Error('A valid reason is required to reverse a recorded payment');
+
+    const now = new Date().toISOString();
+    const reversalPayId = 'REV-' + Math.floor(100000 + Math.random() * 900000);
+
+    // Mark original payment as reversed
+    db.prepare(`
+      UPDATE payments
+      SET is_reversed = 1, reversal_id = ?, notes = notes || ?
+      WHERE id = ?
+    `).run(reversalPayId, ` [REVERSED by ${actor}: ${reason.trim()}]`, paymentId);
+
+    // If payment was tied to khata entry
+    if (payment.reference_id && (payment.reference_type === 'khata_repayment' || String(payment.reference_id).startsWith('KH-'))) {
+      const khata = db.prepare('SELECT * FROM khata_entries WHERE id = ?').get(payment.reference_id);
+      if (khata) {
+        const restoredPaid = Math.max(0, (khata.paid_amount || 0) - payment.amount);
+        const restoredRemaining = Math.min(khata.amount, (khata.remaining_amount || 0) + payment.amount);
+        const restoredStatus = restoredRemaining >= khata.amount ? 'pending' : 'partially_paid';
+
+        db.prepare(`
+          UPDATE khata_entries
+          SET paid_amount = ?, remaining_amount = ?, status = ?, updated_at = ?
+          WHERE id = ?
+        `).run(restoredPaid, restoredRemaining, restoredStatus, now, khata.id);
+      }
+    }
+
+    // Restore customer outstanding balance if original payment was verified
+    if (payment.customer_id && payment.verification_status === 'verified') {
+      const cust = db.prepare('SELECT * FROM customers WHERE id = ?').get(payment.customer_id);
+      if (cust) {
+        const restoredCustBal = (cust.outstanding_balance || 0) + payment.amount;
+        db.prepare('UPDATE customers SET outstanding_balance = ?, last_activity = ? WHERE id = ?')
+          .run(restoredCustBal, now, cust.id);
+      }
+    }
+
+    // Insert compensating reversal ledger entry
+    db.prepare(`
+      INSERT INTO payments (
+        id, customer_id, customer_name, customer_phone, reference_type, reference_id,
+        amount, previous_balance, new_balance, payment_method, reference_number,
+        operator_id, operator_name, verification_status, receipt_no, notes, created_at
+      ) VALUES (?, ?, ?, ?, 'payment_reversal', ?, ?, ?, ?, 'Adjustment', ?, ?, ?, 'verified', '', ?, ?)
+    `).run(
+      reversalPayId,
+      payment.customer_id,
+      payment.customer_name,
+      payment.customer_phone,
+      payment.reference_id || paymentId,
+      -payment.amount,
+      payment.new_balance,
+      payment.previous_balance,
+      payment.id,
+      operatorId || 'ADM-01',
+      actor || 'Super Admin',
+      `Reversal of ${paymentId}: ${reason.trim()}`,
+      now
+    );
+
+    // Audit log
+    db.prepare(`
+      INSERT INTO audit_logs (id, actor, action, module, details, created_at)
+      VALUES (?, ?, 'PAYMENT_REVERSED', 'khata', ?, ?)
+    `).run(
+      'AUD-' + Math.floor(100000 + Math.random() * 900000),
+      actor,
+      `Reversed payment ${paymentId} of Rs.${payment.amount} for customer ${payment.customer_name} (${payment.customer_id}). Reason: ${reason.trim()}`,
+      now
+    );
+
+    return {
+      success: true,
+      reversedPaymentId: paymentId,
+      reversalEntryId: reversalPayId,
+      amountRestored: payment.amount,
+      timestamp: now
+    };
+  });
+
+  return runTx();
+}
+
+function adjustKhataEntryTransaction({ khataId, adjustmentAmount, reason, actor = 'Super Admin', operatorId = 'ADM-01' }) {
+  const runTx = db.transaction(() => {
+    const khata = db.prepare('SELECT * FROM khata_entries WHERE id = ?').get(khataId);
+    if (!khata) throw new Error('Khata entry not found');
+    if (!reason || !reason.trim()) throw new Error('Adjustment reason is required');
+
+    const adj = Number(adjustmentAmount);
+    if (isNaN(adj) || adj === 0) throw new Error('Adjustment amount must be non-zero');
+
+    const currentRemaining = Number(khata.remaining_amount || 0);
+    const newRemaining = currentRemaining - adj;
+    if (newRemaining < 0) {
+      throw new Error(`Adjustment of Rs.${adj} exceeds remaining balance of Rs.${currentRemaining}`);
+    }
+
+    const now = new Date().toISOString();
+    const newTotalAdj = (Number(khata.adjustment_amount) || 0) + adj;
+    const newStatus = newRemaining <= 0 ? 'settled' : (khata.paid_amount > 0 ? 'partially_paid' : 'pending');
+
+    db.prepare(`
+      UPDATE khata_entries
+      SET adjustment_amount = ?, adjustment_reason = ?, remaining_amount = ?, status = ?, updated_at = ?
+      WHERE id = ?
+    `).run(newTotalAdj, reason.trim(), newRemaining, newStatus, now, khataId);
+
+    const cust = db.prepare('SELECT * FROM customers WHERE id = ?').get(khata.customer_id);
+    if (cust) {
+      const newCustBal = Math.max(0, (cust.outstanding_balance || 0) - adj);
+      db.prepare('UPDATE customers SET outstanding_balance = ?, last_activity = ? WHERE id = ?')
+        .run(newCustBal, now, cust.id);
+    }
+
+    const payId = 'ADJ-' + Math.floor(100000 + Math.random() * 900000);
+    db.prepare(`
+      INSERT INTO payments (
+        id, customer_id, customer_name, customer_phone, reference_type, reference_id,
+        amount, previous_balance, new_balance, payment_method, reference_number,
+        operator_id, operator_name, verification_status, receipt_no, notes, created_at
+      ) VALUES (?, ?, ?, ?, 'khata_adjustment', ?, ?, ?, ?, 'Adjustment', '', ?, ?, 'verified', '', ?, ?)
+    `).run(
+      payId,
+      khata.customer_id,
+      khata.customer_name,
+      khata.customer_phone,
+      khataId,
+      adj,
+      currentRemaining,
+      newRemaining,
+      operatorId || 'ADM-01',
+      actor || 'Super Admin',
+      `Ledger Adjustment: ${reason.trim()}`,
+      now
+    );
+
+    db.prepare(`
+      INSERT INTO audit_logs (id, actor, action, module, details, created_at)
+      VALUES (?, ?, 'KHATA_ADJUSTED', 'khata', ?, ?)
+    `).run(
+      'AUD-' + Math.floor(100000 + Math.random() * 900000),
+      actor,
+      `Adjusted Rs.${adj} on khata ${khataId} (${khata.customer_name}). New remaining due: Rs.${newRemaining}. Reason: ${reason.trim()}`,
+      now
+    );
+
+    return {
+      success: true,
+      khataId,
+      adjustmentAmount: adj,
+      newRemaining,
+      newStatus
+    };
+  });
+
+  return runTx();
+}
+
+function getCustomerStatement({ customerId, phone, fromDate = '', toDate = '' }) {
+  let cust = null;
+  if (customerId) {
+    cust = db.prepare('SELECT * FROM customers WHERE id = ?').get(customerId);
+  }
+  if (!cust && phone) {
+    const clean = phone.replace(/\D/g, '');
+    cust = db.prepare("SELECT * FROM customers WHERE REPLACE(phone, ' ', '') = ? OR phone LIKE ?").get(clean, `%${clean.slice(-10)}`);
+  }
+  if (!cust) return null;
+
+  const cleanPhone = (cust.phone || '').replace(/\D/g, '');
+
+  // 1. Credit Sales from POS
+  const sales = db.prepare(`
+    SELECT id, total_amount, amount_received, outstanding_amount, payment_method, sale_date, created_at, notes, 'POS Credit Sale' as type
+    FROM manual_sales
+    WHERE (customer_id = ? OR REPLACE(customer_phone, ' ', '') = ?)
+  `).all(cust.id, cleanPhone);
+
+  // 2. Orders from Online Storefront
+  const orders = db.prepare(`
+    SELECT id, total as total_amount, payment_status, status, order_date, created_at, notes, 'Online Order' as type
+    FROM orders
+    WHERE (customer_id = ? OR REPLACE(customer_phone, ' ', '') = ?)
+  `).all(cust.id, cleanPhone);
+
+  // 3. Khata Entries (Direct / Udhar)
+  const khatas = db.prepare(`
+    SELECT id, amount as total_amount, paid_amount, remaining_amount, reason, due_date, status, created_at, notes, 'Khata Credit' as type
+    FROM khata_entries
+    WHERE (customer_id = ? OR REPLACE(customer_phone, ' ', '') = ?)
+  `).all(cust.id, cleanPhone);
+
+  // 4. Payments Recorded
+  const payments = db.prepare(`
+    SELECT id, reference_id, reference_type, amount, payment_method, reference_number, operator_name, verification_status, receipt_no, is_reversed, notes, created_at, 'Payment' as type
+    FROM payments
+    WHERE (customer_id = ? OR REPLACE(customer_phone, ' ', '') = ?)
+  `).all(cust.id, cleanPhone);
+
+  // Compile chronological transactions
+  const transactions = [];
+
+  // Add Sales that created debt
+  sales.forEach(s => {
+    transactions.push({
+      id: s.id,
+      date: s.sale_date || (s.created_at ? s.created_at.split('T')[0] : ''),
+      timestamp: s.created_at,
+      type: 'DEBIT',
+      category: 'POS Credit Sale',
+      refNo: s.id,
+      description: s.notes || 'Counter Bilty Supply',
+      debit: Number(s.total_amount || 0),
+      credit: 0
+    });
+  });
+
+  // Add Online Orders
+  orders.forEach(o => {
+    transactions.push({
+      id: o.id,
+      date: o.order_date || (o.created_at ? o.created_at.split('T')[0] : ''),
+      timestamp: o.created_at,
+      type: 'DEBIT',
+      category: 'Online Order',
+      refNo: o.id,
+      description: o.notes || 'Storefront Wholesale Petis',
+      debit: Number(o.total_amount || 0),
+      credit: 0
+    });
+  });
+
+  // Add Direct Khata entries if not tied to POS / Order
+  khatas.forEach(k => {
+    const isLinked = sales.some(s => k.reason && k.reason.includes(s.id)) || orders.some(o => k.reason && k.reason.includes(o.id));
+    if (!isLinked) {
+      transactions.push({
+        id: k.id,
+        date: k.created_at ? k.created_at.split('T')[0] : '',
+        timestamp: k.created_at,
+        type: 'DEBIT',
+        category: 'Khata Credit Loan',
+        refNo: k.id,
+        description: k.reason || k.notes || 'Wholesale Goods Credit',
+        debit: Number(k.total_amount || 0),
+        credit: 0
+      });
+    }
+  });
+
+  // Add Payments & Adjustments
+  payments.forEach(p => {
+    const isReversal = p.reference_type === 'payment_reversal' || p.amount < 0;
+    const isAdjustment = p.reference_type === 'khata_adjustment';
+
+    transactions.push({
+      id: p.id,
+      date: p.created_at ? p.created_at.split('T')[0] : '',
+      timestamp: p.created_at,
+      type: isReversal ? 'DEBIT' : 'CREDIT',
+      category: isReversal ? 'Payment Reversal' : (isAdjustment ? 'Ledger Adjustment' : 'Payment Recovery'),
+      refNo: p.receipt_no || p.reference_number || p.id,
+      description: p.notes || (p.payment_method + ' payment received'),
+      debit: isReversal ? Math.abs(p.amount) : 0,
+      credit: isReversal ? 0 : Number(p.amount || 0),
+      method: p.payment_method,
+      referenceNumber: p.reference_number || '',
+      receiptNo: p.receipt_no || '',
+      operator: p.operator_name || 'Admin',
+      verificationStatus: p.verification_status || 'verified',
+      isReversed: p.is_reversed === 1
+    });
+  });
+
+  // Sort chronologically
+  transactions.sort((a, b) => (a.timestamp || '').localeCompare(b.timestamp || ''));
+
+  // Filter by date range if provided
+  let filteredTx = transactions;
+  if (fromDate) {
+    filteredTx = filteredTx.filter(t => t.date >= fromDate);
+  }
+  if (toDate) {
+    filteredTx = filteredTx.filter(t => t.date <= toDate);
+  }
+
+  // Calculate Running Balance
+  let runningBal = 0;
+  let totalDebits = 0;
+  let totalCredits = 0;
+
+  const statementRows = filteredTx.map(t => {
+    if (t.type === 'DEBIT') {
+      runningBal += t.debit;
+      totalDebits += t.debit;
+    } else {
+      runningBal -= t.credit;
+      totalCredits += t.credit;
+    }
+
+    return {
+      ...t,
+      runningBalance: Math.max(0, runningBal)
+    };
+  });
+
+  return {
+    customer: {
+      id: cust.id,
+      name: cust.name,
+      phone: cust.phone,
+      corridor: cust.corridor,
+      address: cust.address,
+      outstandingBalance: Number(cust.outstanding_balance || 0)
+    },
+    filter: { fromDate, toDate },
+    summary: {
+      totalDebits,
+      totalCredits,
+      netCalculatedBalance: Math.max(0, runningBal),
+      recordedOutstandingBalance: Number(cust.outstanding_balance || 0),
+      isReconciled: Math.abs(runningBal - Number(cust.outstanding_balance || 0)) < 0.01
+    },
+    statement: statementRows
+  };
+}
+
+function reconcileKhataBalances() {
+  const customers = db.prepare('SELECT id, name, phone, outstanding_balance FROM customers').all();
+  const khataEntries = db.prepare("SELECT * FROM khata_entries WHERE status != 'cancelled' AND status != 'reversed'").all();
+
+  let totalDuesInKhata = 0;
+  let totalCustBalances = 0;
+  const discrepancies = [];
+
+  customers.forEach(c => {
+    totalCustBalances += Number(c.outstanding_balance || 0);
+
+    const custKhata = khataEntries.filter(k => k.customer_id === c.id || (k.customer_phone && k.customer_phone.replace(/\D/g, '') === (c.phone || '').replace(/\D/g, '')));
+    const khataSumRemaining = custKhata.reduce((sum, k) => sum + Number(k.remaining_amount || 0), 0);
+
+    const diff = Math.abs(Number(c.outstanding_balance || 0) - khataSumRemaining);
+    if (diff > 0.01) {
+      discrepancies.push({
+        customerId: c.id,
+        customerName: c.name,
+        customerPhone: c.phone,
+        customerBalance: Number(c.outstanding_balance || 0),
+        khataTotalRemaining: khataSumRemaining,
+        discrepancyAmount: Number((c.outstanding_balance || 0) - khataSumRemaining),
+        khataEntriesCount: custKhata.length
+      });
+    }
+  });
+
+  khataEntries.forEach(k => {
+    totalDuesInKhata += Number(k.remaining_amount || 0);
+  });
+
+  return {
+    totalAccounts: customers.length,
+    activeKhataEntries: khataEntries.length,
+    totalCustomerDues: totalCustBalances,
+    totalKhataDues: totalDuesInKhata,
+    discrepancyCount: discrepancies.length,
+    isFullyReconciled: discrepancies.length === 0,
+    discrepancies
+  };
+}
+
+function fixReconciliationDiscrepancies({ actor = 'Super Admin' }) {
+  const runTx = db.transaction(() => {
+    const report = reconcileKhataBalances();
+    const now = new Date().toISOString();
+    let fixedCount = 0;
+
+    report.discrepancies.forEach(d => {
+      // Align customer balance to verified khata remaining
+      db.prepare('UPDATE customers SET outstanding_balance = ?, last_activity = ? WHERE id = ?')
+        .run(d.khataTotalRemaining, now, d.customerId);
+      fixedCount++;
+    });
+
+    db.prepare(`
+      INSERT INTO audit_logs (id, actor, action, module, details, created_at)
+      VALUES (?, ?, 'KHATA_RECONCILED', 'khata', ?, ?)
+    `).run('AUD-' + Math.floor(100000 + Math.random() * 900000), actor, `Reconciled khata balances for ${fixedCount} accounts to eliminate drift.`, now);
+
+    return {
+      success: true,
+      fixedCount,
+      timestamp: now
+    };
   });
 
   return runTx();
@@ -1942,8 +2512,14 @@ module.exports = {
   recordManualSaleTransaction,
   refundManualSaleTransaction,
   recordKhataPaymentTransaction,
+  reversePaymentTransaction,
+  adjustKhataEntryTransaction,
+  verifyPaymentTransaction,
   receivePurchaseTransaction,
   createOnlineOrderTransaction,
   updateOrderStatusTransaction,
-  getCustomerProfileAndHistory
+  getCustomerProfileAndHistory,
+  getCustomerStatement,
+  reconcileKhataBalances,
+  fixReconciliationDiscrepancies
 };
