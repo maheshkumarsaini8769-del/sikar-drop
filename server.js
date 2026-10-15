@@ -26,7 +26,8 @@ const {
   recordKhataPaymentTransaction,
   receivePurchaseTransaction,
   createOnlineOrderTransaction,
-  updateOrderStatusTransaction
+  updateOrderStatusTransaction,
+  getCustomerProfileAndHistory
 } = require('./db.js');
 
 const app = express();
@@ -1795,70 +1796,359 @@ app.post('/api/manual-sales/:id/cancel', (req, res) => {
 // ==========================================
 // 6. CUSTOMERS & UNIFIED HISTORY
 // ==========================================
+function checkCustomerAdminRole(req) {
+  const roleHeader = String(
+    req.headers['x-operator-role'] ||
+    req.headers['x-user-role'] ||
+    req.query.role ||
+    (req.body && (req.body.role || req.body.operatorRole)) ||
+    ''
+  ).toLowerCase();
+  const operatorName = String(
+    req.headers['x-operator-name'] ||
+    req.query.actor ||
+    (req.body && (req.body.actor || req.body.operatorName)) ||
+    'Admin'
+  );
+  const isSuper = roleHeader.includes('super') || roleHeader.includes('owner') || roleHeader === 'admin';
+  return { isSuper, role: roleHeader, actor: operatorName };
+}
+
 app.get('/api/customers', (req, res) => {
   try {
-    const q = (req.query.search || '').trim();
-    const limit = parseInt(req.query.limit, 10);
-    const offset = parseInt(req.query.offset, 10) || 0;
-    let query = 'SELECT * FROM customers';
+    const {
+      q,
+      search,
+      type,
+      verificationStatus,
+      dues,
+      repeat,
+      mask,
+      page,
+      limit,
+      paginated
+    } = req.query;
+
+    const searchTerm = (q || search || '').trim().toLowerCase();
+    const typeFilter = (type || verificationStatus || 'all').trim().toLowerCase();
+    const duesFilter = (dues || 'all').trim().toLowerCase();
+    const repeatFilter = (repeat || 'all').trim().toLowerCase();
+
+    const { isSuper } = checkCustomerAdminRole(req);
+    const shouldMaskPii = mask === 'true' || (!isSuper && mask !== 'false');
+
+    let query = 'SELECT * FROM customers WHERE 1=1';
     const params = [];
-    if (q) {
-      query += ' WHERE name LIKE ? OR phone LIKE ?';
-      params.push(`%${q}%`, `%${q}%`);
+
+    if (typeFilter === 'registered') {
+      query += " AND (verified = 1 OR customer_type = 'registered')";
+    } else if (typeFilter === 'guest') {
+      query += " AND (customer_type = 'guest' OR (verified = 0 AND customer_type != 'unverified'))";
+    } else if (typeFilter === 'unverified') {
+      query += " AND (customer_type = 'unverified' OR verified = 2)";
     }
+
+    if (duesFilter === 'has_dues' || duesFilter === 'due') {
+      query += ' AND outstanding_balance > 0';
+    } else if (duesFilter === 'settled' || duesFilter === 'clean') {
+      query += ' AND (outstanding_balance <= 0 OR outstanding_balance IS NULL)';
+    }
+
+    if (repeatFilter === 'repeat') {
+      query += ' AND total_orders > 1';
+    } else if (repeatFilter === 'single' || repeatFilter === '1st') {
+      query += ' AND total_orders <= 1';
+    }
+
     query += ' ORDER BY last_activity DESC';
-    if (limit && limit > 0) {
-      query += ' LIMIT ? OFFSET ?';
-      params.push(limit, offset);
+
+    const allCustomers = db.prepare(query).all(...params);
+
+    // Apply keyword search
+    let filtered = allCustomers;
+    if (searchTerm) {
+      filtered = allCustomers.filter(c => {
+        const idMatch = String(c.id || '').toLowerCase().includes(searchTerm);
+        const nameMatch = String(c.name || '').toLowerCase().includes(searchTerm);
+        const phoneMatch = String(c.phone || '').replace(/\D/g, '').includes(searchTerm.replace(/\D/g, ''));
+        const corridorMatch = String(c.corridor || '').toLowerCase().includes(searchTerm);
+        const addressMatch = String(c.address || '').toLowerCase().includes(searchTerm);
+        return idMatch || nameMatch || phoneMatch || corridorMatch || addressMatch;
+      });
     }
-    const customers = db.prepare(query).all(...params);
-    res.json(customers);
+
+    // Summary KPIs across filtered customers
+    let totalCustomers = filtered.length;
+    let registeredCount = 0;
+    let guestCount = 0;
+    let unverifiedCount = 0;
+    let repeatCount = 0;
+    let totalLifetimeSpend = 0;
+    let totalOutstandingDues = 0;
+
+    const formatted = filtered.map(c => {
+      const cleanPhone = String(c.phone || '').replace(/\D/g, '');
+      const isRegistered = c.verified === 1 || c.customer_type === 'registered';
+      const isUnverified = c.customer_type === 'unverified' || cleanPhone.length < 10;
+      const isGuest = !isRegistered && !isUnverified;
+
+      if (isRegistered) registeredCount++;
+      else if (isGuest) guestCount++;
+      else if (isUnverified) unverifiedCount++;
+
+      const ordersCount = Number(c.total_orders || 0);
+      if (ordersCount > 1) repeatCount++;
+
+      totalLifetimeSpend += Number(c.lifetime_spend || 0);
+      totalOutstandingDues += Number(c.outstanding_balance || 0);
+
+      // Mask PII if staff or unprivileged role
+      const maskedPhone = shouldMaskPii && c.phone
+        ? (c.phone.length >= 10 ? c.phone.replace(/(\d{5})\d{5}/, '$1*****') : '*****')
+        : c.phone;
+      const maskedAddress = shouldMaskPii && c.address
+        ? c.address.replace(/^[^,]+,/, 'Plot **, ')
+        : c.address;
+
+      let verificationBadge = 'Registered & OTP-Verified';
+      if (isGuest) verificationBadge = 'Guest Checkout';
+      else if (isUnverified) verificationBadge = 'Unverified Contact';
+
+      return {
+        ...c,
+        phone: maskedPhone,
+        rawPhone: shouldMaskPii ? undefined : c.phone,
+        address: maskedAddress,
+        isPiiMasked: shouldMaskPii,
+        verificationBadge,
+        ordersCount,
+        lifetimeSpend: Number(c.lifetime_spend || 0),
+        lastOrder: c.last_order_date || (c.last_activity ? c.last_activity.split('T')[0] : '')
+      };
+    });
+
+    const summary = {
+      totalCustomers,
+      registeredCount,
+      guestCount,
+      unverifiedCount,
+      repeatCount,
+      totalLifetimeSpend,
+      totalOutstandingDues
+    };
+
+    if (paginated === 'true' || paginated === '1' || page !== undefined) {
+      const pageNum = Math.max(1, parseInt(page, 10) || 1);
+      const pageSize = Math.max(1, parseInt(limit, 10) || 50);
+      const offset = (pageNum - 1) * pageSize;
+      const paginatedCustomers = formatted.slice(offset, offset + pageSize);
+
+      return res.json({
+        success: true,
+        customers: paginatedCustomers,
+        pagination: {
+          total: totalCustomers,
+          page: pageNum,
+          limit: pageSize,
+          pages: Math.ceil(totalCustomers / pageSize) || 1
+        },
+        summary
+      });
+    }
+
+    // Attach summary for direct consumers while preserving array nature
+    formatted.summary = summary;
+    res.json(formatted);
   } catch (err) {
     res.status(500).json({ error: err.message });
   }
 });
 
+// CSV Export for Customers Directory
+app.get('/api/customers/export.csv', (req, res) => {
+  try {
+    const { isSuper, actor } = checkCustomerAdminRole(req);
+    const shouldMask = !isSuper && req.query.mask !== 'false';
+
+    const customers = db.prepare('SELECT * FROM customers ORDER BY last_activity DESC').all();
+
+    // Log audit trail for data export
+    const now = new Date().toISOString();
+    db.prepare(`
+      INSERT INTO audit_logs (id, actor, action, module, details, created_at)
+      VALUES (?, ?, 'CUSTOMER_DATA_EXPORTED', 'customers', ?, ?)
+    `).run('AUD-' + Math.floor(100000 + Math.random() * 900000), actor || 'Admin', `Exported customer directory CSV (${customers.length} records, Masked: ${shouldMask})`, now);
+
+    res.setHeader('Content-Type', 'text/csv; charset=utf-8');
+    res.setHeader('Content-Disposition', `attachment; filename="sikar_customers_${now.split('T')[0]}.csv"`);
+
+    const header = ['Customer ID', 'Party Name', 'Verification Status', 'Customer Type', 'Mobile Phone', 'Delivery Corridor', 'Delivery Address', 'Total Orders', 'Lifetime Spend (Rs)', 'Outstanding Udhar (Rs)', 'Last Order Date', 'Created Date'];
+    const rows = [header.join(',')];
+
+    for (const c of customers) {
+      const cleanPhone = String(c.phone || '').replace(/\D/g, '');
+      const isReg = c.verified === 1 || c.customer_type === 'registered';
+      const isUnver = c.customer_type === 'unverified' || cleanPhone.length < 10;
+      const statusLabel = isReg ? 'Registered & OTP-Verified' : (isUnver ? 'Unverified Contact' : 'Guest Checkout');
+
+      const phoneVal = shouldMask && c.phone
+        ? (c.phone.length >= 10 ? c.phone.replace(/(\d{5})\d{5}/, '$1*****') : '*****')
+        : (c.phone || '');
+      const addrVal = shouldMask && c.address
+        ? c.address.replace(/^[^,]+,/, 'Plot **, ')
+        : (c.address || '');
+
+      const row = [
+        `"${c.id || ''}"`,
+        `"${(c.name || '').replace(/"/g, '""')}"`,
+        `"${statusLabel}"`,
+        `"${c.customer_type || 'registered'}"`,
+        `"${phoneVal}"`,
+        `"${(c.corridor || '').replace(/"/g, '""')}"`,
+        `"${addrVal.replace(/"/g, '""')}"`,
+        c.total_orders || 0,
+        c.lifetime_spend || 0,
+        c.outstanding_balance || 0,
+        `"${c.last_order_date || ''}"`,
+        `"${c.created_at ? c.created_at.split('T')[0] : ''}"`
+      ];
+      rows.push(row.join(','));
+    }
+
+    res.send(rows.join('\n'));
+  } catch (err) {
+    res.status(500).send('Error exporting customers CSV: ' + err.message);
+  }
+});
+
 app.get('/api/customers/:id', (req, res) => {
   try {
-    const rawId = req.params.id;
-    const cleanPhone = rawId.replace(/[^0-9]/g, '');
-    let customer = db.prepare('SELECT * FROM customers WHERE id = ?').get(rawId);
-    if (!customer && cleanPhone) {
-      customer = db.prepare("SELECT * FROM customers WHERE REPLACE(phone, ' ', '') = ? OR phone LIKE ?").get(cleanPhone, `%${cleanPhone.slice(-10)}`);
+    const { isSuper, actor } = checkCustomerAdminRole(req);
+    const maskPii = req.query.mask === 'true' || (!isSuper && req.query.mask !== 'false');
+
+    const result = getCustomerProfileAndHistory({
+      customerId: req.params.id,
+      phone: req.params.id,
+      maskPii,
+      actor
+    });
+
+    if (!result) {
+      return res.status(404).json({ error: 'Customer not found: ' + req.params.id });
     }
-    if (!customer) return res.status(404).json({ error: 'Customer not found' });
-
-    const custPhoneClean = (customer.phone || '').replace(/[^0-9]/g, '');
-
-    // Retrieve Online Orders
-    const onlineOrders = db.prepare("SELECT * FROM orders WHERE customer_id = ? OR REPLACE(customer_phone, ' ', '') = ? OR customer_phone LIKE ? ORDER BY created_at DESC").all(customer.id, custPhoneClean, `%${custPhoneClean.slice(-10)}`);
-    const formattedOrders = onlineOrders.map(o => ({
-      ...o,
-      items: JSON.parse(o.items_json || '[]')
-    }));
-
-    // Retrieve Manual POS Sales
-    const manualSales = db.prepare("SELECT * FROM manual_sales WHERE customer_id = ? OR REPLACE(customer_phone, ' ', '') = ? OR customer_phone LIKE ? ORDER BY created_at DESC").all(customer.id, custPhoneClean, `%${custPhoneClean.slice(-10)}`);
-    const formattedSales = manualSales.map(s => ({
-      ...s,
-      items: JSON.parse(s.items_json || '[]')
-    }));
-
-    // Retrieve Payments
-    const payments = db.prepare("SELECT * FROM payments WHERE customer_id = ? OR REPLACE(customer_phone, ' ', '') = ? OR customer_phone LIKE ? ORDER BY created_at DESC").all(customer.id, custPhoneClean, `%${custPhoneClean.slice(-10)}`);
-
-    // Retrieve Khata dues
-    const khata = db.prepare("SELECT * FROM khata_entries WHERE customer_id = ? OR REPLACE(customer_phone, ' ', '') = ? OR customer_phone LIKE ? ORDER BY created_at DESC").all(customer.id, custPhoneClean, `%${custPhoneClean.slice(-10)}`);
 
     res.json({
-      customer,
-      onlineOrders: formattedOrders,
-      manualSales: formattedSales,
-      payments,
-      khataEntries: khata
+      success: true,
+      ...result
     });
   } catch (err) {
     res.status(500).json({ error: err.message });
+  }
+});
+
+// Authorize unmasking of PII for single customer (Super Admin only with audit log)
+app.post('/api/customers/:id/unmask', (req, res) => {
+  try {
+    const { isSuper, actor } = checkCustomerAdminRole(req);
+    if (!isSuper) {
+      return res.status(403).json({ error: 'Access Denied: Super Admin role required to unmask customer PII' });
+    }
+
+    const rawId = req.params.id;
+    let cust = db.prepare('SELECT * FROM customers WHERE id = ?').get(rawId);
+    if (!cust) {
+      const clean = rawId.replace(/\D/g, '');
+      if (clean) {
+        cust = db.prepare("SELECT * FROM customers WHERE REPLACE(phone, ' ', '') = ?").get(clean);
+      }
+    }
+    if (!cust) return res.status(404).json({ error: 'Customer not found' });
+
+    // Log PII unmask event
+    const now = new Date().toISOString();
+    db.prepare(`
+      INSERT INTO audit_logs (id, actor, action, module, details, created_at)
+      VALUES (?, ?, 'CUSTOMER_PII_UNMASKED', 'customers', ?, ?)
+    `).run('AUD-' + Math.floor(100000 + Math.random() * 900000), actor || 'Super Admin', `Unmasked PII for customer ${cust.name} (${cust.id}, Phone: ${cust.phone})`, now);
+
+    res.json({
+      success: true,
+      customerId: cust.id,
+      name: cust.name,
+      phone: cust.phone,
+      address: cust.address,
+      corridor: cust.corridor,
+      email: cust.email
+    });
+  } catch (err) {
+    res.status(500).json({ error: err.message });
+  }
+});
+
+// CSV Export for Individual Customer Order History
+app.get('/api/customers/:id/export.csv', (req, res) => {
+  try {
+    const { isSuper, actor } = checkCustomerAdminRole(req);
+    const maskPii = !isSuper && req.query.mask !== 'false';
+
+    const result = getCustomerProfileAndHistory({
+      customerId: req.params.id,
+      phone: req.params.id,
+      maskPii,
+      actor
+    });
+
+    if (!result) return res.status(404).send('Customer not found');
+
+    const c = result.customer;
+    const now = new Date().toISOString();
+
+    db.prepare(`
+      INSERT INTO audit_logs (id, actor, action, module, details, created_at)
+      VALUES (?, ?, 'CUSTOMER_STATEMENT_EXPORTED', 'customers', ?, ?)
+    `).run('AUD-' + Math.floor(100000 + Math.random() * 900000), actor || 'Admin', `Exported order history CSV for customer ${c.name} (${c.id})`, now);
+
+    res.setHeader('Content-Type', 'text/csv; charset=utf-8');
+    res.setHeader('Content-Disposition', `attachment; filename="sikar_customer_${c.id}_orders_${now.split('T')[0]}.csv"`);
+
+    const header = ['Transaction Type', 'Reference ID', 'Date & Time', 'Items & Petis', 'Total Amount (Rs)', 'Paid Amount (Rs)', 'Balance Due (Rs)', 'Payment Status', 'Fulfilment Status', 'Notes'];
+    const rows = [header.join(',')];
+
+    for (const o of result.onlineOrders) {
+      const itemsDesc = (o.items || []).map(i => `${i.qty || i.quantity || 1}x ${i.title}`).join(' | ');
+      rows.push([
+        '"Online Order"',
+        `"${o.id}"`,
+        `"${o.created_at || o.order_date || ''}"`,
+        `"${itemsDesc.replace(/"/g, '""')}"`,
+        o.total || 0,
+        o.payment_status === 'Paid' ? (o.total || 0) : 0,
+        o.payment_status !== 'Paid' ? (o.total || 0) : 0,
+        `"${o.payment_status || 'Pending'}"`,
+        `"${o.status || 'Pending'}"`,
+        `"${(o.notes || '').replace(/"/g, '""')}"`
+      ].join(','));
+    }
+
+    for (const s of result.manualSales) {
+      const itemsDesc = (s.items || []).map(i => `${i.qty || i.quantity || 1}x ${i.title}`).join(' | ');
+      rows.push([
+        '"POS Manual Sale"',
+        `"${s.id}"`,
+        `"${s.created_at || s.sale_date || ''}"`,
+        `"${itemsDesc.replace(/"/g, '""')}"`,
+        s.total_amount || 0,
+        s.amount_received || 0,
+        s.outstanding_amount || 0,
+        `"${s.payment_method || 'Cash'}"`,
+        `"${s.status || 'Completed'}"`,
+        `"${(s.notes || '').replace(/"/g, '""')}"`
+      ].join(','));
+    }
+
+    res.send(rows.join('\n'));
+  } catch (err) {
+    res.status(500).send('Error exporting customer order history: ' + err.message);
   }
 });
 

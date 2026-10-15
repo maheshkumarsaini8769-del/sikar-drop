@@ -727,6 +727,25 @@ function initDatabase() {
     console.warn('Manual sales columns migration notice:', err.message);
   }
 
+  // Ensure customer_type, notes, last_order_id, last_order_date, and repeat_frequency columns exist on customers table
+  try {
+    const custCols = db.prepare("PRAGMA table_info(customers)").all().map(c => c.name);
+    const neededCustCols = [
+      ['customer_type', "TEXT DEFAULT 'registered'"],
+      ['notes', "TEXT DEFAULT ''"],
+      ['last_order_id', "TEXT DEFAULT ''"],
+      ['last_order_date', "TEXT DEFAULT ''"],
+      ['repeat_frequency', "TEXT DEFAULT '1st Order'"]
+    ];
+    for (const [col, colType] of neededCustCols) {
+      if (!custCols.includes(col)) {
+        db.exec(`ALTER TABLE customers ADD COLUMN ${col} ${colType}`);
+      }
+    }
+  } catch (err) {
+    console.warn('Customer columns migration notice:', err.message);
+  }
+
   console.log('Database tables initialized successfully');
   seedDefaultData();
 }
@@ -1535,16 +1554,35 @@ function createOnlineOrderTransaction({ orderId: customOrderId, customerName, cu
     const finalTotal = total !== undefined ? Number(total) : Math.max(0, finalSubtotal - finalDiscount);
 
     // Customer record
+    const cleanPrimary = (primaryPhone || '').replace(/\D/g, '');
+    const isInvalidPhone = cleanPrimary.length < 10;
+    const otpRec = cleanPrimary.length >= 10 ? db.prepare('SELECT verified FROM otp_codes WHERE phone = ?').get(cleanPrimary) : null;
+    const existingCust = cleanPrimary.length >= 10 ? db.prepare("SELECT id, verified, customer_type FROM customers WHERE REPLACE(phone, ' ', '') = ?").get(cleanPrimary) : null;
+    const isVerified = (otpRec && otpRec.verified === 1) || (existingCust && existingCust.verified === 1 && existingCust.customer_type === 'registered');
+    const custType = isInvalidPhone ? 'unverified' : (isVerified ? 'registered' : 'guest');
+    const verifiedVal = isInvalidPhone ? 2 : (isVerified ? 1 : 0);
+
     let cust = db.prepare('SELECT * FROM customers WHERE phone = ?').get(primaryPhone);
+    if (!cust && cleanPrimary.length >= 10) {
+      cust = db.prepare("SELECT * FROM customers WHERE REPLACE(phone, ' ', '') = ?").get(cleanPrimary.slice(-10));
+    }
     let custId = cust ? cust.id : ('CUST-' + Math.floor(1000 + Math.random() * 9000));
     if (!cust) {
       db.prepare(`
-        INSERT INTO customers (id, name, phone, address, corridor, verified, total_orders, lifetime_spend, outstanding_balance, created_at, last_activity)
-        VALUES (?, ?, ?, ?, ?, 1, 1, ?, 0, ?, ?)
-      `).run(custId, customerName, primaryPhone, finalAddress, corridor || 'Sikar', finalTotal, now, now);
+        INSERT INTO customers (id, name, phone, address, corridor, verified, customer_type, total_orders, lifetime_spend, outstanding_balance, last_order_id, last_order_date, repeat_frequency, created_at, last_activity)
+        VALUES (?, ?, ?, ?, ?, ?, ?, 1, ?, 0, ?, ?, '1st Order', ?, ?)
+      `).run(custId, customerName, primaryPhone, finalAddress, corridor || 'Sikar', verifiedVal, custType, finalTotal, orderId, now, now, now);
     } else {
-      db.prepare('UPDATE customers SET total_orders = total_orders + 1, lifetime_spend = lifetime_spend + ?, last_activity = ? WHERE id = ?')
-        .run(finalTotal, now, cust.id);
+      const newOrders = (cust.total_orders || 0) + 1;
+      const newSpend = (cust.lifetime_spend || 0) + finalTotal;
+      const newType = (cust.verified === 1 || isVerified) ? 'registered' : (cust.customer_type || custType);
+      const newVer = (cust.verified === 1 || isVerified) ? 1 : cust.verified;
+      const repeatFreq = `Repeat Buyer: ${newOrders} Orders`;
+      db.prepare(`
+        UPDATE customers
+        SET total_orders = ?, lifetime_spend = ?, verified = ?, customer_type = ?, last_order_id = ?, last_order_date = ?, repeat_frequency = ?, last_activity = ?
+        WHERE id = ?
+      `).run(newOrders, newSpend, newVer, newType, orderId, now, repeatFreq, now, cust.id);
     }
 
     const activityLog = JSON.stringify([
@@ -1695,6 +1733,25 @@ function updateOrderStatusTransaction({ orderId, newStatus, paymentStatus, vehic
       } catch (err) {
         console.error('Error parsing items for cancellation restock:', err);
       }
+
+      // Reconcile customer orders count and lifetime spend on cancellation
+      try {
+        let cust = null;
+        if (order.customer_id) {
+          cust = db.prepare('SELECT * FROM customers WHERE id = ?').get(order.customer_id);
+        } else if (order.customer_phone) {
+          cust = db.prepare('SELECT * FROM customers WHERE phone = ?').get(order.customer_phone);
+        }
+        if (cust) {
+          const newOrders = Math.max(0, (cust.total_orders || 0) - 1);
+          const newSpend = Math.max(0, (cust.lifetime_spend || 0) - Number(order.total || 0));
+          const repeatFreq = newOrders > 1 ? `Repeat Buyer: ${newOrders} Orders` : '1st Order';
+          db.prepare('UPDATE customers SET total_orders = ?, lifetime_spend = ?, repeat_frequency = ?, last_activity = ? WHERE id = ?')
+            .run(newOrders, newSpend, repeatFreq, now, cust.id);
+        }
+      } catch (custErr) {
+        console.warn('Customer reconciliation error on order cancellation:', custErr.message);
+      }
     }
 
     db.prepare("UPDATE orders SET status = ?, payment_status = ?, vehicle = ?, activity_log_json = ?, updated_at = ? WHERE id = ?")
@@ -1721,6 +1778,162 @@ function updateOrderStatusTransaction({ orderId, newStatus, paymentStatus, vehic
   return runTx();
 }
 
+// 6. COMPREHENSIVE CUSTOMER PROFILE & ORDER HISTORY HELPER
+function getCustomerProfileAndHistory({ customerId, phone, maskPii = false, actor = 'Admin' }) {
+  let cust = null;
+  if (customerId) {
+    cust = db.prepare('SELECT * FROM customers WHERE id = ?').get(customerId);
+  }
+  if (!cust && phone) {
+    const clean = String(phone).replace(/\D/g, '');
+    cust = db.prepare('SELECT * FROM customers WHERE phone = ?').get(phone);
+    if (!cust && clean.length >= 10) {
+      cust = db.prepare("SELECT * FROM customers WHERE REPLACE(phone, ' ', '') = ? OR phone LIKE ?").get(clean, `%${clean.slice(-10)}`);
+    }
+  }
+
+  if (!cust) return null;
+
+  const cleanPhone = (cust.phone || '').replace(/\D/g, '');
+
+  // 1. Online orders (match by customer_id or verified phone, NEVER merged merely by name)
+  const onlineOrders = db.prepare(`
+    SELECT * FROM orders
+    WHERE customer_id = ? OR REPLACE(customer_phone, ' ', '') = ? OR customer_phone LIKE ? OR REPLACE(login_phone, ' ', '') = ?
+    ORDER BY created_at DESC
+  `).all(cust.id, cleanPhone, `%${cleanPhone.slice(-10)}`, cleanPhone);
+
+  const formattedOrders = onlineOrders.map(o => {
+    let items = [];
+    try { items = JSON.parse(o.items_json || '[]'); } catch (e) { items = []; }
+    return { ...o, items };
+  });
+
+  // 2. POS Manual Sales
+  const manualSales = db.prepare(`
+    SELECT * FROM manual_sales
+    WHERE customer_id = ? OR REPLACE(customer_phone, ' ', '') = ? OR customer_phone LIKE ?
+    ORDER BY created_at DESC
+  `).all(cust.id, cleanPhone, `%${cleanPhone.slice(-10)}`);
+
+  const formattedSales = manualSales.map(s => {
+    let items = [];
+    try { items = JSON.parse(s.items_json || '[]'); } catch (e) { items = []; }
+    return { ...s, items };
+  });
+
+  // 3. Payments
+  const payments = db.prepare(`
+    SELECT * FROM payments
+    WHERE customer_id = ? OR REPLACE(customer_phone, ' ', '') = ? OR customer_phone LIKE ?
+    ORDER BY created_at DESC
+  `).all(cust.id, cleanPhone, `%${cleanPhone.slice(-10)}`);
+
+  // 4. Khata dues
+  const khata = db.prepare(`
+    SELECT * FROM khata_entries
+    WHERE customer_id = ? OR REPLACE(customer_phone, ' ', '') = ? OR customer_phone LIKE ?
+    ORDER BY created_at DESC
+  `).all(cust.id, cleanPhone, `%${cleanPhone.slice(-10)}`);
+
+  // 5. Activity audit trail
+  const auditEntries = db.prepare(`
+    SELECT * FROM audit_logs
+    WHERE details LIKE ? OR details LIKE ?
+    ORDER BY created_at DESC LIMIT 20
+  `).all(`%${cust.id}%`, `%${cust.phone}%`);
+
+  // Aggregate Metrics & Repeat Buying Analysis
+  const validOrders = formattedOrders.filter(o => o.status !== 'cancelled');
+  const validSales = formattedSales.filter(s => s.status !== 'refunded');
+  const cancelledOrders = formattedOrders.filter(o => o.status === 'cancelled');
+  const refundedSales = formattedSales.filter(s => s.status === 'refunded');
+
+  const netOnlineSpend = validOrders.reduce((sum, o) => sum + Number(o.total || 0), 0);
+  const netPosSpend = validSales.reduce((sum, s) => sum + Number(s.total_amount || 0), 0);
+  const totalNetSpend = netOnlineSpend + netPosSpend;
+
+  const totalValidTransactions = validOrders.length + validSales.length;
+  const averageOrderValue = totalValidTransactions > 0 ? Math.round(totalNetSpend / totalValidTransactions) : 0;
+
+  // Frequent items aggregation
+  const itemMap = new Map();
+  for (const o of validOrders) {
+    for (const it of (o.items || [])) {
+      const title = it.title || 'Water Peti';
+      const qty = Number(it.qty || it.quantity || 1);
+      itemMap.set(title, (itemMap.get(title) || 0) + qty);
+    }
+  }
+  for (const s of validSales) {
+    for (const it of (s.items || [])) {
+      const title = it.title || 'Water Peti';
+      const qty = Number(it.qty || it.quantity || 1);
+      itemMap.set(title, (itemMap.get(title) || 0) + qty);
+    }
+  }
+  const frequentItems = Array.from(itemMap.entries())
+    .map(([title, qty]) => ({ title, qty }))
+    .sort((a, b) => b.qty - a.qty)
+    .slice(0, 5);
+
+  const totalAllOrders = formattedOrders.length + formattedSales.length;
+  let repeatStatus = '1st Order';
+  if (totalAllOrders === 0) repeatStatus = 'No Orders Yet';
+  else if (totalAllOrders === 1) repeatStatus = 'First-time Buyer';
+  else repeatStatus = `Repeat Wholesale Buyer (${totalAllOrders} Orders)`;
+
+  // Verification classification
+  let verificationBadge = 'Registered & OTP-Verified';
+  if (cust.customer_type === 'guest' || cust.verified === 0) {
+    verificationBadge = 'Guest Checkout';
+  } else if (cust.customer_type === 'unverified' || cleanPhone.length < 10) {
+    verificationBadge = 'Unverified Contact';
+  }
+
+  // PII masking if requested
+  const displayPhone = maskPii && cust.phone
+    ? (cust.phone.length >= 10 ? cust.phone.replace(/(\d{5})\d{5}/, '$1*****') : '*****')
+    : cust.phone;
+  const displayAddress = maskPii && cust.address
+    ? cust.address.replace(/^[^,]+,/, 'Plot **, ')
+    : cust.address;
+
+  const customerData = {
+    ...cust,
+    phone: displayPhone,
+    rawPhone: maskPii ? undefined : cust.phone,
+    address: displayAddress,
+    isPiiMasked: maskPii,
+    verificationBadge,
+    repeatStatus
+  };
+
+  return {
+    customer: customerData,
+    metrics: {
+      totalOrders: totalAllOrders,
+      onlineOrdersCount: formattedOrders.length,
+      manualSalesCount: formattedSales.length,
+      validTransactions: totalValidTransactions,
+      cancelledOrdersCount: cancelledOrders.length,
+      refundedSalesCount: refundedSales.length,
+      netLifetimeSpend: totalNetSpend,
+      averageOrderValue,
+      outstandingBalance: Number(cust.outstanding_balance || 0),
+      repeatStatus,
+      frequentItems,
+      firstOrderDate: (formattedOrders[formattedOrders.length - 1] || formattedSales[formattedSales.length - 1] || {}).created_at || cust.created_at,
+      lastOrderDate: (formattedOrders[0] || formattedSales[0] || {}).created_at || cust.last_activity
+    },
+    onlineOrders: formattedOrders,
+    manualSales: formattedSales,
+    payments,
+    khataEntries: khata,
+    auditTrail: auditEntries
+  };
+}
+
 // Initialize on module load
 initDatabase();
 
@@ -1731,5 +1944,6 @@ module.exports = {
   recordKhataPaymentTransaction,
   receivePurchaseTransaction,
   createOnlineOrderTransaction,
-  updateOrderStatusTransaction
+  updateOrderStatusTransaction,
+  getCustomerProfileAndHistory
 };

@@ -3533,20 +3533,79 @@
            TAB 5: CUSTOMERS & LIFETIME HISTORY
            ======================================================= -->
       <section id="pane-customers" class="tab-pane">
+        <!-- 1. CUSTOMER EXECUTIVE SUMMARY METRICS BANNER -->
+        <div class="stats-grid-row" style="margin-bottom: 20px;" id="cust-kpi-summary-row">
+          <div class="stat-kpi-card" style="border-top: 3px solid #0284C7;">
+            <span class="stat-kpi-label">Total Wholesale Parties</span>
+            <div class="stat-kpi-val tabular" id="cust-kpi-total">0 Parties</div>
+            <span class="stat-kpi-delta" id="cust-kpi-total-sub">Direct Database Records</span>
+          </div>
+          <div class="stat-kpi-card" style="border-top: 3px solid #15803D;">
+            <span class="stat-kpi-label">Registered &amp; OTP-Verified</span>
+            <div class="stat-kpi-val tabular" style="color: #15803D;" id="cust-kpi-verified">0</div>
+            <span class="stat-kpi-delta positive" id="cust-kpi-verified-sub">Verified Mobile Auth</span>
+          </div>
+          <div class="stat-kpi-card" style="border-top: 3px solid #64748B;">
+            <span class="stat-kpi-label">Guest Checkouts</span>
+            <div class="stat-kpi-val tabular" style="color: #475569;" id="cust-kpi-guest">0</div>
+            <span class="stat-kpi-delta" id="cust-kpi-guest-sub">Direct Counter / Guest</span>
+          </div>
+          <div class="stat-kpi-card" style="border-top: 3px solid #7C3AED;">
+            <span class="stat-kpi-label">Repeat Wholesale Buyers</span>
+            <div class="stat-kpi-val tabular" style="color: #7C3AED;" id="cust-kpi-repeat">0 Buyers</div>
+            <span class="stat-kpi-delta positive" id="cust-kpi-repeat-sub">2+ Verified Orders</span>
+          </div>
+          <div class="stat-kpi-card" style="border-top: 3px solid #059669;">
+            <span class="stat-kpi-label">Total Lifetime Spend</span>
+            <div class="stat-kpi-val tabular" style="color: #059669;" id="cust-kpi-spend">₹0</div>
+            <span class="stat-kpi-delta positive" id="cust-kpi-spend-sub">Delivered &amp; Paid Net</span>
+          </div>
+          <div class="stat-kpi-card" style="border-top: 3px solid #DC2626;">
+            <span class="stat-kpi-label">Pending Udhar Dues</span>
+            <div class="stat-kpi-val tabular" style="color: #DC2626;" id="cust-kpi-dues">₹0</div>
+            <span class="stat-kpi-delta" style="color: #DC2626;" id="cust-kpi-dues-sub">Active Khata Ledger</span>
+          </div>
+        </div>
+
         <div class="portal-card">
           <div class="portal-card-header">
             <div>
-              <h2>Customers Directory &amp; Purchase History</h2>
-              <p>Search "Mahesh" to find repeat orders, spend analytics, and lifetime history.</p>
+              <h2>Customers Directory &amp; Lifetime History</h2>
+              <p>Authentic wholesale buyer profiles, repeat-order analytics, verified relationships, and role-protected contact details.</p>
             </div>
-            <button type="button" class="btn-portal-primary" onclick="openAddManualOnlineOrderModal()" style="display:inline-flex; align-items:center; gap:6px;">
-              <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5"><line x1="12" y1="5" x2="12" y2="19"></line><line x1="5" y1="12" x2="19" y2="12"></line></svg>
-              <span>Create Online Order</span>
-            </button>
+            <div style="display: flex; gap: 8px; flex-wrap: wrap; align-items: center;">
+              <button type="button" class="btn-portal-outline" id="cust-pii-toggle-btn" onclick="toggleCustomerPiiMask()" style="display: inline-flex; align-items: center; gap: 6px;">
+                <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M1 12s4-8 11-8 11 8 11 8-4 8-11 8-11-8-11-8z"></path><circle cx="12" cy="12" r="3"></circle></svg>
+                <span id="cust-pii-btn-text">PII Protected (Masked)</span>
+              </button>
+              <button type="button" class="btn-portal-outline" onclick="exportCustomersCSV()" style="display: inline-flex; align-items: center; gap: 6px;" title="Export customer directory to CSV">
+                <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5"><path d="M21 15v4a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2v-4"></path><polyline points="7 10 12 15 17 10"></polyline><line x1="12" y1="15" x2="12" y2="3"></line></svg>
+                <span>Export CSV</span>
+              </button>
+              <button type="button" class="btn-portal-primary" onclick="openAddManualOnlineOrderModal()" style="display:inline-flex; align-items:center; gap:6px;">
+                <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5"><line x1="12" y1="5" x2="12" y2="19"></line><line x1="5" y1="12" x2="19" y2="12"></line></svg>
+                <span>Create Online Order</span>
+              </button>
+            </div>
           </div>
 
-          <div style="margin-bottom: 20px;">
-            <input type="text" id="cust-search-filter" class="portal-input" placeholder="Search customer by name or phone (e.g. Mahesh)..." oninput="renderCustomersList(this.value)">
+          <!-- TOOLBAR: SEARCH & STATUS FILTER TABS -->
+          <div style="background: #FFFFFF; border: 1px solid var(--border-subtle); border-radius: var(--radius-sm); padding: 14px 18px; margin-bottom: 20px; box-shadow: var(--shadow-sm);">
+            <div style="display: flex; flex-wrap: wrap; gap: 14px; align-items: center; justify-content: space-between;">
+              <!-- Filter tabs -->
+              <div style="display: flex; gap: 6px; flex-wrap: wrap;" id="customer-filter-tabs">
+                <button type="button" class="btn-tbl-action active" id="cust-flt-all" onclick="setCustomerFilter('all', this)">All Customers</button>
+                <button type="button" class="btn-tbl-action" id="cust-flt-registered" onclick="setCustomerFilter('registered', this)">Registered &amp; Verified</button>
+                <button type="button" class="btn-tbl-action" id="cust-flt-guest" onclick="setCustomerFilter('guest', this)">Guest Checkout</button>
+                <button type="button" class="btn-tbl-action" id="cust-flt-repeat" onclick="setCustomerFilter('repeat', this)">Repeat Buyers</button>
+                <button type="button" class="btn-tbl-action" id="cust-flt-due" onclick="setCustomerFilter('due', this)">Has Outstanding Udhar</button>
+              </div>
+
+              <!-- Search input -->
+              <div style="display: flex; align-items: center; gap: 8px; flex: 1; max-width: 420px; min-width: 260px;">
+                <input type="text" id="cust-search-filter" class="portal-input" placeholder="Search by name, phone, ID, corridor (e.g. Mahesh)..." oninput="handleCustomerSearch(this.value)">
+              </div>
+            </div>
           </div>
 
           <div class="customers-cards-grid" id="customers-cards-container"></div>
@@ -5089,52 +5148,73 @@
 
   <!-- 1. CUSTOMER HISTORY & PROFILE MODAL -->
   <div class="portal-modal-overlay" id="customer-history-modal">
-    <div class="portal-modal-card" style="max-width: 720px; width: 92%;">
+    <div class="portal-modal-card" style="max-width: 840px; width: 94%;">
       <button type="button" class="modal-close-x" onclick="closeModal('customer-history-modal')"><svg style="width:14px;height:14px;display:block;" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5"><line x1="18" y1="6" x2="6" y2="18"></line><line x1="6" y1="6" x2="18" y2="18"></line></svg></button>
-      <div style="display: flex; justify-content: space-between; align-items: flex-start; margin-bottom: 14px;">
+      
+      <div style="display: flex; justify-content: space-between; align-items: flex-start; margin-bottom: 16px; flex-wrap: wrap; gap: 10px;">
         <div>
-          <h3 style="font-family: var(--font-heading); font-size: 1.35rem; font-weight: 900; margin-bottom: 2px;" id="modal-cust-name">Customer History</h3>
-          <p style="font-size: 0.82rem; color: var(--text-muted);" id="modal-cust-phone">+91 00000 00000</p>
+          <div style="display: flex; align-items: center; gap: 8px; flex-wrap: wrap; margin-bottom: 4px;">
+            <h3 style="font-family: var(--font-heading); font-size: 1.4rem; font-weight: 900; margin: 0;" id="modal-cust-name">Customer History</h3>
+            <span id="modal-cust-id" style="font-size: 0.76rem; font-weight: 800; background: #E0F2FE; color: #0284C7; padding: 3px 8px; border-radius: 4px;">CUST-1002</span>
+            <span id="modal-cust-badge" style="font-size: 0.74rem; font-weight: 800; padding: 3px 8px; border-radius: 999px;">Registered &amp; OTP-Verified</span>
+            <span id="modal-cust-repeat-pill" style="font-size: 0.74rem; font-weight: 800; background: #EFF6FF; color: #1D4ED8; padding: 3px 8px; border-radius: 999px; border: 1px solid #BFDBFE;">Repeat Buyer</span>
+          </div>
+          <div style="display: flex; align-items: center; gap: 10px; font-size: 0.84rem; color: var(--text-muted); flex-wrap: wrap;" id="modal-cust-contact-row">
+            <span id="modal-cust-phone">Mobile: +91 98290 *****</span>
+            <span>&bull;</span>
+            <span id="modal-cust-corridor">Corridor: Piprali Road Mandi</span>
+            <span>&bull;</span>
+            <span id="modal-cust-address">Plot 44, Krishi Mandi Phase 2</span>
+            <button type="button" id="btn-modal-unmask-pii" class="btn-tbl-action" onclick="unmaskCustomerModalPii()" style="display: none; padding: 2px 8px; font-size: 0.75rem;">
+              Unmask Full PII
+            </button>
+          </div>
         </div>
-        <span id="modal-cust-id" style="font-size: 0.76rem; font-weight: 800; background: #E0F2FE; color: #0284C7; padding: 4px 10px; border-radius: 4px;">CUST-1002</span>
       </div>
 
-      <div class="cust-modal-stats-grid">
+      <!-- 4-TILE KPI SUMMARY STRIP -->
+      <div class="cust-modal-stats-grid" style="display: grid; grid-template-columns: repeat(4, 1fr); gap: 10px; margin-bottom: 16px;">
         <div style="background: #F8FAFC; border: 1px solid var(--border-subtle); border-radius: var(--radius-sm); padding: 10px; text-align: center;">
-          <span style="font-size: 0.7rem; color: var(--text-muted); text-transform: uppercase; font-weight: 700;">Total Orders</span>
-          <strong style="display: block; font-size: 1.15rem; font-weight: 900; color: #0284C7;" id="modal-cust-total-orders">0</strong>
+          <span style="font-size: 0.7rem; color: var(--text-muted); text-transform: uppercase; font-weight: 700;">Lifetime Orders</span>
+          <strong style="display: block; font-size: 1.2rem; font-weight: 900; color: #0284C7;" id="modal-cust-total-orders">0</strong>
+          <small style="font-size: 0.7rem; color: var(--text-muted);" id="modal-cust-orders-breakdown">0 Online &bull; 0 POS</small>
         </div>
         <div style="background: #F8FAFC; border: 1px solid var(--border-subtle); border-radius: var(--radius-sm); padding: 10px; text-align: center;">
-          <span style="font-size: 0.7rem; color: var(--text-muted); text-transform: uppercase; font-weight: 700;">Lifetime Spend</span>
-          <strong style="display: block; font-size: 1.15rem; font-weight: 900; color: #15803D;" id="modal-cust-lifetime-spend">₹0</strong>
+          <span style="font-size: 0.7rem; color: var(--text-muted); text-transform: uppercase; font-weight: 700;">Delivered Spend</span>
+          <strong style="display: block; font-size: 1.2rem; font-weight: 900; color: #15803D;" id="modal-cust-lifetime-spend">₹0</strong>
+          <small style="font-size: 0.7rem; color: #15803D;" id="modal-cust-aov">AOV: ₹0</small>
         </div>
         <div style="background: #F8FAFC; border: 1px solid var(--border-subtle); border-radius: var(--radius-sm); padding: 10px; text-align: center;">
-          <span style="font-size: 0.7rem; color: var(--text-muted); text-transform: uppercase; font-weight: 700;">Pending Dues</span>
-          <strong style="display: block; font-size: 1.15rem; font-weight: 900; color: #DC2626;" id="modal-cust-dues">₹0</strong>
+          <span style="font-size: 0.7rem; color: var(--text-muted); text-transform: uppercase; font-weight: 700;">Pending Udhar Dues</span>
+          <strong style="display: block; font-size: 1.2rem; font-weight: 900; color: #DC2626;" id="modal-cust-dues">₹0</strong>
+          <small style="font-size: 0.7rem; color: var(--text-muted);" id="modal-cust-dues-status">All Settled</small>
         </div>
         <div style="background: #F8FAFC; border: 1px solid var(--border-subtle); border-radius: var(--radius-sm); padding: 10px; text-align: center;">
-          <span style="font-size: 0.7rem; color: var(--text-muted); text-transform: uppercase; font-weight: 700;">Client Type</span>
-          <strong style="display: block; font-size: 0.92rem; font-weight: 800; color: #0F172A;" id="modal-cust-type">Wholesale</strong>
+          <span style="font-size: 0.7rem; color: var(--text-muted); text-transform: uppercase; font-weight: 700;">Top Favorite Peti</span>
+          <strong style="display: block; font-size: 0.95rem; font-weight: 800; color: #0F172A; white-space: nowrap; overflow: hidden; text-overflow: ellipsis;" id="modal-cust-fav-item">Bisleri 1L Peti</strong>
+          <small style="font-size: 0.7rem; color: var(--text-muted);" id="modal-cust-fav-qty">0 Boxes</small>
         </div>
       </div>
 
       <!-- SEGMENTED TABS INSIDE MODAL -->
-      <div style="display: flex; gap: 6px; border-bottom: 1px solid var(--border-subtle); padding-bottom: 8px; margin-bottom: 14px;">
-        <button type="button" class="btn-portal-outline active" id="modal-tab-orders" onclick="switchCustModalTab('orders')">Online Orders</button>
-        <button type="button" class="btn-portal-outline" id="modal-tab-pos" onclick="switchCustModalTab('pos')">Manual / POS Sales</button>
-        <button type="button" class="btn-portal-outline" id="modal-tab-khata" onclick="switchCustModalTab('khata')">Payment &amp; Khata</button>
+      <div style="display: flex; gap: 6px; border-bottom: 1px solid var(--border-subtle); padding-bottom: 8px; margin-bottom: 14px; flex-wrap: wrap;">
+        <button type="button" class="btn-portal-outline active" id="modal-tab-orders" onclick="switchCustModalTab('orders')">Online Orders (<span id="modal-tab-count-orders">0</span>)</button>
+        <button type="button" class="btn-portal-outline" id="modal-tab-pos" onclick="switchCustModalTab('pos')">Manual / POS Sales (<span id="modal-tab-count-pos">0</span>)</button>
+        <button type="button" class="btn-portal-outline" id="modal-tab-khata" onclick="switchCustModalTab('khata')">Payment &amp; Khata (<span id="modal-tab-count-khata">0</span>)</button>
         <button type="button" class="btn-portal-outline" id="modal-tab-activity" onclick="switchCustModalTab('activity')">Activity Trail</button>
       </div>
 
       <!-- 1. ONLINE ORDERS SECTION -->
-      <div id="modal-cust-orders-box" class="portal-table-wrapper" style="max-height: 240px;">
+      <div id="modal-cust-orders-box" class="portal-table-wrapper" style="max-height: 280px;">
         <table class="portal-table">
           <thead>
             <tr>
-              <th>Order ID</th>
-              <th>Items &amp; Petis</th>
-              <th>Bill Total ₹</th>
-              <th>Status</th>
+              <th>Order ID &amp; Time</th>
+              <th>Purchased Items &amp; Petis</th>
+              <th>Total Bill ₹</th>
+              <th>Fulfilment Status</th>
+              <th>Payment Status</th>
+              <th style="text-align: right;">Action</th>
             </tr>
           </thead>
           <tbody id="modal-cust-orders-tbody"></tbody>
@@ -5142,15 +5222,17 @@
       </div>
 
       <!-- 2. MANUAL POS SALES SECTION -->
-      <div id="modal-cust-pos-box" class="portal-table-wrapper" style="max-height: 240px; display: none;">
+      <div id="modal-cust-pos-box" class="portal-table-wrapper" style="max-height: 280px; display: none;">
         <table class="portal-table">
           <thead>
             <tr>
-              <th>Sale Ref</th>
-              <th>Product / Qty</th>
-              <th>Total ₹</th>
-              <th>Received ₹</th>
-              <th>Balance ₹</th>
+              <th>Sale ID &amp; Date</th>
+              <th>Wholesale Boxes Sold</th>
+              <th>Gross Bill ₹</th>
+              <th>Cash Received ₹</th>
+              <th>Balance Due ₹</th>
+              <th>Status</th>
+              <th style="text-align: right;">Action</th>
             </tr>
           </thead>
           <tbody id="modal-cust-pos-tbody"></tbody>
@@ -5158,15 +5240,15 @@
       </div>
 
       <!-- 3. KHATA & PAYMENTS SECTION -->
-      <div id="modal-cust-khata-box" class="portal-table-wrapper" style="max-height: 240px; display: none;">
+      <div id="modal-cust-khata-box" class="portal-table-wrapper" style="max-height: 280px; display: none;">
         <table class="portal-table">
           <thead>
             <tr>
-              <th>Entry / Ref</th>
-              <th>Reason</th>
-              <th>Due Date</th>
+              <th>Entry / Voucher</th>
+              <th>Date</th>
+              <th>Description / Reason</th>
               <th>Remaining Due ₹</th>
-              <th>Status</th>
+              <th>Payment Status</th>
             </tr>
           </thead>
           <tbody id="modal-cust-khata-tbody"></tbody>
@@ -5174,11 +5256,12 @@
       </div>
 
       <!-- 4. ACTIVITY TRAIL SECTION -->
-      <div id="modal-cust-activity-box" class="portal-table-wrapper" style="max-height: 240px; display: none;">
+      <div id="modal-cust-activity-box" class="portal-table-wrapper" style="max-height: 280px; display: none;">
         <table class="portal-table">
           <thead>
             <tr>
               <th>Timestamp</th>
+              <th>Actor</th>
               <th>Action</th>
               <th>Details</th>
             </tr>
@@ -5187,9 +5270,18 @@
         </table>
       </div>
 
-      <div style="margin-top: 18px; display: flex; justify-content: flex-end; gap: 10px;">
-        <button type="button" class="btn-portal-success" id="btn-modal-cust-whatsapp" onclick="sendCustomerWhatsAppMessage()">Open WhatsApp Chat</button>
-        <button type="button" class="btn-portal-outline" onclick="closeModal('customer-history-modal')">Close</button>
+      <!-- FOOTER ACTIONS -->
+      <div style="margin-top: 18px; display: flex; justify-content: space-between; align-items: center; flex-wrap: wrap; gap: 10px;">
+        <div>
+          <button type="button" class="btn-portal-outline" onclick="exportSingleCustomerHistoryCSV()" style="display: inline-flex; align-items: center; gap: 6px;">
+            <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5"><path d="M21 15v4a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2v-4"></path><polyline points="7 10 12 15 17 10"></polyline><line x1="12" y1="15" x2="12" y2="3"></line></svg>
+            <span>Export Order History CSV</span>
+          </button>
+        </div>
+        <div style="display: flex; gap: 10px;">
+          <button type="button" class="btn-portal-success" id="btn-modal-cust-whatsapp" onclick="sendCustomerWhatsAppMessage()">Open WhatsApp Chat</button>
+          <button type="button" class="btn-portal-outline" onclick="closeModal('customer-history-modal')">Close</button>
+        </div>
       </div>
     </div>
   </div>
@@ -6196,11 +6288,21 @@
 
     // API CLIENT FOR SQLITE BACKEND INTEGRATION
     const sikarApi = {
+      _headers(extra = {}) {
+        const op = currentOperator || JSON.parse(sessionStorage.getItem('sikar_portal_operator') || '{}');
+        const h = { ...extra };
+        if (op && (op.role || op.id)) {
+          h['x-operator-role'] = op.role || 'Super Admin';
+          h['x-operator-id'] = op.id || 'ADM-01';
+          h['x-operator-name'] = op.name || 'Super Admin';
+        }
+        return h;
+      },
       async get(url) {
         try {
           const sep = url.includes('?') ? '&' : '?';
           const bustedUrl = `${url}${sep}_t=${Date.now()}`;
-          const res = await fetch(bustedUrl, { cache: 'no-store' });
+          const res = await fetch(bustedUrl, { headers: this._headers(), cache: 'no-store' });
           if (!res.ok) throw new Error(`HTTP ${res.status}`);
           return await res.json();
         } catch (err) {
@@ -6211,7 +6313,7 @@
       async post(url, data) {
         const res = await fetch(url, {
           method: 'POST',
-          headers: { 'Content-Type': 'application/json' },
+          headers: this._headers({ 'Content-Type': 'application/json' }),
           cache: 'no-store',
           body: JSON.stringify(data)
         });
@@ -6222,7 +6324,7 @@
       async put(url, data) {
         const res = await fetch(url, {
           method: 'PUT',
-          headers: { 'Content-Type': 'application/json' },
+          headers: this._headers({ 'Content-Type': 'application/json' }),
           cache: 'no-store',
           body: JSON.stringify(data)
         });
@@ -6233,7 +6335,7 @@
       async patch(url, data) {
         const res = await fetch(url, {
           method: 'PATCH',
-          headers: { 'Content-Type': 'application/json' },
+          headers: this._headers({ 'Content-Type': 'application/json' }),
           cache: 'no-store',
           body: JSON.stringify(data)
         });
@@ -6242,7 +6344,11 @@
         return json;
       },
       async delete(url) {
-        const res = await fetch(url, { method: 'DELETE', cache: 'no-store' });
+        const res = await fetch(url, {
+          method: 'DELETE',
+          headers: this._headers(),
+          cache: 'no-store'
+        });
         const json = await res.json().catch(() => ({}));
         if (!res.ok) throw new Error(json.error || `HTTP ${res.status}`);
         return json;
@@ -6349,14 +6455,22 @@
             id: c.id,
             name: c.name,
             phone: c.phone,
+            rawPhone: c.rawPhone || c.phone,
+            email: c.email || '',
             corridor: c.delivery_corridor || c.corridor || 'Piprali Road Mandi',
-            ordersCount: c.total_orders || c.ordersCount || 1,
-            lifetimeSpend: c.total_spent || c.lifetimeSpend || 0,
-            outstanding_balance: c.outstanding_balance || 0,
-            balance: c.outstanding_balance || 0,
-            lastOrder: c.last_activity ? c.last_activity.split('T')[0] : (c.lastOrder || '')
+            address: c.address || '',
+            verified: c.verified !== undefined ? Number(c.verified) : 1,
+            customer_type: c.customer_type || (c.verified === 1 ? 'registered' : 'guest'),
+            verificationBadge: c.verificationBadge || (c.verified === 1 ? 'Registered & OTP-Verified' : 'Guest Checkout'),
+            ordersCount: c.ordersCount !== undefined ? Number(c.ordersCount) : Number(c.total_orders || 1),
+            lifetimeSpend: c.lifetimeSpend !== undefined ? Number(c.lifetimeSpend) : Number(c.lifetime_spend || c.total_spent || 0),
+            outstanding_balance: Number(c.outstanding_balance || 0),
+            balance: Number(c.outstanding_balance || 0),
+            repeatStatus: c.repeatStatus || (c.repeat_frequency || (c.total_orders > 1 ? `Repeat Buyer: ${c.total_orders} Orders` : '1st Order')),
+            lastOrder: c.lastOrder || (c.last_activity ? c.last_activity.split('T')[0] : (c.last_order_date || ''))
           }));
           localStorage.setItem('sikar_admin_customers', JSON.stringify(adminCustomers));
+          if (currentTab === 'customers') renderCustomersList();
         }
         if (khata && Array.isArray(khata) && khata.length > 0) {
           adminKhata = khata.map(k => ({
@@ -6790,7 +6904,7 @@
       else if (tabId === 'orders') { renderOrdersTable(); fetchOrdersFromBackend(); }
       else if (tabId === 'pos') renderPosForm();
       else if (tabId === 'khata') renderKhataTable();
-      else if (tabId === 'customers') renderCustomersList();
+      else if (tabId === 'customers') { renderCustomersList(); fetchCustomersFromBackend(); }
       else if (tabId === 'inventory') renderInventoryTable();
       else if (tabId === 'purchases') renderPurchasesTable();
       else if (tabId === 'products') renderProductsTable();
@@ -9757,49 +9871,253 @@
     }
 
     // =========================================================
-    // 5. CUSTOMERS DIRECTORY
+    // 5. CUSTOMERS DIRECTORY & LIFETIME HISTORY
     // =========================================================
-    function renderCustomersList(query = '') {
-      const cont = document.getElementById('customers-cards-container');
-      if (!cont) return;
+    let currentCustomerTypeFilter = 'all';
+    let customerSearchQuery = '';
+    let customerPiiRevealed = false;
+    let activeCustId = '';
+    let activeCustomerData = null;
 
-      const q = (query || '').toLowerCase().trim();
-      const filtered = adminCustomers.filter(c =>
-        c.name.toLowerCase().includes(q) ||
-        c.phone.toLowerCase().includes(q) ||
-        (c.corridor && c.corridor.toLowerCase().includes(q))
-      );
+    async function fetchCustomersFromBackend() {
+      try {
+        const isSuper = currentOperator && (currentOperator.role === 'Super Admin' || currentOperator.perms === 'all');
+        const role = currentOperator ? currentOperator.role : 'Admin';
+        const maskParam = (customerPiiRevealed && isSuper) ? 'false' : 'true';
 
-      if (filtered.length === 0) {
-        cont.innerHTML = `<div style="grid-column: 1/-1; padding: 36px; text-align: center; color: var(--text-muted);">No customers found matching '${escapeHTML(query)}'.</div>`;
+        const data = await sikarApi.get(`/api/customers?mask=${maskParam}&role=${encodeURIComponent(role)}`);
+        const custList = Array.isArray(data) ? data : (data && data.customers ? data.customers : []);
+
+        if (custList.length > 0) {
+          adminCustomers = custList.map(c => ({
+            id: c.id,
+            name: c.name,
+            phone: c.phone,
+            rawPhone: c.rawPhone || c.phone,
+            corridor: c.corridor || 'Piprali Road Mandi',
+            address: c.address || '',
+            verified: c.verified !== undefined ? c.verified : 1,
+            customer_type: c.customer_type || (c.verified === 1 ? 'registered' : 'guest'),
+            verificationBadge: c.verificationBadge || (c.verified === 1 ? 'Registered & OTP-Verified' : 'Guest Checkout'),
+            ordersCount: c.ordersCount !== undefined ? c.ordersCount : (c.total_orders || 1),
+            lifetimeSpend: c.lifetimeSpend !== undefined ? c.lifetimeSpend : (c.lifetime_spend || 0),
+            outstanding_balance: c.outstanding_balance || 0,
+            balance: c.outstanding_balance || 0,
+            repeatStatus: c.repeatStatus || (c.ordersCount > 1 ? `Repeat Buyer: ${c.ordersCount} Orders` : '1st Order'),
+            lastOrder: c.lastOrder || (c.last_activity ? c.last_activity.split('T')[0] : '')
+          }));
+          localStorage.setItem('sikar_admin_customers', JSON.stringify(adminCustomers));
+        }
+
+        renderCustomersList();
+      } catch (err) {
+        console.warn('Backend customers fetch error, falling back locally:', err);
+        renderCustomersList();
+      }
+    }
+
+    function setCustomerFilter(filterType, btnEl) {
+      currentCustomerTypeFilter = filterType;
+      const buttons = document.querySelectorAll('#customer-filter-tabs button');
+      buttons.forEach(btn => btn.classList.remove('active'));
+      if (btnEl) btnEl.classList.add('active');
+      renderCustomersList();
+    }
+
+    function handleCustomerSearch(query) {
+      customerSearchQuery = (query || '').trim();
+      renderCustomersList();
+    }
+
+    function toggleCustomerPiiMask() {
+      const isSuper = currentOperator && (currentOperator.role === 'Super Admin' || currentOperator.perms === 'all');
+      if (!isSuper) {
+        showToast('Access Restricted: Only Super Admin can unmask customer personal information.');
         return;
       }
 
-      const toShow = filtered.slice(0, 100);
-      const moreBannerHtml = filtered.length > 100
-        ? `<div style="grid-column: 1/-1; padding: 10px 16px; background: #EFF6FF; border: 1px solid #BFDBFE; border-radius: 8px; font-size: 0.84rem; color: #1E40AF; text-align: center; font-weight: 600;">
-            Showing first ${toShow.length} of ${filtered.length.toLocaleString('en-IN')} customers. Use the search box to find specific customers.
-           </div>`
-        : '';
+      customerPiiRevealed = !customerPiiRevealed;
+      fetchCustomersFromBackend();
+      showToast(customerPiiRevealed ? 'Customer PII unmasked for authorized Super Admin view.' : 'Customer PII masked for privacy.');
+    }
 
-      cont.innerHTML = moreBannerHtml + toShow.map(c => `
-        <div class="customer-card-box" onclick="openCustomerHistory('${c.id || c.phone}')">
-          <div class="customer-card-header">
-            <div class="cust-avatar-circle">${c.name.charAt(0).toUpperCase()}</div>
-            <div>
-              <strong style="font-size: 0.96rem; color: #0F172A; display: block;">${escapeHTML(c.name)}</strong>
-              <span style="font-size: 0.8rem; color: var(--text-muted);">${escapeHTML(c.phone)} • <code style="font-size:0.75rem;">${escapeHTML(c.id || 'CUST')}</code></span>
+    function renderCustomersList(query) {
+      if (query !== undefined) {
+        customerSearchQuery = (query || '').trim();
+      }
+
+      const cont = document.getElementById('customers-cards-container');
+      if (!cont) return;
+
+      const isSuper = currentOperator && (currentOperator.role === 'Super Admin' || currentOperator.perms === 'all');
+      const maskEnabled = !customerPiiRevealed || !isSuper;
+
+      // Update PII toggle button text
+      const piiText = document.getElementById('cust-pii-btn-text');
+      if (piiText) {
+        if (!isSuper) {
+          piiText.textContent = 'PII Protected (Staff Mode)';
+        } else {
+          piiText.textContent = customerPiiRevealed ? 'Showing Full PII (Admin)' : 'PII Protected (Masked)';
+        }
+      }
+
+      // 1. Calculate Summary KPIs across entire customer database
+      let totalParties = adminCustomers.length;
+      let verifiedCount = 0;
+      let guestCount = 0;
+      let repeatCount = 0;
+      let totalSpend = 0;
+      let totalDues = 0;
+
+      adminCustomers.forEach(c => {
+        const isReg = c.customer_type === 'registered' || (c.verified === 1 && c.customer_type !== 'guest');
+        const isGuest = c.customer_type === 'guest' || (c.verified === 0 && c.customer_type !== 'unverified');
+        if (isReg) verifiedCount++;
+        else if (isGuest) guestCount++;
+
+        const orders = Number(c.ordersCount || c.total_orders || 0);
+        if (orders > 1) repeatCount++;
+
+        totalSpend += Number(c.lifetimeSpend || c.lifetime_spend || 0);
+        totalDues += Number(c.outstanding_balance || 0);
+      });
+
+      const elTotal = document.getElementById('cust-kpi-total');
+      if (elTotal) elTotal.textContent = `${totalParties} Parties`;
+      const elVer = document.getElementById('cust-kpi-verified');
+      if (elVer) elVer.textContent = `${verifiedCount}`;
+      const elGuest = document.getElementById('cust-kpi-guest');
+      if (elGuest) elGuest.textContent = `${guestCount}`;
+      const elRepeat = document.getElementById('cust-kpi-repeat');
+      if (elRepeat) elRepeat.textContent = `${repeatCount} Buyers`;
+      const elSpend = document.getElementById('cust-kpi-spend');
+      if (elSpend) elSpend.textContent = `₹${totalSpend.toLocaleString('en-IN')}`;
+      const elDues = document.getElementById('cust-kpi-dues');
+      if (elDues) elDues.textContent = `₹${totalDues.toLocaleString('en-IN')}`;
+
+      // 2. Filter Customers
+      const q = customerSearchQuery.toLowerCase();
+      const filtered = adminCustomers.filter(c => {
+        // Keyword Search
+        const nameMatch = (c.name || '').toLowerCase().includes(q);
+        const phoneMatch = (c.phone || '').replace(/\D/g, '').includes(q.replace(/\D/g, ''));
+        const idMatch = (c.id || '').toLowerCase().includes(q);
+        const corridorMatch = (c.corridor || '').toLowerCase().includes(q);
+        const addrMatch = (c.address || '').toLowerCase().includes(q);
+        const matchesQuery = !q || nameMatch || phoneMatch || idMatch || corridorMatch || addrMatch;
+
+        if (!matchesQuery) return false;
+
+        // Type filter
+        const isReg = c.customer_type === 'registered' || (c.verified === 1 && c.customer_type !== 'guest');
+        const isGuest = c.customer_type === 'guest' || (c.verified === 0 && c.customer_type !== 'unverified');
+        const orders = Number(c.ordersCount || c.total_orders || 0);
+        const dues = Number(c.outstanding_balance || 0);
+
+        if (currentCustomerTypeFilter === 'registered') return isReg;
+        if (currentCustomerTypeFilter === 'guest') return isGuest;
+        if (currentCustomerTypeFilter === 'repeat') return orders > 1;
+        if (currentCustomerTypeFilter === 'due') return dues > 0;
+
+        return true;
+      });
+
+      if (filtered.length === 0) {
+        cont.innerHTML = `
+          <div style="grid-column: 1/-1; padding: 48px; text-align: center; color: var(--text-muted); background: #F8FAFC; border-radius: var(--radius-sm); border: 1px dashed var(--border-subtle);">
+            <div style="font-size: 1.1rem; font-weight: 800; color: #0F172A; margin-bottom: 6px;">No customers found</div>
+            <p style="font-size: 0.85rem; margin: 0;">No wholesale buyer matched your search '${escapeHTML(customerSearchQuery)}' in tab '${currentCustomerTypeFilter}'.</p>
+          </div>
+        `;
+        return;
+      }
+
+      cont.innerHTML = filtered.map(c => {
+        const hasAsterisk = String(c.phone || '').includes('*');
+        const isReg = c.customer_type === 'registered' || (c.verified === 1 && c.customer_type !== 'guest');
+        const isUnver = c.customer_type === 'unverified' || (!hasAsterisk && String(c.phone || '').replace(/\D/g, '').length < 10);
+        const isGuest = c.customer_type === 'guest' || (!isReg && !isUnver);
+
+        let badgeStyle = 'background: #DCFCE7; color: #166534; border: 1px solid #BBF7D0;';
+        let badgeLabel = 'Registered &amp; OTP-Verified';
+        if (isGuest) {
+          badgeStyle = 'background: #F1F5F9; color: #475569; border: 1px solid #CBD5E1;';
+          badgeLabel = 'Guest Checkout';
+        } else if (isUnver) {
+          badgeStyle = 'background: #FEF3C7; color: #92400E; border: 1px solid #FDE68A;';
+          badgeLabel = 'Unverified Contact';
+        }
+
+        const ordersCount = Number(c.ordersCount || c.total_orders || 1);
+        const lifetimeSpend = Number(c.lifetimeSpend || c.lifetime_spend || 0);
+        const dues = Number(c.outstanding_balance || 0);
+
+        const repeatPill = ordersCount > 1
+          ? `<span style="font-size: 0.72rem; font-weight: 800; background: #EFF6FF; color: #1D4ED8; padding: 2px 7px; border-radius: 999px; border: 1px solid #BFDBFE;">Repeat Buyer: ${ordersCount} Orders</span>`
+          : `<span style="font-size: 0.72rem; font-weight: 700; color: #64748B;">1st Order</span>`;
+
+        // PII Masking
+        const displayPhone = maskEnabled && c.phone
+          ? (c.phone.length >= 10 ? c.phone.replace(/(\d{5})\d{5}/, '$1*****') : '*****')
+          : (c.phone || 'N/A');
+
+        return `
+          <div class="customer-card-box">
+            <div class="customer-card-header" style="justify-content: space-between; align-items: flex-start;">
+              <div style="display: flex; align-items: center; gap: 12px;">
+                <div class="cust-avatar-circle">${escapeHTML((c.name || 'C').charAt(0).toUpperCase())}</div>
+                <div>
+                  <strong style="font-size: 1rem; color: #0F172A; display: block;">${escapeHTML(c.name)}</strong>
+                  <div style="font-size: 0.76rem; color: var(--text-muted); font-family: monospace; margin-top: 1px;">
+                    <code>${escapeHTML(c.id || 'CUST')}</code>
+                  </div>
+                </div>
+              </div>
+              <span style="font-size: 0.72rem; font-weight: 800; padding: 2px 8px; border-radius: 999px; ${badgeStyle}">
+                ${badgeLabel}
+              </span>
+            </div>
+
+            <div style="margin: 10px 0; padding: 8px 12px; background: #F8FAFC; border-radius: var(--radius-sm); border: 1px solid var(--border-subtle); font-size: 0.82rem;">
+              <div style="display: flex; justify-content: space-between; margin-bottom: 4px;">
+                <span style="color: var(--text-muted);">Mobile:</span>
+                <strong style="color: #0F172A; font-family: monospace;">${escapeHTML(displayPhone)}</strong>
+              </div>
+              <div style="display: flex; justify-content: space-between; margin-bottom: 4px;">
+                <span style="color: var(--text-muted);">Corridor:</span>
+                <strong style="color: #0F172A;">${escapeHTML(c.corridor || 'Sikar Mandi')}</strong>
+              </div>
+              <div style="display: flex; justify-content: space-between; align-items: center;">
+                <span style="color: var(--text-muted);">Relationship:</span>
+                <div>${repeatPill}</div>
+              </div>
+            </div>
+
+            <!-- 2-COL METRICS -->
+            <div style="display: grid; grid-template-columns: repeat(2, 1fr); gap: 8px; border-top: 1px solid var(--border-subtle); padding-top: 10px; margin-bottom: 12px; font-size: 0.82rem;">
+              <div>
+                <span style="color: var(--text-muted); font-size: 0.72rem; display: block; text-transform: uppercase; font-weight: 700;">Delivered Spend</span>
+                <strong style="color: #15803D; font-size: 1rem;" class="tabular">₹${lifetimeSpend.toLocaleString('en-IN')}</strong>
+              </div>
+              <div style="text-align: right;">
+                <span style="color: var(--text-muted); font-size: 0.72rem; display: block; text-transform: uppercase; font-weight: 700;">Pending Udhar</span>
+                <strong style="color: ${dues > 0 ? '#DC2626' : '#64748B'}; font-size: 1rem;" class="tabular">₹${dues.toLocaleString('en-IN')}</strong>
+              </div>
+            </div>
+
+            <!-- ACTION BUTTONS -->
+            <div style="display: flex; gap: 8px;">
+              <button type="button" class="btn-portal-primary" style="flex: 1; padding: 6px 12px; font-size: 0.8rem; justify-content: center;" onclick="openCustomerHistory('${escapeHTML(c.id)}')">
+                View History &amp; Orders
+              </button>
+              <button type="button" class="btn-portal-outline" style="padding: 6px 10px; font-size: 0.8rem;" onclick="sendCustomerWhatsAppMessage('${escapeHTML(c.phone)}')" title="Chat on WhatsApp">
+                <svg width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5"><path d="M21 11.5a8.38 8.38 0 0 1-.9 3.8 8.5 8.5 0 0 1-7.6 4.7 8.38 8.38 0 0 1-3.8-.9L3 21l1.9-5.7a8.38 8.38 0 0 1-.9-3.8 8.5 8.5 0 0 1 4.7-7.6 8.38 8.38 0 0 1 3.8-.9h.5a8.48 8.48 0 0 1 8 8v.5z"></path></svg>
+              </button>
             </div>
           </div>
-          <div style="font-size: 0.82rem; color: var(--text-muted); margin-bottom: 10px;">
-            Corridor: <strong>${escapeHTML(c.corridor || 'Sikar Mandi')}</strong>
-          </div>
-          <div style="display: flex; justify-content: space-between; border-top: 1px solid var(--border-subtle); padding-top: 10px; font-size: 0.82rem;">
-            <span>Orders: <strong>${c.ordersCount || 1}</strong></span>
-            <span>Total Spend: <strong style="color: #0284C7;" class="tabular">₹${(c.lifetimeSpend || 0).toLocaleString('en-IN')}</strong></span>
-          </div>
-        </div>
-      `).join('');
+        `;
+      }).join('');
     }
 
     let activeCustPhone = '';
@@ -9816,83 +10134,187 @@
     async function openCustomerHistory(idOrPhone) {
       switchCustModalTab('orders');
 
+      const isSuper = currentOperator && (currentOperator.role === 'Super Admin' || currentOperator.perms === 'all');
+      const maskParam = (customerPiiRevealed && isSuper) ? 'false' : 'true';
+      const roleParam = currentOperator ? currentOperator.role : 'Admin';
+
       try {
-        const data = await sikarApi.get('/api/customers/' + encodeURIComponent(idOrPhone));
+        const url = `/api/customers/${encodeURIComponent(idOrPhone)}?mask=${maskParam}&role=${encodeURIComponent(roleParam)}`;
+        const data = await sikarApi.get(url);
+
         if (data && data.customer) {
+          activeCustomerData = data;
           const c = data.customer;
-          activeCustPhone = c.phone;
+          const m = data.metrics || {};
+          activeCustId = c.id;
+          activeCustPhone = c.rawPhone || c.phone;
+
           document.getElementById('modal-cust-name').textContent = c.name;
           const idBadge = document.getElementById('modal-cust-id');
           if (idBadge) idBadge.textContent = c.id || 'CUST';
-          document.getElementById('modal-cust-phone').textContent = `Mobile: ${c.phone} • Corridor: ${c.corridor || 'Piprali Road'} • ${c.email || 'Email Verified'}`;
-          document.getElementById('modal-cust-total-orders').textContent = c.total_orders || 0;
-          document.getElementById('modal-cust-lifetime-spend').textContent = `₹${(c.lifetime_spend || 0).toLocaleString('en-IN')}`;
-          document.getElementById('modal-cust-dues').textContent = `₹${(c.outstanding_balance || 0).toLocaleString('en-IN')}`;
-          document.getElementById('modal-cust-type').textContent = (c.outstanding_balance > 0) ? 'Credit Account' : 'Wholesale Regular';
 
-          // 1. Online Orders Tab
+          // Verification badge
+          const vBadge = document.getElementById('modal-cust-badge');
+          if (vBadge) {
+            const isReg = c.verified === 1 || c.customer_type === 'registered';
+            const isGuest = c.customer_type === 'guest' || (c.verified === 0 && c.customer_type !== 'unverified');
+            if (isReg) {
+              vBadge.style.cssText = 'font-size:0.74rem; font-weight:800; padding:3px 8px; border-radius:999px; background:#DCFCE7; color:#166534; border:1px solid #BBF7D0;';
+              vBadge.textContent = 'Registered & OTP-Verified';
+            } else if (isGuest) {
+              vBadge.style.cssText = 'font-size:0.74rem; font-weight:800; padding:3px 8px; border-radius:999px; background:#F1F5F9; color:#475569; border:1px solid #CBD5E1;';
+              vBadge.textContent = 'Guest Checkout';
+            } else {
+              vBadge.style.cssText = 'font-size:0.74rem; font-weight:800; padding:3px 8px; border-radius:999px; background:#FEF3C7; color:#92400E; border:1px solid #FDE68A;';
+              vBadge.textContent = 'Unverified Contact';
+            }
+          }
+
+          // Repeat Buyer pill
+          const rPill = document.getElementById('modal-cust-repeat-pill');
+          if (rPill) {
+            rPill.textContent = m.repeatStatus || '1st Order';
+          }
+
+          // Contact details
+          document.getElementById('modal-cust-phone').textContent = `Mobile: +91 ${c.phone}`;
+          document.getElementById('modal-cust-corridor').textContent = `Corridor: ${c.corridor || 'Sikar Mandi'}`;
+          document.getElementById('modal-cust-address').textContent = c.address || 'Address on file';
+
+          // Unmask button for Super Admin
+          const unmaskBtn = document.getElementById('btn-modal-unmask-pii');
+          if (unmaskBtn) {
+            unmaskBtn.style.display = (isSuper && c.isPiiMasked) ? 'inline-block' : 'none';
+          }
+
+          // Summary Metrics Strip
+          document.getElementById('modal-cust-total-orders').textContent = m.totalOrders || 0;
+          document.getElementById('modal-cust-orders-breakdown').textContent = `${m.onlineOrdersCount || 0} Online • ${m.manualSalesCount || 0} POS`;
+          document.getElementById('modal-cust-lifetime-spend').textContent = `₹${(m.netLifetimeSpend || 0).toLocaleString('en-IN')}`;
+          document.getElementById('modal-cust-aov').textContent = `AOV: ₹${(m.averageOrderValue || 0).toLocaleString('en-IN')}`;
+          document.getElementById('modal-cust-dues').textContent = `₹${(m.outstandingBalance || 0).toLocaleString('en-IN')}`;
+          document.getElementById('modal-cust-dues-status').textContent = m.outstandingBalance > 0 ? 'Pending Udhar' : 'All Settled';
+
+          const topFav = (m.frequentItems && m.frequentItems[0]) || { title: 'Standard Packaged Water', qty: 0 };
+          document.getElementById('modal-cust-fav-item').textContent = topFav.title;
+          document.getElementById('modal-cust-fav-qty').textContent = `${topFav.qty} Boxes Purchased`;
+
+          // Tab Count Badges
+          document.getElementById('modal-tab-count-orders').textContent = (data.onlineOrders || []).length;
+          document.getElementById('modal-tab-count-pos').textContent = (data.manualSales || []).length;
+          document.getElementById('modal-tab-count-khata').textContent = (data.khataEntries || []).length;
+
+          // 1. ONLINE ORDERS TAB
           const orders = data.onlineOrders || [];
           const oTbody = document.getElementById('modal-cust-orders-tbody');
           if (orders.length === 0) {
-            oTbody.innerHTML = '<tr><td colspan="4" style="text-align:center; padding:16px; color:var(--text-muted);">No online orders logged yet.</td></tr>';
+            oTbody.innerHTML = '<tr><td colspan="6" style="text-align:center; padding:24px; color:var(--text-muted);">No online website orders logged for this customer.</td></tr>';
           } else {
-            oTbody.innerHTML = orders.map(o => `
-              <tr>
-                <td><strong>${escapeHTML(o.id)}</strong><div style="margin-top:2px;">${renderOrderPhonesHTML(o)}</div></td>
-                <td>${escapeHTML((o.items || []).map(i => `${i.quantity}x ${i.title}`).join(', ') || `${o.items_count || 1} Petis`)}</td>
-                <td class="tabular"><strong>₹${(o.total_amount || 0).toLocaleString('en-IN')}</strong></td>
-                <td><span class="badge-status ${o.status || 'completed'}">${escapeHTML(o.status || 'completed')}</span></td>
-              </tr>
-            `).join('');
+            oTbody.innerHTML = orders.map(o => {
+              const itemsList = (o.items || []).map(i => `${i.qty || i.quantity || 1}x ${escapeHTML(i.title)}`).join(', ');
+              const isCancelled = (o.status || '').toLowerCase() === 'cancelled';
+              const cancelledNote = isCancelled ? `<div style="font-size:0.75rem; color:#DC2626; margin-top:2px;">Cancellation: ${escapeHTML(o.notes || 'Order Cancelled')}</div>` : '';
+
+              return `
+                <tr>
+                  <td>
+                    <strong>${escapeHTML(o.id)}</strong>
+                    <div style="font-size: 0.76rem; color: var(--text-muted);">${escapeHTML(o.created_at ? o.created_at.split('T')[0] : (o.order_date || ''))}</div>
+                  </td>
+                  <td style="max-width: 240px; font-size: 0.82rem;">
+                    ${itemsList || `${o.items_count || 1} Petis`}
+                    ${cancelledNote}
+                  </td>
+                  <td class="tabular" style="font-weight: 800; color: ${isCancelled ? '#94A3B8' : '#0284C7'}; text-decoration: ${isCancelled ? 'line-through' : 'none'};">
+                    ₹${(o.total || o.total_amount || 0).toLocaleString('en-IN')}
+                  </td>
+                  <td>
+                    <span class="badge-status ${o.status || 'pending'}">${escapeHTML(o.status || 'pending')}</span>
+                  </td>
+                  <td>
+                    <span class="badge-status ${(o.payment_status || 'Pending').toLowerCase()}">${escapeHTML(o.payment_status || 'Pending')}</span>
+                  </td>
+                  <td style="text-align: right;">
+                    <button type="button" class="btn-tbl-action" onclick="openOrderDetailModal('${escapeHTML(o.id)}')" title="View Detailed Order &amp; Invoice">
+                      View Invoice
+                    </button>
+                  </td>
+                </tr>
+              `;
+            }).join('');
           }
 
-          // 2. POS Manual Sales Tab
+          // 2. POS MANUAL SALES TAB
           const sales = data.manualSales || [];
           const posTbody = document.getElementById('modal-cust-pos-tbody');
           if (sales.length === 0) {
-            posTbody.innerHTML = '<tr><td colspan="5" style="text-align:center; padding:16px; color:var(--text-muted);">No direct POS cash sales recorded.</td></tr>';
+            posTbody.innerHTML = '<tr><td colspan="7" style="text-align:center; padding:24px; color:var(--text-muted);">No direct counter POS sales recorded.</td></tr>';
           } else {
-            posTbody.innerHTML = sales.map(s => `
-              <tr>
-                <td><strong>${escapeHTML(s.id)}</strong></td>
-                <td>${escapeHTML((s.items || []).map(i => `${i.quantity}x ${i.title}`).join(', ') || 'Wholesale Bottles')}</td>
-                <td class="tabular"><strong>₹${(s.total_amount || 0).toLocaleString('en-IN')}</strong></td>
-                <td class="tabular" style="color:#15803D;">₹${(s.amount_received || 0).toLocaleString('en-IN')}</td>
-                <td class="tabular" style="color:${s.balance_due > 0 ? '#DC2626' : '#64748B'};">₹${(s.balance_due || 0).toLocaleString('en-IN')}</td>
-              </tr>
-            `).join('');
+            posTbody.innerHTML = sales.map(s => {
+              const isRefunded = s.status === 'refunded';
+              const itemsList = (s.items || []).map(i => `${i.qty || i.quantity || 1}x ${escapeHTML(i.title)}`).join(', ');
+              const refundNote = isRefunded ? `<div style="font-size:0.75rem; color:#DC2626; margin-top:2px;">Refund Reason: ${escapeHTML(s.refund_reason || 'Stock Restored')}</div>` : '';
+
+              return `
+                <tr>
+                  <td>
+                    <strong>${escapeHTML(s.id)}</strong>
+                    <div style="font-size: 0.76rem; color: var(--text-muted);">${escapeHTML(s.sale_date || (s.created_at ? s.created_at.split('T')[0] : ''))}</div>
+                  </td>
+                  <td style="max-width: 200px; font-size: 0.82rem;">
+                    ${itemsList || 'Wholesale Petis'}
+                    ${refundNote}
+                  </td>
+                  <td class="tabular" style="font-weight: 800; color: ${isRefunded ? '#94A3B8' : '#0F172A'}; text-decoration: ${isRefunded ? 'line-through' : 'none'};">
+                    ₹${(s.total_amount || 0).toLocaleString('en-IN')}
+                  </td>
+                  <td class="tabular" style="color:#15803D;">₹${(s.amount_received || 0).toLocaleString('en-IN')}</td>
+                  <td class="tabular" style="color:${(s.outstanding_amount || 0) > 0 ? '#DC2626' : '#64748B'};">₹${(s.outstanding_amount || 0).toLocaleString('en-IN')}</td>
+                  <td>
+                    <span class="badge-status ${isRefunded ? 'cancelled' : 'completed'}">${escapeHTML(s.status || 'completed')}</span>
+                  </td>
+                  <td style="text-align: right;">
+                    <button type="button" class="btn-tbl-action" onclick="openPosReceiptModal('${escapeHTML(s.id)}')" title="Reprint POS Cash Memo">
+                      Reprint Bilty
+                    </button>
+                  </td>
+                </tr>
+              `;
+            }).join('');
           }
 
-          // 3. Khata & Payments Tab
+          // 3. KHATA & PAYMENTS TAB
           const khata = data.khataEntries || [];
           const khataTbody = document.getElementById('modal-cust-khata-tbody');
           if (khata.length === 0 && (!data.payments || data.payments.length === 0)) {
-            khataTbody.innerHTML = '<tr><td colspan="5" style="text-align:center; padding:16px; color:var(--text-muted);">Account cleared. No pending debt or previous dues.</td></tr>';
+            khataTbody.innerHTML = '<tr><td colspan="5" style="text-align:center; padding:24px; color:var(--text-muted);">Account cleared. No pending debt or previous dues.</td></tr>';
           } else {
             khataTbody.innerHTML = khata.map(k => `
               <tr>
                 <td><strong>${escapeHTML(k.id)}</strong></td>
-                <td>${escapeHTML(k.reason || 'Water Supply')}</td>
-                <td><code>${escapeHTML(k.due_date || 'N/A')}</code></td>
+                <td><code>${escapeHTML(k.created_at ? k.created_at.split('T')[0] : (k.due_date || 'N/A'))}</code></td>
+                <td>${escapeHTML(k.reason || 'Water Peti Supply')}</td>
                 <td class="tabular"><strong style="color:${k.remaining_amount > 0 ? '#DC2626' : '#15803D'};">₹${(k.remaining_amount || 0).toLocaleString('en-IN')}</strong></td>
                 <td><span class="badge-status ${k.status === 'settled' ? 'completed' : 'pending'}">${escapeHTML(k.status)}</span></td>
               </tr>
             `).join('');
           }
 
-          // 4. Activity Trail Tab
+          // 4. ACTIVITY TRAIL TAB
           const actTbody = document.getElementById('modal-cust-activity-tbody');
-          const trails = [
-            { time: c.last_activity || 'Recent', action: 'Account Active', details: `Current outstanding balance: ₹${c.outstanding_balance}` },
-            { time: c.created_at || 'Registration', action: 'Customer Onboarded', details: `Registered via ${c.verified ? 'Verified Phone' : 'Depot Desk'}` }
-          ];
-          actTbody.innerHTML = trails.map(t => `
-            <tr>
-              <td><small>${escapeHTML(t.time)}</small></td>
-              <td><strong>${escapeHTML(t.action)}</strong></td>
-              <td>${escapeHTML(t.details)}</td>
-            </tr>
-          `).join('');
+          const auditTrail = data.auditTrail || [];
+          if (auditTrail.length === 0) {
+            actTbody.innerHTML = '<tr><td colspan="4" style="text-align:center; padding:24px; color:var(--text-muted);">No recorded audit entries.</td></tr>';
+          } else {
+            actTbody.innerHTML = auditTrail.map(t => `
+              <tr>
+                <td><small>${escapeHTML(t.created_at || 'Recent')}</small></td>
+                <td><code>${escapeHTML(t.actor || 'System')}</code></td>
+                <td><strong>${escapeHTML(t.action)}</strong></td>
+                <td>${escapeHTML(t.details)}</td>
+              </tr>
+            `).join('');
+          }
 
           openModal('customer-history-modal');
           return;
@@ -9900,48 +10322,44 @@
       } catch (err) {
         console.warn('Backend customer detail fetch failed, falling back locally', err);
       }
-
-      // Local fallback
-      const cleanTarget = (idOrPhone || '').replace(/[^0-9]/g, '');
-      const cust = adminCustomers.find(c =>
-        c.id === idOrPhone ||
-        (cleanTarget && c.phone && c.phone.replace(/[^0-9]/g, '').slice(-10) === cleanTarget.slice(-10))
-      );
-      if (!cust) return;
-
-      activeCustPhone = cust.phone;
-      document.getElementById('modal-cust-name').textContent = cust.name;
-      const idBadge = document.getElementById('modal-cust-id');
-      if (idBadge) idBadge.textContent = cust.id || 'CUST';
-      document.getElementById('modal-cust-phone').textContent = `Mobile: ${cust.phone} • Corridor: ${cust.corridor || 'Piprali Road'}`;
-      document.getElementById('modal-cust-total-orders').textContent = cust.ordersCount || 1;
-      document.getElementById('modal-cust-lifetime-spend').textContent = `₹${(cust.lifetimeSpend || 0).toLocaleString('en-IN')}`;
-      document.getElementById('modal-cust-dues').textContent = `₹${(cust.outstanding_balance || 0).toLocaleString('en-IN')}`;
-
-      const cleanPhone = cust.phone.replace(/[^0-9]/g, '').slice(-10);
-      const orders = adminOrders.filter(o => o.phone.replace(/[^0-9]/g, '').slice(-10) === cleanPhone);
-
-      const tbody = document.getElementById('modal-cust-orders-tbody');
-      if (orders.length === 0) {
-        tbody.innerHTML = `<tr><td colspan="4" style="text-align:center; padding:16px;">Counter sale recorded. Total ₹${(cust.lifetimeSpend || 0).toLocaleString('en-IN')}</td></tr>`;
-      } else {
-        tbody.innerHTML = orders.map(o => `
-          <tr>
-            <td><strong>${escapeHTML(o.id)}</strong></td>
-            <td>${escapeHTML(o.itemsDesc || `${o.itemsCount} Petis`)}</td>
-            <td class="tabular"><strong>₹${(o.total || 0).toLocaleString('en-IN')}</strong></td>
-            <td><span class="badge-status ${o.status || 'completed'}">${escapeHTML(o.status || 'completed')}</span></td>
-          </tr>
-        `).join('');
-      }
-
-      openModal('customer-history-modal');
     }
 
-    function sendCustomerWhatsAppMessage() {
-      if (!activeCustPhone) return;
-      const clean = activeCustPhone.replace(/[^0-9]/g, '').slice(-10);
-      window.open(`https://wa.me/91${clean}?text=${encodeURIComponent('Namaste! Sikar Drop Wholesale Depot regarding your order.')}`, '_blank');
+    async function unmaskCustomerModalPii() {
+      if (!activeCustId) return;
+      try {
+        const res = await sikarApi.post(`/api/customers/${encodeURIComponent(activeCustId)}/unmask`, {});
+        if (res && res.success) {
+          document.getElementById('modal-cust-phone').textContent = `Mobile: +91 ${res.phone}`;
+          document.getElementById('modal-cust-address').textContent = res.address || 'Address verified';
+          const unmaskBtn = document.getElementById('btn-modal-unmask-pii');
+          if (unmaskBtn) unmaskBtn.style.display = 'none';
+          showToast('Customer PII unmasked and audited.');
+        } else {
+          showToast('Error unmasking PII: ' + ((res && res.error) || 'Access Denied'));
+        }
+      } catch (err) {
+        showToast('Unauthorized: ' + err.message);
+      }
+    }
+
+    function exportCustomersCSV() {
+      const role = currentOperator ? currentOperator.role : 'Admin';
+      window.open(`/api/customers/export.csv?role=${encodeURIComponent(role)}`, '_blank');
+      showToast('Downloading Customers Directory CSV...');
+    }
+
+    function exportSingleCustomerHistoryCSV() {
+      if (!activeCustId) return;
+      const role = currentOperator ? currentOperator.role : 'Admin';
+      window.open(`/api/customers/${encodeURIComponent(activeCustId)}/export.csv?role=${encodeURIComponent(role)}`, '_blank');
+      showToast('Downloading Customer Order History CSV...');
+    }
+
+    function sendCustomerWhatsAppMessage(phoneParam) {
+      const phone = phoneParam || activeCustPhone;
+      if (!phone) return;
+      const clean = phone.replace(/[^0-9]/g, '').slice(-10);
+      window.open(`https://wa.me/91${clean}?text=${encodeURIComponent('Namaste! Sikar Drop Wholesale Depot regarding your beverage order.')}`, '_blank');
     }
 
     // =========================================================
