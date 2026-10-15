@@ -83,7 +83,7 @@
           <circle cx="11" cy="11" r="8"></circle>
           <line x1="21" y1="21" x2="16.65" y2="16.65"></line>
         </svg>
-        <input type="text" class="nav-search-input" placeholder="Search bulk deals..." onfocus="window.location.href='/products'">
+        <input type="text" class="nav-search-input" placeholder="Search water, pack, brand..." onkeyup="if(event.key==='Enter') window.location.href='/products?q=' + encodeURIComponent(this.value)">
       </div>
 
       <div class="nav-right-actions">

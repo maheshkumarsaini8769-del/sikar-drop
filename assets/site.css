@@ -1796,14 +1796,15 @@
       position: absolute;
       top: calc(100% + 8px);
       left: 0;
-      width: 320px;
+      width: 380px;
+      max-width: 92vw;
       background: #FFFFFF;
       border: 1px solid var(--border-subtle);
       border-radius: var(--radius-sm);
-      box-shadow: 0 12px 28px rgba(15, 23, 42, 0.1);
+      box-shadow: 0 16px 36px rgba(15, 23, 42, 0.16);
       display: none;
       z-index: 1200;
-      max-height: 380px;
+      max-height: 420px;
       overflow-y: auto;
     }
 
@@ -1811,11 +1812,29 @@
       display: block;
     }
 
+    .search-clear-btn {
+      background: none;
+      border: none;
+      padding: 3px 6px;
+      cursor: pointer;
+      color: #94A3B8;
+      display: inline-flex;
+      align-items: center;
+      justify-content: center;
+      transition: color 0.15s;
+      flex-shrink: 0;
+      border-radius: 999px;
+    }
+    .search-clear-btn:hover {
+      color: #0F172A;
+      background: #F1F5F9;
+    }
+
     .search-drop-header {
       padding: 10px 14px;
       background: #F8FAFC;
       border-bottom: 1px solid var(--border-subtle);
-      font-size: 0.82rem;
+      font-size: 0.8rem;
       font-weight: 700;
       color: var(--text-light);
       text-transform: uppercase;
@@ -1842,12 +1861,14 @@
     }
 
     .search-drop-thumb {
-      width: 38px;
-      height: 38px;
+      width: 40px;
+      height: 40px;
       object-fit: contain;
       background: #FFFFFF;
       border-radius: var(--radius-xs);
+      border: 1px solid #E2E8F0;
       flex-shrink: 0;
+      padding: 2px;
     }
 
     .search-drop-info {
@@ -1862,27 +1883,66 @@
       white-space: nowrap;
       overflow: hidden;
       text-overflow: ellipsis;
+      line-height: 1.3;
     }
 
     .search-drop-price {
       font-size: 0.8rem;
       font-weight: 800;
       color: #0369A1;
+      margin-top: 2px;
     }
 
     .btn-search-drop-add {
-      background: #0F3D64;
+      background: #0284C7;
       color: #FFFFFF;
-      font-size: 0.82rem;
+      border: none;
+      font-size: 0.78rem;
       font-weight: 800;
-      padding: 5px 10px;
+      padding: 6px 12px;
       border-radius: var(--radius-xs);
       flex-shrink: 0;
+      cursor: pointer;
       transition: background 0.15s;
     }
 
     .btn-search-drop-add:hover {
-      background: #0A2B47;
+      background: #0369A1;
+    }
+
+    .search-drop-footer {
+      display: flex;
+      align-items: center;
+      justify-content: space-between;
+      padding: 10px 14px;
+      background: #F8FAFC;
+      border-top: 1px solid var(--border-subtle);
+      font-size: 0.82rem;
+      font-weight: 700;
+      color: #0284C7;
+      cursor: pointer;
+      transition: background 0.15s;
+    }
+
+    .search-drop-footer:hover {
+      background: #E0F2FE;
+    }
+
+    .search-suggest-chip {
+      background: #F1F5F9;
+      border: 1px solid #CBD5E1;
+      color: #334155;
+      font-size: 0.76rem;
+      font-weight: 700;
+      padding: 4px 10px;
+      border-radius: 999px;
+      cursor: pointer;
+      transition: all 0.15s;
+    }
+    .search-suggest-chip:hover {
+      background: #0284C7;
+      color: #FFFFFF;
+      border-color: #0284C7;
     }
 
     /* CATALOG FILTER CHIPS BAR */

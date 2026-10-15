@@ -1903,14 +1903,15 @@
       position: absolute;
       top: calc(100% + 8px);
       left: 0;
-      width: 320px;
+      width: 380px;
+      max-width: 92vw;
       background: #FFFFFF;
       border: 1px solid var(--border-subtle);
       border-radius: var(--radius-sm);
-      box-shadow: 0 12px 28px rgba(15, 23, 42, 0.1);
+      box-shadow: 0 16px 36px rgba(15, 23, 42, 0.16);
       display: none;
       z-index: 1200;
-      max-height: 380px;
+      max-height: 420px;
       overflow-y: auto;
     }
 
@@ -1918,11 +1919,29 @@
       display: block;
     }
 
+    .search-clear-btn {
+      background: none;
+      border: none;
+      padding: 3px 6px;
+      cursor: pointer;
+      color: #94A3B8;
+      display: inline-flex;
+      align-items: center;
+      justify-content: center;
+      transition: color 0.15s;
+      flex-shrink: 0;
+      border-radius: 999px;
+    }
+    .search-clear-btn:hover {
+      color: #0F172A;
+      background: #F1F5F9;
+    }
+
     .search-drop-header {
       padding: 10px 14px;
       background: #F8FAFC;
       border-bottom: 1px solid var(--border-subtle);
-      font-size: 0.82rem;
+      font-size: 0.8rem;
       font-weight: 700;
       color: var(--text-light);
       text-transform: uppercase;
@@ -1949,12 +1968,14 @@
     }
 
     .search-drop-thumb {
-      width: 38px;
-      height: 38px;
+      width: 40px;
+      height: 40px;
       object-fit: contain;
       background: #FFFFFF;
       border-radius: var(--radius-xs);
+      border: 1px solid #E2E8F0;
       flex-shrink: 0;
+      padding: 2px;
     }
 
     .search-drop-info {
@@ -1969,27 +1990,66 @@
       white-space: nowrap;
       overflow: hidden;
       text-overflow: ellipsis;
+      line-height: 1.3;
     }
 
     .search-drop-price {
       font-size: 0.8rem;
       font-weight: 800;
       color: #0369A1;
+      margin-top: 2px;
     }
 
     .btn-search-drop-add {
-      background: #0F3D64;
+      background: #0284C7;
       color: #FFFFFF;
-      font-size: 0.82rem;
+      border: none;
+      font-size: 0.78rem;
       font-weight: 800;
-      padding: 5px 10px;
+      padding: 6px 12px;
       border-radius: var(--radius-xs);
       flex-shrink: 0;
+      cursor: pointer;
       transition: background 0.15s;
     }
 
     .btn-search-drop-add:hover {
-      background: #0A2B47;
+      background: #0369A1;
+    }
+
+    .search-drop-footer {
+      display: flex;
+      align-items: center;
+      justify-content: space-between;
+      padding: 10px 14px;
+      background: #F8FAFC;
+      border-top: 1px solid var(--border-subtle);
+      font-size: 0.82rem;
+      font-weight: 700;
+      color: #0284C7;
+      cursor: pointer;
+      transition: background 0.15s;
+    }
+
+    .search-drop-footer:hover {
+      background: #E0F2FE;
+    }
+
+    .search-suggest-chip {
+      background: #F1F5F9;
+      border: 1px solid #CBD5E1;
+      color: #334155;
+      font-size: 0.76rem;
+      font-weight: 700;
+      padding: 4px 10px;
+      border-radius: 999px;
+      cursor: pointer;
+      transition: all 0.15s;
+    }
+    .search-suggest-chip:hover {
+      background: #0284C7;
+      color: #FFFFFF;
+      border-color: #0284C7;
     }
 
     /* CATALOG FILTER CHIPS BAR */
@@ -4239,12 +4299,15 @@
       </nav>
 
       <!-- 3. SEARCH BAR -->
-      <div class="nav-search-bar">
+      <div class="nav-search-bar" id="header-nav-search-bar">
         <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.3">
           <circle cx="11" cy="11" r="8"></circle>
           <line x1="21" y1="21" x2="16.65" y2="16.65"></line>
         </svg>
-        <input type="text" id="global-search-input" class="nav-search-input" placeholder="Search water, pack, brand..." oninput="handleSearch(this.value)" onfocus="handleSearch(this.value)">
+        <input type="text" id="global-search-input" class="nav-search-input" placeholder="Search water, pack, brand..." oninput="handleSearch(this.value)" onfocus="handleSearch(this.value)" onkeydown="handleSearchKeyDown(event)" autocomplete="off">
+        <button type="button" id="search-clear-btn" class="search-clear-btn" style="display:none;" onclick="clearGlobalSearch(event)" title="Clear Search" aria-label="Clear Search">
+          <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5"><line x1="18" y1="6" x2="6" y2="18"></line><line x1="6" y1="6" x2="18" y2="18"></line></svg>
+        </button>
         <div class="live-search-dropdown" id="live-search-dropdown"></div>
       </div>
 
@@ -8046,46 +8109,170 @@
       if (chipsContainer) chipsContainer.innerHTML = chipsHtml;
     }
 
+    // SMART MULTI-FIELD & TOKENIZED PRODUCT SEARCH ENGINE
+    function matchAndScoreProduct(p, rawQuery, strict = true) {
+      if (!rawQuery) return 1;
+      const q = String(rawQuery).trim().toLowerCase();
+      if (!q) return 1;
+
+      const title = (p.title || '').toLowerCase();
+      const cat = (p.category || '').toLowerCase();
+      const spec = (p.spec || '').toLowerCase();
+      const sku = (p.sku || '').toLowerCase();
+      const desc = (p.description || '').toLowerCase();
+      const combined = `${title} ${cat} ${spec} ${sku} ${desc}`;
+
+      // 1. Direct whole-query match
+      if (title === q) return 100;
+      if (title.startsWith(q)) return 85;
+      if (title.includes(q)) return 70;
+      if (combined.includes(q)) return 55;
+
+      // 2. Multi-token match
+      const tokens = q.split(/\s+/).filter(Boolean);
+      if (tokens.length === 0) return 0;
+
+      let score = 0;
+      let matchedTokensCount = 0;
+
+      for (const t of tokens) {
+        let matched = false;
+        if (combined.includes(t)) {
+          matched = true;
+          score += 15;
+          if (title.includes(t)) score += 10;
+        } else {
+          // Normalize volume and units: e.g. "250" -> "250ml", "1l" -> "1 liter"
+          if (!isNaN(t) && combined.includes(t + 'ml')) {
+            matched = true; score += 12;
+          } else if (!isNaN(t) && (combined.includes(t + 'l') || combined.includes(t + ' liter') || combined.includes(t + ' litre'))) {
+            matched = true; score += 12;
+          } else if (t.endsWith('l') && (combined.includes(t.replace('l', ' liter')) || combined.includes(t.replace('l', ' litre')) || combined.includes(t.replace('l', 'l')))) {
+            matched = true; score += 12;
+          } else if (t.endsWith('ml') && combined.includes(t.replace('ml', ''))) {
+            matched = true; score += 12;
+          } else if (t === 'pani' || t === 'paani' || t === 'water') {
+            if (combined.includes('water') || combined.includes('drinking') || combined.includes('bisleri') || combined.includes('kinley') || combined.includes('aquafina')) {
+              matched = true; score += 10;
+            }
+          } else if (t === 'peti' || t === 'crate' || t === 'box' || t === 'case' || t === 'tray') {
+            if (combined.includes('case') || combined.includes('peti') || combined.includes('crate') || combined.includes('tray') || combined.includes('box')) {
+              matched = true; score += 10;
+            }
+          } else if (t === 'campa' || t === 'cola' || t === 'cold' || t === 'drink' || t === 'colddrink' || t === 'softdrink' || t === 'beverage') {
+            if (combined.includes('cola') || combined.includes('drink') || combined.includes('soft') || combined.includes('pepsi') || combined.includes('thums') || combined.includes('coca') || combined.includes('sprite')) {
+              matched = true; score += 10;
+            }
+          } else if (t === 'bislery' || t === 'bisleri') {
+            if (combined.includes('bisleri')) { matched = true; score += 15; }
+          } else if (t === 'kinly' || t === 'kinley') {
+            if (combined.includes('kinley')) { matched = true; score += 15; }
+          } else if (t === 'juice' || t === 'fruiti' || t === 'frooti') {
+            if (combined.includes('juice') || combined.includes('frooti') || combined.includes('tetra') || combined.includes('mango')) { matched = true; score += 12; }
+          }
+        }
+
+        if (matched) {
+          matchedTokensCount++;
+        } else if (strict) {
+          return 0; // In strict mode, every token must have a match
+        }
+      }
+
+      if (strict) {
+        return score;
+      } else {
+        // In relaxed mode, score is weighted by matched tokens
+        return matchedTokensCount > 0 ? (score * (matchedTokensCount / tokens.length)) : 0;
+      }
+    }
+
+    function highlightQueryTerms(text, query) {
+      if (!text || !query) return escapeHTML(text || '');
+      const escaped = escapeHTML(text);
+      const tokens = String(query).trim().split(/\s+/).filter(Boolean);
+      if (tokens.length === 0) return escaped;
+      let result = escaped;
+      tokens.forEach(tok => {
+        const cleanTok = tok.replace(/[.*+?^${}()|[\]\\]/g, '\\$&');
+        if (cleanTok.length > 1) {
+          const regex = new RegExp(`(${cleanTok})`, 'gi');
+          result = result.replace(regex, '<mark style="background:#FEF08A; color:#854D0E; font-weight:700; padding:0 2px; border-radius:2px;">$1</mark>');
+        }
+      });
+      return result;
+    }
+
     // RENDER PRODUCTS
     function renderProducts() {
       const grid = document.getElementById('products-grid-container');
       if (!grid) return;
 
-      const filtered = PRODUCTS.filter(p => {
-        const matchCat = currentFilter === 'all' || p.category === currentFilter;
-        const matchSearch = !searchQuery || p.title.toLowerCase().includes(searchQuery.toLowerCase());
-        return matchCat && matchSearch;
-      });
+      let list = [];
+      let isRelaxedGrid = false;
+      if (searchQuery) {
+        // 1. Strict match first
+        list = PRODUCTS
+          .map(p => ({ product: p, score: matchAndScoreProduct(p, searchQuery, true) }))
+          .filter(x => x.score > 0)
+          .sort((a, b) => b.score - a.score)
+          .map(x => x.product);
+
+        // 2. Relaxed match fallback if strict match returns 0
+        if (list.length === 0) {
+          list = PRODUCTS
+            .map(p => ({ product: p, score: matchAndScoreProduct(p, searchQuery, false) }))
+            .filter(x => x.score > 0)
+            .sort((a, b) => b.score - a.score)
+            .map(x => x.product);
+          if (list.length > 0) isRelaxedGrid = true;
+        }
+      } else {
+        list = PRODUCTS.filter(p => currentFilter === 'all' || p.category === currentFilter);
+        list.sort((a, b) => {
+          const ordA = a.display_order !== undefined ? a.display_order : 50;
+          const ordB = b.display_order !== undefined ? b.display_order : 50;
+          if (ordA !== ordB) return ordA - ordB;
+          return (b.created_at || '').localeCompare(a.created_at || '');
+        });
+      }
 
       const headerTitle = document.getElementById('home-active-category-title');
       const headerLink = document.getElementById('home-active-category-link');
-      if (headerTitle) {
-        if (currentFilter === 'all') {
-          headerTitle.textContent = `All Beverages & Cases (${filtered.length} Items)`;
-        } else {
-          headerTitle.textContent = `${getCategoryDisplayName(currentFilter)} (${filtered.length} Items)`;
+
+      if (searchQuery) {
+        if (headerTitle) {
+          const prefix = isRelaxedGrid ? 'Closest Matches for' : 'Search Results:';
+          headerTitle.innerHTML = `${prefix} "<strong>${escapeHTML(searchQuery)}</strong>" (${list.length} Items)`;
+        }
+        if (headerLink) {
+          headerLink.innerHTML = 'Clear Search &times;';
+          headerLink.href = 'javascript:void(0)';
+          headerLink.onclick = () => clearGlobalSearch();
+        }
+      } else {
+        if (headerTitle) {
+          if (currentFilter === 'all') {
+            headerTitle.textContent = `All Beverages & Cases (${list.length} Items)`;
+          } else {
+            headerTitle.textContent = `${getCategoryDisplayName(currentFilter)} (${list.length} Items)`;
+          }
+        }
+        if (headerLink) {
+          headerLink.innerHTML = 'Open Category Page &rarr;';
+          headerLink.onclick = null;
+          headerLink.href = currentFilter === 'all' ? '/products' : `/products?category=${encodeURIComponent(currentFilter)}`;
         }
       }
-      if (headerLink) {
-        headerLink.href = currentFilter === 'all' ? '/products' : `/products?category=${encodeURIComponent(currentFilter)}`;
-      }
 
-      // Sort so new products (display_order: 0 or newest created_at) appear first
-      const sorted = [...filtered].sort((a, b) => {
-        const ordA = a.display_order !== undefined ? a.display_order : 50;
-        const ordB = b.display_order !== undefined ? b.display_order : 50;
-        if (ordA !== ordB) return ordA - ordB;
-        return (b.created_at || '').localeCompare(a.created_at || '');
-      });
-
-      const toShow = (currentFilter === 'all' && !searchQuery) ? sorted.slice(0, 12) : sorted;
+      const toShow = (currentFilter === 'all' && !searchQuery) ? list.slice(0, 12) : list;
 
       if (toShow.length === 0) {
         grid.innerHTML = `
           <div style="grid-column: 1 / -1; text-align: center; padding: 48px 20px; background: #FFFFFF; border: 1px dashed var(--border-subtle); border-radius: var(--radius-md);">
-            <h3 style="font-size: 1.15rem; color: #0B192C; margin-bottom: 6px;">No products found</h3>
-            <p style="font-size: 0.88rem; color: var(--text-light); margin-bottom: 16px;">Try selecting another category or clearing search query.</p>
-            <button type="button" class="chip-filter-btn active" onclick="setCatalogFilter('all', null)">View All Products</button>
+            <h3 style="font-size: 1.15rem; color: #0B192C; margin-bottom: 6px;">No products match "${escapeHTML(searchQuery || '')}"</h3>
+            <p style="font-size: 0.88rem; color: var(--text-light); margin-bottom: 16px;">Try searching for Bisleri, Kinley, Coca-Cola, Water Peti, or Soda.</p>
+            <button type="button" class="chip-filter-btn active" onclick="clearGlobalSearch()">Clear Search & View All Products</button>
           </div>
         `;
         return;
@@ -8099,7 +8286,7 @@
           <article class="clean-product-card" id="card-${p.id}">
             <div>
               <div class="card-photo-box" onclick="openQuickView('${p.id}')" style="cursor: pointer;" title="Click to view details">
-                <img src="${p.image}" alt="${p.title}" id="prod-img-${p.id}" loading="lazy">
+                <img src="${p.image}" alt="${escapeHTML(p.title)}" id="prod-img-${p.id}" loading="lazy">
                 <button type="button" class="btn-card-heart ${isWish ? 'active' : ''}" onclick="event.stopPropagation(); toggleWishlist('${p.id}')" aria-label="Save to Wishlist">
                   <svg viewBox="0 0 24 24" fill="${isWish ? '#E11D48' : 'none'}" stroke="currentColor" stroke-width="2">
                     <path d="M20.84 4.61a5.5 5.5 0 0 0-7.78 0L12 5.67l-1.06-1.06a5.5 5.5 0 0 0-7.78 7.78l1.06 1.06L12 21.23l7.78-7.78 1.06-1.06a5.5 5.5 0 0 0 0-7.78z"></path>
@@ -8155,8 +8342,13 @@
 
     // INSTANT LIVE SEARCH
     function handleSearch(val) {
-      searchQuery = val.trim();
+      searchQuery = (val || '').trim();
       const dropdown = document.getElementById('live-search-dropdown');
+      const clearBtn = document.getElementById('search-clear-btn');
+      if (clearBtn) {
+        clearBtn.style.display = searchQuery ? 'inline-flex' : 'none';
+      }
+
       if (!dropdown) {
         renderProducts();
         return;
@@ -8169,34 +8361,72 @@
         return;
       }
 
-      const matches = PRODUCTS.filter(p =>
-        p.title.toLowerCase().includes(searchQuery.toLowerCase()) ||
-        p.category.toLowerCase().includes(searchQuery.toLowerCase())
-      );
+      let isRelaxed = false;
+      let matches = PRODUCTS
+        .map(p => ({ p, score: matchAndScoreProduct(p, searchQuery, true) }))
+        .filter(item => item.score > 0)
+        .sort((a, b) => b.score - a.score)
+        .map(item => item.p);
+
+      // If strict match produced 0, run relaxed match fallback
+      if (matches.length === 0) {
+        matches = PRODUCTS
+          .map(p => ({ p, score: matchAndScoreProduct(p, searchQuery, false) }))
+          .filter(item => item.score > 0)
+          .sort((a, b) => b.score - a.score)
+          .map(item => item.p);
+        if (matches.length > 0) isRelaxed = true;
+      }
 
       if (matches.length === 0) {
         dropdown.innerHTML = `
-          <div class="search-drop-header">Search Results</div>
+          <div class="search-drop-header" style="display:flex; justify-content:space-between; align-items:center;">
+            <span>Search Results</span>
+            <span style="font-size:0.74rem; font-weight:700; color:#DC2626;">0 Found</span>
+          </div>
           <div style="padding: 16px; text-align: center; color: var(--text-light); font-size: 0.84rem;">
-            No products match "${escapeHTML(searchQuery)}".
+            No products match "<strong>${escapeHTML(searchQuery)}</strong>".
+            <div style="margin-top:10px; font-size:0.78rem; color:#64748B;">Popular searches:</div>
+            <div style="display:flex; flex-wrap:wrap; gap:6px; justify-content:center; margin-top:8px;">
+              <button type="button" class="search-suggest-chip" onclick="applySearchSuggestion('Bisleri')">Bisleri</button>
+              <button type="button" class="search-suggest-chip" onclick="applySearchSuggestion('Kinley')">Kinley</button>
+              <button type="button" class="search-suggest-chip" onclick="applySearchSuggestion('Coca-Cola')">Coca-Cola</button>
+              <button type="button" class="search-suggest-chip" onclick="applySearchSuggestion('Thums Up')">Thums Up</button>
+              <button type="button" class="search-suggest-chip" onclick="applySearchSuggestion('Water Peti')">Water Peti</button>
+              <button type="button" class="search-suggest-chip" onclick="applySearchSuggestion('Club Soda')">Club Soda</button>
+            </div>
           </div>
         `;
         dropdown.classList.add('open');
       } else {
         dropdown.innerHTML = `
-          <div class="search-drop-header">Found ${matches.length} Wholesale Items</div>
-          ${matches.slice(0, 5).map(p => `
-            <div class="search-drop-item" onclick="openQuickView('${p.id}'); document.getElementById('live-search-dropdown').classList.remove('open');">
-              <img src="${p.image}" alt="${p.title}" class="search-drop-thumb">
-              <div class="search-drop-info">
-                <div class="search-drop-title">${escapeHTML(p.title)}</div>
-                <div class="search-drop-price tabular">₹${p.price} <span style="font-size: 0.82rem; color:var(--text-light); font-weight:normal;">• ${p.spec}</span></div>
+          <div class="search-drop-header" style="display:flex; justify-content:space-between; align-items:center;">
+            <span>${isRelaxed ? 'Closest Wholesale Matches' : 'Wholesale Results'}</span>
+            <span style="font-size:0.74rem; font-weight:700; background:#E0F2FE; color:#0369A1; padding:2px 8px; border-radius:999px;">
+              ${matches.length} Items Found
+            </span>
+          </div>
+          <div class="search-drop-list">
+            ${matches.slice(0, 6).map(p => `
+              <div class="search-drop-item" onclick="openQuickView('${p.id}'); document.getElementById('live-search-dropdown').classList.remove('open');">
+                <img src="${p.image}" alt="${escapeHTML(p.title)}" class="search-drop-thumb" loading="lazy">
+                <div class="search-drop-info">
+                  <div class="search-drop-title">${highlightQueryTerms(p.title, searchQuery)}</div>
+                  <div class="search-drop-price tabular">
+                    ₹${p.price}
+                    <span style="font-size: 0.78rem; color:var(--text-light); font-weight:normal;">• ${highlightQueryTerms(p.spec, searchQuery)}</span>
+                  </div>
+                </div>
+                <button type="button" class="btn-search-drop-add" onclick="event.stopPropagation(); updateCart('${p.id}', 1, event); document.getElementById('live-search-dropdown').classList.remove('open');" title="Add 1 Case to Cart">
+                  + Add
+                </button>
               </div>
-              <button type="button" class="btn-search-drop-add" onclick="event.stopPropagation(); updateCart('${p.id}', 1, event); document.getElementById('live-search-dropdown').classList.remove('open');">
-                + Add
-              </button>
-            </div>
-          `).join('')}
+            `).join('')}
+          </div>
+          <div class="search-drop-footer" onclick="scrollToSearchResults('${escapeHTML(searchQuery)}')">
+            <span>View All ${matches.length} Results in Catalog</span>
+            <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5"><line x1="5" y1="12" x2="19" y2="12"></line><polyline points="12 5 19 12 12 19"></polyline></svg>
+          </div>
         `;
         dropdown.classList.add('open');
       }
@@ -8204,10 +8434,51 @@
       renderProducts();
     }
 
-    document.addEventListener('click', (e) => {
-      const wrapper = document.querySelector('.nav-search-wrapper');
+    function scrollToSearchResults(query) {
       const dropdown = document.getElementById('live-search-dropdown');
-      if (wrapper && dropdown && !wrapper.contains(e.target)) {
+      if (dropdown) dropdown.classList.remove('open');
+      const section = document.getElementById('products-section');
+      if (section) {
+        section.scrollIntoView({ behavior: 'smooth', block: 'start' });
+      }
+    }
+
+    function handleSearchKeyDown(e) {
+      if (e.key === 'Enter') {
+        e.preventDefault();
+        const dropdown = document.getElementById('live-search-dropdown');
+        if (dropdown) dropdown.classList.remove('open');
+        scrollToSearchResults(searchQuery);
+      } else if (e.key === 'Escape') {
+        const dropdown = document.getElementById('live-search-dropdown');
+        if (dropdown) dropdown.classList.remove('open');
+      }
+    }
+
+    function clearGlobalSearch(e) {
+      if (e) {
+        if (typeof e.stopPropagation === 'function') e.stopPropagation();
+        if (typeof e.preventDefault === 'function') e.preventDefault();
+      }
+      const input = document.getElementById('global-search-input');
+      if (input) {
+        input.value = '';
+      }
+      handleSearch('');
+    }
+
+    function applySearchSuggestion(text) {
+      const input = document.getElementById('global-search-input');
+      if (input) {
+        input.value = text;
+      }
+      handleSearch(text);
+    }
+
+    document.addEventListener('click', (e) => {
+      const bar = document.querySelector('.nav-search-bar');
+      const dropdown = document.getElementById('live-search-dropdown');
+      if (bar && dropdown && !bar.contains(e.target)) {
         dropdown.classList.remove('open');
       }
     });
@@ -13041,7 +13312,16 @@
 
       // 4. Hash and Query routing
       const searchParams = new URLSearchParams(window.location.search);
-      if (searchParams.get('admin') === '1') {
+      const urlQuery = searchParams.get('q') || searchParams.get('search');
+      if (urlQuery) {
+        const sInput = document.getElementById('global-search-input');
+        if (sInput) sInput.value = urlQuery;
+        handleSearch(urlQuery);
+        setTimeout(() => {
+          const pSec = document.getElementById('products-section');
+          if (pSec) pSec.scrollIntoView({ behavior: 'smooth', block: 'start' });
+        }, 350);
+      } else if (searchParams.get('admin') === '1') {
         adminUnlocked = true;
         sessionStorage.setItem('sikar_admin_unlocked', 'true');
         navigatePage('admin');

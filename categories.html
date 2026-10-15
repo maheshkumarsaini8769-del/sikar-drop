@@ -70,7 +70,7 @@
           <circle cx="11" cy="11" r="8"></circle>
           <line x1="21" y1="21" x2="16.65" y2="16.65"></line>
         </svg>
-        <input type="text" class="nav-search-input" placeholder="Search categories..." oninput="handleCategorySearch(this.value)">
+        <input type="text" class="nav-search-input" placeholder="Search categories or products..." oninput="handleCategorySearch(this.value)" onkeyup="if(event.key==='Enter') window.location.href='/products?q=' + encodeURIComponent(this.value)">
       </div>
 
       <div class="nav-right-actions">
@@ -352,10 +352,31 @@
 
     function handleCategorySearch(val) {
       const q = val.trim().toLowerCase();
+      let visibleCount = 0;
       document.querySelectorAll('#categories-cards-grid .portal-card').forEach(card => {
         const text = card.textContent.toLowerCase();
-        card.style.display = text.includes(q) ? 'block' : 'none';
+        const match = !q || text.includes(q);
+        card.style.display = match ? 'block' : 'none';
+        if (match) visibleCount++;
       });
+
+      let fallbackEl = document.getElementById('category-search-fallback');
+      if (visibleCount === 0 && q) {
+        if (!fallbackEl) {
+          fallbackEl = document.createElement('div');
+          fallbackEl.id = 'category-search-fallback';
+          fallbackEl.style.cssText = 'grid-column: 1 / -1; padding: 40px 20px; text-align: center; background: #FFFFFF; border-radius: var(--radius-md); border: 1px dashed var(--border-subtle); margin-top: 10px;';
+          document.getElementById('categories-cards-grid').appendChild(fallbackEl);
+        }
+        fallbackEl.innerHTML = `
+          <h3 style="font-family: var(--font-heading); color: #0B192C; margin-bottom: 8px;">No Categories Matching "${escapeHTML(val)}"</h3>
+          <p style="color: var(--text-muted); font-size: 0.9rem; margin-bottom: 16px;">Are you looking for a specific beverage or bottled water brand?</p>
+          <a href="/products?q=${encodeURIComponent(val)}" class="btn-portal-primary" style="padding: 9px 18px; text-decoration: none; font-size: 0.85rem;">Search All Products for "${escapeHTML(val)}" &rarr;</a>
+        `;
+        fallbackEl.style.display = 'block';
+      } else if (fallbackEl) {
+        fallbackEl.style.display = 'none';
+      }
     }
   </script>
 </body>

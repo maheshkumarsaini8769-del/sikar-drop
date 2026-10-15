@@ -52,6 +52,23 @@
   <link href="https://fonts.googleapis.com/css2?family=Be+Vietnam+Pro:wght@400;500;600;700;800&family=Outfit:wght@500;600;700;800;900&display=swap" rel="stylesheet">
   <link rel="stylesheet" href="assets/site.css">
   <style>
+    .search-clear-btn {
+      background: none;
+      border: none;
+      padding: 3px 6px;
+      cursor: pointer;
+      color: #94A3B8;
+      display: inline-flex;
+      align-items: center;
+      justify-content: center;
+      transition: color 0.15s;
+      flex-shrink: 0;
+      border-radius: 999px;
+    }
+    .search-clear-btn:hover {
+      color: #0F172A;
+      background: #F1F5F9;
+    }
     .catalog-chips-bar {
       display: flex;
       align-items: center;
@@ -129,7 +146,10 @@
           <circle cx="11" cy="11" r="8"></circle>
           <line x1="21" y1="21" x2="16.65" y2="16.65"></line>
         </svg>
-        <input type="text" id="global-search-input" class="nav-search-input" placeholder="Search water, pack, brand..." oninput="handleCatalogSearch(this.value)">
+        <input type="text" id="global-search-input" class="nav-search-input" placeholder="Search water, pack, brand..." oninput="handleCatalogSearch(this.value)" autocomplete="off">
+        <button type="button" id="catalog-search-clear-btn" class="search-clear-btn" style="display:none;" onclick="clearCatalogSearch(event)" title="Clear Search" aria-label="Clear Search">
+          <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5"><line x1="18" y1="6" x2="6" y2="18"></line><line x1="6" y1="6" x2="18" y2="18"></line></svg>
+        </button>
       </div>
 
       <!-- 4. RIGHT ACTION ICONS -->
@@ -443,11 +463,19 @@
       await loadCatalogFromBackend();
       updateCartUI();
 
-      // Check URL query parameters (e.g. ?category=water)
+      // Check URL query parameters (e.g. ?category=water or ?q=bisleri)
       const params = new URLSearchParams(window.location.search);
       const catParam = params.get('category');
       if (catParam) {
         activeCategoryFilter = catParam;
+      }
+      const qParam = params.get('q') || params.get('search');
+      if (qParam) {
+        catalogSearchQuery = qParam.trim();
+        const sInput = document.getElementById('global-search-input');
+        if (sInput) sInput.value = catalogSearchQuery;
+        const clearBtn = document.getElementById('catalog-search-clear-btn');
+        if (clearBtn) clearBtn.style.display = 'inline-flex';
       }
 
       renderCatalogCategoryChips();
@@ -532,14 +560,106 @@
       renderProductsPageGrid();
     }
 
+    // SMART MULTI-FIELD & TOKENIZED PRODUCT SEARCH ENGINE
+    function matchAndScoreProduct(p, rawQuery) {
+      if (!rawQuery) return 1;
+      const q = String(rawQuery).trim().toLowerCase();
+      if (!q) return 1;
+
+      const title = (p.title || '').toLowerCase();
+      const cat = (p.category || '').toLowerCase();
+      const spec = (p.spec || '').toLowerCase();
+      const sku = (p.sku || '').toLowerCase();
+      const desc = (p.description || '').toLowerCase();
+      const combined = `${title} ${cat} ${spec} ${sku} ${desc}`;
+
+      // 1. Direct whole-query match
+      if (title === q) return 100;
+      if (title.startsWith(q)) return 85;
+      if (title.includes(q)) return 70;
+      if (combined.includes(q)) return 55;
+
+      // 2. Multi-token match
+      const tokens = q.split(/\s+/).filter(Boolean);
+      if (tokens.length === 0) return 0;
+
+      let score = 0;
+      for (const t of tokens) {
+        let matched = false;
+        if (combined.includes(t)) {
+          matched = true;
+          score += 15;
+          if (title.includes(t)) score += 10;
+        } else {
+          // Normalize volume and units: e.g. "250" -> "250ml", "1l" -> "1 liter"
+          if (!isNaN(t) && combined.includes(t + 'ml')) {
+            matched = true; score += 12;
+          } else if (!isNaN(t) && (combined.includes(t + 'l') || combined.includes(t + ' liter') || combined.includes(t + ' litre'))) {
+            matched = true; score += 12;
+          } else if (t.endsWith('l') && (combined.includes(t.replace('l', ' liter')) || combined.includes(t.replace('l', ' litre')) || combined.includes(t.replace('l', 'l')))) {
+            matched = true; score += 12;
+          } else if (t.endsWith('ml') && combined.includes(t.replace('ml', ''))) {
+            matched = true; score += 12;
+          } else if (t === 'pani' || t === 'paani' || t === 'water') {
+            if (combined.includes('water') || combined.includes('drinking') || combined.includes('bisleri') || combined.includes('kinley') || combined.includes('aquafina')) {
+              matched = true; score += 10;
+            }
+          } else if (t === 'peti' || t === 'crate' || t === 'box' || t === 'case' || t === 'tray') {
+            if (combined.includes('case') || combined.includes('peti') || combined.includes('crate') || combined.includes('tray') || combined.includes('box')) {
+              matched = true; score += 10;
+            }
+          } else if (t === 'cold' || t === 'drink' || t === 'colddrink' || t === 'softdrink' || t === 'beverage') {
+            if (combined.includes('cola') || combined.includes('drink') || combined.includes('soft') || combined.includes('pepsi') || combined.includes('campa') || combined.includes('soda') || combined.includes('can')) {
+              matched = true; score += 10;
+            }
+          } else if (t === 'bislery' || t === 'bisleri') {
+            if (combined.includes('bisleri')) { matched = true; score += 15; }
+          } else if (t === 'kinly' || t === 'kinley') {
+            if (combined.includes('kinley')) { matched = true; score += 15; }
+          } else if (t === 'juice' || t === 'fruiti' || t === 'frooti') {
+            if (combined.includes('juice') || combined.includes('frooti') || combined.includes('tetra') || combined.includes('mango')) { matched = true; score += 12; }
+          }
+        }
+
+        if (!matched) return 0;
+      }
+
+      return score;
+    }
+
     function sortCatalogProducts(sortVal) {
       activeCatalogSort = sortVal;
       renderProductsPageGrid();
     }
 
     function handleCatalogSearch(val) {
-      catalogSearchQuery = val.trim().toLowerCase();
+      catalogSearchQuery = (val || '').trim();
+      const clearBtn = document.getElementById('catalog-search-clear-btn');
+      if (clearBtn) clearBtn.style.display = catalogSearchQuery ? 'inline-flex' : 'none';
+
+      // Update URL query state cleanly without full reload
+      try {
+        const u = new URL(window.location);
+        if (catalogSearchQuery) {
+          u.searchParams.set('q', catalogSearchQuery);
+        } else {
+          u.searchParams.delete('q');
+          u.searchParams.delete('search');
+        }
+        window.history.replaceState({}, '', u.toString());
+      } catch (e) {}
+
       renderProductsPageGrid();
+    }
+
+    function clearCatalogSearch(e) {
+      if (e && typeof e.stopPropagation === 'function') e.stopPropagation();
+      const sInput = document.getElementById('global-search-input');
+      if (sInput) {
+        sInput.value = '';
+        sInput.focus();
+      }
+      handleCatalogSearch('');
     }
 
     function renderProductsPageGrid() {
@@ -553,9 +673,28 @@
         list = list.filter(p => p.category === activeCategoryFilter);
       }
 
-      // 2. Filter Search
+      // 2. Filter Search using Smart Multi-Token Scorer
       if (catalogSearchQuery) {
-        list = list.filter(p => p.title.toLowerCase().includes(catalogSearchQuery) || (p.spec && p.spec.toLowerCase().includes(catalogSearchQuery)));
+        const scored = list
+          .map(p => ({ product: p, score: matchAndScoreProduct(p, catalogSearchQuery) }))
+          .filter(x => x.score > 0)
+          .sort((a, b) => b.score - a.score);
+
+        // If filtering within a selected category produced 0 results, fall back to matching across all active products
+        if (scored.length === 0 && activeCategoryFilter !== 'all') {
+          const globalScored = PRODUCTS
+            .filter(p => p.active !== 0)
+            .map(p => ({ product: p, score: matchAndScoreProduct(p, catalogSearchQuery) }))
+            .filter(x => x.score > 0)
+            .sort((a, b) => b.score - a.score);
+          if (globalScored.length > 0) {
+            list = globalScored.map(x => x.product);
+          } else {
+            list = [];
+          }
+        } else {
+          list = scored.map(x => x.product);
+        }
       }
 
       // 3. Sorting
@@ -569,14 +708,19 @@
 
       const countBadge = document.getElementById('catalog-product-count-badge');
       if (countBadge) {
-        countBadge.textContent = `${list.length} Wholesale Products`;
+        if (catalogSearchQuery) {
+          countBadge.textContent = `${list.length} Results for "${catalogSearchQuery}"`;
+        } else {
+          countBadge.textContent = `${list.length} Wholesale Products`;
+        }
       }
 
       if (list.length === 0) {
         container.innerHTML = `
           <div style="grid-column: 1 / -1; padding: 60px 20px; text-align: center; background: #FFFFFF; border-radius: var(--radius-md); border: 1px dashed var(--border-light);">
             <h3 style="font-family: var(--font-heading); color: #0B192C; margin-bottom: 8px;">No Wholesale Products Found</h3>
-            <p style="color: var(--text-muted); font-size: 0.9rem;">Try selecting another category or clearing your search query.</p>
+            <p style="color: var(--text-muted); font-size: 0.9rem; margin-bottom: 16px;">No products match "<strong>${escapeHTML(catalogSearchQuery || '')}</strong>". Try searching for Bisleri, Kinley, Campa, or clearing search.</p>
+            <button type="button" class="btn-portal-primary" onclick="clearCatalogSearch()" style="padding: 8px 18px; font-size: 0.84rem;">Clear Search & Show All Products</button>
           </div>
         `;
         return;
