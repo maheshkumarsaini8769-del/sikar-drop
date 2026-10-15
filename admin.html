@@ -2049,6 +2049,9 @@
           <span id="sidebar-operator-role">Depot Owner</span>
         </div>
       </div>
+      <button type="button" id="btn-revert-superadmin" onclick="switchBackToSuperAdmin()" style="display:none; width:100%; margin:8px 0; padding:6px 10px; font-size:0.75rem; font-weight:700; background:#0284C7; color:#FFFFFF; border:none; border-radius:4px; cursor:pointer;">
+        Switch to Super Admin
+      </button>
       <div class="sidebar-action-row">
         <a href="index.html" class="btn-side-action" title="View Storefront">
           <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" width="14" height="14"><path d="M18 13v6a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2V8a2 2 0 0 1 2-2h6"></path><polyline points="15 3 21 3 21 9"></polyline><line x1="10" y1="14" x2="21" y2="3"></line></svg>
@@ -4690,7 +4693,13 @@
         </div>
 
         <div class="portal-field-group">
-          <label style="margin-bottom: 10px;">Select Permitted Tabs Access *</label>
+          <div style="display:flex; justify-content:space-between; align-items:center; margin-bottom:8px;">
+            <label style="margin:0;">Select Permitted Tabs Access *</label>
+            <div style="display:flex; gap:8px;">
+              <button type="button" onclick="document.querySelectorAll('input[name=\'staff-perms\']').forEach(cb => cb.checked = true)" style="background:none; border:none; color:#0284C7; font-size:0.75rem; font-weight:700; cursor:pointer;">Select All</button>
+              <button type="button" onclick="document.querySelectorAll('input[name=\'staff-perms\']').forEach(cb => cb.checked = false)" style="background:none; border:none; color:#64748B; font-size:0.75rem; font-weight:700; cursor:pointer;">Clear All</button>
+            </div>
+          </div>
           <div style="display: grid; grid-template-columns: repeat(2, 1fr); gap: 10px; background: #F8FAFC; padding: 14px; border-radius: var(--radius-sm); border: 1px solid var(--border-subtle); max-height: 280px; overflow-y: auto;">
             <label style="display:flex; align-items:center; gap:8px; font-weight:600; font-size:0.84rem;"><input type="checkbox" name="staff-perms" value="reports" checked> P&amp;L &amp; Sales Reports</label>
             <label style="display:flex; align-items:center; gap:8px; font-weight:600; font-size:0.84rem;"><input type="checkbox" name="staff-perms" value="social" checked> Social Media Analytics</label>
@@ -4700,6 +4709,7 @@
             <label style="display:flex; align-items:center; gap:8px; font-weight:600; font-size:0.84rem;"><input type="checkbox" name="staff-perms" value="khata"> Khata &amp; Pending Payments Ledger</label>
             <label style="display:flex; align-items:center; gap:8px; font-weight:600; font-size:0.84rem;"><input type="checkbox" name="staff-perms" value="products"> Products &amp; Box Pricing</label>
             <label style="display:flex; align-items:center; gap:8px; font-weight:600; font-size:0.84rem;"><input type="checkbox" name="staff-perms" value="categories"> Categories Management</label>
+            <label style="display:flex; align-items:center; gap:8px; font-weight:600; font-size:0.84rem;"><input type="checkbox" name="staff-perms" value="bundles"> Event Bundles &amp; Bulk Deals</label>
             <label style="display:flex; align-items:center; gap:8px; font-weight:600; font-size:0.84rem;"><input type="checkbox" name="staff-perms" value="inventory"> Inventory &amp; Stock Ledger</label>
             <label style="display:flex; align-items:center; gap:8px; font-weight:600; font-size:0.84rem;"><input type="checkbox" name="staff-perms" value="purchases"> Supplier Purchases (Stock In)</label>
             <label style="display:flex; align-items:center; gap:8px; font-weight:600; font-size:0.84rem;"><input type="checkbox" name="staff-perms" value="coupons"> Festival Themes &amp; Offers</label>
@@ -5124,7 +5134,7 @@
     // REAL-TIME SYNC FROM SQLITE DATABASE ON PAGE LOAD & EVENTS
     async function syncFromBackend() {
       try {
-        const [stats, orders, manualSales, deliveryZones, customers, khata, prods, cats, purchases, coupons, reviews, soc, settings, bundles] = await Promise.all([
+        const [stats, orders, manualSales, deliveryZones, customers, khata, prods, cats, purchases, coupons, reviews, soc, settings, bundles, subadmins] = await Promise.all([
           sikarApi.get('/api/dashboard/stats?period=' + currentDashboardPeriod),
           sikarApi.get('/api/orders'),
           sikarApi.get('/api/manual-sales'),
@@ -5138,8 +5148,15 @@
           sikarApi.get('/api/reviews'),
           sikarApi.get('/api/analytics/stats'),
           sikarApi.get('/api/settings'),
-          sikarApi.get('/api/bundles?all=1')
+          sikarApi.get('/api/bundles?all=1'),
+          sikarApi.get('/api/auth/subadmins')
         ]);
+
+        if (subadmins && Array.isArray(subadmins)) {
+          adminSubAdmins = subadmins;
+          localStorage.setItem('sikar_admin_subadmins', JSON.stringify(adminSubAdmins));
+          if (currentTab === 'subadmin') renderSubAdminTable();
+        }
 
         if (settings) {
           initFestivalThemesFromSettings(settings);
@@ -5490,6 +5507,8 @@
       sessionStorage.removeItem('sikar_portal_operator');
       const lockScreen = document.getElementById('auth-lock-screen');
       if (lockScreen) lockScreen.style.display = 'flex';
+      const emailInput = document.getElementById('login-email-input');
+      if (emailInput) emailInput.value = '';
       const passInput = document.getElementById('login-pass-input');
       if (passInput) passInput.value = '';
       const errBox = document.getElementById('login-error-msg');
@@ -5532,6 +5551,12 @@
       if (roleEl) roleEl.textContent = currentOperator.role;
       if (avatarEl) avatarEl.textContent = currentOperator.name.split(' ').map(n => n[0]).join('').slice(0, 2).toUpperCase();
 
+      const isSubAdmin = currentOperator.id !== 'ADM-01';
+      const switchBackBtn = document.getElementById('btn-revert-superadmin');
+      if (switchBackBtn) {
+        switchBackBtn.style.display = isSubAdmin ? 'block' : 'none';
+      }
+
       // Filter tabs in sidebar if restricted
       document.querySelectorAll('.sidebar-tab-btn').forEach(btn => {
         const tab = btn.getAttribute('data-tab');
@@ -5541,6 +5566,13 @@
           btn.style.display = 'none';
         }
       });
+
+      // If active tab is restricted, redirect to first allowed tab or dashboard
+      if (!hasPermission(currentTab)) {
+        const perms = currentOperator.permissions || currentOperator.perms || [];
+        const firstPerm = (Array.isArray(perms) && perms.find(p => p !== 'all' && document.getElementById(`pane-${p}`))) || 'dashboard';
+        switchTab(firstPerm);
+      }
     }
 
     function hasPermission(tabId) {
@@ -9302,21 +9334,84 @@
       const tbody = document.getElementById('subadmin-table-tbody');
       if (!tbody) return;
 
-      tbody.innerHTML = adminSubAdmins.map((s, idx) => `
-        <tr>
-          <td><strong>${escapeHTML(s.name)}</strong></td>
-          <td><code>${escapeHTML(s.email)}</code></td>
-          <td><span class="badge-status confirmed">${escapeHTML(s.role)}</span></td>
+      if (!adminSubAdmins || adminSubAdmins.length === 0) {
+        tbody.innerHTML = `<tr><td colspan="5" style="text-align:center; padding:24px; color:var(--text-muted); font-size:0.86rem;">No staff sub-admin accounts created yet. Click "+ Add New Sub-Admin" above to configure operator accounts.</td></tr>`;
+        return;
+      }
+
+      tbody.innerHTML = adminSubAdmins.map((s, idx) => {
+        const perms = Array.isArray(s.perms) ? s.perms : (Array.isArray(s.permissions) ? s.permissions : []);
+        const email = s.email || s.username || 'staff@sikardrop.in';
+        const isCurrentActive = currentOperator && (currentOperator.id === s.id || currentOperator.email === email || currentOperator.username === s.username);
+
+        return `
+        <tr style="${isCurrentActive ? 'background: #F0FDF4;' : ''}">
           <td>
-            <div style="display:flex; flex-wrap:wrap; gap:4px;">
-              ${s.perms.map(p => `<span style="font-size:0.7rem; background:#E2E8F0; padding:2px 6px; border-radius:4px;">${escapeHTML(p)}</span>`).join('')}
+            <strong>${escapeHTML(s.name)}</strong>
+            ${s.id ? `<span style="display:block; font-size:0.7rem; color:var(--text-muted); font-family:monospace; margin-top:2px;">ID: ${escapeHTML(s.id)}</span>` : ''}
+          </td>
+          <td>
+            <code>${escapeHTML(email)}</code>
+            ${s.pass || s.pin ? `<span style="display:block; font-size:0.7rem; color:var(--text-muted); margin-top:2px;">Pass: ${escapeHTML(s.pass || s.pin)}</span>` : ''}
+          </td>
+          <td><span class="badge-status confirmed" style="font-weight:700;">${escapeHTML(s.role || 'Operator Staff')}</span></td>
+          <td>
+            <div style="display:flex; flex-wrap:wrap; gap:4px; max-width:320px;">
+              ${perms.map(p => `<span style="font-size:0.72rem; font-weight:700; background:#E0F2FE; color:#0369A1; padding:2px 7px; border-radius:4px; border:1px solid #BAE6FD;">${escapeHTML(p)}</span>`).join('')}
             </div>
           </td>
           <td>
-            <button type="button" class="btn-tbl-action danger" onclick="deleteSubAdmin(${idx})">Revoke</button>
+            <div style="display:flex; align-items:center; gap:6px;">
+              <button type="button" class="btn-tbl-action" style="${isCurrentActive ? 'background:#16A34A; color:#FFFFFF;' : 'background:#0F172A; color:#FFFFFF;'}" onclick="switchOperatorSession(${idx})">
+                ${isCurrentActive ? 'Active Now' : 'Test Login'}
+              </button>
+              <button type="button" class="btn-tbl-action danger" onclick="deleteSubAdmin(${idx})">Revoke</button>
+            </div>
           </td>
         </tr>
-      `).join('');
+      `;
+      }).join('');
+    }
+
+    function switchOperatorSession(idx) {
+      const staff = adminSubAdmins[idx];
+      if (!staff) return;
+
+      currentOperator = {
+        id: staff.id || ('ADM-SUB-' + (idx + 1)),
+        name: staff.name,
+        email: staff.email || staff.username,
+        username: staff.username || staff.email,
+        role: staff.role || 'Staff Operator',
+        perms: staff.perms || staff.permissions || ['dashboard'],
+        permissions: staff.perms || staff.permissions || ['dashboard']
+      };
+
+      adminAuth = true;
+      sessionStorage.setItem('sikar_portal_auth', 'true');
+      sessionStorage.setItem('sikar_portal_operator', JSON.stringify(currentOperator));
+
+      applyOperatorPermissions();
+      renderSubAdminTable();
+      showToast(`Logged in as Operator: ${staff.name} (${staff.role || 'Staff'})`);
+    }
+
+    function switchBackToSuperAdmin() {
+      currentOperator = {
+        id: 'ADM-01',
+        name: 'Mahesh Kumar Saini',
+        email: 'maheshkumarsaini8769@gmail.com',
+        username: 'maheshkumarsaini8769@gmail.com',
+        role: 'Super Admin',
+        perms: ['all'],
+        permissions: ['all']
+      };
+      adminAuth = true;
+      sessionStorage.setItem('sikar_portal_auth', 'true');
+      sessionStorage.setItem('sikar_portal_operator', JSON.stringify(currentOperator));
+      applyOperatorPermissions();
+      renderSubAdminTable();
+      showToast('Switched back to Super Admin (Full Access)');
     }
 
     function openAddSubAdminModal() {
@@ -9335,6 +9430,11 @@
         perms.push(cb.value);
       });
 
+      if (!name || !email || !pass) {
+        showToast('Please fill in name, email and password.');
+        return;
+      }
+
       if (perms.length === 0) {
         showToast('Please select at least one module permission.');
         return;
@@ -9348,14 +9448,21 @@
           password: pass,
           permissions: perms
         });
+
         if (res && res.success) {
           closeModal('subadmin-modal');
-          await syncFromBackend();
+          const refreshed = await sikarApi.get('/api/auth/subadmins');
+          if (Array.isArray(refreshed)) {
+            adminSubAdmins = refreshed;
+            localStorage.setItem('sikar_admin_subadmins', JSON.stringify(adminSubAdmins));
+          }
+          renderSubAdminTable();
           showToast(`Staff account created for ${name} (${role})!`);
           return;
         }
       } catch (err) {
-        console.warn('Backend subadmin save fallback', err);
+        console.warn('Backend subadmin save notice:', err);
+        showToast(err.message || 'Error saving staff account');
       }
 
       adminSubAdmins.push({ name: name, email: email, pass: pass, role: role, perms: perms });
@@ -9366,22 +9473,29 @@
     }
 
     async function deleteSubAdmin(idx) {
-      if (!confirm('Revoke access for this operator account?')) return;
       const staff = adminSubAdmins[idx];
-      if (staff && staff.id) {
-        try {
-          await sikarApi.delete('/api/auth/subadmins/' + encodeURIComponent(staff.id));
-          await syncFromBackend();
-          showToast('Staff account revoked.');
-          return;
-        } catch (err) {
-          console.warn('Backend subadmin delete fallback', err);
+      if (!staff) return;
+      if (!confirm(`Revoke access for ${staff.name} (${staff.email || staff.username})?`)) return;
+
+      const targetId = staff.id || staff.email || staff.username;
+      try {
+        await sikarApi.delete('/api/auth/subadmins/' + encodeURIComponent(targetId));
+        const refreshed = await sikarApi.get('/api/auth/subadmins');
+        if (Array.isArray(refreshed)) {
+          adminSubAdmins = refreshed;
+          localStorage.setItem('sikar_admin_subadmins', JSON.stringify(adminSubAdmins));
+        } else {
+          adminSubAdmins.splice(idx, 1);
+          localStorage.setItem('sikar_admin_subadmins', JSON.stringify(adminSubAdmins));
         }
+      } catch (err) {
+        console.warn('Backend subadmin delete fallback:', err);
+        adminSubAdmins.splice(idx, 1);
+        localStorage.setItem('sikar_admin_subadmins', JSON.stringify(adminSubAdmins));
       }
-      adminSubAdmins.splice(idx, 1);
-      localStorage.setItem('sikar_admin_subadmins', JSON.stringify(adminSubAdmins));
+
       renderSubAdminTable();
-      showToast('Staff account revoked.');
+      showToast(`Staff account for ${staff.name} revoked.`);
     }
 
     // =========================================================

@@ -192,10 +192,10 @@ app.post('/api/auth/login', (req, res) => {
       return res.status(400).json({ error: 'Email and password are required' });
     }
 
-    const baseUsername = loginEmail.replace('@gmail.com', '');
+    const emailPrefix = loginEmail.includes('@') ? loginEmail.split('@')[0] : loginEmail;
     const isSuperAdminEmail = (
       loginEmail === 'maheshkumarsaini8769@gmail.com' ||
-      baseUsername === 'maheshkumarsaini8769' ||
+      loginEmail === 'maheshkumarsaini8769' ||
       loginEmail === 'admin' ||
       loginEmail === 'mahesh'
     );
@@ -220,7 +220,8 @@ app.post('/api/auth/login', (req, res) => {
         WHERE (
           LOWER(TRIM(username)) = ?
           OR LOWER(TRIM(username)) = ?
-          OR LOWER(TRIM(username)) = ?
+          OR LOWER(TRIM(username)) LIKE ?
+          OR LOWER(TRIM(id)) = ?
         ) 
         AND (
           pin = ? 
@@ -230,8 +231,9 @@ app.post('/api/auth/login', (req, res) => {
         AND active = 1
       `).get(
         loginEmail,
-        baseUsername,
-        baseUsername + '@gmail.com',
+        emailPrefix,
+        emailPrefix + '@%',
+        loginEmail,
         loginPassword,
         loginPassword.toLowerCase(),
         loginPassword
@@ -360,11 +362,29 @@ app.post('/api/auth/credentials', handleCredentialsUpdate);
 
 app.get('/api/auth/subadmins', (req, res) => {
   try {
-    const users = db.prepare('SELECT id, username, name, role, permissions_json, active, created_at, last_login FROM admin_users').all();
-    const formatted = users.map(u => ({
-      ...u,
-      permissions: JSON.parse(u.permissions_json)
-    }));
+    const users = db.prepare("SELECT id, username, name, role, pin, permissions_json, active, created_at, last_login FROM admin_users WHERE id != 'ADM-01'").all();
+    const formatted = users.map(u => {
+      let parsedPerms = [];
+      try {
+        parsedPerms = JSON.parse(u.permissions_json || '[]');
+      } catch (e) {
+        parsedPerms = ['dashboard'];
+      }
+      return {
+        id: u.id,
+        name: u.name,
+        email: u.username,
+        username: u.username,
+        role: u.role,
+        pass: u.pin,
+        pin: u.pin,
+        perms: parsedPerms,
+        permissions: parsedPerms,
+        active: u.active === 1,
+        created_at: u.created_at,
+        last_login: u.last_login
+      };
+    });
     res.json(formatted);
   } catch (err) {
     res.status(500).json({ error: err.message });
@@ -374,28 +394,45 @@ app.get('/api/auth/subadmins', (req, res) => {
 app.post('/api/auth/subadmins', (req, res) => {
   try {
     const { username, email, name, role, pin, password, permissions } = req.body;
-    const finalUsername = username || email || (name ? name.toLowerCase().replace(/\s+/g, '_') : '');
-    const finalPin = pin || password || '1234';
+    const finalUsername = String(email || username || (name ? name.toLowerCase().replace(/\s+/g, '_') : '')).trim().toLowerCase();
+    const finalPin = String(password || pin || '1234').trim();
     if (!finalUsername || !name) return res.status(400).json({ error: 'Username/email and name are required' });
 
-    const existing = db.prepare('SELECT id FROM admin_users WHERE username = ?').get(finalUsername);
-    if (existing) return res.status(400).json({ error: 'Username already exists' });
+    const existing = db.prepare('SELECT id FROM admin_users WHERE LOWER(TRIM(username)) = ?').get(finalUsername);
+    if (existing) return res.status(400).json({ error: 'An account with this email/username already exists' });
 
     const id = 'ADM-' + Math.floor(100 + Math.random() * 900);
     const now = new Date().toISOString();
-    const permsJson = JSON.stringify(permissions || ['dashboard']);
+    const cleanPerms = Array.isArray(permissions) && permissions.length > 0 ? permissions : ['dashboard'];
+    const permsJson = JSON.stringify(cleanPerms);
 
     db.prepare(`
       INSERT INTO admin_users (id, username, name, role, pin, permissions_json, active, created_at)
       VALUES (?, ?, ?, ?, ?, ?, 1, ?)
-    `).run(id, finalUsername, name, role || 'Staff', finalPin, permsJson, now);
+    `).run(id, finalUsername, name.trim(), role || 'Staff', finalPin, permsJson, now);
 
     db.prepare(`
       INSERT INTO audit_logs (id, actor, action, module, details, created_at)
       VALUES (?, 'Super Admin', 'SUBADMIN_CREATED', 'subadmin', ?, ?)
-    `).run('AUD-' + Math.floor(100000 + Math.random() * 900000), `Created sub-admin account ${finalUsername} (${name}) with role ${role}`, now);
+    `).run('AUD-' + Math.floor(100000 + Math.random() * 900000), `Created sub-admin account ${finalUsername} (${name}) with role ${role || 'Staff'}`, now);
 
-    res.status(201).json({ success: true, id });
+    res.status(201).json({
+      success: true,
+      id,
+      subadmin: {
+        id,
+        name: name.trim(),
+        email: finalUsername,
+        username: finalUsername,
+        role: role || 'Staff',
+        pass: finalPin,
+        pin: finalPin,
+        perms: cleanPerms,
+        permissions: cleanPerms,
+        active: true
+      },
+      message: `Staff account created for ${name} (${role || 'Staff'})`
+    });
   } catch (err) {
     res.status(500).json({ error: err.message });
   }
@@ -405,8 +442,17 @@ app.delete('/api/auth/subadmins/:id', (req, res) => {
   try {
     const { id } = req.params;
     if (id === 'ADM-01') return res.status(400).json({ error: 'Cannot delete primary super admin account' });
-    db.prepare('DELETE FROM admin_users WHERE id = ?').run(id);
-    res.json({ success: true });
+    const target = db.prepare('SELECT * FROM admin_users WHERE id = ? OR LOWER(TRIM(username)) = ?').get(id, id.toLowerCase());
+    if (!target) return res.status(404).json({ error: 'Sub-admin account not found' });
+    if (target.id === 'ADM-01') return res.status(400).json({ error: 'Cannot delete primary super admin account' });
+
+    db.prepare('DELETE FROM admin_users WHERE id = ?').run(target.id);
+    db.prepare(`
+      INSERT INTO audit_logs (id, actor, action, module, details, created_at)
+      VALUES (?, 'Super Admin', 'SUBADMIN_DELETED', 'subadmin', ?, ?)
+    `).run('AUD-' + Math.floor(100000 + Math.random() * 900000), `Revoked sub-admin access for ${target.username} (${target.name})`, new Date().toISOString());
+
+    res.json({ success: true, message: `Account for ${target.name} has been revoked` });
   } catch (err) {
     res.status(500).json({ error: err.message });
   }

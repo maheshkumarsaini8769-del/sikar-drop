@@ -11313,24 +11313,33 @@
       const tbody = document.getElementById('admin-subadmins-tbody');
       if (!tbody) return;
 
-      tbody.innerHTML = adminSubAdmins.map(s => `
+      if (!adminSubAdmins || adminSubAdmins.length === 0) {
+        tbody.innerHTML = `<tr><td colspan="5" style="text-align:center; padding:20px; color:var(--text-light);">No sub-admins configured yet. Click "+ Create New Sub-Admin" to add one.</td></tr>`;
+        return;
+      }
+
+      tbody.innerHTML = adminSubAdmins.map(s => {
+        const perms = Array.isArray(s.perms) ? s.perms : (Array.isArray(s.permissions) ? s.permissions : []);
+        const email = s.email || s.username || 'staff@sikardrop.in';
+        return `
         <tr>
-          <td><strong>${escapeHTML(s.name)}</strong><br><span style="font-size:0.75rem; color:#64748B;">${s.role}</span></td>
-          <td><code>${s.email}</code></td>
-          <td>••••••••</td>
+          <td><strong>${escapeHTML(s.name)}</strong><br><span style="font-size:0.75rem; color:#64748B;">${escapeHTML(s.role || 'Operator')}</span></td>
+          <td><code>${escapeHTML(email)}</code></td>
+          <td>${escapeHTML(s.pass || s.pin || '••••••••')}</td>
           <td>
             <div style="display:flex; flex-wrap:wrap; gap:4px; max-width:280px;">
-              ${s.perms.map(p => `<span class="badge-status loaded" style="font-size:0.72rem;">${p}</span>`).join('')}
+              ${perms.map(p => `<span class="badge-status loaded" style="font-size:0.72rem;">${escapeHTML(p)}</span>`).join('')}
             </div>
           </td>
           <td>
             <div style="display:flex; gap:6px;">
-              <button type="button" class="btn-tbl-edit" style="background:#0F172A; color:#FFFFFF;" onclick="simulateSubAdminLogin('${s.email}')">Test Login</button>
-              <button type="button" class="btn-tbl-del" onclick="deleteSubAdmin('${s.email}')">Delete</button>
+              <button type="button" class="btn-tbl-edit" style="background:#0F172A; color:#FFFFFF;" onclick="simulateSubAdminLogin('${escapeHTML(email)}')">Test Login</button>
+              <button type="button" class="btn-tbl-del" onclick="deleteSubAdmin('${escapeHTML(email)}')">Delete</button>
             </div>
           </td>
         </tr>
-      `).join('');
+      `;
+      }).join('');
     }
 
     function openAddSubAdminModal() {
@@ -11345,7 +11354,7 @@
       if (modal) modal.classList.remove('active');
     }
 
-    function saveSubAdmin() {
+    async function saveSubAdmin() {
       const name = document.getElementById('subadmin-name').value.trim();
       const email = document.getElementById('subadmin-email').value.trim();
       const pass = document.getElementById('subadmin-pass').value.trim();
@@ -11358,6 +11367,28 @@
         return;
       }
 
+      try {
+        const res = await fetch('/api/auth/subadmins', {
+          method: 'POST',
+          headers: { 'Content-Type': 'application/json' },
+          body: JSON.stringify({ name, email, role: 'Operator Staff', password: pass, permissions: perms })
+        });
+        const data = await res.json();
+        if (data && data.success) {
+          const ref = await fetch('/api/auth/subadmins').then(r => r.json());
+          if (Array.isArray(ref)) {
+            adminSubAdmins = ref;
+            localStorage.setItem('sikar_admin_subadmins', JSON.stringify(adminSubAdmins));
+          }
+          renderSubAdminsList();
+          closeSubAdminModal();
+          showToast(`Sub-Admin account created for ${name}`);
+          return;
+        }
+      } catch (err) {
+        console.warn('Backend subadmin save notice:', err);
+      }
+
       adminSubAdmins.push({ name, email, pass, role: 'Operator Staff', perms });
       localStorage.setItem('sikar_admin_subadmins', JSON.stringify(adminSubAdmins));
       renderSubAdminsList();
@@ -11365,9 +11396,22 @@
       showToast(`Sub-Admin account created for ${name}`);
     }
 
-    function deleteSubAdmin(email) {
+    async function deleteSubAdmin(email) {
       if (confirm('Are you sure you want to remove this sub-admin?')) {
-        adminSubAdmins = adminSubAdmins.filter(s => s.email !== email);
+        try {
+          await fetch('/api/auth/subadmins/' + encodeURIComponent(email), { method: 'DELETE' });
+          const ref = await fetch('/api/auth/subadmins').then(r => r.json());
+          if (Array.isArray(ref)) {
+            adminSubAdmins = ref;
+            localStorage.setItem('sikar_admin_subadmins', JSON.stringify(adminSubAdmins));
+            renderSubAdminsList();
+            showToast('Sub-Admin removed.');
+            return;
+          }
+        } catch (err) {
+          console.warn('Backend subadmin delete notice:', err);
+        }
+        adminSubAdmins = adminSubAdmins.filter(s => (s.email !== email && s.username !== email && s.id !== email));
         localStorage.setItem('sikar_admin_subadmins', JSON.stringify(adminSubAdmins));
         renderSubAdminsList();
         showToast('Sub-Admin removed.');
@@ -12406,6 +12450,18 @@
             }
           }
         } catch (sErr) {}
+
+        try {
+          const subRes = await fetch('/api/auth/subadmins');
+          if (subRes.ok) {
+            const serverSubs = await subRes.json();
+            if (Array.isArray(serverSubs) && serverSubs.length > 0) {
+              adminSubAdmins = serverSubs;
+              localStorage.setItem('sikar_admin_subadmins', JSON.stringify(adminSubAdmins));
+              if (typeof renderSubAdminsList === 'function') renderSubAdminsList();
+            }
+          }
+        } catch (subErr) {}
       } catch (err) {
         console.warn('Backend storefront sync failed, using cached catalog:', err);
       }
