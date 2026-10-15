@@ -273,11 +273,11 @@ async function runAudit() {
     const couponPostData = await couponPost.json();
     assert(couponPostData.valid === true, `POST /api/coupons/validate returns valid:true with discount ₹${couponPostData.discount}`);
 
-    // Test coupon on cart page with order subtotal >= min_order (100 bottles = ₹1800)
+    // Test coupon on cart page with order subtotal >= min_order (10 boxes @ ₹195 = ₹1950)
     await page.goto(`${BASE_URL}/cart`, { waitUntil: 'networkidle2' });
     
     await page.evaluate(() => {
-      localStorage.setItem('sikar_cart', JSON.stringify({ p1: 100 }));
+      localStorage.setItem('sikar_cart', JSON.stringify({ p1: 10 }));
     });
     await page.reload({ waitUntil: 'networkidle2' });
 

@@ -691,7 +691,7 @@ function updateCartUI() {
           <img src="${prod.image}" alt="${prod.title}" class="cart-line-thumb">
           <div class="cart-line-info">
             <h4>${escapeHTML(prod.title)}</h4>
-            <div class="price-tag tabular">₹${prod.price} x ${qty} = <strong>₹${lineTotal}</strong></div>
+            <div class="price-tag tabular">₹${prod.price}/box x ${qty} Box${qty > 1 ? 'es' : ''} = <strong>₹${lineTotal.toLocaleString('en-IN')}</strong></div>
           </div>
           <div class="card-stepper-control tabular" style="background:#FFFFFF;">
             <button type="button" class="stepper-btn-pill" onclick="updateCart('${prod.id}', -1, event)">-</button>

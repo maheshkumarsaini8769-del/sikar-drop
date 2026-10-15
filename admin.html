@@ -4276,26 +4276,26 @@
             <select id="prod-cat-select" class="portal-select" required></select>
           </div>
           <div class="portal-field-group">
-            <label for="prod-spec-input">Packaging Spec *</label>
-            <input type="text" id="prod-spec-input" class="portal-input" placeholder="e.g. 12 Bottles Shrink Pack" required>
+            <label for="prod-spec-input">Packaging Spec (e.g. 12 Sealed Bottles Box • ₹16/btl) *</label>
+            <input type="text" id="prod-spec-input" class="portal-input" placeholder="e.g. 12 Sealed Bottles Box • ₹16/btl" required>
           </div>
         </div>
 
         <div class="portal-form-grid-4">
           <div class="portal-field-group">
-            <label for="prod-cost-input">Cost ₹ *</label>
+            <label for="prod-cost-input">Box Cost ₹ *</label>
             <input type="number" id="prod-cost-input" class="portal-input tabular" min="1" required>
           </div>
           <div class="portal-field-group">
-            <label for="prod-price-input">Wholesale ₹ *</label>
+            <label for="prod-price-input">Box Wholesale Rate ₹ *</label>
             <input type="number" id="prod-price-input" class="portal-input tabular" min="1" required>
           </div>
           <div class="portal-field-group">
-            <label for="prod-mrp-input">MRP ₹ *</label>
+            <label for="prod-mrp-input">Box MRP ₹ *</label>
             <input type="number" id="prod-mrp-input" class="portal-input tabular" min="1" required>
           </div>
           <div class="portal-field-group">
-            <label for="prod-stock-input">Stock (Petis) *</label>
+            <label for="prod-stock-input">Stock (Boxes / Petis) *</label>
             <input type="number" id="prod-stock-input" class="portal-input tabular" min="0" required>
           </div>
         </div>
@@ -7186,9 +7186,9 @@
           </td>
           <td><strong>${escapeHTML(p.title)}</strong></td>
           <td><span class="badge-status confirmed">${escapeHTML(p.category)}</span></td>
-          <td class="tabular"><strong>₹${p.price}</strong></td>
+          <td class="tabular"><strong>₹${p.price}</strong> <span style="font-size:0.75rem; color:var(--text-muted);">/ Box</span></td>
           <td class="tabular" style="color:var(--text-light); text-decoration:line-through;">₹${p.mrp}</td>
-          <td class="tabular"><strong style="color:${p.stock <= 15 ? '#DC2626' : '#15803D'};">${p.stock}</strong></td>
+          <td class="tabular"><strong style="color:${p.stock <= 15 ? '#DC2626' : '#15803D'};">${p.stock} Boxes</strong></td>
           <td><small style="color:var(--text-muted);">${escapeHTML(p.spec)}</small></td>
           <td>
             <div style="display:flex; gap:6px; flex-wrap:wrap;">
