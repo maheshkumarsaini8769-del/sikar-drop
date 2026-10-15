@@ -1111,36 +1111,184 @@ app.get('/api/admin/reports/pnl/export.csv', (req, res) => {
 // ==========================================
 // 4. ORDERS MANAGEMENT (ONLINE ORDERS)
 // ==========================================
+// 4. ORDERS MANAGEMENT (ONLINE ORDERS)
+// ==========================================
 app.get('/api/orders', (req, res) => {
   try {
-    const { status, phone } = req.query;
-    let query = 'SELECT * FROM orders';
+    const {
+      status,
+      phone,
+      paymentStatus,
+      payment_status,
+      corridor,
+      search,
+      q,
+      startDate,
+      dateFrom,
+      endDate,
+      dateTo,
+      sort,
+      page,
+      limit,
+      paginated
+    } = req.query;
+
+    let whereClauses = [];
     const params = [];
 
-    if (status && status !== 'all') {
-      query += ' WHERE status = ?';
-      params.push(status);
-    } else if (phone) {
-      query += ' WHERE customer_phone = ? OR login_phone = ? OR delivery_phone = ?';
-      params.push(phone, phone, phone);
+    // Filter by fulfillment status
+    const effectiveStatus = (status || '').trim();
+    if (effectiveStatus && effectiveStatus !== 'all') {
+      if (effectiveStatus === 'in_transit' || effectiveStatus === 'shipped') {
+        whereClauses.push("(status = 'in_transit' OR status = 'shipped' OR status = 'out_for_delivery')");
+      } else if (effectiveStatus === 'completed' || effectiveStatus === 'delivered') {
+        whereClauses.push("(status = 'completed' OR status = 'delivered')");
+      } else {
+        whereClauses.push("status = ?");
+        params.push(effectiveStatus);
+      }
     }
 
-    query += ' ORDER BY created_at DESC';
-    const orders = db.prepare(query).all(...params);
+    // Filter by payment status
+    const effectivePayStatus = (paymentStatus || payment_status || '').trim();
+    if (effectivePayStatus && effectivePayStatus !== 'all') {
+      whereClauses.push("LOWER(payment_status) = LOWER(?)");
+      params.push(effectivePayStatus);
+    }
+
+    // Filter by phone
+    const effectivePhone = (phone || '').trim();
+    if (effectivePhone) {
+      whereClauses.push("(customer_phone LIKE ? OR login_phone LIKE ? OR delivery_phone LIKE ?)");
+      const phPattern = `%${effectivePhone}%`;
+      params.push(phPattern, phPattern, phPattern);
+    }
+
+    // Filter by corridor
+    const effectiveCorridor = (corridor || '').trim();
+    if (effectiveCorridor && effectiveCorridor !== 'all') {
+      whereClauses.push("LOWER(corridor) LIKE LOWER(?)");
+      params.push(`%${effectiveCorridor}%`);
+    }
+
+    // Filter by date range
+    const effectiveStart = (startDate || dateFrom || '').trim();
+    if (effectiveStart) {
+      whereClauses.push("(order_date >= ? OR created_at >= ?)");
+      params.push(effectiveStart, effectiveStart);
+    }
+    const effectiveEnd = (endDate || dateTo || '').trim();
+    if (effectiveEnd) {
+      // include the entire end date
+      const endInclusive = effectiveEnd.length === 10 ? `${effectiveEnd}T23:59:59.999Z` : effectiveEnd;
+      whereClauses.push("(order_date <= ? OR created_at <= ?)");
+      params.push(effectiveEnd.slice(0, 10), endInclusive);
+    }
+
+    // Search query (Order ID, Customer Name, Phones, Address, Items JSON)
+    const searchQuery = (search || q || '').trim();
+    if (searchQuery) {
+      whereClauses.push(`(
+        id LIKE ? OR
+        customer_name LIKE ? OR
+        customer_phone LIKE ? OR
+        login_phone LIKE ? OR
+        delivery_phone LIKE ? OR
+        delivery_address LIKE ? OR
+        corridor LIKE ? OR
+        vehicle LIKE ? OR
+        items_json LIKE ?
+      )`);
+      const sPattern = `%${searchQuery}%`;
+      params.push(sPattern, sPattern, sPattern, sPattern, sPattern, sPattern, sPattern, sPattern, sPattern);
+    }
+
+    const whereSql = whereClauses.length > 0 ? ` WHERE ${whereClauses.join(' AND ')}` : '';
+
+    // Count total filtered orders
+    const countSql = `SELECT COUNT(*) AS count FROM orders${whereSql}`;
+    const totalFiltered = db.prepare(countSql).get(...params).count;
+
+    // Sorting
+    let orderSql = ' ORDER BY created_at DESC';
+    if (sort === 'date_asc' || sort === 'oldest') orderSql = ' ORDER BY created_at ASC';
+    else if (sort === 'total_desc' || sort === 'highest') orderSql = ' ORDER BY total DESC';
+    else if (sort === 'total_asc' || sort === 'lowest') orderSql = ' ORDER BY total ASC';
+    else if (sort === 'customer_asc') orderSql = ' ORDER BY customer_name ASC';
+
+    // Pagination
+    const isPaged = paginated === 'true' || page !== undefined;
+    const pageNum = Math.max(1, parseInt(page, 10) || 1);
+    const limitNum = Math.max(1, parseInt(limit, 10) || 20);
+    const offset = (pageNum - 1) * limitNum;
+
+    let dataSql = `SELECT * FROM orders${whereSql}${orderSql}`;
+    const queryParams = [...params];
+
+    if (isPaged) {
+      dataSql += ' LIMIT ? OFFSET ?';
+      queryParams.push(limitNum, offset);
+    }
+
+    const orders = db.prepare(dataSql).all(...queryParams);
 
     const formatted = orders.map(o => {
       const loginPh = (o.login_phone || o.customer_phone || '').trim();
       const delivPh = (o.delivery_phone || o.customer_phone || '').trim();
+      let parsedItems = [];
+      try { parsedItems = JSON.parse(o.items_json || '[]'); } catch (e) { parsedItems = []; }
+      let parsedActivity = [];
+      try { parsedActivity = JSON.parse(o.activity_log_json || '[]'); } catch (e) { parsedActivity = []; }
+
       return {
         ...o,
+        customer: o.customer_name,
+        customerName: o.customer_name,
+        phone: o.customer_phone,
+        customerPhone: o.customer_phone,
         login_phone: loginPh,
         delivery_phone: delivPh,
         loginPhone: loginPh,
         deliveryPhone: delivPh,
-        items: JSON.parse(o.items_json || '[]'),
-        activityLog: JSON.parse(o.activity_log_json || '[]')
+        items: parsedItems,
+        itemsCount: o.items_count || parsedItems.reduce((acc, i) => acc + (i.qty || i.quantity || 1), 0),
+        itemsDesc: parsedItems.map(i => `${i.qty || i.quantity || 1}x ${i.title || 'Item'}`).join(', ') || 'Wholesale Order',
+        activityLog: parsedActivity,
+        time: o.created_at ? new Date(o.created_at).toLocaleTimeString('en-IN', { hour: '2-digit', minute: '2-digit', hour12: true }) : '',
+        formattedDate: o.created_at ? new Date(o.created_at).toLocaleDateString('en-IN', { day: 'numeric', month: 'short', year: 'numeric' }) : o.order_date
       };
     });
+
+    res.setHeader('X-Total-Count', String(totalFiltered));
+
+    if (isPaged) {
+      // Calculate overall depot orders metrics for quick badge counters
+      const metricsRow = db.prepare(`
+        SELECT 
+          COUNT(*) as totalOrders,
+          SUM(CASE WHEN status = 'pending' THEN 1 ELSE 0 END) as pendingCount,
+          SUM(CASE WHEN status = 'confirmed' THEN 1 ELSE 0 END) as confirmedCount,
+          SUM(CASE WHEN status IN ('in_transit', 'shipped', 'out_for_delivery') THEN 1 ELSE 0 END) as inTransitCount,
+          SUM(CASE WHEN status IN ('completed', 'delivered') THEN 1 ELSE 0 END) as completedCount,
+          SUM(CASE WHEN status = 'cancelled' THEN 1 ELSE 0 END) as cancelledCount,
+          SUM(CASE WHEN payment_status = 'Paid' THEN 1 ELSE 0 END) as paidCount,
+          SUM(CASE WHEN payment_status != 'Paid' THEN 1 ELSE 0 END) as pendingPaymentCount,
+          COALESCE(SUM(CASE WHEN status != 'cancelled' THEN total ELSE 0 END), 0) as totalRevenue
+        FROM orders
+      `).get();
+
+      return res.json({
+        success: true,
+        orders: formatted,
+        pagination: {
+          total: totalFiltered,
+          page: pageNum,
+          limit: limitNum,
+          totalPages: Math.ceil(totalFiltered / limitNum) || 1
+        },
+        metrics: metricsRow
+      });
+    }
 
     res.json(formatted);
   } catch (err) {
@@ -1151,23 +1299,139 @@ app.get('/api/orders', (req, res) => {
 app.get('/api/orders/:id', (req, res) => {
   try {
     const order = db.prepare('SELECT * FROM orders WHERE id = ?').get(req.params.id);
-    if (!order) return res.status(404).json({ error: 'Order not found' });
-    const parsedItems = JSON.parse(order.items_json || '[]');
-    const parsedActivity = JSON.parse(order.activity_log_json || '[]');
+    if (!order) return res.status(404).json({ error: 'Order not found: ' + req.params.id });
+
+    let parsedItems = [];
+    try { parsedItems = JSON.parse(order.items_json || '[]'); } catch (e) { parsedItems = []; }
+    let parsedActivity = [];
+    try { parsedActivity = JSON.parse(order.activity_log_json || '[]'); } catch (e) { parsedActivity = []; }
+
+    // Enrich items with live inventory levels from products table
+    const enrichedItems = parsedItems.map(it => {
+      const pid = it.id || it.productId;
+      const currentProd = pid ? db.prepare('SELECT id, title, stock, price, category FROM products WHERE id = ?').get(pid) : null;
+      return {
+        ...it,
+        currentStock: currentProd ? currentProd.stock : null,
+        stockStatus: currentProd ? (currentProd.stock <= 5 ? 'critical' : currentProd.stock <= 20 ? 'low' : 'healthy') : 'unknown'
+      };
+    });
+
     const loginPh = (order.login_phone || order.customer_phone || '').trim();
     const delivPh = (order.delivery_phone || order.customer_phone || '').trim();
+
+    // Check customer lifetime profile
+    const customer = db.prepare('SELECT * FROM customers WHERE phone = ? OR phone = ?').get(loginPh, delivPh);
+
+    // Build pre-filled WhatsApp Dispatch notification link
+    const cleanPhone = (delivPh || loginPh).replace(/[^0-9]/g, '').slice(-10);
+    const waPhone = cleanPhone ? (cleanPhone.startsWith('91') ? cleanPhone : '91' + cleanPhone) : '';
+    const itemsSummary = enrichedItems.map(i => `${i.qty || i.quantity || 1}x ${i.title}`).join(', ');
+    const waText = encodeURIComponent(
+      `Hello ${order.customer_name}, Sikar Drop Wholesale Depot update for Bilty #${order.id}:\n` +
+      `Status: ${order.status.toUpperCase()}\n` +
+      `Items: ${itemsSummary}\n` +
+      `Total: Rs.${order.total} (${order.payment_status})\n` +
+      `Vehicle: ${order.vehicle || 'Depot Tempo'}\n` +
+      `Track live: https://sikar-drop.vercel.app/track?id=${order.id}`
+    );
+    const waUrl = waPhone ? `https://wa.me/${waPhone}?text=${waText}` : '';
+
     const enrichedOrder = {
       ...order,
+      customer: order.customer_name,
+      customerName: order.customer_name,
+      phone: order.customer_phone,
+      customerPhone: order.customer_phone,
       login_phone: loginPh,
       delivery_phone: delivPh,
       loginPhone: loginPh,
       deliveryPhone: delivPh,
-      items: parsedItems,
-      activityLog: parsedActivity
+      items: enrichedItems,
+      activityLog: parsedActivity,
+      customerProfile: customer || null,
+      whatsappUrl: waUrl,
+      trackingUrl: `/track.html?id=${encodeURIComponent(order.id)}`
     };
+
     res.json({
       ...enrichedOrder,
       order: enrichedOrder
+    });
+  } catch (err) {
+    res.status(500).json({ error: err.message });
+  }
+});
+
+app.patch('/api/orders/:id/status', (req, res) => {
+  try {
+    const { status, paymentStatus, vehicle, note, cancellationReason, actor } = req.body || {};
+    if (!status && !paymentStatus && vehicle === undefined) {
+      return res.status(400).json({ error: 'Please specify status, paymentStatus, or vehicle to update' });
+    }
+
+    const effectiveNote = (note || cancellationReason || '').trim();
+
+    const result = updateOrderStatusTransaction({
+      orderId: req.params.id,
+      newStatus: status,
+      paymentStatus,
+      vehicle,
+      note: effectiveNote,
+      actor: actor || 'Admin'
+    });
+
+    // Check if WhatsApp notification is enabled in settings and can be sent
+    let notificationSent = false;
+    let waUrl = '';
+    try {
+      const order = db.prepare('SELECT customer_name, customer_phone, login_phone, delivery_phone, total, status, vehicle, items_json FROM orders WHERE id = ?').get(req.params.id);
+      if (order) {
+        const ph = (order.delivery_phone || order.customer_phone || '').replace(/[^0-9]/g, '').slice(-10);
+        if (ph) {
+          const waPhone = '91' + ph;
+          let itemsList = [];
+          try { itemsList = JSON.parse(order.items_json); } catch (e) {}
+          const itemSummary = itemsList.map(i => `${i.qty || i.quantity || 1}x ${i.title}`).join(', ');
+          const waMsg = `Hello ${order.customer_name}, Sikar Drop Bilty #${req.params.id} update: Status is now ${result.newStatus.toUpperCase()}. Vehicle: ${result.vehicle || 'Depot Tempo'}. Track live: https://sikar-drop.vercel.app/track?id=${req.params.id}`;
+          waUrl = `https://wa.me/${waPhone}?text=${encodeURIComponent(waMsg)}`;
+        }
+      }
+    } catch (e) {
+      // non-fatal
+    }
+
+    res.json({
+      success: true,
+      order: result,
+      whatsappUrl: waUrl,
+      ...result
+    });
+  } catch (err) {
+    res.status(400).json({ error: err.message });
+  }
+});
+
+app.post('/api/orders/:id/notify', (req, res) => {
+  try {
+    const order = db.prepare('SELECT * FROM orders WHERE id = ?').get(req.params.id);
+    if (!order) return res.status(404).json({ error: 'Order not found' });
+
+    const phone = (order.delivery_phone || order.customer_phone || '').replace(/[^0-9]/g, '').slice(-10);
+    if (!phone) return res.status(400).json({ error: 'Customer phone number not available' });
+
+    let items = [];
+    try { items = JSON.parse(order.items_json); } catch (e) {}
+    const itemsSummary = items.map(i => `${i.qty || i.quantity || 1}x ${i.title}`).join(', ');
+
+    const text = `Hello ${order.customer_name},\n\nSikar Drop Wholesale Depot Bilty Dispatch Update:\n• Bilty ID: #${order.id}\n• Status: ${order.status.toUpperCase()}\n• Items: ${itemsSummary}\n• Total Amount: Rs.${order.total} (${order.payment_status})\n• Vehicle: ${order.vehicle || 'Depot Bolero / Tempo'}\n• Track Live: https://sikar-drop.vercel.app/track?id=${order.id}\n\nStation Road Mandi Bypass, Sikar Depot.`;
+    const waUrl = `https://wa.me/91${phone}?text=${encodeURIComponent(text)}`;
+
+    res.json({
+      success: true,
+      recipient: phone,
+      whatsappUrl: waUrl,
+      message: text
     });
   } catch (err) {
     res.status(500).json({ error: err.message });
@@ -1263,25 +1527,6 @@ app.post('/api/orders', (req, res) => {
       order: result,
       ...result
     });
-  } catch (err) {
-    res.status(400).json({ error: err.message });
-  }
-});
-
-app.patch('/api/orders/:id/status', (req, res) => {
-  try {
-    const { status, vehicle, note, actor } = req.body;
-    if (!status) return res.status(400).json({ error: 'New status is required' });
-
-    const result = updateOrderStatusTransaction({
-      orderId: req.params.id,
-      newStatus: status,
-      vehicle,
-      note,
-      actor: actor || 'Admin'
-    });
-
-    res.json({ success: true, order: result, ...result });
   } catch (err) {
     res.status(400).json({ error: err.message });
   }

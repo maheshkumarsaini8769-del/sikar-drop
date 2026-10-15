@@ -1457,10 +1457,40 @@ function createOnlineOrderTransaction({ orderId: customOrderId, customerName, cu
 }
 
 // 5. ATOMIC ORDER STATUS UPDATE
-function updateOrderStatusTransaction({ orderId, newStatus, vehicle = '', note = '', actor = 'Admin' }) {
+function updateOrderStatusTransaction({ orderId, newStatus, paymentStatus, vehicle, note = '', actor = 'Admin' }) {
   const runTx = db.transaction(() => {
     const order = db.prepare('SELECT * FROM orders WHERE id = ?').get(orderId);
     if (!order) throw new Error('Order not found: ' + orderId);
+
+    const validStatuses = ['pending', 'confirmed', 'processing', 'in_transit', 'shipped', 'delivered', 'completed', 'cancelled'];
+    if (newStatus && !validStatuses.includes(newStatus)) {
+      throw new Error(`Invalid order status: ${newStatus}`);
+    }
+
+    // Terminal state protection
+    if (order.status === 'cancelled' && newStatus && newStatus !== 'cancelled') {
+      throw new Error('Order is already cancelled and cannot be modified. Cancelled status is terminal.');
+    }
+    if ((order.status === 'completed' || order.status === 'delivered') && newStatus === 'pending') {
+      throw new Error('Delivered orders cannot be moved back to pending status.');
+    }
+
+    // Cancellation requires a recorded reason
+    if (newStatus === 'cancelled' && order.status !== 'cancelled' && (!note || !note.trim())) {
+      throw new Error('A cancellation reason is required to cancel an order.');
+    }
+
+    const effectiveStatus = newStatus || order.status;
+    let effectivePayStatus = paymentStatus !== undefined && paymentStatus !== null && paymentStatus !== ''
+      ? paymentStatus
+      : order.payment_status;
+
+    // Automatic payment status inference if not explicitly specified
+    if ((effectiveStatus === 'completed' || effectiveStatus === 'delivered') && effectivePayStatus === 'Pending') {
+      effectivePayStatus = 'Paid';
+    }
+
+    const effectiveVehicle = (vehicle !== undefined && vehicle !== null) ? String(vehicle).trim() : (order.vehicle || '');
 
     const now = new Date().toISOString();
     let activityLog = [];
@@ -1471,27 +1501,48 @@ function updateOrderStatusTransaction({ orderId, newStatus, vehicle = '', note =
     }
 
     activityLog.push({
-      status: newStatus,
+      status: effectiveStatus,
+      paymentStatus: effectivePayStatus,
       timestamp: now,
       actor: actor,
-      note: note || `Status changed to ${newStatus}`
+      note: note || `Status updated to ${effectiveStatus} (Payment: ${effectivePayStatus})`
     });
 
-    // If order was cancelled and was not cancelled before, restock inventory
-    if (newStatus === 'cancelled' && order.status !== 'cancelled') {
+    // If order is transitioning to cancelled for the first time, restock inventory safely
+    if (effectiveStatus === 'cancelled' && order.status !== 'cancelled') {
       try {
-        const items = JSON.parse(order.items_json);
-        for (const item of items) {
-          const prod = db.prepare('SELECT stock FROM products WHERE id = ?').get(item.id);
-          if (prod) {
-            const beforeStock = prod.stock;
-            const afterStock = beforeStock + item.qty;
-            db.prepare('UPDATE products SET stock = ?, updated_at = ? WHERE id = ?').run(afterStock, now, item.id);
+        let items = [];
+        try {
+          items = typeof order.items_json === 'string' ? JSON.parse(order.items_json) : (order.items_json || []);
+        } catch (e) {
+          items = [];
+        }
 
-            db.prepare(`
-              INSERT INTO inventory_movements (id, product_id, movement_type, quantity, before_stock, after_stock, reference_id, reason, actor, created_at)
-              VALUES (?, ?, 'cancellation_restock', ?, ?, ?, ?, ?, ?, ?)
-            `).run('MOV-' + Math.floor(100000 + Math.random() * 900000), item.id, item.qty, beforeStock, afterStock, orderId, `Restocked due to Order Cancellation ${orderId}`, actor, now);
+        for (const item of items) {
+          const pid = item.id || item.productId;
+          const pqty = Number(item.qty || item.quantity || 1);
+          if (pid && pqty > 0) {
+            const prod = db.prepare('SELECT stock, title FROM products WHERE id = ?').get(pid);
+            if (prod) {
+              const beforeStock = prod.stock;
+              const afterStock = beforeStock + pqty;
+              db.prepare('UPDATE products SET stock = ?, updated_at = ? WHERE id = ?').run(afterStock, now, pid);
+
+              db.prepare(`
+                INSERT INTO inventory_movements (id, product_id, movement_type, quantity, before_stock, after_stock, reference_id, reason, actor, created_at)
+                VALUES (?, ?, 'cancellation_restock', ?, ?, ?, ?, ?, ?, ?)
+              `).run(
+                'MOV-' + Math.floor(100000 + Math.random() * 900000),
+                pid,
+                pqty,
+                beforeStock,
+                afterStock,
+                orderId,
+                `Restocked due to Order Cancellation ${orderId}: ${note || 'Admin cancelled'}`,
+                actor,
+                now
+              );
+            }
           }
         }
       } catch (err) {
@@ -1499,17 +1550,25 @@ function updateOrderStatusTransaction({ orderId, newStatus, vehicle = '', note =
       }
     }
 
-    const payStatus = newStatus === 'completed' ? 'Paid' : order.payment_status;
-
-    db.prepare("UPDATE orders SET status = ?, payment_status = ?, vehicle = COALESCE(NULLIF(?, ''), vehicle), activity_log_json = ?, updated_at = ? WHERE id = ?")
-      .run(newStatus, payStatus, vehicle, JSON.stringify(activityLog), now, orderId);
+    db.prepare("UPDATE orders SET status = ?, payment_status = ?, vehicle = ?, activity_log_json = ?, updated_at = ? WHERE id = ?")
+      .run(effectiveStatus, effectivePayStatus, effectiveVehicle, JSON.stringify(activityLog), now, orderId);
 
     db.prepare(`
       INSERT INTO audit_logs (id, actor, action, module, details, created_at)
       VALUES (?, ?, 'ORDER_STATUS_UPDATED', 'orders', ?, ?)
-    `).run('AUD-' + Math.floor(100000 + Math.random() * 900000), actor, `Updated order ${orderId} status from ${order.status} to ${newStatus}`, now);
+    `).run('AUD-' + Math.floor(100000 + Math.random() * 900000), actor, `Updated order ${orderId} status from ${order.status} to ${effectiveStatus} (payment: ${effectivePayStatus})`, now);
 
-    return { orderId, oldStatus: order.status, newStatus, payStatus };
+    return {
+      orderId,
+      oldStatus: order.status,
+      newStatus: effectiveStatus,
+      status: effectiveStatus,
+      oldPaymentStatus: order.payment_status,
+      paymentStatus: effectivePayStatus,
+      payment_status: effectivePayStatus,
+      vehicle: effectiveVehicle,
+      activityLog
+    };
   });
 
   return runTx();

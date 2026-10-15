@@ -294,16 +294,17 @@
   <script src="assets/site.js"></script>
   <script>
     window.addEventListener('DOMContentLoaded', async () => {
-      await initStorefrontTheme();
-      await loadCatalogFromBackend();
-      updateCartUI();
-
       const params = new URLSearchParams(window.location.search);
       const orderParam = params.get('id') || params.get('order');
       if (orderParam) {
-        document.getElementById('bilty-input').value = orderParam;
+        const input = document.getElementById('bilty-input');
+        if (input) input.value = orderParam;
         lookupLiveBilty(orderParam);
       }
+
+      initStorefrontTheme();
+      loadCatalogFromBackend();
+      updateCartUI();
     });
 
     async function lookupLiveBilty(overrideId) {
@@ -341,9 +342,9 @@
       const name = o.customer_name || o.customerName || 'Valued Customer';
       const phone = o.customer_phone || o.customerPhone || '98290 XXXXX';
       const corridor = o.delivery_corridor || o.corridor || 'Piprali Road';
-      const vehicle = o.dispatch_vehicle || 'RJ-23-GA-4821';
+      const vehicle = o.vehicle || o.dispatch_vehicle || 'Depot Dispatch Vehicle (Assigned on Departure)';
       const total = o.total || 0;
-      const summary = o.items_summary || (Array.isArray(o.items) ? o.items.map(i => `${i.quantity}x ${i.title}`).join(', ') : 'Factory-Sealed Petis');
+      const summary = o.items_summary || o.itemsDesc || (Array.isArray(o.items) ? o.items.map(i => `${i.quantity || i.qty || 1}x ${i.title}`).join(', ') : 'Factory-Sealed Petis');
 
       document.getElementById('track-order-id-display').textContent = `Bilty #${orderId}`;
       document.getElementById('track-order-corridor').textContent = `Destination: ${corridor}, Sikar`;
@@ -358,10 +359,61 @@
       badge.className = `badge-status ${status}`;
 
       const eta = document.getElementById('track-order-eta');
-      if (status === 'completed' || status === 'delivered') eta.textContent = 'Status: Successfully Unloaded at Venue';
-      else if (status === 'transit' || status === 'in_transit') eta.textContent = 'ETA: ~15-20 Mins On Corridor';
-      else if (status === 'confirmed') eta.textContent = 'Status: Confirmed & Packing At Depot';
-      else eta.textContent = 'Status: Order Queued For Dispatch';
+      if (status === 'completed' || status === 'delivered') {
+        eta.textContent = 'Status: Successfully Unloaded at Venue';
+      } else if (status === 'transit' || status === 'in_transit' || status === 'shipped') {
+        eta.textContent = 'ETA: ~15-20 Mins On Corridor';
+      } else if (status === 'confirmed') {
+        eta.textContent = 'Status: Confirmed & Packing At Depot';
+      } else if (status === 'cancelled') {
+        eta.textContent = 'Status: Order Cancelled / Restocked';
+      } else {
+        eta.textContent = 'Status: Order Queued For Dispatch';
+      }
+
+      // Update progress step indicators
+      const stepsBar = document.getElementById('track-steps-bar');
+      if (stepsBar) {
+        let stepLevel = 1;
+        if (status === 'confirmed') stepLevel = 2;
+        else if (status === 'transit' || status === 'in_transit' || status === 'shipped') stepLevel = 3;
+        else if (status === 'completed' || status === 'delivered') stepLevel = 4;
+        else if (status === 'cancelled') stepLevel = 0;
+
+        const steps = [
+          { num: 1, label: 'Received' },
+          { num: 2, label: 'Confirmed' },
+          { num: 3, label: 'In Transit' },
+          { num: 4, label: 'Completed' }
+        ];
+
+        stepsBar.innerHTML = steps.map(s => {
+          let bg = '#E2E8F0';
+          let textColor = '#64748B';
+          let labelColor = '#64748B';
+
+          if (status === 'cancelled') {
+            bg = '#FEE2E2';
+            textColor = '#DC2626';
+            labelColor = '#991B1B';
+          } else if (s.num <= stepLevel) {
+            bg = (stepLevel === 4) ? '#16A34A' : '#0284C7';
+            textColor = '#FFFFFF';
+            labelColor = '#0F172A';
+          }
+
+          return `
+            <div style="text-align: center; flex: 1;">
+              <div style="width: 34px; height: 34px; border-radius: 50%; background: ${bg}; color: ${textColor}; display: inline-flex; align-items: center; justify-content: center; font-weight: 800; font-size: 0.84rem; transition: all 0.3s;">
+                ${status === 'cancelled' ? 'X' : s.num}
+              </div>
+              <div style="font-size: 0.76rem; font-weight: 700; color: ${labelColor}; margin-top: 6px;">
+                ${s.label}
+              </div>
+            </div>
+          `;
+        }).join('');
+      }
 
       showToast(`Tracking status updated: ${status.toUpperCase()}`);
     }
