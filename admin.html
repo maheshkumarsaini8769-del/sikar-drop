@@ -3318,19 +3318,26 @@
            ======================================================= -->
       <section id="pane-coupons" class="tab-pane">
         <!-- ACTIVE FESTIVAL MODE BANNER -->
-        <div class="active-mode-banner" id="active-mode-banner-box">
-          <div class="banner-icon-leaf">
-            <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.3" width="22" height="22"><path d="M12 2.69l5.66 5.66a8 8 0 1 1-11.31 0z"></path></svg>
-          </div>
-          <div class="banner-text">
-            <div class="banner-text-heading">
-              <span>Active Mode:</span>
-              <span id="active-mode-title-display">Normal (Standard Days)</span>
-              <span class="pulse-dot"></span>
+        <div class="active-mode-banner" id="active-mode-banner-box" style="display: flex; justify-content: space-between; align-items: center; flex-wrap: wrap; gap: 14px;">
+          <div style="display: flex; align-items: center; gap: 14px;">
+            <div class="banner-icon-leaf">
+              <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.3" width="22" height="22"><path d="M12 2.69l5.66 5.66a8 8 0 1 1-11.31 0z"></path></svg>
             </div>
-            <p class="banner-text-sub" id="active-mode-sub-display">
-              Standard daily water catalog and delivery banners are currently active on public website.
-            </p>
+            <div class="banner-text">
+              <div class="banner-text-heading">
+                <span>Active Mode:</span>
+                <span id="active-mode-title-display">Normal (Standard Days)</span>
+                <span class="pulse-dot"></span>
+              </div>
+              <p class="banner-text-sub" id="active-mode-sub-display" style="margin: 0;">
+                Standard daily water catalog and delivery banners are currently active on public website.
+              </p>
+            </div>
+          </div>
+          <div>
+            <button type="button" class="btn-portal-outline" id="btn-revert-normal-mode" onclick="revertToNormalMode()" style="font-size: 0.8rem; padding: 7px 14px; background: #FFFFFF; font-weight: 700;">
+              Revert to Normal Mode
+            </button>
           </div>
         </div>
 
@@ -4040,6 +4047,75 @@
             <button type="submit" id="btn-save-credentials" class="btn-portal-primary" style="margin-top: 6px;">
               <span>Update Admin Credentials</span>
             </button>
+          </form>
+        </div>
+
+        <!-- WHATSAPP OTP GATEWAY CONFIGURATION CARD -->
+        <div class="portal-card" style="margin-top: 24px;">
+          <div class="portal-card-header" style="flex-wrap: wrap; gap: 12px;">
+            <div>
+              <h2>WhatsApp Business OTP Gateway Configuration</h2>
+              <p>Configure your live WhatsApp API provider credentials. Until an API key is provided, the system automatically uses <strong>9999</strong> as the default OTP so verification is 100% active and testable.</p>
+            </div>
+            <div id="whatsapp-gateway-status-pill">
+              <span class="portal-badge" style="background: #E0F2FE; color: #0369A1; border: 1px solid #BAE6FD;">Default Test Mode (OTP: 9999)</span>
+            </div>
+          </div>
+
+          <form onsubmit="handleWhatsAppGatewayUpdate(event)" style="max-width: 680px;">
+            <div class="portal-form-grid-2">
+              <div class="portal-field-group">
+                <label for="cfg-whatsapp-provider">WhatsApp Gateway Provider</label>
+                <select id="cfg-whatsapp-provider" class="portal-select">
+                  <option value="meta_cloud">Meta WhatsApp Cloud API (Official)</option>
+                  <option value="fast2sms">Fast2SMS WhatsApp Gateway</option>
+                  <option value="custom_webhook">Custom Webhook / HTTP Gateway</option>
+                </select>
+                <small style="color: var(--text-muted); font-size: 0.76rem; display: block; margin-top: 4px;">Choose your WhatsApp messaging provider.</small>
+              </div>
+
+              <div class="portal-field-group">
+                <label for="cfg-whatsapp-default-otp">Default Fallback OTP Code</label>
+                <input type="text" id="cfg-whatsapp-default-otp" class="portal-input tabular" value="9999" placeholder="9999" maxlength="6" style="font-weight: 800; letter-spacing: 0.1em;">
+                <small style="color: var(--text-muted); font-size: 0.76rem; display: block; margin-top: 4px;">Active fallback OTP when API key is blank or gateway is in test mode.</small>
+              </div>
+            </div>
+
+            <div class="portal-field-group" style="margin-top: 12px;">
+              <label for="cfg-whatsapp-api-key">WhatsApp API Key / Access Token</label>
+              <div style="position: relative; display: flex; align-items: center;">
+                <input type="password" id="cfg-whatsapp-api-key" class="portal-input" placeholder="Paste your WhatsApp API Key / Token here (Leave empty for default 9999)" style="padding-right: 42px;">
+                <button type="button" onclick="toggleWhatsAppKeyVisibility()" title="Show/Hide Key" style="position: absolute; right: 10px; background: transparent; border: none; cursor: pointer; color: var(--text-muted); display: flex; align-items: center; justify-content: center; padding: 4px;">
+                  <svg id="whatsapp-key-toggle-icon" width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M1 12s4-8 11-8 11 8 11 8-4 8-11 8-11-8-11-8z"></path><circle cx="12" cy="12" r="3"></circle></svg>
+                </button>
+              </div>
+              <small style="color: #0369A1; font-size: 0.78rem; display: block; margin-top: 4px; font-weight: 600;">Simply paste your API key here whenever ready. Until provided, 9999 remains the active default OTP.</small>
+            </div>
+
+            <div class="portal-form-grid-2" style="margin-top: 12px;">
+              <div class="portal-field-group">
+                <label for="cfg-whatsapp-phone-id">Phone Number ID / Sender ID</label>
+                <input type="text" id="cfg-whatsapp-phone-id" class="portal-input" placeholder="e.g. 109823471928374 or Sender Number">
+                <small style="color: var(--text-muted); font-size: 0.76rem; display: block; margin-top: 4px;">Meta Phone Number ID or custom sender identifier.</small>
+              </div>
+
+              <div class="portal-field-group">
+                <label for="cfg-whatsapp-template">WhatsApp Template Name</label>
+                <input type="text" id="cfg-whatsapp-template" class="portal-input" value="otp_verification" placeholder="otp_verification">
+                <small style="color: var(--text-muted); font-size: 0.76rem; display: block; margin-top: 4px;">Approved template name with OTP parameter (default: otp_verification).</small>
+              </div>
+            </div>
+
+            <div id="cfg-whatsapp-msg" style="display: none; margin-top: 12px; font-size: 0.82rem; font-weight: 600; padding: 8px 12px; border-radius: var(--radius-sm);"></div>
+
+            <div style="display: flex; align-items: center; gap: 12px; margin-top: 18px;">
+              <button type="submit" id="btn-save-whatsapp-cfg" class="btn-portal-success">
+                <span>Save WhatsApp Gateway Settings</span>
+              </button>
+              <button type="button" class="btn-portal-outline" onclick="testWhatsAppOtpFlow()">
+                <span>Test Current OTP Mode</span>
+              </button>
+            </div>
           </form>
         </div>
       </section>
@@ -5561,7 +5637,7 @@
       else if (tabId === 'social') renderSocialStats();
       else if (tabId === 'subadmin') renderSubAdminTable();
       else if (tabId === 'seo') renderSeoForm();
-      else if (tabId === 'settings') { renderDeliveryZonesTable(); renderAdminCredentials(); }
+      else if (tabId === 'settings') { renderDeliveryZonesTable(); renderAdminCredentials(); loadWhatsAppConfig(); }
     }
 
     function toggleMobileSidebar(force) {
@@ -8644,7 +8720,7 @@
       }).join('');
     }
 
-    function selectFestivalPreset(presetId) {
+    async function selectFestivalPreset(presetId, autoSave = true) {
       const p = FESTIVAL_PRESETS[presetId] || FESTIVAL_PRESETS.normal;
       currentSelectedPresetId = presetId;
       currentThemeAccentColor = p.accentColor;
@@ -8685,6 +8761,31 @@
       if (tFloat) tFloat.checked = !!p.floatingWidget;
 
       updateLivePreview();
+
+      const modeTitle = document.getElementById('active-mode-title-display');
+      const modeSub = document.getElementById('active-mode-sub-display');
+      if (modeTitle) modeTitle.textContent = p.modeTitle || p.name;
+      if (modeSub) modeSub.textContent = `${p.desc} are currently active on public website.`;
+
+      if (autoSave) {
+        try {
+          localStorage.setItem('sikar_admin_theme', presetId);
+          localStorage.setItem('sikar_theme', presetId);
+          window.dispatchEvent(new Event('storage'));
+
+          const res = await sikarApi.post('/api/settings/theme', { theme: presetId });
+          if (res && res.success) {
+            showToast(`Active Festival Mode '${(p.modeTitle || p.name).toUpperCase()}' activated live!`);
+          }
+        } catch (err) {
+          console.warn('Background theme sync warning:', err);
+        }
+      }
+    }
+
+    async function revertToNormalMode() {
+      await selectFestivalPreset('normal', true);
+      showToast('Festival mode deactivated. Storefront reverted to Normal mode.');
     }
 
     function updateLivePreview() {
@@ -9542,6 +9643,132 @@
           saveBtn.disabled = false;
           saveBtn.innerHTML = '<span>Update Admin Credentials</span>';
         }
+      }
+    }
+
+    // WHATSAPP BUSINESS OTP GATEWAY MANAGEMENT
+    async function loadWhatsAppConfig() {
+      const providerSel = document.getElementById('cfg-whatsapp-provider');
+      const defaultOtpInput = document.getElementById('cfg-whatsapp-default-otp');
+      const apiKeyInput = document.getElementById('cfg-whatsapp-api-key');
+      const phoneIdInput = document.getElementById('cfg-whatsapp-phone-id');
+      const templateInput = document.getElementById('cfg-whatsapp-template');
+      const statusPill = document.getElementById('whatsapp-gateway-status-pill');
+
+      try {
+        const res = await sikarApi.get('/api/settings/whatsapp');
+        if (res && res.success) {
+          const cfg = res.data || {};
+          if (providerSel && cfg.provider) providerSel.value = cfg.provider;
+          if (defaultOtpInput && cfg.defaultOtp) defaultOtpInput.value = cfg.defaultOtp;
+          if (apiKeyInput && cfg.apiKey) apiKeyInput.value = cfg.apiKey;
+          if (phoneIdInput && cfg.phoneId) phoneIdInput.value = cfg.phoneId;
+          if (templateInput && cfg.templateName) templateInput.value = cfg.templateName;
+
+          if (statusPill) {
+            if (cfg.apiKey && cfg.apiKey.trim()) {
+              statusPill.innerHTML = '<span class="portal-badge badge-success" style="background:#DCFCE7; color:#15803D; border:1px solid #BBF7D0;">Live WhatsApp Cloud Active</span>';
+            } else {
+              statusPill.innerHTML = `<span class="portal-badge" style="background:#E0F2FE; color:#0369A1; border:1px solid #BAE6FD;">Default Test Mode (OTP: ${escapeHTML(cfg.defaultOtp || '9999')})</span>`;
+            }
+          }
+        }
+      } catch (err) {
+        console.warn('Could not load WhatsApp config:', err);
+      }
+    }
+
+    async function handleWhatsAppGatewayUpdate(e) {
+      if (e) e.preventDefault();
+      const providerSel = document.getElementById('cfg-whatsapp-provider');
+      const defaultOtpInput = document.getElementById('cfg-whatsapp-default-otp');
+      const apiKeyInput = document.getElementById('cfg-whatsapp-api-key');
+      const phoneIdInput = document.getElementById('cfg-whatsapp-phone-id');
+      const templateInput = document.getElementById('cfg-whatsapp-template');
+      const msgBox = document.getElementById('cfg-whatsapp-msg');
+      const saveBtn = document.getElementById('btn-save-whatsapp-cfg');
+      const statusPill = document.getElementById('whatsapp-gateway-status-pill');
+
+      const provider = providerSel ? providerSel.value : 'meta_cloud';
+      const defaultOtp = defaultOtpInput ? defaultOtpInput.value.trim() : '9999';
+      const apiKey = apiKeyInput ? apiKeyInput.value.trim() : '';
+      const phoneId = phoneIdInput ? phoneIdInput.value.trim() : '';
+      const templateName = templateInput ? templateInput.value.trim() : 'otp_verification';
+
+      if (saveBtn) {
+        saveBtn.disabled = true;
+        saveBtn.innerHTML = '<span>Saving Settings...</span>';
+      }
+
+      try {
+        const res = await sikarApi.post('/api/settings/whatsapp', {
+          provider,
+          defaultOtp: defaultOtp || '9999',
+          apiKey,
+          phoneId,
+          templateName: templateName || 'otp_verification'
+        });
+
+        if (!res || !res.success) {
+          throw new Error(res?.error || 'Failed to save WhatsApp configuration');
+        }
+
+        if (msgBox) {
+          msgBox.style.display = 'block';
+          msgBox.style.color = '#15803D';
+          msgBox.style.background = '#F0FDF4';
+          msgBox.textContent = apiKey ? 'WhatsApp Gateway settings saved. Live OTP dispatch is now configured!' : 'Settings saved. Operating in Default Test Mode with OTP: ' + (defaultOtp || '9999');
+        }
+
+        if (statusPill) {
+          if (apiKey) {
+            statusPill.innerHTML = '<span class="portal-badge badge-success" style="background:#DCFCE7; color:#15803D; border:1px solid #BBF7D0;">Live WhatsApp Cloud Active</span>';
+          } else {
+            statusPill.innerHTML = `<span class="portal-badge" style="background:#E0F2FE; color:#0369A1; border:1px solid #BAE6FD;">Default Test Mode (OTP: ${escapeHTML(defaultOtp || '9999')})</span>`;
+          }
+        }
+
+        showToast('WhatsApp Gateway settings saved successfully!');
+      } catch (err) {
+        if (msgBox) {
+          msgBox.style.display = 'block';
+          msgBox.style.color = '#B91C1C';
+          msgBox.style.background = '#FEF2F2';
+          msgBox.textContent = err.message || 'Failed to save settings.';
+        }
+        showToast('Error saving WhatsApp settings: ' + err.message);
+      } finally {
+        if (saveBtn) {
+          saveBtn.disabled = false;
+          saveBtn.innerHTML = '<span>Save WhatsApp Gateway Settings</span>';
+        }
+      }
+    }
+
+    function toggleWhatsAppKeyVisibility() {
+      const input = document.getElementById('cfg-whatsapp-api-key');
+      const icon = document.getElementById('whatsapp-key-toggle-icon');
+      if (!input) return;
+      if (input.type === 'password') {
+        input.type = 'text';
+        if (icon) icon.innerHTML = '<path d="M17.94 17.94A10.07 10.07 0 0 1 12 20c-7 0-11-8-11-8a18.45 18.45 0 0 1 5.06-5.94M9.9 4.24A9.12 9.12 0 0 1 12 4c7 0 11 8 11 8a18.5 18.5 0 0 1-2.16 3.19m-6.72-1.07a3 3 0 1 1-4.24-4.24"></path><line x1="1" y1="1" x2="23" y2="23"></line>';
+      } else {
+        input.type = 'password';
+        if (icon) icon.innerHTML = '<path d="M1 12s4-8 11-8 11 8 11 8-4 8-11 8-11-8-11-8z"></path><circle cx="12" cy="12" r="3"></circle>';
+      }
+    }
+
+    async function testWhatsAppOtpFlow() {
+      try {
+        const res = await sikarApi.post('/api/otp/send', { phone: '9876543210' });
+        if (res && res.success) {
+          const otpUsed = res.otp || '9999';
+          showToast(`Test OTP generated: ${otpUsed} (Default: ${res.defaultOtp || '9999'})`);
+        } else {
+          showToast('OTP test failed: ' + (res?.error || 'Unknown error'));
+        }
+      } catch (err) {
+        showToast('OTP test error: ' + err.message);
       }
     }
 

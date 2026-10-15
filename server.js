@@ -2031,7 +2031,99 @@ app.get('/api/users', (req, res) => {
   }
 });
 
-const handleOtpSend = (req, res) => {
+// WhatsApp Gateway Provider Helper
+async function sendWhatsAppOtpViaProvider({ provider, apiKey, phoneId, templateName, toPhone, otp }) {
+  if (!apiKey || !apiKey.trim()) {
+    return { success: true, mode: 'test_default', message: 'No API key provided. Using default fallback OTP 9999.' };
+  }
+
+  const cleanPhone = String(toPhone).replace(/[^0-9]/g, '');
+  const recipient = cleanPhone.length === 10 ? `91${cleanPhone}` : cleanPhone;
+
+  // 1. Meta WhatsApp Cloud API
+  if (provider === 'meta_cloud' || !provider) {
+    const targetPhoneId = phoneId || 'YOUR_PHONE_NUMBER_ID';
+    const url = `https://graph.facebook.com/v19.0/${targetPhoneId}/messages`;
+    const res = await fetch(url, {
+      method: 'POST',
+      headers: {
+        'Authorization': `Bearer ${apiKey.trim()}`,
+        'Content-Type': 'application/json'
+      },
+      body: JSON.stringify({
+        messaging_product: 'whatsapp',
+        recipient_type: 'individual',
+        to: recipient,
+        type: 'template',
+        template: {
+          name: templateName || 'otp_verification',
+          language: { code: 'en' },
+          components: [
+            {
+              type: 'body',
+              parameters: [{ type: 'text', text: String(otp) }]
+            },
+            {
+              type: 'button',
+              sub_type: 'url',
+              index: '0',
+              parameters: [{ type: 'text', text: String(otp) }]
+            }
+          ]
+        }
+      })
+    });
+    const data = await res.json();
+    if (!res.ok) {
+      throw new Error((data && data.error && data.error.message) || `WhatsApp API error HTTP ${res.status}`);
+    }
+    return { success: true, mode: 'meta_cloud', data };
+  }
+
+  // 2. Fast2SMS WhatsApp Gateway
+  if (provider === 'fast2sms') {
+    const url = 'https://www.fast2sms.com/dev/bulkV2';
+    const res = await fetch(url, {
+      method: 'POST',
+      headers: {
+        'authorization': apiKey.trim(),
+        'Content-Type': 'application/json'
+      },
+      body: JSON.stringify({
+        route: 'dlt',
+        sender_id: phoneId || 'SKRDRO',
+        message: `Your Sikar Drop WhatsApp verification OTP is ${otp}. Valid for 15 mins.`,
+        flash: 0,
+        numbers: cleanPhone.slice(-10)
+      })
+    });
+    const data = await res.json();
+    return { success: true, mode: 'fast2sms', data };
+  }
+
+  // 3. Custom Webhook / HTTP Gateway
+  if (provider === 'custom_webhook' || (phoneId && phoneId.startsWith('http'))) {
+    const targetUrl = phoneId.startsWith('http') ? phoneId : 'https://api.whatsapp.gateway/send';
+    const res = await fetch(targetUrl, {
+      method: 'POST',
+      headers: {
+        'Authorization': `Bearer ${apiKey.trim()}`,
+        'Content-Type': 'application/json'
+      },
+      body: JSON.stringify({
+        phone: recipient,
+        otp: String(otp),
+        message: `Your Sikar Drop WhatsApp verification OTP is ${otp}.`
+      })
+    });
+    const data = await res.json();
+    return { success: true, mode: 'custom_webhook', data };
+  }
+
+  return { success: true, mode: 'dispatched' };
+}
+
+const handleOtpSend = async (req, res) => {
   try {
     const { phone, channel, name } = req.body;
     if (!phone) return res.status(400).json({ error: 'Phone number is required' });
@@ -2041,17 +2133,55 @@ const handleOtpSend = (req, res) => {
       return res.status(400).json({ error: 'Please enter a valid 10-digit mobile number' });
     }
 
+    // Retrieve settings
+    const rows = db.prepare("SELECT key, value FROM website_settings WHERE key IN ('default_otp', 'whatsapp_api_key', 'whatsapp_phone_id', 'whatsapp_provider', 'whatsapp_template')").all();
+    const cfg = {};
+    rows.forEach(r => { cfg[r.key] = r.value; });
+
+    const apiKey = (cfg.whatsapp_api_key || '').trim();
+    const phoneId = (cfg.whatsapp_phone_id || '').trim();
+    const provider = (cfg.whatsapp_provider || 'meta_cloud').trim();
+    const templateName = (cfg.whatsapp_template || 'otp_verification').trim();
+    const sysDefaultOtp = (cfg.default_otp || '9999').trim();
+
+    let generatedOtp = '9999';
+    let isLiveDispatched = false;
+    let dispatchMsg = '';
+
+    if (apiKey) {
+      // API Key provided: Generate dynamic 4-digit code and dispatch via WhatsApp Gateway
+      generatedOtp = String(Math.floor(1000 + Math.random() * 9000));
+      try {
+        await sendWhatsAppOtpViaProvider({
+          provider,
+          apiKey,
+          phoneId,
+          templateName,
+          toPhone: cleanPhone,
+          otp: generatedOtp
+        });
+        isLiveDispatched = true;
+        dispatchMsg = `WhatsApp OTP dispatched to +91 ${cleanPhone.slice(-10)}`;
+      } catch (dispErr) {
+        console.warn('[WHATSAPP-OTP] Gateway error, falling back to default OTP:', dispErr.message);
+        generatedOtp = sysDefaultOtp || '9999';
+        dispatchMsg = `Gateway notice (${dispErr.message}). Fallback OTP ${generatedOtp} active.`;
+      }
+    } else {
+      // API Key NOT provided yet: Keep 9999 as default
+      generatedOtp = sysDefaultOtp || '9999';
+      dispatchMsg = `Default WhatsApp OTP is ${generatedOtp}. Enter ${generatedOtp} to verify.`;
+    }
+
     const now = new Date().toISOString();
     const expiresAt = new Date(Date.now() + 15 * 60000).toISOString(); // 15 min expiry
-    const sysOtp = getSystemOtp();
-    const generatedOtp = sysOtp || '9999';
 
     db.prepare(`
       INSERT OR REPLACE INTO otp_codes (phone, otp_code, expires_at, attempts, verified, last_sent)
       VALUES (?, ?, ?, 0, 0, ?)
     `).run(cleanPhone, generatedOtp, expiresAt, now);
 
-    console.log(`[AUTH-OTP] Generated OTP ${generatedOtp} for ${cleanPhone} via ${channel || 'whatsapp'}`);
+    console.log(`[AUTH-OTP] Mode: ${apiKey ? 'LIVE_WHATSAPP' : 'DEFAULT_SANDBOX_9999'} | Phone: ${cleanPhone} | OTP: ${generatedOtp}`);
 
     res.json({
       success: true,
@@ -2059,8 +2189,9 @@ const handleOtpSend = (req, res) => {
       otp: generatedOtp,
       testOtp: generatedOtp,
       defaultOtp: generatedOtp,
-      channel: channel || 'whatsapp',
-      message: `WhatsApp OTP sent successfully: ${generatedOtp}`
+      channel: 'whatsapp',
+      live: isLiveDispatched,
+      message: dispatchMsg
     });
   } catch (err) {
     res.status(500).json({ error: err.message });
@@ -2146,6 +2277,60 @@ app.post('/api/otp/verify', handleOtpVerify);
 app.post('/api/auth/otp/verify', handleOtpVerify);
 
 // ==========================================
+// 17.5 WHATSAPP GATEWAY CONFIGURATION ROUTES
+// ==========================================
+app.get('/api/settings/whatsapp', (req, res) => {
+  try {
+    const rows = db.prepare("SELECT key, value FROM website_settings WHERE key IN ('default_otp', 'whatsapp_api_key', 'whatsapp_phone_id', 'whatsapp_provider', 'whatsapp_template')").all();
+    const cfg = {};
+    rows.forEach(r => { cfg[r.key] = r.value; });
+    const rawKey = (cfg.whatsapp_api_key || '').trim();
+    const maskedKey = rawKey ? (rawKey.length > 8 ? rawKey.slice(0, 4) + '••••••••' + rawKey.slice(-4) : '••••••••') : '';
+
+    res.json({
+      configured: !!rawKey,
+      has_api_key: !!rawKey,
+      whatsapp_api_key: maskedKey,
+      whatsapp_phone_id: cfg.whatsapp_phone_id || '',
+      whatsapp_provider: cfg.whatsapp_provider || 'meta_cloud',
+      whatsapp_template: cfg.whatsapp_template || 'otp_verification',
+      default_otp: cfg.default_otp || '9999'
+    });
+  } catch (err) {
+    res.status(500).json({ error: err.message });
+  }
+});
+
+app.post('/api/settings/whatsapp', (req, res) => {
+  try {
+    const { apiKey, phoneId, provider, templateName, defaultOtp } = req.body;
+    const now = new Date().toISOString();
+
+    const insertOrUpdate = db.prepare(`
+      INSERT INTO website_settings (key, value, updated_at)
+      VALUES (?, ?, ?)
+      ON CONFLICT(key) DO UPDATE SET value = excluded.value, updated_at = excluded.updated_at
+    `);
+
+    db.transaction(() => {
+      if (apiKey !== undefined) {
+        if (!apiKey.includes('••••')) {
+          insertOrUpdate.run('whatsapp_api_key', apiKey.trim(), now);
+        }
+      }
+      if (phoneId !== undefined) insertOrUpdate.run('whatsapp_phone_id', phoneId.trim(), now);
+      if (provider !== undefined) insertOrUpdate.run('whatsapp_provider', provider.trim(), now);
+      if (templateName !== undefined) insertOrUpdate.run('whatsapp_template', templateName.trim(), now);
+      if (defaultOtp !== undefined) insertOrUpdate.run('default_otp', defaultOtp.trim() || '9999', now);
+    })();
+
+    res.json({ success: true, message: 'WhatsApp OTP gateway settings saved successfully' });
+  } catch (err) {
+    res.status(400).json({ error: err.message });
+  }
+});
+
+// ==========================================
 // 18. BACKUP & SYSTEM RECOVERY
 // ==========================================
 app.get('/api/backup/export', (req, res) => {
@@ -2173,6 +2358,114 @@ app.get('/api/backup/export', (req, res) => {
 // ==========================================
 // 18.5 WEBSITE SETTINGS & FESTIVAL THEMES
 // ==========================================
+const FESTIVAL_THEME_DEFAULTS = {
+  normal: {
+    campaign_title: 'Normal (Standard Days)',
+    top_ribbon_badge: 'SIKAR DEPOT',
+    banner_message: 'Factory-sealed packaged mineral water petis & chilled crates delivered in 40 mins across Sikar.',
+    promo_coupon_code: 'SIKAR2026',
+    discount_percentage: '0',
+    welcome_greeting_title: 'Welcome to Sikar Drop Depot',
+    welcome_greeting_subtitle: "Rajasthan's premier wholesale beverage depot. Direct factory purity.",
+    theme_accent_color: '#0284C7',
+    ambient_effects_enabled: '0',
+    welcome_modal_enabled: '0',
+    sparkler_trail_enabled: '0',
+    countdown_timer_enabled: '0',
+    floating_widget_enabled: '0'
+  },
+  diwali: {
+    campaign_title: 'Diwali Celebration (Deepawali Dhamaka)',
+    top_ribbon_badge: 'DEEPAWALI SPECIAL',
+    banner_message: 'Shubh Deepawali! Flat 15% off on all 250ml mini petis & banquet beverage crates across Sikar!',
+    promo_coupon_code: 'DIWALI2026',
+    discount_percentage: '15',
+    welcome_greeting_title: 'Shubh Deepawali from Sikar Drop',
+    welcome_greeting_subtitle: 'Purity of factory-sealed packaged water for your festive celebrations.',
+    theme_accent_color: '#D97706',
+    ambient_effects_enabled: '1',
+    welcome_modal_enabled: '1',
+    sparkler_trail_enabled: '1',
+    countdown_timer_enabled: '1',
+    floating_widget_enabled: '1'
+  },
+  holi: {
+    campaign_title: 'Holi Celebration (Festive Splashes)',
+    top_ribbon_badge: 'HOLI DHAMAKA',
+    banner_message: 'Holi Ke Rang, Purity Ke Sang! Chilled cold drink crates & water petis with 12% discount.',
+    promo_coupon_code: 'HOLI2026',
+    discount_percentage: '12',
+    welcome_greeting_title: 'Holi Hai! Pure Hydration from Sikar Drop',
+    welcome_greeting_subtitle: 'Keep your family & guests refreshed with 100% factory-sealed bottled beverages.',
+    theme_accent_color: '#E11D48',
+    ambient_effects_enabled: '1',
+    welcome_modal_enabled: '1',
+    sparkler_trail_enabled: '1',
+    countdown_timer_enabled: '1',
+    floating_widget_enabled: '1'
+  },
+  navratri: {
+    campaign_title: 'Navratri & Dussehra Mahotsav',
+    top_ribbon_badge: 'NAVRATRI SPECIAL',
+    banner_message: 'Navratri Mahotsav: 100% untouched pure packaged water for sacred celebrations.',
+    promo_coupon_code: 'SHUBH2026',
+    discount_percentage: '10',
+    welcome_greeting_title: 'Jai Mata Di from Sikar Drop',
+    welcome_greeting_subtitle: 'Certified pure bottled drinking water delivered to your pooja samiti & home.',
+    theme_accent_color: '#DC2626',
+    ambient_effects_enabled: '1',
+    welcome_modal_enabled: '1',
+    sparkler_trail_enabled: '0',
+    countdown_timer_enabled: '1',
+    floating_widget_enabled: '1'
+  },
+  newyear: {
+    campaign_title: 'New Year Celebration (2026 Bash)',
+    top_ribbon_badge: 'NEW YEAR BASH',
+    banner_message: 'Ring in the New Year with chilled beverage crates & soda can trays delivered to your party lawn.',
+    promo_coupon_code: 'NEWYEAR26',
+    discount_percentage: '10',
+    welcome_greeting_title: 'Happy New Year from Sikar Drop',
+    welcome_greeting_subtitle: 'Superfast 40-minute chilled beverage delivery for your celebrations.',
+    theme_accent_color: '#06B6D4',
+    ambient_effects_enabled: '1',
+    welcome_modal_enabled: '1',
+    sparkler_trail_enabled: '1',
+    countdown_timer_enabled: '1',
+    floating_widget_enabled: '1'
+  },
+  national: {
+    campaign_title: 'Republic & Independence Celebration',
+    top_ribbon_badge: 'AZADI SPECIAL',
+    banner_message: 'Celebrating National Pride: Pure, hygienic hydration for schools, institutions & gatherings.',
+    promo_coupon_code: 'VANDE2026',
+    discount_percentage: '8',
+    welcome_greeting_title: 'Jai Hind from Sikar Drop',
+    welcome_greeting_subtitle: 'Trusted factory-sealed packaged water across Sikar mandi.',
+    theme_accent_color: '#EA580C',
+    ambient_effects_enabled: '0',
+    welcome_modal_enabled: '1',
+    sparkler_trail_enabled: '0',
+    countdown_timer_enabled: '0',
+    floating_widget_enabled: '1'
+  },
+  custom: {
+    campaign_title: 'Custom Festival & Shaadi Season',
+    top_ribbon_badge: 'FESTIVAL SPECIAL',
+    banner_message: 'Special festive pricing on wholesale cold drinks & packaged mineral water cases.',
+    promo_coupon_code: 'SPECIAL26',
+    discount_percentage: '10',
+    welcome_greeting_title: 'Festive Season at Sikar Drop',
+    welcome_greeting_subtitle: 'Wholesale savings on bulk beverage crates for your event.',
+    theme_accent_color: '#7C3AED',
+    ambient_effects_enabled: '1',
+    welcome_modal_enabled: '1',
+    sparkler_trail_enabled: '1',
+    countdown_timer_enabled: '1',
+    floating_widget_enabled: '1'
+  }
+};
+
 app.get('/api/settings', (req, res) => {
   try {
     const rows = db.prepare('SELECT key, value FROM website_settings').all();
@@ -2191,37 +2484,29 @@ app.post('/api/settings/theme', (req, res) => {
     if (!theme) return res.status(400).json({ error: 'Theme name is required' });
     const now = new Date().toISOString();
     const tName = theme.toLowerCase();
-    const presetColors = {
-      normal: '#0284C7',
-      default: '#0284C7',
-      diwali: '#D97706',
-      holi: '#E11D48',
-      navratri: '#DC2626',
-      newyear: '#06B6D4',
-      national: '#EA580C',
-      custom: '#7C3AED'
-    };
 
-    db.prepare(`
+    const insertOrUpdate = db.prepare(`
       INSERT INTO website_settings (key, value, updated_at)
-      VALUES ('active_theme', ?, ?)
+      VALUES (?, ?, ?)
       ON CONFLICT(key) DO UPDATE SET value = excluded.value, updated_at = excluded.updated_at
-    `).run(tName, now);
+    `);
 
-    if (presetColors[tName]) {
-      db.prepare(`
-        INSERT INTO website_settings (key, value, updated_at)
-        VALUES ('theme_accent_color', ?, ?)
-        ON CONFLICT(key) DO UPDATE SET value = excluded.value, updated_at = excluded.updated_at
-      `).run(presetColors[tName], now);
-    }
+    db.transaction(() => {
+      insertOrUpdate.run('active_theme', tName, now);
+
+      // Auto-populate preset defaults so theme is 100% active immediately on website
+      const defaults = FESTIVAL_THEME_DEFAULTS[tName] || FESTIVAL_THEME_DEFAULTS.normal;
+      Object.entries(defaults).forEach(([k, v]) => {
+        insertOrUpdate.run(k, String(v), now);
+      });
+    })();
 
     db.prepare(`
       INSERT INTO audit_logs (id, actor, action, module, details, created_at)
       VALUES (?, 'Admin', 'THEME_UPDATED', 'settings', ?, ?)
-    `).run('AUD-' + Math.floor(100000 + Math.random() * 900000), `Changed active website festival theme to '${theme}'`, now);
+    `).run('AUD-' + Math.floor(100000 + Math.random() * 900000), `Changed active website festival theme to '${tName}'`, now);
 
-    res.json({ success: true, theme: tName, message: `Active festival theme updated to ${theme}` });
+    res.json({ success: true, theme: tName, message: `Active festival theme updated to ${tName}` });
   } catch (err) {
     res.status(400).json({ error: err.message });
   }

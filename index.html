@@ -12305,6 +12305,8 @@
         if (setRes.ok) {
           const settings = await setRes.json();
           if (settings) {
+            localStorage.setItem('sikar_settings', JSON.stringify(settings));
+            localStorage.setItem('sikar_theme', settings.active_theme || 'normal');
             applyActiveFestivalTheme(settings);
           }
         }
@@ -12643,35 +12645,116 @@
       }
     }
 
+    const FESTIVE_STORE_PRESETS = {
+      diwali: {
+        badge: 'DIWALI SPECIAL OFFER',
+        banner: 'Shubh Deepawali! Save 15% on wholesale water & beverage crates with code DIWALI2026.',
+        coupon: 'DIWALI2026',
+        discount: '15',
+        greetingTitle: 'Shubh Deepawali from Sikar Drop',
+        greetingSub: 'Celebrate the festival of lights with pristine mineral water cases at depot prices.',
+        accentColor: '#D97706',
+        ambient: true,
+        welcomeModal: true,
+        sparklerTrail: true,
+        countdown: true,
+        floatingWidget: true
+      },
+      holi: {
+        badge: 'HOLI DHAMAKA',
+        banner: 'Holi Ke Rang, Sikar Drop Ke Sang! Instant chilled PET crate deliveries across Sikar.',
+        coupon: 'HOLI2026',
+        discount: '12',
+        greetingTitle: 'Rangotsav Greetings from Sikar Drop',
+        greetingSub: 'Keep your guests hydrated with premium packaged drinking water.',
+        accentColor: '#E11D48',
+        ambient: true,
+        welcomeModal: true,
+        sparklerTrail: false,
+        countdown: true,
+        floatingWidget: true
+      },
+      navratri: {
+        badge: 'NAVRATRI SPECIAL',
+        banner: 'Purity in every drop. Certified ISI packaged drinking water for auspicious occasions.',
+        coupon: 'DURGA10',
+        discount: '10',
+        greetingTitle: 'Jai Mata Di - Auspicious Navratri Deals',
+        greetingSub: 'Fast delivery to marriage gardens, community pandals & homes.',
+        accentColor: '#DC2626',
+        ambient: true,
+        welcomeModal: true,
+        sparklerTrail: false,
+        countdown: false,
+        floatingWidget: true
+      },
+      newyear: {
+        badge: 'NEW YEAR 2027',
+        banner: 'Stock up your hotel, cafe, or party with chilled sodas & mineral water petis.',
+        coupon: 'NEWYEAR20',
+        discount: '20',
+        greetingTitle: 'Happy New Year Celebration Deals',
+        greetingSub: 'Wholesale beverage & water deliveries 24/7 across Sikar.',
+        accentColor: '#06B6D4',
+        ambient: true,
+        welcomeModal: true,
+        sparklerTrail: true,
+        countdown: true,
+        floatingWidget: true
+      },
+      national: {
+        badge: 'DESH KI SHAN',
+        banner: 'Proudly serving Rajasthan with certified pure mineral water depot supply.',
+        coupon: 'TIRANGA15',
+        discount: '15',
+        greetingTitle: 'Saluting the Nation with Pure Water',
+        greetingSub: 'Supplying schools, offices, rallies & community gatherings.',
+        accentColor: '#EA580C',
+        ambient: true,
+        welcomeModal: true,
+        sparklerTrail: false,
+        countdown: false,
+        floatingWidget: false
+      },
+      custom: {
+        badge: 'LIMITED CAMPAIGN',
+        banner: 'Exclusive limited time wholesale prices on bulk petis and cartons.',
+        coupon: 'SPECIAL15',
+        discount: '15',
+        greetingTitle: 'Special Campaign Deals',
+        greetingSub: 'Special depot rates for commercial buyers.',
+        accentColor: '#7C3AED',
+        ambient: false,
+        welcomeModal: true,
+        sparklerTrail: false,
+        countdown: true,
+        floatingWidget: true
+      }
+    };
+
     function applyActiveFestivalTheme(settings) {
-      const themeName = (typeof settings === 'string' ? settings : (settings.active_theme || 'normal')).toLowerCase();
+      const themeName = (typeof settings === 'string' ? settings : ((settings && settings.active_theme) || 'normal')).toLowerCase();
       currentTheme = themeName;
       localStorage.setItem('sikar_theme', themeName);
       let ribbon = document.getElementById('store-festival-ribbon');
 
-      const presetColors = {
-        diwali: '#D97706',
-        holi: '#E11D48',
-        navratri: '#DC2626',
-        newyear: '#06B6D4',
-        national: '#EA580C',
-        custom: '#7C3AED'
-      };
-      const accentColor = (typeof settings === 'object' && settings.theme_accent_color)
-        ? settings.theme_accent_color
-        : (presetColors[themeName] || '#D97706');
+      const preset = FESTIVE_STORE_PRESETS[themeName] || {};
+      const cfg = (typeof settings === 'object' && settings) ? settings : {};
+      const accentColor = cfg.theme_accent_color || preset.accentColor || '#D97706';
 
       if (!themeName || themeName === 'normal' || themeName === 'default') {
         document.documentElement.removeAttribute('data-theme');
-        applyFestiveBackgroundAndColorMix('normal', '#0284C7', settings);
+        applyFestiveBackgroundAndColorMix('normal', '#0284C7', cfg);
         if (ribbon) ribbon.style.display = 'none';
         const fw = document.getElementById('festive-floating-widget');
         if (fw) fw.remove();
+        const sc = document.getElementById('sparkler-canvas');
+        if (sc) sc.remove();
         return;
       }
 
       document.documentElement.setAttribute('data-theme', themeName);
-      applyFestiveBackgroundAndColorMix(themeName, accentColor, settings);
+      applyFestiveBackgroundAndColorMix(themeName, accentColor, cfg);
 
       if (!ribbon) {
         ribbon = document.createElement('aside');
@@ -12679,12 +12762,14 @@
         const navbar = document.querySelector('.site-navbar');
         if (navbar && navbar.parentNode) {
           navbar.parentNode.insertBefore(ribbon, navbar);
+        } else {
+          document.body.prepend(ribbon);
         }
       }
 
-      const badgeText = (typeof settings === 'object' && settings.top_ribbon_badge) ? settings.top_ribbon_badge : 'FESTIVAL SPECIAL';
-      const msgText = (typeof settings === 'object' && settings.banner_message) ? settings.banner_message : 'Wholesale packaged water & beverage cases delivered in Sikar.';
-      const isCountdown = typeof settings === 'object' && settings.countdown_timer_enabled === '1';
+      const badgeText = cfg.top_ribbon_badge || preset.badge || 'FESTIVAL SPECIAL';
+      const msgText = cfg.banner_message || preset.banner || 'Wholesale packaged water & beverage cases delivered in Sikar.';
+      const isCountdown = (cfg.countdown_timer_enabled === '1' || (cfg.countdown_timer_enabled === undefined && preset.countdown));
 
       ribbon.style.display = 'block';
       ribbon.style.background = `linear-gradient(90deg, #0B192C 0%, ${accentColor} 50%, #0B192C 100%)`;
@@ -12701,13 +12786,16 @@
         </div>
       `;
 
-      if (typeof settings === 'object' && settings.welcome_modal_enabled === '1') {
-        initFestiveWelcomeModal(settings);
+      const showModal = (cfg.welcome_modal_enabled === '1' || (cfg.welcome_modal_enabled === undefined && preset.welcomeModal));
+      if (showModal) {
+        initFestiveWelcomeModal(Object.assign({}, preset, cfg));
       }
-      if (typeof settings === 'object' && settings.floating_widget_enabled === '1') {
-        initFestiveFloatingWidget(settings);
+      const showWidget = (cfg.floating_widget_enabled === '1' || (cfg.floating_widget_enabled === undefined && preset.floatingWidget));
+      if (showWidget) {
+        initFestiveFloatingWidget(Object.assign({}, preset, cfg));
       }
-      if (typeof settings === 'object' && settings.sparkler_trail_enabled === '1') {
+      const showSparkler = (cfg.sparkler_trail_enabled === '1' || (cfg.sparkler_trail_enabled === undefined && preset.sparklerTrail));
+      if (showSparkler) {
         initSparklerTrail(accentColor);
       }
     }
@@ -12823,10 +12911,32 @@
 
     // INITIALIZATION ON DOM READY
     window.addEventListener('DOMContentLoaded', () => {
-      // 1. Initialize Themes & Texts
-      if (currentTheme && currentTheme !== 'default') {
-        document.documentElement.setAttribute('data-theme', currentTheme);
+      // 1. Synchronously apply cached festival theme from localStorage immediately
+      try {
+        const cachedSettings = JSON.parse(localStorage.getItem('sikar_settings') || 'null');
+        const cachedTheme = localStorage.getItem('sikar_theme') || (cachedSettings && cachedSettings.active_theme) || 'normal';
+        if (cachedTheme && cachedTheme !== 'normal' && cachedTheme !== 'default') {
+          applyActiveFestivalTheme(cachedSettings || cachedTheme);
+        } else if (currentTheme && currentTheme !== 'default') {
+          document.documentElement.setAttribute('data-theme', currentTheme);
+        }
+      } catch (e) {
+        console.warn('Initial theme load fallback', e);
       }
+
+      // Cross-tab real-time sync for festival themes & settings
+      window.addEventListener('storage', (e) => {
+        if (!e.key || e.key === 'sikar_theme' || e.key === 'sikar_settings') {
+          try {
+            const freshSettings = JSON.parse(localStorage.getItem('sikar_settings') || 'null');
+            const freshTheme = localStorage.getItem('sikar_theme') || (freshSettings && freshSettings.active_theme) || 'normal';
+            applyActiveFestivalTheme(freshSettings || freshTheme);
+          } catch (err) {
+            console.warn('Theme storage sync error:', err);
+          }
+        }
+      });
+
       applyLiveSiteTexts();
       applyLanguage();
       startTempoCountdown();
