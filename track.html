@@ -790,7 +790,8 @@
       const waBtn = document.getElementById('btn-track-whatsapp');
       if (waBtn) {
         const waMsg = `Hello Sikar Water Bottle Supply, I am tracking my order #${orderId} (${name}, ${phone}). Please provide delivery update.`;
-        waBtn.href = `https://wa.me/919829000000?text=${encodeURIComponent(waMsg)}`;
+        const waNum = (window.getLiveWhatsAppNumber ? window.getLiveWhatsAppNumber() : '919829000000');
+        waBtn.href = `https://wa.me/${waNum}?text=${encodeURIComponent(waMsg)}`;
       }
 
       showToast(`Tracking: ${st.badgeText} for Bilty #${orderId}`);

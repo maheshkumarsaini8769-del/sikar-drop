@@ -5293,20 +5293,26 @@
       <!-- SECTION 7: CUSTOMER REVIEWS (SIKAR LOCAL) -->
       <section class="customer-reviews-section" id="reviews-section">
         <div class="container">
-          <div class="section-headline-bar">
+          <div class="section-headline-bar" style="display: flex; justify-content: space-between; align-items: flex-end; flex-wrap: wrap; gap: 16px;">
             <div>
               <h2>Trusted by Sikar's Events &amp; Businesses</h2>
               <p>Real feedback from marriage garden organizers, coaching hostel wardens, and local merchants across Sikar</p>
             </div>
-            <div class="overall-rating-badge">
-              <div class="rating-stars-inline">
-                <svg viewBox="0 0 24 24" fill="#F59E0B" width="16" height="16"><polygon points="12 2 15.09 8.26 22 9.27 17 14.14 18.18 21.02 12 17.77 5.82 21.02 7 14.14 2 9.27 8.91 8.26 12 2"/></svg>
-                <svg viewBox="0 0 24 24" fill="#F59E0B" width="16" height="16"><polygon points="12 2 15.09 8.26 22 9.27 17 14.14 18.18 21.02 12 17.77 5.82 21.02 7 14.14 2 9.27 8.91 8.26 12 2"/></svg>
-                <svg viewBox="0 0 24 24" fill="#F59E0B" width="16" height="16"><polygon points="12 2 15.09 8.26 22 9.27 17 14.14 18.18 21.02 12 17.77 5.82 21.02 7 14.14 2 9.27 8.91 8.26 12 2"/></svg>
-                <svg viewBox="0 0 24 24" fill="#F59E0B" width="16" height="16"><polygon points="12 2 15.09 8.26 22 9.27 17 14.14 18.18 21.02 12 17.77 5.82 21.02 7 14.14 2 9.27 8.91 8.26 12 2"/></svg>
-                <svg viewBox="0 0 24 24" fill="#F59E0B" width="16" height="16"><polygon points="12 2 15.09 8.26 22 9.27 17 14.14 18.18 21.02 12 17.77 5.82 21.02 7 14.14 2 9.27 8.91 8.26 12 2"/></svg>
+            <div style="display: flex; align-items: center; gap: 12px; flex-wrap: wrap;">
+              <div class="overall-rating-badge">
+                <div class="rating-stars-inline">
+                  <svg viewBox="0 0 24 24" fill="#F59E0B" width="16" height="16"><polygon points="12 2 15.09 8.26 22 9.27 17 14.14 18.18 21.02 12 17.77 5.82 21.02 7 14.14 2 9.27 8.91 8.26 12 2"/></svg>
+                  <svg viewBox="0 0 24 24" fill="#F59E0B" width="16" height="16"><polygon points="12 2 15.09 8.26 22 9.27 17 14.14 18.18 21.02 12 17.77 5.82 21.02 7 14.14 2 9.27 8.91 8.26 12 2"/></svg>
+                  <svg viewBox="0 0 24 24" fill="#F59E0B" width="16" height="16"><polygon points="12 2 15.09 8.26 22 9.27 17 14.14 18.18 21.02 12 17.77 5.82 21.02 7 14.14 2 9.27 8.91 8.26 12 2"/></svg>
+                  <svg viewBox="0 0 24 24" fill="#F59E0B" width="16" height="16"><polygon points="12 2 15.09 8.26 22 9.27 17 14.14 18.18 21.02 12 17.77 5.82 21.02 7 14.14 2 9.27 8.91 8.26 12 2"/></svg>
+                  <svg viewBox="0 0 24 24" fill="#F59E0B" width="16" height="16"><polygon points="12 2 15.09 8.26 22 9.27 17 14.14 18.18 21.02 12 17.77 5.82 21.02 7 14.14 2 9.27 8.91 8.26 12 2"/></svg>
+                </div>
+                <strong>4.9 / 5.0 (420+ Orders)</strong>
               </div>
-              <strong>4.9 / 5.0 (420+ Orders)</strong>
+              <button type="button" class="btn-write-review" onclick="openWriteReviewModal()" style="display: inline-flex; align-items: center; gap: 8px; background: #0284C7; color: #FFFFFF; font-family: var(--font-heading); font-size: 0.86rem; font-weight: 700; padding: 9px 18px; border-radius: var(--radius-sm); border: none; cursor: pointer; transition: all 0.2s ease; box-shadow: 0 2px 8px rgba(2, 132, 199, 0.25);">
+                <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.4"><path d="M12 20h9"></path><path d="M16.5 3.5a2.121 2.121 0 0 1 3 3L7 19l-4 1 1-4L16.5 3.5z"></path></svg>
+                <span>Write a Review</span>
+              </button>
             </div>
           </div>
 
@@ -5403,8 +5409,78 @@
               </div>
             </article>
           </div>
+
+          <div style="text-align: center; margin-top: 26px;" id="reviews-actions-container">
+            <button type="button" id="btn-toggle-all-reviews" onclick="toggleViewAllReviews()" style="display: inline-flex; align-items: center; gap: 8px; background: #FFFFFF; color: #0284C7; border: 1.5px solid #0284C7; font-family: var(--font-heading); font-size: 0.88rem; font-weight: 700; padding: 10px 24px; border-radius: var(--radius-pill); cursor: pointer; transition: all 0.2s ease; box-shadow: var(--shadow-sm);">
+              <span id="txt-toggle-reviews">View All Reviews</span>
+              <svg id="icon-toggle-reviews" width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5"><polyline points="6 9 12 15 18 9"></polyline></svg>
+            </button>
+          </div>
         </div>
       </section>
+
+      <!-- WRITE A CUSTOMER REVIEW MODAL -->
+      <div class="custom-modal-backdrop" id="write-review-modal" style="display: none; position: fixed; inset: 0; background: rgba(15, 23, 42, 0.65); backdrop-filter: blur(4px); -webkit-backdrop-filter: blur(4px); z-index: 1050; align-items: center; justify-content: center; padding: 16px;">
+        <div class="custom-modal-card" style="background: #FFFFFF; border-radius: var(--radius-md); max-width: 500px; width: 100%; box-shadow: 0 20px 40px rgba(0,0,0,0.22); overflow: hidden;">
+          <div style="background: #0B192C; color: #FFFFFF; padding: 18px 22px; display: flex; align-items: center; justify-content: space-between;">
+            <div style="display: flex; align-items: center; gap: 10px;">
+              <div style="width: 34px; height: 34px; border-radius: 8px; background: rgba(2, 132, 199, 0.2); display: flex; align-items: center; justify-content: center; color: #38BDF8;">
+                <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.3"><polygon points="12 2 15.09 8.26 22 9.27 17 14.14 18.18 21.02 12 17.77 5.82 21.02 7 14.14 2 9.27 8.91 8.26 12 2"/></svg>
+              </div>
+              <div>
+                <h3 style="margin: 0; font-family: var(--font-heading); font-size: 1.12rem; font-weight: 800; color: #FFFFFF;">Write a Customer Review</h3>
+                <span style="font-size: 0.72rem; color: #94A3B8;">Share your wholesale delivery experience in Sikar</span>
+              </div>
+            </div>
+            <button type="button" onclick="closeWriteReviewModal()" style="background: transparent; border: none; color: #94A3B8; cursor: pointer; padding: 4px; display: flex;" aria-label="Close">
+              <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5"><line x1="18" y1="6" x2="6" y2="18"></line><line x1="6" y1="6" x2="18" y2="18"></line></svg>
+            </button>
+          </div>
+          <form id="write-review-form" onsubmit="submitCustomerReview(event)" style="padding: 22px;">
+            <!-- Rating Stars -->
+            <div style="margin-bottom: 16px; text-align: center;">
+              <label style="display: block; font-size: 0.8rem; font-weight: 700; color: #475569; margin-bottom: 6px;">Your Rating</label>
+              <div id="review-stars-selector" style="display: inline-flex; gap: 8px; cursor: pointer;">
+                <!-- 5 stars -->
+              </div>
+              <input type="hidden" id="review-input-rating" value="5">
+            </div>
+
+            <!-- Name -->
+            <div style="margin-bottom: 14px;">
+              <label for="review-input-name" style="display: block; font-size: 0.82rem; font-weight: 700; color: #334155; margin-bottom: 4px;">Your Name / Establishment *</label>
+              <input type="text" id="review-input-name" required placeholder="e.g. Mahesh Kumar Saini / Royal Marriage Garden" style="width: 100%; padding: 10px 14px; border: 1.5px solid var(--border-subtle); border-radius: 8px; font-size: 0.9rem; outline: none; box-sizing: border-box;">
+            </div>
+
+            <div style="display: grid; grid-template-columns: 1fr 1fr; gap: 12px; margin-bottom: 14px;">
+              <!-- Role / Business -->
+              <div>
+                <label for="review-input-role" style="display: block; font-size: 0.82rem; font-weight: 700; color: #334155; margin-bottom: 4px;">Role / Client Type</label>
+                <input type="text" id="review-input-role" placeholder="e.g. Marriage Garden / Kirana Store / Residence" style="width: 100%; padding: 10px 14px; border: 1.5px solid var(--border-subtle); border-radius: 8px; font-size: 0.9rem; outline: none; box-sizing: border-box;">
+              </div>
+              <!-- Location -->
+              <div>
+                <label for="review-input-location" style="display: block; font-size: 0.82rem; font-weight: 700; color: #334155; margin-bottom: 4px;">Sikar Location / Road</label>
+                <input type="text" id="review-input-location" placeholder="e.g. Piprali Road / Krishi Mandi" style="width: 100%; padding: 10px 14px; border: 1.5px solid var(--border-subtle); border-radius: 8px; font-size: 0.9rem; outline: none; box-sizing: border-box;">
+              </div>
+            </div>
+
+            <!-- Review text -->
+            <div style="margin-bottom: 18px;">
+              <label for="review-input-text" style="display: block; font-size: 0.82rem; font-weight: 700; color: #334155; margin-bottom: 4px;">Your Review / Experience *</label>
+              <textarea id="review-input-text" required rows="3" placeholder="Tell us about the water bottle delivery, timing, sealing, or wholesale rates..." style="width: 100%; padding: 10px 14px; border: 1.5px solid var(--border-subtle); border-radius: 8px; font-size: 0.9rem; outline: none; box-sizing: border-box; resize: vertical;"></textarea>
+            </div>
+
+            <!-- Submit Button -->
+            <div style="display: flex; justify-content: flex-end; gap: 10px;">
+              <button type="button" onclick="closeWriteReviewModal()" style="padding: 10px 18px; border: 1px solid var(--border-subtle); background: #F8FAFC; color: #475569; font-weight: 700; border-radius: 8px; cursor: pointer;">Cancel</button>
+              <button type="submit" id="btn-submit-review" style="padding: 10px 22px; background: #0284C7; color: #FFFFFF; font-weight: 700; border: none; border-radius: 8px; cursor: pointer; display: inline-flex; align-items: center; gap: 6px;">
+                <span>Submit Review</span>
+              </button>
+            </div>
+          </form>
+        </div>
+      </div>
 
       <!-- SECTION: LIVE DELIVERY AVAILABILITY & AREA CHECKER (BOTTOM CONVERSION STRIP) -->
       <section class="delivery-checker-section" id="delivery-checker-section" style="padding: 24px 0 24px; background: #F8FAFC; border-top: 1px solid var(--border-subtle);">
@@ -10184,7 +10260,7 @@
         `------------------------------------\n` +
         `Please confirm delivery time and dispatch tempo from Mandi Depot!`;
       trackSocialClick('whatsapp');
-      window.open(`https://wa.me/919829011223?text=${encodeURIComponent(msg)}`, '_blank');
+      window.open(`https://wa.me/${getLiveWhatsAppNumber()}?text=${encodeURIComponent(msg)}`, '_blank');
       showToast(`WhatsApp message opened for ${bundle.title}!`);
     }
 
@@ -10196,6 +10272,43 @@
     function addBulkCalcItemsToCart() {}
     function dispatchBulkCalcWhatsApp() {}
 
+    function getLiveWhatsAppNumber() {
+      try {
+        const cached = localStorage.getItem('sikar_admin_texts');
+        if (cached) {
+          const parsed = JSON.parse(cached);
+          if (parsed && (parsed.whatsappNumber || parsed.whatsapp)) {
+            const raw = parsed.whatsappNumber || parsed.whatsapp;
+            const clean = String(raw).replace(/\D/g, '');
+            if (clean.length === 10) return '91' + clean;
+            if (clean.length >= 10) return clean;
+          }
+        }
+      } catch (e) {}
+
+      const raw = (adminTexts && (adminTexts.whatsappNumber || adminTexts.whatsapp)) ||
+                  (typeof SITE_TEXTS !== 'undefined' && (SITE_TEXTS.whatsappNumber || SITE_TEXTS.whatsapp)) ||
+                  '919829000000';
+      const clean = String(raw).replace(/\D/g, '');
+      return clean.length === 10 ? ('91' + clean) : (clean || '919829000000');
+    }
+
+    function getLivePhoneNumber() {
+      try {
+        const cached = localStorage.getItem('sikar_admin_texts');
+        if (cached) {
+          const parsed = JSON.parse(cached);
+          if (parsed && (parsed.contactPhone || parsed.helpline)) {
+            return parsed.contactPhone || parsed.helpline;
+          }
+        }
+      } catch (e) {}
+
+      return (adminTexts && (adminTexts.contactPhone || adminTexts.helpline)) ||
+             (typeof SITE_TEXTS !== 'undefined' && (SITE_TEXTS.contactPhone || SITE_TEXTS.helpline)) ||
+             '+91 98290 11223';
+    }
+
     function sendBulkQuoteWhatsApp() {
       const eventType = document.getElementById('bulk-event-type').value.trim() || 'Marriage Garden Supply';
       const cases = document.getElementById('bulk-cases-req').value.trim() || '25';
@@ -10206,30 +10319,44 @@
         `Please share the best wholesale rates and confirm a tempo delivery slot!`;
 
       trackSocialClick('whatsapp');
-      window.open(`https://wa.me/919829000000?text=${encodeURIComponent(text)}`, '_blank');
+      window.open(`https://wa.me/${getLiveWhatsAppNumber()}?text=${encodeURIComponent(text)}`, '_blank');
     }
 
-    // STOREFRONT REVIEWS WITH OFFICIAL REPLIES
+    // STOREFRONT REVIEWS WITH EXPAND/COLLAPSE & "WRITE A REVIEW" MODAL
+    let storefrontShowAllReviews = false;
+    let currentReviewRating = 5;
+
+    function toggleViewAllReviews() {
+      storefrontShowAllReviews = !storefrontShowAllReviews;
+      renderStorefrontReviews();
+    }
+
     function renderStorefrontReviews() {
       const grid = document.getElementById('storefront-reviews-grid');
       if (!grid) return;
 
-      grid.innerHTML = adminReviews.map(r => {
-        const initials = r.name.split(' ').map(w => w[0]).join('').substring(0, 2).toUpperCase() || 'SD';
+      const totalReviews = adminReviews.length;
+      const reviewsToRender = storefrontShowAllReviews ? adminReviews : adminReviews.slice(0, 4);
+
+      grid.innerHTML = reviewsToRender.map(r => {
+        const initials = ((r.name || 'SD').split(' ').map(w => w[0]).join('').substring(0, 2).toUpperCase()) || 'SD';
+        const ratingCount = Math.max(1, Math.min(5, Number(r.rating) || 5));
+        let starsHtml = '';
+        for (let i = 0; i < 5; i++) {
+          const fill = i < ratingCount ? '#F59E0B' : '#CBD5E1';
+          starsHtml += `<svg viewBox="0 0 24 24" fill="${fill}" width="15" height="15"><polygon points="12 2 15.09 8.26 22 9.27 17 14.14 18.18 21.02 12 17.77 5.82 21.02 7 14.14 2 9.27 8.91 8.26 12 2"/></svg>`;
+        }
+
         return `
           <article class="review-card-item">
             <div class="review-meta-top">
               <div class="review-stars-row">
-                <svg viewBox="0 0 24 24" fill="#F59E0B" width="15" height="15"><polygon points="12 2 15.09 8.26 22 9.27 17 14.14 18.18 21.02 12 17.77 5.82 21.02 7 14.14 2 9.27 8.91 8.26 12 2"/></svg>
-                <svg viewBox="0 0 24 24" fill="#F59E0B" width="15" height="15"><polygon points="12 2 15.09 8.26 22 9.27 17 14.14 18.18 21.02 12 17.77 5.82 21.02 7 14.14 2 9.27 8.91 8.26 12 2"/></svg>
-                <svg viewBox="0 0 24 24" fill="#F59E0B" width="15" height="15"><polygon points="12 2 15.09 8.26 22 9.27 17 14.14 18.18 21.02 12 17.77 5.82 21.02 7 14.14 2 9.27 8.91 8.26 12 2"/></svg>
-                <svg viewBox="0 0 24 24" fill="#F59E0B" width="15" height="15"><polygon points="12 2 15.09 8.26 22 9.27 17 14.14 18.18 21.02 12 17.77 5.82 21.02 7 14.14 2 9.27 8.91 8.26 12 2"/></svg>
-                <svg viewBox="0 0 24 24" fill="#F59E0B" width="15" height="15"><polygon points="12 2 15.09 8.26 22 9.27 17 14.14 18.18 21.02 12 17.77 5.82 21.02 7 14.14 2 9.27 8.91 8.26 12 2"/></svg>
+                ${starsHtml}
               </div>
-              <span class="review-verified-pill">${escapeHTML(r.type || 'Verified Client')}</span>
+              <span class="review-verified-pill">${escapeHTML(r.type || r.role || 'Verified Client')}</span>
             </div>
             <p class="review-quote-text">
-              "${escapeHTML(r.quote)}"
+              "${escapeHTML(r.quote || r.review_text || '')}"
             </p>
             ${r.reply ? `
               <div style="background: #F0FDF4; border-left: 3px solid #16A34A; padding: 8px 12px; margin: 10px 0; border-radius: var(--radius-xs); font-size: 0.82rem; color: #166534;">
@@ -10237,15 +10364,139 @@
               </div>
             ` : ''}
             <div class="review-author-row">
-              <div class="author-avatar-initials">${initials}</div>
+              <div class="author-avatar-initials">${escapeHTML(initials)}</div>
               <div>
-                <h3 class="author-name">${escapeHTML(r.name)}</h3>
-                <div class="author-sub">${escapeHTML(r.role)} • <span class="loc-accent">${escapeHTML(r.location)}</span></div>
+                <h3 class="author-name">${escapeHTML(r.name || 'Customer')}</h3>
+                <div class="author-sub">${escapeHTML(r.role || 'Direct Customer')}${r.location ? ` • <span class="loc-accent">${escapeHTML(r.location)}</span>` : ''}</div>
               </div>
             </div>
           </article>
         `;
       }).join('');
+
+      // Manage View All Reviews button state
+      const actionsContainer = document.getElementById('reviews-actions-container');
+      const txtToggle = document.getElementById('txt-toggle-reviews');
+      const iconToggle = document.getElementById('icon-toggle-reviews');
+
+      if (actionsContainer) {
+        if (totalReviews <= 4) {
+          actionsContainer.style.display = 'none';
+        } else {
+          actionsContainer.style.display = 'block';
+          if (storefrontShowAllReviews) {
+            if (txtToggle) txtToggle.textContent = 'Show Fewer Reviews';
+            if (iconToggle) iconToggle.innerHTML = '<polyline points="18 15 12 9 6 15"></polyline>';
+          } else {
+            if (txtToggle) txtToggle.textContent = `View All Reviews (${totalReviews})`;
+            if (iconToggle) iconToggle.innerHTML = '<polyline points="6 9 12 15 18 9"></polyline>';
+          }
+        }
+      }
+    }
+
+    function openWriteReviewModal() {
+      const modal = document.getElementById('write-review-modal');
+      if (!modal) return;
+      currentReviewRating = 5;
+      renderReviewStarsSelector(5);
+      const form = document.getElementById('write-review-form');
+      if (form) form.reset();
+      const inputRating = document.getElementById('review-input-rating');
+      if (inputRating) inputRating.value = '5';
+      modal.style.display = 'flex';
+      document.body.style.overflow = 'hidden';
+    }
+
+    function closeWriteReviewModal() {
+      const modal = document.getElementById('write-review-modal');
+      if (!modal) return;
+      modal.style.display = 'none';
+      document.body.style.overflow = '';
+    }
+
+    function setReviewRating(val) {
+      currentReviewRating = Math.max(1, Math.min(5, parseInt(val, 10) || 5));
+      const inputRating = document.getElementById('review-input-rating');
+      if (inputRating) inputRating.value = String(currentReviewRating);
+      renderReviewStarsSelector(currentReviewRating);
+    }
+
+    function renderReviewStarsSelector(activeStars = 5) {
+      const container = document.getElementById('review-stars-selector');
+      if (!container) return;
+      let html = '';
+      for (let i = 1; i <= 5; i++) {
+        const isFilled = i <= activeStars;
+        const color = isFilled ? '#F59E0B' : '#CBD5E1';
+        html += `
+          <span onclick="setReviewRating(${i})" title="${i} Star" style="cursor: pointer; display: inline-block; padding: 4px; transition: transform 0.15s ease;">
+            <svg viewBox="0 0 24 24" fill="${color}" width="26" height="26" style="filter: drop-shadow(0 1px 2px rgba(0,0,0,0.1));">
+              <polygon points="12 2 15.09 8.26 22 9.27 17 14.14 18.18 21.02 12 17.77 5.82 21.02 7 14.14 2 9.27 8.91 8.26 12 2"/>
+            </svg>
+          </span>
+        `;
+      }
+      container.innerHTML = html;
+    }
+
+    async function submitCustomerReview(e) {
+      if (e) e.preventDefault();
+      const nameEl = document.getElementById('review-input-name');
+      const roleEl = document.getElementById('review-input-role');
+      const locEl = document.getElementById('review-input-location');
+      const textEl = document.getElementById('review-input-text');
+      const ratingEl = document.getElementById('review-input-rating');
+
+      const nameVal = (nameEl ? nameEl.value.trim() : '');
+      const quoteVal = (textEl ? textEl.value.trim() : '');
+      if (!nameVal || !quoteVal) {
+        showToast('Please enter your name and review message.');
+        return;
+      }
+
+      const roleVal = (roleEl ? roleEl.value.trim() : '') || 'Verified Customer';
+      const locVal = (locEl ? locEl.value.trim() : '') || 'Sikar';
+      const ratingVal = parseInt(ratingEl ? ratingEl.value : currentReviewRating, 10) || 5;
+
+      const newReview = {
+        id: 'REV-' + Date.now(),
+        name: nameVal,
+        role: roleVal,
+        location: locVal,
+        type: roleVal,
+        quote: quoteVal,
+        rating: ratingVal,
+        reply: '',
+        status: 'approved'
+      };
+
+      // Immediate live display on home page ("sath me hi dikao")
+      adminReviews.unshift(newReview);
+      localStorage.setItem('sikar_admin_reviews', JSON.stringify(adminReviews));
+      renderStorefrontReviews();
+
+      closeWriteReviewModal();
+      showToast('Thank you! Your review has been submitted and published live.');
+
+      // Send to server
+      try {
+        await fetch('/api/reviews', {
+          method: 'POST',
+          headers: { 'Content-Type': 'application/json' },
+          body: JSON.stringify({
+            customer_name: nameVal,
+            customerName: nameVal,
+            rating: ratingVal,
+            quote: quoteVal,
+            review_text: quoteVal,
+            location: locVal,
+            role: roleVal
+          })
+        });
+      } catch (err) {
+        console.warn('Backend review sync warning:', err);
+      }
     }
 
     // LIVE SITE TEXTS
@@ -10256,6 +10507,11 @@
     }
 
     function applyLiveSiteTexts() {
+      try {
+        const cached = localStorage.getItem('sikar_admin_texts');
+        if (cached) adminTexts = JSON.parse(cached);
+      } catch (e) {}
+
       const t = adminTexts || DEFAULT_TEXTS;
       if (!t) return;
 
@@ -10270,7 +10526,11 @@
       if (elHeroDesc && (t.heroDesc || t.hero_desc)) elHeroDesc.textContent = t.heroDesc || t.hero_desc;
       const elHeroImg = document.getElementById('live-hero-bottles-img');
       if (elHeroImg && (t.heroImg || t.hero_img)) {
-        elHeroImg.src = resolveHeroImageSource(t.heroImg || t.hero_img);
+        const heroSrc = resolveHeroImageSource(t.heroImg || t.hero_img);
+        elHeroImg.src = heroSrc;
+        if (!heroSrc.includes('hero_bottles_blended')) {
+          elHeroImg.removeAttribute('srcset');
+        }
       }
 
       // 1. Slider Slides
@@ -10325,9 +10585,10 @@
       const elFooterHelpline = document.getElementById('live-footer-helpline');
 
       if (elTopPolicy && t.topPolicy) elTopPolicy.textContent = t.topPolicy;
-      if (elHelpline && t.helpline) {
-        elHelpline.textContent = t.helpline;
-        elHelpline.setAttribute('href', 'tel:' + t.helpline.replace(/[^0-9]/g, ''));
+      if (elHelpline && (t.helpline || t.contactPhone)) {
+        const hNum = t.helpline || t.contactPhone;
+        elHelpline.textContent = hNum;
+        elHelpline.setAttribute('href', 'tel:' + String(hNum).replace(/[^0-9]/g, ''));
       }
       if (elTagline && t.brandTagline) elTagline.textContent = t.brandTagline;
       if (elTruckTitle && t.truckTitle) elTruckTitle.textContent = t.truckTitle;
@@ -10353,6 +10614,30 @@
       if (elWbTitle && t.wholesaleBundlesTitle) elWbTitle.textContent = t.wholesaleBundlesTitle;
       if (elWbDesc && t.wholesaleBundlesDesc) elWbDesc.textContent = t.wholesaleBundlesDesc;
       if (elWbLink && t.wholesaleBundlesLinkText) elWbLink.textContent = t.wholesaleBundlesLinkText;
+
+      // 4. DYNAMIC LIVE WHATSAPP & PHONE BINDING ACROSS ALL LINKS & BUTTONS
+      const liveWa = getLiveWhatsAppNumber();
+      const livePhone = getLivePhoneNumber();
+      const digitsPhone = livePhone.replace(/[^0-9]/g, '');
+
+      document.querySelectorAll('a[href*="wa.me"]').forEach(a => {
+        try {
+          const oldHref = a.getAttribute('href');
+          const u = new URL(oldHref, window.location.origin);
+          const txt = u.searchParams.get('text');
+          a.setAttribute('href', `https://wa.me/${liveWa}${txt ? `?text=${encodeURIComponent(txt)}` : ''}`);
+        } catch (e) {
+          a.setAttribute('href', `https://wa.me/${liveWa}`);
+        }
+      });
+
+      document.querySelectorAll('.btn-vip-call, .mobile-menu-call-btn, a[data-role="live-phone"]').forEach(a => {
+        a.setAttribute('href', `tel:${digitsPhone}`);
+        const span = a.querySelector('span');
+        if (span && (span.textContent.includes('Call') || span.textContent.includes('+91'))) {
+          span.textContent = `Call ${livePhone}`;
+        }
+      });
     }
 
     // =========================================================
@@ -10581,7 +10866,7 @@
         `Please share wholesale price quote!`;
 
       const cleanPhone = phone.replace(/[^0-9]/g, '');
-      const waUrl = `https://wa.me/919829000000?text=${encodeURIComponent(text)}`;
+      const waUrl = `https://wa.me/${getLiveWhatsAppNumber()}?text=${encodeURIComponent(text)}`;
       window.open(waUrl, '_blank');
       showToast('Inquiry sent to Sikar Depot via WhatsApp!');
     }
@@ -10796,7 +11081,7 @@
 
     function testWhatsAppClick() {
       trackSocialClick('whatsapp');
-      window.open('https://wa.me/919829000000?text=Namaste%20Sikar%20Drop%20Wholesale%20Depot', '_blank');
+      window.open('https://wa.me/' + getLiveWhatsAppNumber() + '?text=Namaste%20Sikar%20Drop%20Wholesale%20Depot', '_blank');
     }
 
     // ADMIN GLOBAL INSTANT SEARCH
@@ -13756,6 +14041,12 @@
             loadStorefrontBundles();
           } else if (ev.data.type === 'CMS_UPDATED') {
             syncStorefrontFromBackend();
+          } else if (ev.data.type === 'REVIEWS_UPDATED') {
+            try {
+              const freshRev = localStorage.getItem('sikar_admin_reviews');
+              if (freshRev) adminReviews = JSON.parse(freshRev);
+            } catch (err) {}
+            renderStorefrontReviews();
           }
         };
       }
@@ -13766,6 +14057,13 @@
         }
         if (!e.key || e.key === 'sikar_admin_texts') {
           applyLiveSiteTexts();
+        }
+        if (!e.key || e.key === 'sikar_admin_reviews') {
+          try {
+            const freshRev = localStorage.getItem('sikar_admin_reviews');
+            if (freshRev) adminReviews = JSON.parse(freshRev);
+          } catch (err) {}
+          renderStorefrontReviews();
         }
         if (!e.key || e.key === 'sikar_theme' || e.key === 'sikar_settings') {
           try {

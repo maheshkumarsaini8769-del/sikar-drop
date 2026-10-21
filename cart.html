@@ -789,7 +789,7 @@
 
         const rawDepotWa = (SITE_TEXTS && (SITE_TEXTS.whatsappNumber || SITE_TEXTS.whatsapp)) || (JSON.parse(localStorage.getItem('sikar_admin_texts') || '{}').whatsappNumber) || '919829000000';
         const cleanDepotDigits = String(rawDepotWa).replace(/\D/g, '');
-        const depotPhone = cleanDepotDigits.length === 10 ? ('91' + cleanDepotDigits) : (cleanDepotDigits || '919829000000');
+        const depotPhone = (window.getLiveWhatsAppNumber ? window.getLiveWhatsAppNumber() : (cleanDepotDigits.length === 10 ? ('91' + cleanDepotDigits) : (cleanDepotDigits || '919829000000')));
 
         // Show confirmation and trigger WhatsApp
         alert(`Order ${orderId} confirmed successfully! Dispatching to Sikar Water Bottle Supply tempo delivery.`);

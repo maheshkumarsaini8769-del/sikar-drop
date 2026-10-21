@@ -14188,6 +14188,7 @@
         // 1. Optimistically update local array, localStorage, and table immediately
         r.reply = text;
         localStorage.setItem('sikar_admin_reviews', JSON.stringify(adminReviews));
+        notifyStorefrontSync('REVIEWS_UPDATED');
         renderReviewsTable();
         closeModal('review-reply-modal');
         showToast('Official depot reply published successfully.');
@@ -14212,6 +14213,7 @@
         try {
           await sikarApi.delete('/api/reviews/' + encodeURIComponent(r.id));
           await syncFromBackend();
+          notifyStorefrontSync('REVIEWS_UPDATED');
           showToast('Review deleted.');
           return;
         } catch (err) {
@@ -14220,6 +14222,7 @@
       }
       adminReviews.splice(idx, 1);
       localStorage.setItem('sikar_admin_reviews', JSON.stringify(adminReviews));
+      notifyStorefrontSync('REVIEWS_UPDATED');
       renderReviewsTable();
       showToast('Review deleted.');
     }

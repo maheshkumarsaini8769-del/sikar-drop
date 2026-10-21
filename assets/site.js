@@ -671,6 +671,43 @@ function resolveHeroImageSource(src) {
   return value;
 }
 
+window.getLiveWhatsAppNumber = function() {
+  try {
+    const cached = localStorage.getItem('sikar_admin_texts');
+    if (cached) {
+      const parsed = JSON.parse(cached);
+      if (parsed && (parsed.whatsappNumber || parsed.whatsapp)) {
+        const raw = parsed.whatsappNumber || parsed.whatsapp;
+        const clean = String(raw).replace(/\D/g, '');
+        if (clean.length === 10) return '91' + clean;
+        if (clean.length >= 10) return clean;
+      }
+    }
+  } catch (e) {}
+
+  const raw = (window.SITE_TEXTS && (window.SITE_TEXTS.whatsappNumber || window.SITE_TEXTS.whatsapp)) ||
+              (typeof adminTexts !== 'undefined' && adminTexts && (adminTexts.whatsappNumber || adminTexts.whatsapp)) ||
+              '919829000000';
+  const clean = String(raw).replace(/\D/g, '');
+  return clean.length === 10 ? ('91' + clean) : (clean || '919829000000');
+};
+
+window.getLivePhoneNumber = function() {
+  try {
+    const cached = localStorage.getItem('sikar_admin_texts');
+    if (cached) {
+      const parsed = JSON.parse(cached);
+      if (parsed && (parsed.contactPhone || parsed.helpline)) {
+        return parsed.contactPhone || parsed.helpline;
+      }
+    }
+  } catch (e) {}
+
+  return (window.SITE_TEXTS && (window.SITE_TEXTS.contactPhone || window.SITE_TEXTS.helpline)) ||
+         (typeof adminTexts !== 'undefined' && adminTexts && (adminTexts.contactPhone || adminTexts.helpline)) ||
+         '+91 98290 11223';
+};
+
 function applyStorefrontSiteTexts(t) {
   if (!t) return;
   const setTxt = (id, val) => {
@@ -687,7 +724,11 @@ function applyStorefrontSiteTexts(t) {
   setTxt('live-hero-desc-lead', t.heroDesc || t.hero_desc);
   const heroImg = document.getElementById('live-hero-bottles-img');
   if (heroImg && (t.heroImg || t.hero_img)) {
-    heroImg.src = resolveHeroImageSource(t.heroImg || t.hero_img);
+    const heroSrc = resolveHeroImageSource(t.heroImg || t.hero_img);
+    heroImg.src = heroSrc;
+    if (!heroSrc.includes('hero_bottles_blended')) {
+      heroImg.removeAttribute('srcset');
+    }
   }
 
   setTxt('live-top-policy-text', t.topPolicy || t.top_policy);
@@ -751,11 +792,11 @@ function applyStorefrontSiteTexts(t) {
   const rawPh = t.contactPhone || t.helpline;
   if (rawPh) {
     const cleanPh = String(rawPh).replace(/[^0-9+]/g, '');
-    document.querySelectorAll('.mobile-menu-call-btn, a[href^="tel:"]').forEach(a => {
+    document.querySelectorAll('.mobile-menu-call-btn, .btn-vip-call, a[href^="tel:"]').forEach(a => {
       a.href = 'tel:' + cleanPh;
       const span = a.querySelector('span');
-      if (span && span.textContent.includes('Call Mandi Depot')) {
-        span.textContent = `Call Mandi Depot: ${rawPh}`;
+      if (span && (span.textContent.includes('Call Mandi Depot') || span.textContent.includes('+91') || span.textContent.includes('Call'))) {
+        span.textContent = `Call ${rawPh}`;
       }
     });
   }

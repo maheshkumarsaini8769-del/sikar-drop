@@ -3622,8 +3622,8 @@ app.get('/api/reviews', (req, res) => {
 app.post('/api/reviews', (req, res) => {
   try {
     const customerName = req.body.customerName || req.body.customer_name || req.body.name;
-    const quote = req.body.quote || req.body.text || req.body.comment;
-    const role = req.body.role || 'Customer';
+    const quote = req.body.quote || req.body.review_text || req.body.text || req.body.comment;
+    const role = req.body.role || req.body.type || 'Customer';
     const location = req.body.location || 'Sikar';
     const rating = req.body.rating || 5;
 
@@ -5533,6 +5533,10 @@ app.post('/api/settings', (req, res) => {
       syncDoc('website_settings', { key: 'portal_settings' }, { key: 'portal_settings', settings, updated_at: now });
     } catch (e) {}
 
+    if (typeof pageTemplateCache !== 'undefined') {
+      pageTemplateCache.clear();
+    }
+
     res.json({ success: true, message: 'Settings saved successfully' });
   } catch (err) {
     res.status(400).json({ error: err.message });
@@ -5546,7 +5550,7 @@ const DEFAULT_FALLBACK_TEXTS = {
   heroPill: 'Trusted by 10,000+ Families in Sikar',
   heroTitle: 'Pure Water\nFor A Healthier\nTomorrow',
   heroDesc: 'Quality drinking water and beverages delivered to your home, office and business across Sikar.',
-  heroImg: 'assets/hero_bottles_blended.png',
+  heroImg: 'assets/hero_bottles_blended.webp',
   slide1Image: 'assets/hero_bottles.webp',
   slide1Tag: 'SIKAR MANDI WHOLESALE PETI DEPOT',
   slide1Title: '100% Factory-Sealed Mineral Water Petis',
@@ -5612,6 +5616,25 @@ app.post('/api/site-texts', (req, res) => {
       ON CONFLICT(key) DO UPDATE SET value = excluded.value, updated_at = excluded.updated_at
     `).run(JSON.stringify(merged), now);
 
+    // Also sync individual quick keys for compatibility
+    if (merged.contactPhone) {
+      db.prepare(`INSERT INTO website_settings (key, value, updated_at) VALUES ('phone', ?, ?) ON CONFLICT(key) DO UPDATE SET value = excluded.value, updated_at = excluded.updated_at`).run(String(merged.contactPhone), now);
+    }
+    if (merged.whatsappNumber) {
+      db.prepare(`INSERT INTO website_settings (key, value, updated_at) VALUES ('whatsapp', ?, ?) ON CONFLICT(key) DO UPDATE SET value = excluded.value, updated_at = excluded.updated_at`).run(String(merged.whatsappNumber), now);
+    }
+    if (merged.helpline) {
+      db.prepare(`INSERT INTO website_settings (key, value, updated_at) VALUES ('helpline', ?, ?) ON CONFLICT(key) DO UPDATE SET value = excluded.value, updated_at = excluded.updated_at`).run(String(merged.helpline), now);
+    }
+    if (merged.contactAddress) {
+      db.prepare(`INSERT INTO website_settings (key, value, updated_at) VALUES ('address', ?, ?) ON CONFLICT(key) DO UPDATE SET value = excluded.value, updated_at = excluded.updated_at`).run(String(merged.contactAddress), now);
+    }
+
+    // Invalidate cached HTML so new texts, phone & WhatsApp immediately reflect on website
+    if (typeof pageTemplateCache !== 'undefined') {
+      pageTemplateCache.clear();
+    }
+
     try {
       syncDoc('website_settings', { key: 'site_texts' }, { key: 'site_texts', value: JSON.stringify(merged), updated_at: now });
     } catch (e) {}
@@ -5619,7 +5642,7 @@ app.post('/api/site-texts', (req, res) => {
     try {
       db.prepare(`
         INSERT INTO audit_logs (id, actor, action, module, details, created_at)
-        VALUES (?, 'Admin', 'CMS_TEXTS_UPDATED', 'cms', 'Updated homepage slides, hero banner and site text copy', ?)
+        VALUES (?, 'Admin', 'CMS_TEXTS_UPDATED', 'cms', 'Updated homepage slides, hero banner, phone and WhatsApp number', ?)
       `).run('AUD-' + Math.floor(100000 + Math.random() * 900000), now);
     } catch (e) {}
 
@@ -6189,7 +6212,43 @@ function renderStorefrontPage(file) {
   html = setPageMeta(html, 'twitter:card', 'summary_large_image', 'name', { onlyIfMissing: true });
   if (title) html = setPageMeta(html, 'twitter:title', title, 'name', { onlyIfMissing: true, raw: true });
   if (description) html = setPageMeta(html, 'twitter:description', description, 'name', { onlyIfMissing: true, raw: true });
-  html = setPageMeta(html, 'twitter:image', socialImage, 'name', { onlyIfMissing: true, raw: true });
+  // Inject live WhatsApp number, phone, and CMS texts into storefront HTML
+  try {
+    const row = db.prepare("SELECT value FROM website_settings WHERE key = 'site_texts'").get();
+    if (row && row.value) {
+      const t = JSON.parse(row.value);
+      const rawWa = t.whatsappNumber || t.whatsapp;
+      if (rawWa) {
+        const cleanDigits = String(rawWa).replace(/\D/g, '');
+        const cleanWa = cleanDigits.length === 10 ? ('91' + cleanDigits) : cleanDigits;
+        if (cleanWa.length >= 10) {
+          html = html.replace(/https:\/\/wa\.me\/(91)?[0-9]{10}/g, `https://wa.me/${cleanWa}`);
+        }
+      }
+      const rawPh = t.contactPhone || t.helpline;
+      if (rawPh) {
+        const cleanPh = String(rawPh).replace(/[^0-9+]/g, '');
+        html = html.replace(/\+91 98290 11223/g, rawPh);
+        html = html.replace(/tel:\+?919829011223/g, 'tel:' + cleanPh);
+        html = html.replace(/tel:9829000000/g, 'tel:' + cleanPh);
+      }
+      if (t.heroPill) {
+        html = html.replace(/<span id="live-hero-pill-text">[^<]*<\/span>/, `<span id="live-hero-pill-text">${escapeSeoHtml(t.heroPill)}</span>`);
+      }
+      if (t.heroTitle) {
+        html = html.replace(/<h1 class="hero-main-title" id="live-hero-main-title">[\s\S]*?<\/h1>/, `<h1 class="hero-main-title" id="live-hero-main-title">${escapeSeoHtml(t.heroTitle).replace(/\n/g, '<br>')}</h1>`);
+      }
+      if (t.heroDesc) {
+        html = html.replace(/<p class="hero-desc-lead" id="live-hero-desc-lead">[^<]*<\/p>/, `<p class="hero-desc-lead" id="live-hero-desc-lead">${escapeSeoHtml(t.heroDesc)}</p>`);
+      }
+      if (t.heroImg && !t.heroImg.includes('hero_bottles_blended')) {
+        html = html.replace(/(<img[^>]*?id="live-hero-bottles-img"[^>]*?)srcset="[^"]*"/, '$1');
+        html = html.replace(/(<img[^>]*?id="live-hero-bottles-img"[^>]*?)src="[^"]*"/, `$1src="${escapeSeoHtml(t.heroImg)}"`);
+      }
+    }
+  } catch (e) {
+    console.warn('Live texts injection warning:', e.message);
+  }
 
   return html;
 }
