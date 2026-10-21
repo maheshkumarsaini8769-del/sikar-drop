@@ -44,18 +44,27 @@ const {
 
 const { syncDoc, deleteDoc, getMongoDb, MONGODB_URI } = require('./mongo.js');
 
+// Load environment variables from .env.local or .env if present
+try {
+  if (fs.existsSync(path.join(__dirname, '.env.local'))) {
+    process.loadEnvFile(path.join(__dirname, '.env.local'));
+  }
+} catch (e) {}
+try {
+  if (fs.existsSync(path.join(__dirname, '.env'))) {
+    process.loadEnvFile(path.join(__dirname, '.env'));
+  }
+} catch (e) {}
+
 const app = express();
 const PORT = process.env.PORT || 8090;
-const IS_DEV = process.env.NODE_ENV !== 'production';
 const SITE_URL = (process.env.SITE_URL || 'https://sikar-drop.vercel.app').replace(/\/$/, '');
 
 // ============================================================
-// SECURITY: Helmet (X-Frame-Options, HSTS, X-Content-Type-Options, etc.)
+// SECURITY: Helmet (X-Frame-Options, HSTS, X-Content-Type-Options)
 // ============================================================
 let helmet = null;
-try {
-  helmet = require('helmet');
-} catch (e) {
+try { helmet = require('helmet'); } catch (e) {
   console.warn('[SECURITY] helmet not installed - run: npm install helmet');
 }
 
@@ -63,19 +72,34 @@ try {
 // SECURITY: Rate limiting
 // ============================================================
 let rateLimit = null;
-try {
-  rateLimit = require('express-rate-limit');
-} catch (e) {
+try { rateLimit = require('express-rate-limit'); } catch (e) {
   console.warn('[SECURITY] express-rate-limit not installed - run: npm install express-rate-limit');
 }
 
 // ============================================================
-// SECURITY: Admin token helpers (HMAC-SHA256 signed)
+// SECURITY: Strict dev-mode detection
+// Only NODE_ENV='development' (or unset) is dev. 'staging' is production-safe.
 // ============================================================
-const ADMIN_TOKEN_SECRET = process.env.ADMIN_TOKEN_SECRET || crypto.randomBytes(32).toString('hex');
-const TRUECALLER_SECRET  = process.env.TRUECALLER_SECRET  || crypto.randomBytes(32).toString('hex');
+const IS_DEV = !process.env.NODE_ENV || process.env.NODE_ENV === 'development';
+
+// ============================================================
+// SECURITY: HMAC secrets (fatal error if missing in production)
+// ============================================================
+const ADMIN_TOKEN_SECRET = process.env.ADMIN_TOKEN_SECRET ||
+  (IS_DEV ? crypto.randomBytes(32).toString('hex') : null);
+const TRUECALLER_SECRET = process.env.TRUECALLER_SECRET ||
+  (IS_DEV ? crypto.randomBytes(32).toString('hex') : null);
 const ENFORCE_ADMIN_AUTH = process.env.ENFORCE_ADMIN_AUTH === 'true';
 
+if (!ADMIN_TOKEN_SECRET || !TRUECALLER_SECRET) {
+  console.error('[FATAL] ADMIN_TOKEN_SECRET and TRUECALLER_SECRET must be set in .env.local in production.');
+  console.error('        Generate with: node -e "console.log(require(\'crypto\').randomBytes(32).toString(\'hex\'))"');
+  if (!IS_DEV) process.exit(1);
+}
+
+// ============================================================
+// SECURITY: Signed admin token (HMAC-SHA256)
+// ============================================================
 function signAdminToken(adminId) {
   const payload = `${adminId}:${Date.now()}`;
   const sig = crypto.createHmac('sha256', ADMIN_TOKEN_SECRET).update(payload).digest('hex');
@@ -89,19 +113,18 @@ function verifyAdminToken(token) {
   try {
     const payload = Buffer.from(parts[0], 'base64url').toString('utf8');
     const expected = crypto.createHmac('sha256', ADMIN_TOKEN_SECRET).update(payload).digest('hex');
-    // SECURITY: constant-time compare to prevent timing attacks
     const a = Buffer.from(parts[1], 'hex');
     const b = Buffer.from(expected, 'hex');
     if (a.length !== b.length || !crypto.timingSafeEqual(a, b)) return null;
     const [adminId, ts] = payload.split(':');
-    if (Date.now() - parseInt(ts, 10) > 8 * 60 * 60 * 1000) return null; // 8h expiry
+    if (Date.now() - parseInt(ts, 10) > 8 * 60 * 60 * 1000) return null;
     return adminId;
-  } catch (e) {
-    return null;
-  }
+  } catch (e) { return null; }
 }
 
-// SECURITY: Truecaller token signing/verification (HMAC-SHA256)
+// ============================================================
+// SECURITY: Signed Truecaller token (replaces prefix-only check)
+// ============================================================
 function signTruecallerToken(phone) {
   const payload = `${phone}:${Date.now()}`;
   const sig = crypto.createHmac('sha256', TRUECALLER_SECRET).update(payload).digest('hex');
@@ -119,22 +142,20 @@ function verifyTruecallerToken(token) {
     const b = Buffer.from(expected, 'hex');
     if (a.length !== b.length || !crypto.timingSafeEqual(a, b)) return null;
     const [phone, ts] = payload.split(':');
-    if (Date.now() - parseInt(ts, 10) > 24 * 60 * 60 * 1000) return null; // 24h
+    if (Date.now() - parseInt(ts, 10) > 24 * 60 * 60 * 1000) return null;
     return phone;
-  } catch (e) {
-    return null;
-  }
+  } catch (e) { return null; }
 }
 
-// SECURITY: Admin auth middleware (opt-in via ENFORCE_ADMIN_AUTH=true)
+// ============================================================
+// SECURITY: Admin auth middleware (no-op until ENFORCE_ADMIN_AUTH=true)
+// ============================================================
 function requireAdmin(req, res, next) {
-  if (!ENFORCE_ADMIN_AUTH) return next(); // backward-compatible
+  if (!ENFORCE_ADMIN_AUTH) return next();
   const token = req.headers['x-admin-token'] ||
                 (req.headers.authorization || '').replace(/^Bearer\s+/i, '');
   const adminId = verifyAdminToken(token);
-  if (!adminId) {
-    return res.status(401).json({ error: 'Admin authentication required' });
-  }
+  if (!adminId) return res.status(401).json({ error: 'Admin authentication required' });
   req.adminId = adminId;
   next();
 }
@@ -142,11 +163,13 @@ function requireAdmin(req, res, next) {
 // Performance & baseline security headers
 app.disable('x-powered-by');
 
-// SECURITY: Helmet first
+// SECURITY: Helmet headers (CSP/CORP/COOP off to preserve inline scripts & fonts)
 if (helmet) {
   app.use(helmet({
-    contentSecurityPolicy: false,       // preserve existing inline scripts
-    crossOriginEmbedderPolicy: false
+    contentSecurityPolicy: false,
+    crossOriginEmbedderPolicy: false,
+    crossOriginResourcePolicy: false,
+    crossOriginOpenerPolicy: false
   }));
 }
 
@@ -162,26 +185,38 @@ app.use((req, res, next) => {
 // Middleware
 app.use(cors());
 
-// SECURITY: Image upload gets its own bigger limit
+// SECURITY: upload-specific parser MUST be registered before global parser.
+// Otherwise the 2MB global limit rejects legitimate image uploads first.
 app.use('/api/media/upload', bodyParser.json({ limit: '10mb' }));
 
 // SECURITY: reduced body limit (was 25mb - DoS risk)
 app.use(bodyParser.json({ limit: '2mb' }));
 app.use(bodyParser.urlencoded({ extended: true, limit: '2mb' }));
 
-// SECURITY: Rate limiting
-let authLimiter = (req, res, next) => next();
+// SECURITY: rate limiting - split read vs write budgets
 if (rateLimit) {
-  const globalLimiter = rateLimit({
+  const readLimiter = rateLimit({
     windowMs: 60 * 1000,
-    max: 200,
+    max: 800,
     standardHeaders: true,
     legacyHeaders: false,
+    skip: (req) => !['GET', 'HEAD', 'OPTIONS'].includes(req.method),
     message: { error: 'Too many requests. Please try again shortly.' }
   });
-  app.use('/api/', globalLimiter);
+  app.use('/api/', readLimiter);
 
-  authLimiter = rateLimit({
+  const writeLimiter = rateLimit({
+    windowMs: 60 * 1000,
+    max: 60,
+    standardHeaders: true,
+    legacyHeaders: false,
+    skip: (req) => ['GET', 'HEAD', 'OPTIONS'].includes(req.method),
+    message: { error: 'Too many updates. Please slow down.' }
+  });
+  app.use('/api/', writeLimiter);
+
+  // SECURITY: tight limit on admin password / Truecaller verify
+  const authLimiter = rateLimit({
     windowMs: 15 * 60 * 1000,
     max: 10,
     skipSuccessfulRequests: true,
@@ -190,8 +225,6 @@ if (rateLimit) {
     message: { error: 'Too many failed attempts. Please try again in 15 minutes.' }
   });
   app.use('/api/auth/login', authLimiter);
-  app.use('/api/otp/verify', authLimiter);
-  app.use('/api/auth/otp/verify', authLimiter);
   app.use('/api/truecaller/verify', authLimiter);
   app.use('/api/auth/truecaller', authLimiter);
 }
@@ -550,6 +583,12 @@ app.post('/api/auth/login', (req, res) => {
         `).run(SUPER_ADMIN_PASS);
         admin = db.prepare("SELECT * FROM admin_users WHERE id = 'ADM-01'").get();
       }
+      // SECURITY: if env password is set, keep DB pin in sync.
+      // This prevents the old DB pin from acting as a second valid password.
+      if (admin && process.env.SUPER_ADMIN_PASSWORD && admin.pin !== process.env.SUPER_ADMIN_PASSWORD) {
+        db.prepare('UPDATE admin_users SET pin = ? WHERE id = ?').run(process.env.SUPER_ADMIN_PASSWORD, admin.id);
+        admin.pin = process.env.SUPER_ADMIN_PASSWORD;
+      }
     } else if (isSubAdminEmail && isSubAdminPass) {
       admin = db.prepare("SELECT * FROM admin_users WHERE id = 'ADM-SUB' OR LOWER(TRIM(username)) = 'subadmin@sikardrop.in' OR LOWER(TRIM(username)) = 'subadmin'").get();
       if (!admin) {
@@ -559,6 +598,10 @@ app.post('/api/auth/login', (req, res) => {
           VALUES ('ADM-SUB', 'subadmin@sikardrop.in', 'Operations Sub-Admin', 'Store Sub-Admin', ?, ?, 1, ?)
         `).run(SUBADMIN_PASS, JSON.stringify(['dashboard', 'orders', 'pos', 'inventory', 'khata', 'reports', 'purchases', 'bundles', 'coupons', 'products', 'categories', 'reviews', 'bulk', 'subadmin']), now);
         admin = db.prepare("SELECT * FROM admin_users WHERE id = 'ADM-SUB'").get();
+      }
+      if (admin && process.env.SUBADMIN_PASSWORD && admin.pin !== process.env.SUBADMIN_PASSWORD) {
+        db.prepare('UPDATE admin_users SET pin = ? WHERE id = ?').run(process.env.SUBADMIN_PASSWORD, admin.id);
+        admin.pin = process.env.SUBADMIN_PASSWORD;
       }
     } else {
       // Find candidate admin users matching email, prefix, full email with domain, id, or name
@@ -574,6 +617,7 @@ app.post('/api/auth/login', (req, res) => {
           OR LOWER(TRIM(name)) = ?
           OR LOWER(TRIM(name)) LIKE ?
         )
+        ${process.env.SUPER_ADMIN_PASSWORD ? "AND id != 'ADM-01'" : ''}
       `).all(
         loginEmail,
         emailPrefix,
@@ -3544,7 +3588,7 @@ app.delete('/api/products/:id', requireAdmin, async (req, res) => {
   }
 });
 
-app.post('/api/products/bulk-price', (req, res) => {
+app.post('/api/products/bulk-price', requireAdmin, (req, res) => {
   try {
     let { mode, value, category, apply = false, action, percentage } = req.body;
     // Harmonize action & percentage from admin UI
@@ -4775,7 +4819,7 @@ app.put('/api/bundles/:id', requireAdmin, (req, res) => {
   }
 });
 
-app.patch('/api/bundles/:id/toggle', (req, res) => {
+app.patch('/api/bundles/:id/toggle', requireAdmin, (req, res) => {
   try {
     const { id } = req.params;
     const now = new Date().toISOString();
@@ -4806,74 +4850,20 @@ app.delete('/api/bundles/:id', requireAdmin, (req, res) => {
   }
 });
 
-// ==========================================
-// 17. OTP VERIFICATION (DEV & PROD SECURE FLOW)
-// ==========================================
-function getSystemOtp() {
-  try {
-    const row = db.prepare("SELECT value FROM website_settings WHERE key = 'default_otp'").get();
-    if (row && row.value && String(row.value).trim()) {
-      const val = String(row.value).trim();
-      if ((val === '9999' || val === '1234') && !IS_DEV && process.env.ALLOW_TEST_OTP !== 'true') {
-        // Fall through to secure random in production
-      } else {
-        return val;
-      }
-    }
-  } catch (e) {}
-  // SECURITY: 9999 fallback ONLY allowed in dev or when explicitly enabled.
-  // In production without config, generate a random 6-digit code that the
-  // admin must retrieve from the DB or WhatsApp (never guessable).
-  if (IS_DEV || process.env.ALLOW_TEST_OTP === 'true') {
-    return '9999';
-  }
-  return String(Math.floor(100000 + Math.random() * 900000));
-}
-
-app.get('/api/settings/otp', (req, res) => {
-  try {
-    const currentOtp = getSystemOtp();
-    res.json({ default_otp: currentOtp });
-  } catch (err) {
-    res.status(500).json({ error: err.message });
-  }
-});
-
-app.post('/api/settings/otp', requireAdmin, (req, res) => {
-  try {
-    const { otp } = req.body;
-    if (!otp || String(otp).trim().length < 4) {
-      return res.status(400).json({ error: 'Valid OTP of at least 4 digits is required' });
-    }
-    const cleanOtp = String(otp).trim();
-    const now = new Date().toISOString();
-    db.prepare(`
-      INSERT INTO website_settings (key, value, updated_at)
-      VALUES ('default_otp', ?, ?)
-      ON CONFLICT(key) DO UPDATE SET value = excluded.value, updated_at = excluded.updated_at
-    `).run(cleanOtp, now);
-
-    try {
-      db.prepare(`
-        INSERT INTO audit_logs (id, actor, action, module, details, created_at)
-        VALUES (?, 'Admin', 'OTP_CONFIG_UPDATED', 'settings', ?, ?)
-      `).run('AUD-' + Math.floor(100000 + Math.random() * 900000), `Updated default system verification OTP to '${cleanOtp}'`, now);
-    } catch (e) {}
-
-    res.json({ success: true, default_otp: cleanOtp, message: `System verification OTP updated to '${cleanOtp}'` });
-  } catch (err) {
-    res.status(500).json({ error: err.message });
-  }
-});
+// ============================================================
+// [REMOVED] OTP system - replaced by Truecaller 1-Tap verification.
+// All /api/otp/* and /api/settings/otp/* endpoints deleted.
+// Truecaller endpoints live in section 17.6 below.
+// ============================================================
 
 app.get('/api/users', (req, res) => {
   try {
+    // SECURITY: OTP system removed; verified flag comes from Truecaller flow.
     const users = db.prepare(`
       SELECT c.id, c.name, c.phone, c.email, c.verified, c.total_orders, c.lifetime_spend, c.created_at, c.last_activity,
-             COALESCE(o.last_sent, c.last_activity) as loginTime,
-             COALESCE(o.verified, 1) as otp_verified
+             c.last_activity as loginTime,
+             1 as otp_verified
       FROM customers c
-      LEFT JOIN otp_codes o ON c.phone = o.phone
       ORDER BY c.last_activity DESC
     `).all();
     res.json(users);
@@ -4882,308 +4872,10 @@ app.get('/api/users', (req, res) => {
   }
 });
 
-// WhatsApp Gateway Provider Helper
-async function sendWhatsAppOtpViaProvider({ provider, apiKey, phoneId, templateName, toPhone, otp }) {
-  if (!apiKey || !apiKey.trim()) {
-    return { success: true, mode: 'test_default', message: 'No API key provided. Using default fallback OTP 9999.' };
-  }
-
-  const cleanPhone = String(toPhone).replace(/[^0-9]/g, '');
-  const recipient = cleanPhone.length === 10 ? `91${cleanPhone}` : cleanPhone;
-
-  // 1. Meta WhatsApp Cloud API
-  if (provider === 'meta_cloud' || !provider) {
-    const targetPhoneId = phoneId || 'YOUR_PHONE_NUMBER_ID';
-    const url = `https://graph.facebook.com/v19.0/${targetPhoneId}/messages`;
-    const res = await fetch(url, {
-      method: 'POST',
-      headers: {
-        'Authorization': `Bearer ${apiKey.trim()}`,
-        'Content-Type': 'application/json'
-      },
-      body: JSON.stringify({
-        messaging_product: 'whatsapp',
-        recipient_type: 'individual',
-        to: recipient,
-        type: 'template',
-        template: {
-          name: templateName || 'otp_verification',
-          language: { code: 'en' },
-          components: [
-            {
-              type: 'body',
-              parameters: [{ type: 'text', text: String(otp) }]
-            },
-            {
-              type: 'button',
-              sub_type: 'url',
-              index: '0',
-              parameters: [{ type: 'text', text: String(otp) }]
-            }
-          ]
-        }
-      })
-    });
-    const data = await res.json();
-    if (!res.ok) {
-      throw new Error((data && data.error && data.error.message) || `WhatsApp API error HTTP ${res.status}`);
-    }
-    return { success: true, mode: 'meta_cloud', data };
-  }
-
-  // 2. Fast2SMS WhatsApp Gateway
-  if (provider === 'fast2sms') {
-    const url = 'https://www.fast2sms.com/dev/bulkV2';
-    const res = await fetch(url, {
-      method: 'POST',
-      headers: {
-        'authorization': apiKey.trim(),
-        'Content-Type': 'application/json'
-      },
-      body: JSON.stringify({
-        route: 'dlt',
-        sender_id: phoneId || 'SKRDRO',
-        message: `Your Sikar Drop WhatsApp verification OTP is ${otp}. Valid for 15 mins.`,
-        flash: 0,
-        numbers: cleanPhone.slice(-10)
-      })
-    });
-    const data = await res.json();
-    return { success: true, mode: 'fast2sms', data };
-  }
-
-  // 3. Custom Webhook / HTTP Gateway
-  if (provider === 'custom_webhook' || (phoneId && phoneId.startsWith('http'))) {
-    const targetUrl = phoneId.startsWith('http') ? phoneId : 'https://api.whatsapp.gateway/send';
-    const res = await fetch(targetUrl, {
-      method: 'POST',
-      headers: {
-        'Authorization': `Bearer ${apiKey.trim()}`,
-        'Content-Type': 'application/json'
-      },
-      body: JSON.stringify({
-        phone: recipient,
-        otp: String(otp),
-        message: `Your Sikar Drop WhatsApp verification OTP is ${otp}.`
-      })
-    });
-    const data = await res.json();
-    return { success: true, mode: 'custom_webhook', data };
-  }
-
-  return { success: true, mode: 'dispatched' };
-}
-
-const handleOtpSend = async (req, res) => {
-  try {
-    const { phone, channel, name } = req.body;
-    if (!phone) return res.status(400).json({ error: 'Phone number is required' });
-
-    const cleanPhone = String(phone).replace(/[^0-9]/g, '');
-    if (cleanPhone.length < 10) {
-      return res.status(400).json({ error: 'Please enter a valid 10-digit mobile number' });
-    }
-
-    // Retrieve settings
-    const rows = db.prepare("SELECT key, value FROM website_settings WHERE key IN ('default_otp', 'whatsapp_api_key', 'whatsapp_phone_id', 'whatsapp_provider', 'whatsapp_template')").all();
-    const cfg = {};
-    rows.forEach(r => { cfg[r.key] = r.value; });
-
-    const apiKey = (cfg.whatsapp_api_key || '').trim();
-    const phoneId = (cfg.whatsapp_phone_id || '').trim();
-    const provider = (cfg.whatsapp_provider || 'meta_cloud').trim();
-    const templateName = (cfg.whatsapp_template || 'otp_verification').trim();
-    const sysDefaultOtp = (cfg.default_otp || '9999').trim();
-
-    let generatedOtp = '9999';
-    let isLiveDispatched = false;
-    let dispatchMsg = '';
-
-    if (apiKey) {
-      // API Key provided: Generate dynamic 4-digit code and dispatch via WhatsApp Gateway
-      generatedOtp = String(Math.floor(1000 + Math.random() * 9000));
-      try {
-        await sendWhatsAppOtpViaProvider({
-          provider,
-          apiKey,
-          phoneId,
-          templateName,
-          toPhone: cleanPhone,
-          otp: generatedOtp
-        });
-        isLiveDispatched = true;
-        dispatchMsg = `WhatsApp OTP dispatched to +91 ${cleanPhone.slice(-10)}`;
-      } catch (dispErr) {
-        console.warn('[WHATSAPP-OTP] Gateway error, falling back to default OTP:', dispErr.message);
-        generatedOtp = sysDefaultOtp || '9999';
-        dispatchMsg = `Gateway notice (${dispErr.message}). Fallback OTP ${generatedOtp} active.`;
-      }
-    } else {
-      // API Key NOT provided yet: Keep 9999 as default
-      generatedOtp = sysDefaultOtp || '9999';
-      dispatchMsg = `Default WhatsApp OTP is ${generatedOtp}. Enter ${generatedOtp} to verify.`;
-    }
-
-    const now = new Date().toISOString();
-    const expiresAt = new Date(Date.now() + 15 * 60000).toISOString(); // 15 min expiry
-
-    db.prepare(`
-      INSERT OR REPLACE INTO otp_codes (phone, otp_code, expires_at, attempts, verified, last_sent)
-      VALUES (?, ?, ?, 0, 0, ?)
-    `).run(cleanPhone, generatedOtp, expiresAt, now);
-
-    console.log(`[AUTH-OTP] Mode: ${apiKey ? 'LIVE_WHATSAPP' : 'DEFAULT_SANDBOX_9999'} | Phone: ${cleanPhone} | OTP: ${generatedOtp}`);
-
-    res.json({
-      success: true,
-      phone: cleanPhone,
-      otp: generatedOtp,
-      testOtp: generatedOtp,
-      defaultOtp: generatedOtp,
-      channel: 'whatsapp',
-      live: isLiveDispatched,
-      message: dispatchMsg
-    });
-  } catch (err) {
-    res.status(500).json({ error: err.message });
-  }
-};
-
-app.post('/api/otp/send', authLimiter, handleOtpSend);
-app.post('/api/auth/otp/send', authLimiter, handleOtpSend);
-
-const handleOtpVerify = (req, res) => {
-  try {
-    const { phone, otp, name } = req.body;
-    if (!phone || !otp) return res.status(400).json({ error: 'Phone and OTP are required' });
-
-    const cleanPhone = String(phone).replace(/[^0-9]/g, '');
-    const cleanOtp = String(otp).trim();
-    const sysOtp = getSystemOtp();
-
-    const record = db.prepare('SELECT * FROM otp_codes WHERE phone = ?').get(cleanPhone);
-
-    // SECURITY: 9999/1234 shortcuts only in dev or explicit opt-in.
-    const allowTestOtp = IS_DEV || process.env.ALLOW_TEST_OTP === 'true';
-    const isSystemOtpValid =
-      (allowTestOtp && (cleanOtp === '9999' || cleanOtp === '1234')) ||
-      cleanOtp === sysOtp;
-    const isRecordOtpValid = record && record.otp_code === cleanOtp && new Date().toISOString() <= record.expires_at;
-
-    if (!isSystemOtpValid && !isRecordOtpValid) {
-      if (record) {
-        db.prepare('UPDATE otp_codes SET attempts = attempts + 1 WHERE phone = ?').run(cleanPhone);
-      }
-      return res.status(400).json({ error: 'Invalid OTP code. Please enter the correct verification code.' });
-    }
-
-    db.prepare(`
-      INSERT OR REPLACE INTO otp_codes (phone, otp_code, expires_at, attempts, verified, last_sent)
-      VALUES (?, ?, ?, 0, 1, ?)
-    `).run(cleanPhone, cleanOtp, new Date(Date.now() + 60 * 60000).toISOString(), new Date().toISOString());
-
-    // Fetch or create customer record
-    const now = new Date().toISOString();
-    let cust = db.prepare('SELECT * FROM customers WHERE phone = ?').get(cleanPhone);
-    const providedName = (name && String(name).trim() && String(name).trim() !== 'Valued Customer') ? String(name).trim() : null;
-
-    if (!cust) {
-      const custId = 'CUST-' + Math.floor(1000 + Math.random() * 9000);
-      const custName = providedName || 'Mahesh Sharma';
-      db.prepare(`
-        INSERT INTO customers (id, name, phone, verified, total_orders, lifetime_spend, outstanding_balance, created_at, last_activity)
-        VALUES (?, ?, ?, 1, 0, 0, 0, ?, ?)
-      `).run(custId, custName, cleanPhone, now, now);
-      cust = db.prepare('SELECT * FROM customers WHERE id = ?').get(custId);
-    } else {
-      const updatedName = providedName || cust.name || 'Valued Customer';
-      db.prepare(`
-        UPDATE customers SET verified = 1, last_activity = ?, name = ? WHERE phone = ?
-      `).run(now, updatedName, cleanPhone);
-      cust = db.prepare('SELECT * FROM customers WHERE id = ?').get(cust.id);
-    }
-
-    try {
-      db.prepare(`
-        INSERT INTO audit_logs (id, actor, action, module, details, created_at)
-        VALUES (?, ?, 'USER_OTP_VERIFIED', 'auth', ?, ?)
-      `).run('AUD-' + Math.floor(100000 + Math.random() * 900000), cust.name, `Customer verified & logged in via OTP (${cleanPhone})`, now);
-    } catch (e) {}
-
-    res.json({
-      success: true,
-      verified: true,
-      customer: cust,
-      user: {
-        id: cust.id,
-        name: cust.name,
-        phone: cust.phone,
-        email: cust.email || '',
-        verified: true
-      },
-      message: 'Login successfully verified!'
-    });
-  } catch (err) {
-    res.status(500).json({ error: err.message });
-  }
-};
-
-app.post('/api/otp/verify', handleOtpVerify);
-app.post('/api/auth/otp/verify', handleOtpVerify);
-
-// ==========================================
-// 17.5 WHATSAPP GATEWAY CONFIGURATION ROUTES
-// ==========================================
-app.get('/api/settings/whatsapp', (req, res) => {
-  try {
-    const rows = db.prepare("SELECT key, value FROM website_settings WHERE key IN ('default_otp', 'whatsapp_api_key', 'whatsapp_phone_id', 'whatsapp_provider', 'whatsapp_template')").all();
-    const cfg = {};
-    rows.forEach(r => { cfg[r.key] = r.value; });
-    const rawKey = (cfg.whatsapp_api_key || '').trim();
-    const maskedKey = rawKey ? (rawKey.length > 8 ? rawKey.slice(0, 4) + '••••••••' + rawKey.slice(-4) : '••••••••') : '';
-
-    res.json({
-      configured: !!rawKey,
-      has_api_key: !!rawKey,
-      whatsapp_api_key: maskedKey,
-      whatsapp_phone_id: cfg.whatsapp_phone_id || '',
-      whatsapp_provider: cfg.whatsapp_provider || 'meta_cloud',
-      whatsapp_template: cfg.whatsapp_template || 'otp_verification',
-      default_otp: cfg.default_otp || '9999'
-    });
-  } catch (err) {
-    res.status(500).json({ error: err.message });
-  }
-});
-
-app.post('/api/settings/whatsapp', requireAdmin, (req, res) => {
-  try {
-    const { apiKey, phoneId, provider, templateName, defaultOtp } = req.body;
-    const now = new Date().toISOString();
-
-    const insertOrUpdate = db.prepare(`
-      INSERT INTO website_settings (key, value, updated_at)
-      VALUES (?, ?, ?)
-      ON CONFLICT(key) DO UPDATE SET value = excluded.value, updated_at = excluded.updated_at
-    `);
-
-    db.transaction(() => {
-      if (apiKey !== undefined) {
-        if (!apiKey.includes('••••')) {
-          insertOrUpdate.run('whatsapp_api_key', apiKey.trim(), now);
-        }
-      }
-      if (phoneId !== undefined) insertOrUpdate.run('whatsapp_phone_id', phoneId.trim(), now);
-      if (provider !== undefined) insertOrUpdate.run('whatsapp_provider', provider.trim(), now);
-      if (templateName !== undefined) insertOrUpdate.run('whatsapp_template', templateName.trim(), now);
-      if (defaultOtp !== undefined) insertOrUpdate.run('default_otp', defaultOtp.trim() || '9999', now);
-    })();
-
-    res.json({ success: true, message: 'WhatsApp OTP gateway settings saved successfully' });
-  } catch (err) {
-    res.status(400).json({ error: err.message });
-  }
-});
+// ============================================================
+// [REMOVED] WhatsApp OTP config - replaced by Truecaller settings.
+// Truecaller config is at /api/settings/truecaller.
+// ============================================================
 
 // ==========================================
 // 17.6 TRUECALLER 1-TAP VERIFICATION GATEWAY
@@ -6621,7 +6313,18 @@ if (require.main === module) {
     console.log(` SIKAR DROP ENTERPRISE SERVER RUNNING ON PORT ${PORT}`);
     console.log(` Storefront: http://127.0.0.1:${PORT}`);
     console.log(` Admin Hub:  http://127.0.0.1:${PORT}/admin.html`);
-    console.log(` Environment: ${IS_DEV ? 'DEVELOPMENT (Test OTP: 9999 Enabled)' : 'PRODUCTION'}`);
+    console.log(` Environment: ${IS_DEV ? 'DEVELOPMENT' : 'PRODUCTION'}`);
+    console.log(` Auth mode: Truecaller 1-Tap only (OTP system removed)`);
+    console.log(` Admin API auth: ${ENFORCE_ADMIN_AUTH ? 'ENFORCED' : 'open (set ENFORCE_ADMIN_AUTH=true to enforce)'}`);
+    if (!IS_DEV) {
+      try {
+        const tcKey = db.prepare("SELECT value FROM website_settings WHERE key = 'truecaller_app_key'").get();
+        if (!tcKey || !tcKey.value) {
+          console.warn(' [WARNING] Truecaller app key not configured.');
+          console.warn('    Users will NOT be able to verify. Set it in /admin -> Settings -> Truecaller.');
+        }
+      } catch (e) {}
+    }
     console.log(`=======================================================`);
   });
 }

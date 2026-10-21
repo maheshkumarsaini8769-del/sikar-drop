@@ -1383,21 +1383,14 @@ function handleAuthSuccess(userData, method = 'Truecaller Verified') {
 }
 
 // Global Aliases for Compatibility
-async function submitTruecallerVerification() {
-  return startTruecaller1TapFlow();
-}
-
-async function submitLoginProcess() {
-  return startTruecaller1TapFlow();
-}
-
-async function requestWhatsAppOtp() {
-  return startTruecaller1TapFlow();
-}
-
-async function handleAuthAction() {
-  return startTruecaller1TapFlow();
-}
+// SECURITY: All aliases route to Truecaller. Old OTP-based names kept
+// so any legacy HTML still referencing them does not break.
+async function submitTruecallerVerification() { return startTruecaller1TapFlow(); }
+async function submitLoginProcess()          { return startTruecaller1TapFlow(); }
+async function requestWhatsAppOtp()          { return startTruecaller1TapFlow(); }
+async function handleAuthAction()            { return startTruecaller1TapFlow(); }
+async function handleOtpVerify()             { return startTruecaller1TapFlow(); } // legacy alias
+async function handleOtpSend()               { return startTruecaller1TapFlow(); } // legacy alias
 
 // Auto-check on return from Truecaller redirect
 window.addEventListener('DOMContentLoaded', async () => {

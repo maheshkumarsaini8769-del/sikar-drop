@@ -2112,9 +2112,20 @@ function receivePurchaseTransaction({ purchaseId, actor = 'Admin' }) {
 }
 
 // 4. ATOMIC ORDER CREATION (ONLINE STOREFRONT)
-function createOnlineOrderTransaction({ orderId: customOrderId, customerName, customerPhone, loginPhone = '', deliveryPhone = '', addressPhone = '', corridor, address = '', deliveryAddress = '', items = [], subtotal, discount = 0, total, paymentMethod = 'COD', paymentStatus = '', notes = '', attribution = {} }) {
+function createOnlineOrderTransaction({ orderId: customOrderId, customerName, customerPhone, loginPhone = '', deliveryPhone = '', addressPhone = '', corridor, address = '', deliveryAddress = '', items = [], subtotal, discount = 0, total, couponCode = '', paymentMethod = 'COD', paymentStatus = '', notes = '', attribution = {} }) {
   const runTx = db.transaction(() => {
-    const orderId = customOrderId || ('SKR-' + Math.floor(1000 + Math.random() * 9000));
+    // Order IDs are generated server-side with a collision guard. Client-supplied
+    // IDs are only honoured when they are free, otherwise a fresh unique ID is minted.
+    let orderId = String(customOrderId || '').trim();
+    if (orderId) {
+      const clash = db.prepare('SELECT id FROM orders WHERE id = ?').get(orderId);
+      if (clash) orderId = '';
+    }
+    if (!orderId) {
+      do {
+        orderId = 'SKR-' + Math.floor(1000 + Math.random() * 9000);
+      } while (db.prepare('SELECT id FROM orders WHERE id = ?').get(orderId));
+    }
     const finalAddress = address || deliveryAddress || corridor || 'Sikar';
     const finalLoginPhone = String(loginPhone || customerPhone || '').trim();
     const finalDeliveryPhone = String(deliveryPhone || addressPhone || customerPhone || finalLoginPhone).trim();
@@ -2170,10 +2181,17 @@ function createOnlineOrderTransaction({ orderId: customOrderId, customerName, cu
 
     // Customer record
     const cleanPrimary = (primaryPhone || '').replace(/\D/g, '');
-    const isInvalidPhone = cleanPrimary.length < 10;
-    const otpRec = cleanPrimary.length >= 10 ? db.prepare('SELECT verified FROM otp_codes WHERE phone = ?').get(cleanPrimary) : null;
-    const existingCust = cleanPrimary.length >= 10 ? db.prepare("SELECT id, verified, customer_type FROM customers WHERE REPLACE(phone, ' ', '') = ?").get(cleanPrimary) : null;
-    const isVerified = (otpRec && otpRec.verified === 1) || (existingCust && existingCust.verified === 1 && existingCust.customer_type === 'registered');
+    // SECURITY: OTP system removed. Legacy otp_codes.verified lookup kept
+    // ONLY for backward compat with users who verified via OTP before migration.
+    const legacyOtpRec = cleanPrimary.length >= 10
+      ? db.prepare('SELECT verified FROM otp_codes WHERE phone = ?').get(cleanPrimary)
+      : null;
+    const existingCust = cleanPrimary.length >= 10
+      ? db.prepare("SELECT id, verified, customer_type FROM customers WHERE REPLACE(phone, ' ', '') = ?").get(cleanPrimary)
+      : null;
+    const isVerified =
+      (existingCust && existingCust.verified === 1) ||
+      (legacyOtpRec && legacyOtpRec.verified === 1);
     const custType = isInvalidPhone ? 'unverified' : (isVerified ? 'registered' : 'guest');
     const verifiedVal = isInvalidPhone ? 2 : (isVerified ? 1 : 0);
 

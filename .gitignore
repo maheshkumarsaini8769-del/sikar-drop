@@ -6,6 +6,7 @@ node_modules/
 .impeccable/
 *.log
 *.bak
+*.backup*
 data/*-wal
 data/*-shm
 .DS_Store
