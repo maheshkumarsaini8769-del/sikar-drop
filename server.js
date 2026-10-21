@@ -83,18 +83,16 @@ try { rateLimit = require('express-rate-limit'); } catch (e) {
 const IS_DEV = !process.env.NODE_ENV || process.env.NODE_ENV === 'development';
 
 // ============================================================
-// SECURITY: HMAC secrets (fatal error if missing in production)
+// SECURITY: HMAC secrets (with cryptographic fallback)
 // ============================================================
 const ADMIN_TOKEN_SECRET = process.env.ADMIN_TOKEN_SECRET ||
-  (IS_DEV ? crypto.randomBytes(32).toString('hex') : null);
+  crypto.randomBytes(32).toString('hex');
 const TRUECALLER_SECRET = process.env.TRUECALLER_SECRET ||
-  (IS_DEV ? crypto.randomBytes(32).toString('hex') : null);
+  crypto.randomBytes(32).toString('hex');
 const ENFORCE_ADMIN_AUTH = process.env.ENFORCE_ADMIN_AUTH === 'true';
 
-if (!ADMIN_TOKEN_SECRET || !TRUECALLER_SECRET) {
-  console.error('[FATAL] ADMIN_TOKEN_SECRET and TRUECALLER_SECRET must be set in .env.local in production.');
-  console.error('        Generate with: node -e "console.log(require(\'crypto\').randomBytes(32).toString(\'hex\'))"');
-  if (!IS_DEV) process.exit(1);
+if (!process.env.ADMIN_TOKEN_SECRET || !process.env.TRUECALLER_SECRET) {
+  console.warn('[SECURITY] ADMIN_TOKEN_SECRET or TRUECALLER_SECRET not set in environment. Using generated ephemeral secret.');
 }
 
 // ============================================================
