@@ -328,7 +328,7 @@
               <button type="button" onclick="handleCartSwitchUser()" style="background: none; border: none; color: #0066F5; font-size: 0.78rem; font-weight: 700; text-decoration: underline; cursor: pointer;">Change Number</button>
             </div>
             
-            <form id="checkout-dispatch-form" onsubmit="handleCartFormSubmit(event)">
+            <form id="checkout-dispatch-form" novalidate onsubmit="handleCartFormSubmit(event)">
               <div class="checkout-form-group">
                 <label for="order-cust-name">Full Name / Business Name *</label>
                 <input type="text" id="order-cust-name" required placeholder="e.g. Ramesh Saini or Royal Garden">
@@ -628,7 +628,9 @@
     }
 
     async function handleCartFormSubmit(e) {
-      e.preventDefault();
+      // This handler is also invoked programmatically after a successful login
+      // (without a submit event), so the guard must be optional.
+      if (e && typeof e.preventDefault === 'function') e.preventDefault();
       const cart = JSON.parse(localStorage.getItem('sikar_cart') || '{}');
       const items = [];
       let total = 0;
@@ -647,12 +649,16 @@
         return;
       }
 
-      // TRUECALLER LOGIN GATE
+      // LOGIN GATE
+      // Already logged in -> continue straight to order placement.
+      // Not logged in     -> verify first, then automatically resume the order.
       const activeUser = JSON.parse(localStorage.getItem('sikar_user') || 'null');
       if (!activeUser || !activeUser.phone) {
+        window.cartLoginResume = true;
         openCartLoginModal();
         return;
       }
+      window.cartLoginResume = false;
 
       const name = document.getElementById('order-cust-name').value.trim() || activeUser.name || 'Valued Customer';
       const phone = document.getElementById('order-cust-phone').value.trim() || activeUser.phone;
@@ -661,6 +667,21 @@
       const payMethod = document.querySelector('input[name="pay-method"]:checked')?.value || 'COD';
       const notes = document.getElementById('order-notes').value.trim();
 
+      // Manual validation (the form is novalidate so the LOGIN GATE above
+      // always runs first, and the customer is never blocked by a native
+      // browser tooltip before we can ask them to log in).
+      if (!name) {
+        alert('Please enter your full name.');
+        const nameEl = document.getElementById('order-cust-name');
+        if (nameEl) nameEl.focus();
+        return;
+      }
+      if (!/^[0-9]{10}$/.test(phone)) {
+        alert('Please enter a valid 10-digit WhatsApp mobile number.');
+        const phoneEl = document.getElementById('order-cust-phone');
+        if (phoneEl) phoneEl.focus();
+        return;
+      }
       if (!corridor || !address) {
         alert('Please select your Sikar delivery area and enter your street address.');
         return;

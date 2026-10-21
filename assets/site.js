@@ -1319,6 +1319,7 @@ function initiateCheckoutGate() {
 }
 
 function openLoginModal(purpose = 'nav') {
+  ensureCheckoutModals();
   window.loginPurpose = purpose;
   if (typeof loginPurpose !== 'undefined') loginPurpose = purpose;
   const modal = document.getElementById('login-modal');
@@ -1526,8 +1527,16 @@ function handleAuthSuccess(userData, method = 'Truecaller Verified') {
   showToast(`Verified via Truecaller! Welcome, ${currentUser.name}.`);
 
   const purpose = window.loginPurpose || (typeof loginPurpose !== 'undefined' ? loginPurpose : 'nav');
-  if (purpose === 'checkout' && typeof openOrderConfirmModal === 'function') {
-    openOrderConfirmModal();
+  if (purpose === 'checkout') {
+    // Resume the checkout exactly where the customer left off.
+    ensureCheckoutModals();
+    setTimeout(() => {
+      try {
+        if (typeof openOrderConfirmModal === 'function') openOrderConfirmModal();
+      } catch (e) {
+        console.warn('Checkout resume error:', e);
+      }
+    }, 60);
   }
 }
 
@@ -1684,6 +1693,7 @@ function validateCheckoutAddressLocation() {
 }
 
 function openOrderConfirmModal() {
+  ensureCheckoutModals();
   const modal = document.getElementById('order-confirm-modal');
   if (!modal) return;
 
@@ -1696,9 +1706,12 @@ function openOrderConfirmModal() {
   const elAmt = document.getElementById('confirm-total-amount');
   const delivPhoneInput = document.getElementById('delivery-phone-input');
 
-  const loginPhoneVal = (currentUser && currentUser.phone) ? String(currentUser.phone).trim() : '';
+  // Always resolve the signed-in customer from storage so the order screen
+  // shows the right name/number no matter which page the flow started from.
+  const signedIn = getSignedInUser();
+  const loginPhoneVal = (signedIn && signedIn.phone) ? String(signedIn.phone).trim() : '';
 
-  if (elName) elName.textContent = currentUser ? currentUser.name : 'Counter Guest';
+  if (elName) elName.textContent = signedIn ? signedIn.name : 'Counter Guest';
   if (elPhone) elPhone.textContent = loginPhoneVal ? `+91 ${loginPhoneVal}` : '+91 98290 XXXXX';
   if (elPetis) elPetis.textContent = `${totalPetis} Petis / Cases`;
   if (elAmt) elAmt.textContent = `₹${totalAmount.toLocaleString('en-IN')}`;
@@ -1753,9 +1766,10 @@ async function dispatchFinalWhatsAppOrder() {
     return;
   }
 
-  const loginPhoneVal = (currentUser && currentUser.phone)
-    ? String(currentUser.phone).trim()
-    : (document.getElementById('login-phone-input')?.value.trim() || '9829012345');
+  const signedInUser = getSignedInUser();
+  const loginPhoneVal = (signedInUser && signedInUser.phone)
+    ? String(signedInUser.phone).trim()
+    : (document.getElementById('login-phone-input')?.value.trim() || '');
   const delivPhoneInput = document.getElementById('delivery-phone-input');
   const deliveryPhoneVal = (delivPhoneInput && delivPhoneInput.value.trim()) ? delivPhoneInput.value.trim() : loginPhoneVal;
 
@@ -1777,9 +1791,9 @@ async function dispatchFinalWhatsAppOrder() {
     return;
   }
 
-  const orderId = 'SKR-' + Math.floor(1000 + Math.random() * 9000);
   const total = items.reduce((a, b) => a + (b.price * b.quantity), 0);
   const fullAddress = addressNote ? `${addressNote}, ${corridor}` : corridor;
+  const couponCode = (typeof appliedCoupon !== 'undefined' && appliedCoupon && appliedCoupon.code) ? appliedCoupon.code : '';
 
   const btn = document.getElementById('btn-confirm-dispatch-order');
   if (btn) {
@@ -1792,7 +1806,6 @@ async function dispatchFinalWhatsAppOrder() {
       method: 'POST',
       headers: { 'Content-Type': 'application/json' },
       body: JSON.stringify({
-        orderId,
         customerName: currentUser ? currentUser.name : 'Valued Customer',
         customerPhone: loginPhoneVal,
         loginPhone: loginPhoneVal,
@@ -1800,6 +1813,7 @@ async function dispatchFinalWhatsAppOrder() {
         corridor,
         deliveryAddress: fullAddress,
         items,
+        couponCode,
         notes: addressNote,
         attribution: window.SikarAnalytics && typeof window.SikarAnalytics.getAttributionPayload === 'function'
           ? window.SikarAnalytics.getAttributionPayload()
@@ -1807,9 +1821,15 @@ async function dispatchFinalWhatsAppOrder() {
       })
     });
 
-    if (res.ok) {
+    const data = await res.json().catch(() => ({}));
+
+    if (res.ok && data.success) {
+      // The server is the single source of truth for the order ID and totals.
+      const orderId = data.orderId || (data.order && data.order.orderId) || '';
+      const finalTotal = Number(data.total || (data.order && data.order.total) || total);
+
       if (window.SikarAnalytics && typeof window.SikarAnalytics.trackPurchase === 'function') {
-        window.SikarAnalytics.trackPurchase(orderId, total);
+        window.SikarAnalytics.trackPurchase(orderId, finalTotal);
       }
 
       // Clear Cart across all references
@@ -1830,7 +1850,7 @@ async function dispatchFinalWhatsAppOrder() {
           id: orderId,
           phone: cleanPhone,
           customerName: currentUser ? currentUser.name : 'Valued Customer',
-          total: total,
+          total: finalTotal,
           corridor: corridor,
           date: new Date().toISOString(),
           status: 'pending',
@@ -1850,8 +1870,8 @@ async function dispatchFinalWhatsAppOrder() {
         ? `Login Phone: ${loginPhoneVal}\nAddress Phone: ${deliveryPhoneVal}`
         : `Phone: ${loginPhoneVal}`;
 
-      const msg = `*NEW SIKAR DROP BILTY DISPATCH*\nOrder ID: ${orderId}\nCustomer: ${currentUser ? currentUser.name : 'Customer'}\n${phoneLines}\nCorridor: ${corridor}\nAddress: ${fullAddress}\n\n*Items Ordered:*\n${itemsList}\n\n*Total Amount:* Rs.${total}\n*Camper Notice:* 100% Factory Sealed Cases Only.`;
-      
+      const msg = `*NEW SIKAR DROP BILTY DISPATCH*\nOrder ID: ${orderId}\nCustomer: ${currentUser ? currentUser.name : 'Customer'}\n${phoneLines}\nCorridor: ${corridor}\nAddress: ${fullAddress}\n\n*Items Ordered:*\n${itemsList}\n\n*Total Amount:* Rs.${finalTotal}\n*Camper Notice:* 100% Factory Sealed Cases Only.`;
+
       const waUrl = `https://wa.me/${depotPhone}?text=${encodeURIComponent(msg)}`;
       showToast(`Order #${orderId} booked! Dispatching to WhatsApp...`);
 
@@ -1864,8 +1884,7 @@ async function dispatchFinalWhatsAppOrder() {
         window.location.href = waUrl;
       }
     } else {
-      const errData = await res.json().catch(() => ({}));
-      showToast(errData.error || 'Failed to place order. Please try again.');
+      showToast(data.error || 'Failed to place order. Please try again.');
     }
   } catch (e) {
     console.error('Order creation error:', e);
@@ -1957,12 +1976,14 @@ async function loadSeoSettingsFromBackend() {
 if (typeof window !== 'undefined') {
   if (document.readyState === 'loading') {
     document.addEventListener('DOMContentLoaded', () => {
+      ensureCheckoutModals();
       initStorefrontTheme();
       loadSiteTextsFromBackend();
       loadSeoSettingsFromBackend();
       ensureMobileMenuElements();
     });
   } else {
+    ensureCheckoutModals();
     initStorefrontTheme();
     loadSiteTextsFromBackend();
     loadSeoSettingsFromBackend();

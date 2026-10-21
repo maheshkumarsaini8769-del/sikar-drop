@@ -2086,18 +2086,12 @@ function receivePurchaseTransaction({ purchaseId, actor = 'Admin' }) {
 // 4. ATOMIC ORDER CREATION (ONLINE STOREFRONT)
 function createOnlineOrderTransaction({ orderId: customOrderId, customerName, customerPhone, loginPhone = '', deliveryPhone = '', addressPhone = '', corridor, address = '', deliveryAddress = '', items = [], subtotal, discount = 0, total, couponCode = '', paymentMethod = 'COD', paymentStatus = '', notes = '', attribution = {} }) {
   const runTx = db.transaction(() => {
-    // Order IDs are generated server-side with a collision guard. Client-supplied
-    // IDs are only honoured when they are free, otherwise a fresh unique ID is minted.
-    let orderId = String(customOrderId || '').trim();
-    if (orderId) {
-      const clash = db.prepare('SELECT id FROM orders WHERE id = ?').get(orderId);
-      if (clash) orderId = '';
-    }
-    if (!orderId) {
-      do {
-        orderId = 'SKR-' + Math.floor(1000 + Math.random() * 9000);
-      } while (db.prepare('SELECT id FROM orders WHERE id = ?').get(orderId));
-    }
+    // Order IDs are ALWAYS minted server-side. Client-supplied IDs are ignored
+    // so a duplicate/stale ID can never abort an order placement.
+    let orderId = '';
+    do {
+      orderId = 'SKR-' + Math.floor(1000 + Math.random() * 9000);
+    } while (db.prepare('SELECT id FROM orders WHERE id = ?').get(orderId));
     const finalAddress = address || deliveryAddress || corridor || 'Sikar';
     const finalLoginPhone = String(loginPhone || customerPhone || '').trim();
     const finalDeliveryPhone = String(deliveryPhone || addressPhone || customerPhone || finalLoginPhone).trim();
