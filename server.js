@@ -5900,7 +5900,34 @@ const PAGE_SEO = {
 
 const pageTemplateCache = new Map();
 
+const STATIC_TEMPLATE_LOADERS = {
+  'index.html': () => fs.readFileSync(path.join(__dirname, 'index.html'), 'utf8'),
+  'admin.html': () => fs.readFileSync(path.join(__dirname, 'admin.html'), 'utf8'),
+  'products.html': () => fs.readFileSync(path.join(__dirname, 'products.html'), 'utf8'),
+  'categories.html': () => fs.readFileSync(path.join(__dirname, 'categories.html'), 'utf8'),
+  'bulk.html': () => fs.readFileSync(path.join(__dirname, 'bulk.html'), 'utf8'),
+  'cart.html': () => fs.readFileSync(path.join(__dirname, 'cart.html'), 'utf8'),
+  'track.html': () => fs.readFileSync(path.join(__dirname, 'track.html'), 'utf8'),
+  'about.html': () => fs.readFileSync(path.join(__dirname, 'about.html'), 'utf8'),
+  'why.html': () => fs.readFileSync(path.join(__dirname, 'why.html'), 'utf8'),
+  'faq.html': () => fs.readFileSync(path.join(__dirname, 'faq.html'), 'utf8'),
+  'contact.html': () => fs.readFileSync(path.join(__dirname, 'contact.html'), 'utf8'),
+  'privacy.html': () => fs.readFileSync(path.join(__dirname, 'privacy.html'), 'utf8'),
+  'terms.html': () => fs.readFileSync(path.join(__dirname, 'terms.html'), 'utf8')
+};
+
 function readPageTemplate(file) {
+  if (STATIC_TEMPLATE_LOADERS[file]) {
+    try {
+      const cached = pageTemplateCache.get(file);
+      if (cached) return cached;
+      const content = STATIC_TEMPLATE_LOADERS[file]();
+      pageTemplateCache.set(file, content);
+      return content;
+    } catch (e) {
+      console.warn(`[Template] Failed to load static template ${file}:`, e.message);
+    }
+  }
   const candidatePaths = [
     path.join(__dirname, file),
     path.join(process.cwd(), file),
@@ -5914,9 +5941,9 @@ function readPageTemplate(file) {
   const stat = fs.statSync(filePath);
   const cached = pageTemplateCache.get(file);
   if (!cached || cached.mtimeMs !== stat.mtimeMs) {
-    pageTemplateCache.set(file, { html: fs.readFileSync(filePath, 'utf8'), mtimeMs: stat.mtimeMs });
+    pageTemplateCache.set(file, fs.readFileSync(filePath, 'utf8'));
   }
-  return pageTemplateCache.get(file).html;
+  return pageTemplateCache.get(file);
 }
 
 function escapeSeoHtml(value) {
