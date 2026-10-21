@@ -1205,46 +1205,88 @@ const SIKAR_LOGIN_MODAL_HTML = `
 const SIKAR_ORDER_CONFIRM_MODAL_HTML = `
   <div class="modal-backdrop" id="order-confirm-modal" role="dialog" aria-modal="true" aria-labelledby="order-confirm-title" data-sikar-injected="1">
     <div class="order-confirm-dialog">
-      <button type="button" class="modal-close-icon" onclick="closeOrderConfirmModal()" aria-label="Close confirmation dialog" style="position: absolute; right: 14px; top: 14px; background: none; border: none; cursor: pointer; color: #64748B;">
-        <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" width="20" height="20"><line x1="18" y1="6" x2="6" y2="18"></line><line x1="6" y1="6" x2="18" y2="18"></line></svg>
+      <button type="button" class="modal-close-icon" onclick="closeOrderConfirmModal()" aria-label="Close confirmation dialog">
+        <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" width="18" height="18"><line x1="18" y1="6" x2="6" y2="18"></line><line x1="6" y1="6" x2="18" y2="18"></line></svg>
       </button>
-      <h3 id="order-confirm-title" style="margin: 0 0 4px; font-size: 1.2rem; font-weight: 800; color: #0B192C;">Confirm Order Dispatch</h3>
-      <p style="font-size: 0.84rem; color: #64748B; margin: 0 0 16px;">Logged in successfully. Confirm the delivery details to dispatch your order.</p>
-      <div style="border-top: 1px solid var(--border-subtle); border-bottom: 1px solid var(--border-subtle); padding: 14px 0; margin-bottom: 16px;">
-        <div style="display: flex; justify-content: space-between; margin-bottom: 6px;">
-          <span style="font-size: 0.84rem; color: var(--text-muted);">Customer:</span>
-          <strong id="confirm-customer-name" style="font-size: 0.9rem; color: #0B192C;">Valued Customer</strong>
+
+      <div style="margin-bottom: 14px; padding-right: 32px;">
+        <div style="display: inline-flex; align-items: center; gap: 6px; background: #E0F2FE; color: #0369A1; font-size: 0.74rem; font-weight: 800; padding: 3px 10px; border-radius: 999px; margin-bottom: 6px; letter-spacing: 0.02em;">
+          <span>SIKAR EXPRESS TEMPO</span> &bull; <span>45-60 MINS</span>
         </div>
-        <div style="display: flex; justify-content: space-between; margin-bottom: 6px;">
-          <span style="font-size: 0.84rem; color: var(--text-muted);">Login Mobile No.:</span>
-          <strong id="confirm-customer-phone" style="font-size: 0.9rem; color: #0B192C;">+91 98290 XXXXX</strong>
+        <h3 id="order-confirm-title" style="margin: 0 0 4px; font-size: 1.32rem; font-family: var(--font-heading); font-weight: 800; color: #0B192C; line-height: 1.25;">
+          Confirm Order Dispatch
+        </h3>
+        <p style="font-size: 0.82rem; color: #64748B; margin: 0; line-height: 1.35;">
+          Verify delivery address and receiver mobile for immediate vehicle dispatch.
+        </p>
+      </div>
+
+      <!-- ORDER SUMMARY CARD -->
+      <div style="background: #F8FAFC; border: 1px solid #E2E8F0; border-radius: 12px; padding: 14px 16px; margin-bottom: 14px;">
+        <div style="display: flex; justify-content: space-between; align-items: center; margin-bottom: 8px;">
+          <span style="font-size: 0.82rem; color: #64748B; font-weight: 600;">Customer / Client:</span>
+          <strong style="font-size: 0.88rem; color: #0B192C; font-weight: 700;" id="confirm-customer-name">Valued Customer</strong>
         </div>
-        <div style="display: flex; justify-content: space-between; margin-bottom: 6px;">
-          <span style="font-size: 0.84rem; color: var(--text-muted);">Total Selected:</span>
-          <strong id="confirm-total-petis" style="font-size: 0.9rem; color: #0369A1;">0 Cases</strong>
+        <div style="display: flex; justify-content: space-between; align-items: center; margin-bottom: 8px;">
+          <span style="font-size: 0.82rem; color: #64748B; font-weight: 600;">Login Mobile:</span>
+          <span style="display: inline-flex; align-items: center; gap: 4px; font-size: 0.86rem; color: #0369A1; font-weight: 700;">
+            <svg width="14" height="14" viewBox="0 0 24 24" fill="#0066F5"><path d="M12 2C6.48 2 2 6.48 2 12c0 1.85.5 3.58 1.38 5.07L2.1 21.9l4.98-1.28C8.51 21.49 10.2 22 12 22c5.52 0 10-4.48 10-10S17.52 2 12 2zm-1 14.5l-3.5-3.5 1.41-1.41L11 13.67l5.59-5.59L18 9.5l-7 7z"></path></svg>
+            <strong id="confirm-customer-phone">+91 98290 XXXXX</strong>
+          </span>
         </div>
-        <div style="display: flex; justify-content: space-between;">
-          <span style="font-size: 0.84rem; color: var(--text-muted);">Grand Total:</span>
-          <strong id="confirm-total-amount" style="color: #0F3D64; font-size: 1.15rem;">&#8377;0</strong>
+        <div style="display: flex; justify-content: space-between; align-items: center; margin-bottom: 8px; padding-top: 8px; border-top: 1px dashed #CBD5E1;">
+          <span style="font-size: 0.82rem; color: #64748B; font-weight: 600;">Total Selected:</span>
+          <strong style="font-size: 0.88rem; color: #0284C7; font-weight: 800;" id="confirm-total-petis">0 Cases</strong>
+        </div>
+        <div style="display: flex; justify-content: space-between; align-items: baseline; padding-top: 6px;">
+          <span style="font-size: 0.9rem; color: #0F172A; font-weight: 800;">Grand Total Payable:</span>
+          <strong style="font-size: 1.35rem; color: #0F3D64; font-family: var(--font-heading); font-weight: 900;" id="confirm-total-amount">₹0</strong>
         </div>
       </div>
-      <div class="form-group-field">
-        <label for="delivery-phone-input">Delivery / Address Mobile Number</label>
-        <input type="tel" id="delivery-phone-input" placeholder="e.g. 94140 55667 (Receiver / Address Mobile)" maxlength="10">
-        <div style="font-size: 0.73rem; color: var(--text-light); margin-top: 3px;">Leave unchanged if your login number and delivery address number are the same.</div>
+
+      <!-- DELIVERY RECEIVER MOBILE -->
+      <div class="form-group-field" style="margin-bottom: 12px;">
+        <label for="delivery-phone-input" style="font-size: 0.82rem; font-weight: 700; color: #0F172A; margin-bottom: 4px; display: flex; justify-content: space-between;">
+          <span>Delivery / Receiver Phone Number *</span>
+          <span style="font-size: 0.72rem; color: #64748B; font-weight: 500;">Driver calls this number</span>
+        </label>
+        <div style="position: relative; display: flex; align-items: center;">
+          <span style="position: absolute; left: 12px; font-weight: 700; color: #64748B; font-size: 0.92rem;">+91</span>
+          <input type="tel" id="delivery-phone-input" placeholder="98290 12345" maxlength="10" style="padding-left: 48px; width: 100%; height: 44px; border: 1.5px solid #CBD5E1; border-radius: 8px; font-size: 16px; font-weight: 700; color: #0F172A; box-sizing: border-box; outline: none;">
+        </div>
       </div>
-      <div class="form-group-field">
-        <label for="delivery-corridor-select">Select Sikar Delivery Area</label>
-        <select id="delivery-corridor-select" style="padding: 10px; border: 1.5px solid var(--border-subtle); border-radius: var(--radius-xs); font-weight: 600;">
-          <option value="Piprali Road (Coaching Hub & Marriage Gardens)">Piprali Road</option>
+
+      <!-- SIKAR DELIVERY CORRIDOR -->
+      <div class="form-group-field" style="margin-bottom: 12px;">
+        <label for="delivery-corridor-select" style="font-size: 0.82rem; font-weight: 700; color: #0F172A; margin-bottom: 4px;">
+          Select Sikar Delivery Corridor / Zone *
+        </label>
+        <select id="delivery-corridor-select" onchange="validateCheckoutAddressLocation()" style="width: 100%; height: 44px; padding: 0 12px; border: 1.5px solid #CBD5E1; border-radius: 8px; font-size: 15px; font-weight: 600; color: #0F172A; background: #FFFFFF; box-sizing: border-box; outline: none;">
+          <option value="Piprali Road (Coaching Hub & Marriage Gardens)">Piprali Road (Coaching Hub &amp; Gardens)</option>
+          <option value="Nawalgarh Road & Pullia Market">Nawalgarh Road &amp; Pullia Market</option>
+          <option value="Station Road, Subhash Chowk & Krishi Mandi">Station Road, Subhash Chowk &amp; Krishi Mandi</option>
+          <option value="Fatehpur Road & Sabalpura Corridor">Fatehpur Road &amp; Sabalpura Corridor</option>
+          <option value="Rani Sati Road, Silver Jubilee & Collectorate">Rani Sati Road, Silver Jubilee &amp; Collectorate</option>
+          <option value="Salasar Stand, Jaipur Road & Industrial Area">Salasar Stand, Jaipur Road &amp; Industrial Area</option>
         </select>
       </div>
-      <div class="form-group-field">
-        <label for="delivery-note-input">Address / Landmark Note</label>
-        <input type="text" id="delivery-note-input" placeholder="e.g. Near Prince School">
+
+      <!-- STREET ADDRESS & LANDMARK -->
+      <div class="form-group-field" style="margin-bottom: 14px;">
+        <label for="delivery-note-input" style="font-size: 0.82rem; font-weight: 700; color: #0F172A; margin-bottom: 4px; display: flex; justify-content: space-between;">
+          <span>Street Address &amp; Landmark *</span>
+          <span style="font-size: 0.72rem; color: #0284C7; font-weight: 600;">Shop / Garden / Colony</span>
+        </label>
+        <input type="text" id="delivery-note-input" placeholder="e.g. Near Prince School, Piprali Road, Shop No. 4" oninput="validateCheckoutAddressLocation()" style="width: 100%; height: 44px; padding: 0 12px; border: 1.5px solid #CBD5E1; border-radius: 8px; font-size: 16px; font-weight: 600; color: #0F172A; box-sizing: border-box; outline: none;">
+        <div id="checkout-area-quick-tags" style="display: flex; gap: 6px; overflow-x: auto; flex-wrap: nowrap; padding: 4px 0; margin-top: 4px; -webkit-overflow-scrolling: touch; scrollbar-width: none;"></div>
+        <div id="checkout-location-check-status" style="margin-top: 6px; padding: 6px 10px; border-radius: 6px; font-size: 0.76rem; font-weight: 700; background: #F0FDF4; border: 1px solid #BBF7D0; color: #166534;">
+          Verified Serviceable Area: Piprali Road &bull; 45-60 Mins Express Tempo
+        </div>
       </div>
-      <button type="button" class="btn-checkout-gate" id="btn-confirm-dispatch-order" onclick="dispatchFinalWhatsAppOrder()">
+
+      <button type="button" class="btn-checkout-gate" id="btn-confirm-dispatch-order" style="width: 100%; height: 48px; border-radius: 10px; font-size: 0.98rem; font-weight: 800; letter-spacing: 0.02em; display: flex; align-items: center; justify-content: center; gap: 8px; background: #0284C7; color: #FFFFFF; border: none; cursor: pointer; box-shadow: 0 4px 14px rgba(2, 132, 199, 0.35); margin-top: 10px;" onclick="dispatchFinalWhatsAppOrder()">
         <span>CONFIRM &amp; DISPATCH ORDER</span>
+        <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5"><line x1="5" y1="12" x2="19" y2="12"></line><polyline points="12 5 19 12 12 19"></polyline></svg>
       </button>
     </div>
   </div>`;
@@ -1287,12 +1329,32 @@ function getSignedInUser() {
   return null;
 }
 
+function dismissCartDrawers() {
+  if (typeof toggleCartDrawer === 'function') {
+    try { toggleCartDrawer(false); } catch (e) {}
+  }
+  document.querySelectorAll('.cart-drawer-side, .cart-drawer-panel').forEach(el => {
+    el.classList.remove('open');
+    el.style.right = '';
+  });
+  document.querySelectorAll('.drawer-backdrop, .cart-backdrop').forEach(el => {
+    el.classList.remove('active');
+    el.classList.remove('open');
+  });
+}
+
 function proceedToCheckout() {
-  const totalItems = Object.values(cart).reduce((a, b) => a + b, 0);
+  const activeCart = (typeof cart !== 'undefined' && Object.keys(cart).length > 0)
+    ? cart
+    : JSON.parse(localStorage.getItem('sikar_cart') || '{}');
+  const totalItems = Object.values(activeCart).reduce((a, b) => a + b, 0);
   if (totalItems === 0) {
     showToast('Cart is empty. Add water petis first.');
     return;
   }
+
+  // Dismiss cart drawer immediately so it never hides the modal
+  dismissCartDrawers();
 
   if (window.SikarAnalytics && typeof window.SikarAnalytics.trackCheckoutStart === 'function') {
     window.SikarAnalytics.trackCheckoutStart(totalItems, calculateSubtotal());
@@ -1319,6 +1381,7 @@ function initiateCheckoutGate() {
 }
 
 function openLoginModal(purpose = 'nav') {
+  dismissCartDrawers();
   ensureCheckoutModals();
   window.loginPurpose = purpose;
   if (typeof loginPurpose !== 'undefined') loginPurpose = purpose;
@@ -1704,7 +1767,18 @@ function validateCheckoutAddressLocation() {
 }
 
 function openOrderConfirmModal() {
+  dismissCartDrawers();
   ensureCheckoutModals();
+
+  const signedIn = getSignedInUser();
+  if (!signedIn || !signedIn.phone) {
+    window.loginPurpose = 'checkout';
+    if (typeof loginPurpose !== 'undefined') loginPurpose = 'checkout';
+    openLoginModal('checkout');
+    showToast('Please verify your mobile number to place the order.');
+    return;
+  }
+
   const modal = document.getElementById('order-confirm-modal');
   if (!modal) return;
 
@@ -1719,7 +1793,6 @@ function openOrderConfirmModal() {
 
   // Always resolve the signed-in customer from storage so the order screen
   // shows the right name/number no matter which page the flow started from.
-  const signedIn = getSignedInUser();
   const loginPhoneVal = (signedIn && signedIn.phone) ? String(signedIn.phone).trim() : '';
 
   if (elName) elName.textContent = signedIn ? signedIn.name : 'Counter Guest';
@@ -1745,13 +1818,13 @@ function openOrderConfirmModal() {
       if (wrap) {
         const tagsDiv = document.createElement('div');
         tagsDiv.id = 'checkout-area-quick-tags';
-        tagsDiv.style.cssText = 'display:flex;flex-wrap:wrap;gap:5px;margin-top:6px;';
-        tagsDiv.innerHTML = activeZones.map(z => `<button type="button" onclick="selectCheckoutQuickArea('${escapeHTML(z.area_name)}', '${escapeHTML(z.corridor || z.area_name)}')" style="background:#F0F9FF;border:1px solid #BAE6FD;color:#0284C7;border-radius:999px;padding:2px 8px;font-size:0.72rem;font-weight:700;cursor:pointer;">+ ${escapeHTML(z.corridor || z.area_name)}</button>`).join('');
+        tagsDiv.style.cssText = 'display: flex; gap: 6px; overflow-x: auto; flex-wrap: nowrap; padding: 4px 0; margin-top: 4px; -webkit-overflow-scrolling: touch; scrollbar-width: none;';
+        tagsDiv.innerHTML = activeZones.map(z => `<button type="button" onclick="selectCheckoutQuickArea('${escapeHTML(z.area_name)}', '${escapeHTML(z.corridor || z.area_name)}')" style="white-space: nowrap; background: #F0F9FF; border: 1px solid #BAE6FD; color: #0284C7; border-radius: 999px; padding: 3px 10px; font-size: 0.74rem; font-weight: 700; cursor: pointer; flex-shrink: 0; touch-action: manipulation;">+ ${escapeHTML(z.corridor || z.area_name)}</button>`).join('');
         wrap.appendChild(tagsDiv);
 
         const statusDiv = document.createElement('div');
         statusDiv.id = 'checkout-location-check-status';
-        statusDiv.style.cssText = 'margin-top:8px;padding:9px 12px;border-radius:6px;font-size:0.79rem;font-weight:700;';
+        statusDiv.style.cssText = 'margin-top: 6px; padding: 6px 10px; border-radius: 6px; font-size: 0.76rem; font-weight: 700;';
         wrap.appendChild(statusDiv);
       }
     }

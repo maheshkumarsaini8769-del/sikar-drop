@@ -1406,10 +1406,10 @@
     .modal-backdrop {
       position: fixed;
       inset: 0;
-      background: rgba(11, 25, 44, 0.7);
-      backdrop-filter: blur(4px);
-      -webkit-backdrop-filter: blur(4px);
-      z-index: 9990;
+      background: rgba(11, 25, 44, 0.72);
+      backdrop-filter: blur(5px);
+      -webkit-backdrop-filter: blur(5px);
+      z-index: 25000 !important;
       display: none;
       align-items: center;
       justify-content: center;
@@ -1417,7 +1417,7 @@
     }
 
     .modal-backdrop.active {
-      display: flex;
+      display: flex !important;
     }
 
     /* LOGIN MODAL (STRICT CHECKOUT GATE) */
@@ -1714,15 +1714,21 @@
       background: #FFFFFF;
       width: 100%;
       max-width: 520px;
-      border-radius: var(--radius-md);
-      padding: 28px;
-      box-shadow: var(--shadow-lg);
+      max-height: 90vh;
+      max-height: 90dvh;
+      overflow-y: auto;
+      -webkit-overflow-scrolling: touch;
+      border-radius: 20px;
+      padding: 28px 24px;
+      box-shadow: 0 25px 60px rgba(11, 25, 44, 0.35);
       position: relative;
+      border: 1px solid rgba(15, 23, 42, 0.08);
+      box-sizing: border-box;
     }
 
     .order-confirm-dialog h3 {
       font-family: var(--font-heading);
-      font-size: 1.45rem;
+      font-size: 1.35rem;
       font-weight: 800;
       color: #0B192C;
       margin-bottom: 6px;
@@ -1740,7 +1746,7 @@
       border-radius: var(--radius-pill);
       font-size: 0.88rem;
       font-weight: 700;
-      z-index: 2000;
+      z-index: 30000 !important;
       box-shadow: var(--shadow-lg);
       transition: transform 0.3s cubic-bezier(0.16, 1, 0.3, 1), opacity 0.3s, visibility 0.3s;
       display: flex;
@@ -3018,14 +3024,33 @@
       .auth-modal-dialog,
       .order-confirm-dialog,
       .admin-modal-box {
-        max-height: 85vh !important;
-        max-height: 85dvh !important;
+        max-height: 90vh !important;
+        max-height: 90dvh !important;
         overflow-y: auto !important;
         -webkit-overflow-scrolling: touch !important;
         border-radius: 18px !important;
-        padding: 22px 16px 28px !important;
-        margin: 10px !important;
-        width: calc(100% - 20px) !important;
+        padding: 20px 16px 22px !important;
+        margin: auto 8px !important;
+        width: calc(100% - 16px) !important;
+        box-sizing: border-box !important;
+      }
+
+      .order-confirm-dialog h3,
+      .auth-modal-dialog h3 {
+        font-size: 1.22rem !important;
+      }
+
+      .order-confirm-dialog .form-group-field input,
+      .order-confirm-dialog .form-group-field select,
+      .auth-modal-dialog input {
+        font-size: 16px !important;
+        height: 44px !important;
+      }
+
+      .order-confirm-dialog .btn-checkout-gate,
+      .auth-modal-dialog .btn-checkout-gate {
+        height: 48px !important;
+        font-size: 0.96rem !important;
       }
 
       .stepper-btn-pill {
