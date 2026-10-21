@@ -5246,6 +5246,10 @@
   .nav-hamburger-btn {
     display: none !important;
   }
+  .mobile-menu-drawer,
+  .mobile-menu-backdrop {
+    display: none !important;
+  }
 }
 
 .nav-hamburger-btn {
@@ -5394,10 +5398,12 @@
 }
 
 .mobile-menu-link svg {
-  width: 19px;
-  height: 19px;
+  width: 18px !important;
+  height: 18px !important;
+  max-width: 18px !important;
+  max-height: 18px !important;
   color: #64748B;
-  flex-shrink: 0;
+  flex-shrink: 0 !important;
   transition: color 0.18s ease;
 }
 
