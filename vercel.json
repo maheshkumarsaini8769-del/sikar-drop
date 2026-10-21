@@ -56,7 +56,24 @@
   ],
   "functions": {
     "api/**": {
-      "includeFiles": "{*.html,data/**,assets/**,favicon.*,robots.txt,sitemap.xml}"
+      "includeFiles": [
+        "*.html",
+        "data/**",
+        "assets/**",
+        "favicon.*",
+        "robots.txt",
+        "sitemap.xml"
+      ]
+    },
+    "api/*": {
+      "includeFiles": [
+        "*.html",
+        "data/**",
+        "assets/**",
+        "favicon.*",
+        "robots.txt",
+        "sitemap.xml"
+      ]
     }
   },
   "rewrites": [
