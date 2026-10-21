@@ -5901,7 +5901,16 @@ const PAGE_SEO = {
 const pageTemplateCache = new Map();
 
 function readPageTemplate(file) {
-  const filePath = path.join(__dirname, file);
+  const candidatePaths = [
+    path.join(__dirname, file),
+    path.join(process.cwd(), file),
+    path.join(__dirname, '..', file)
+  ];
+  const filePath = candidatePaths.find(p => fs.existsSync(p));
+  if (!filePath) {
+    console.warn(`[Template] Page file not found: ${file}`);
+    return `<!DOCTYPE html><html lang="en"><head><meta charset="utf-8"><title>Sikar Water Bottle Supply</title></head><body><h1>Sikar Water Bottle Supply</h1></body></html>`;
+  }
   const stat = fs.statSync(filePath);
   const cached = pageTemplateCache.get(file);
   if (!cached || cached.mtimeMs !== stat.mtimeMs) {
