@@ -408,6 +408,8 @@
       border-radius: var(--radius-pill);
       padding: 7px 16px;
       width: 240px;
+      min-width: 190px;
+      flex-shrink: 0;
       border: 1.5px solid var(--border-subtle);
       transition: all 0.2s ease;
       position: relative;
@@ -2884,10 +2886,10 @@
     }
 
     /* RESPONSIVE MEDIA QUERIES */
-    @media (max-width: 1280px) {
+    @media (max-width: 1366px) {
       .nav-links-menu { gap: 2px; }
-      .nav-item-link { padding: 6px 8px; font-size: 0.82rem; }
-      .nav-search-bar { width: 190px; }
+      .nav-item-link { padding: 5px 7px; font-size: 0.81rem; }
+      .nav-search-bar { width: 190px; min-width: 170px; flex-shrink: 0; }
       .nav-search-bar:focus-within { width: 220px; }
     }
 
@@ -2905,8 +2907,9 @@
       }
       .brand-block { order: 1; }
       .nav-right-actions { order: 2; margin-left: auto; }
-      .nav-search-bar { order: 3; width: 100% !important; margin-top: 4px; }
+      .nav-search-bar { order: 3; width: 100% !important; min-width: 0 !important; flex-shrink: 1 !important; margin-top: 4px; }
       .nav-links-menu { display: none !important; }
+      .live-search-dropdown { width: 100% !important; max-width: 100% !important; left: 0 !important; right: 0 !important; }
     }
 
     @media (max-width: 768px) {
@@ -4564,16 +4567,16 @@
       </nav>
 
       <!-- 3. SEARCH BAR -->
-      <div class="nav-search-bar" id="header-nav-search-bar" onclick="openGlobalSearchModal(document.getElementById('global-search-input')?.value)">
+      <div class="nav-search-bar" id="header-nav-search-bar">
         <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.3">
           <circle cx="11" cy="11" r="8"></circle>
           <line x1="21" y1="21" x2="16.65" y2="16.65"></line>
         </svg>
-        <input type="text" id="global-search-input" class="nav-search-input" placeholder="Search water, pack, brand..." onclick="openGlobalSearchModal(this.value)" onfocus="openGlobalSearchModal(this.value)" onkeydown="if(event.key==='Enter') openGlobalSearchModal(this.value)" autocomplete="off">
+        <input type="text" id="global-search-input" class="nav-search-input" placeholder="Search water, pack, brand..." oninput="handleSearch(this.value)" onkeydown="handleSearchKeyDown(event)" autocomplete="off">
         <button type="button" id="search-clear-btn" class="search-clear-btn" style="display:none;" onclick="clearGlobalSearch(event)" title="Clear Search" aria-label="Clear Search">
           <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5"><line x1="18" y1="6" x2="6" y2="18"></line><line x1="6" y1="6" x2="18" y2="18"></line></svg>
         </button>
-        <div class="live-search-dropdown" id="live-search-dropdown" style="display:none;"></div>
+        <div class="live-search-dropdown" id="live-search-dropdown"></div>
       </div>
 
       <!-- 4. RIGHT ACTION ICONS -->
@@ -4610,7 +4613,7 @@
   </header>
 
   <!-- MOBILE MENU BACKDROP & DRAWER -->
-  <div class="mobile-menu-backdrop" id="mobile-menu-backdrop" onclick="toggleMobileMenu(false)" style="position: fixed; inset: 0; background: rgba(15, 23, 42, 0.6); z-index: 1000; opacity: 0; visibility: hidden; pointer-events: none;"></div>
+  <div class="mobile-menu-backdrop" id="mobile-menu-backdrop" onclick="toggleMobileMenu(false)"></div>
   <aside class="mobile-menu-drawer" id="mobile-menu-drawer" aria-label="Site Navigation" style="position: fixed; top: 0; left: -340px; width: 320px; max-width: 86vw; height: 100%; height: 100dvh; background: #FFFFFF; z-index: 1001; display: flex; flex-direction: column; overflow-y: auto;">
     <div class="mobile-menu-header">
       <div class="mobile-menu-brand">
@@ -13367,19 +13370,15 @@
         if (prodRes.ok) {
           const prods = await prodRes.json();
           if (Array.isArray(prods)) {
-            const cached = JSON.parse(localStorage.getItem('sikar_admin_products') || '[]');
-            const serverIds = new Set(prods.map(p => p.id));
-            const localOnly = cached.filter(p => !serverIds.has(p.id) && (String(p.id).startsWith('p_') || String(p.id).startsWith('custom_')));
-            const merged = [...localOnly, ...prods];
-            merged.sort((a, b) => {
+            prods.sort((a, b) => {
               const ordA = a.display_order !== undefined ? a.display_order : 50;
               const ordB = b.display_order !== undefined ? b.display_order : 50;
               if (ordA !== ordB) return ordA - ordB;
               return (b.created_at || '').localeCompare(a.created_at || '');
             });
-            PRODUCTS = merged;
-            adminProducts = merged;
-            localStorage.setItem('sikar_admin_products', JSON.stringify(merged));
+            PRODUCTS = prods;
+            adminProducts = prods;
+            localStorage.setItem('sikar_admin_products', JSON.stringify(prods));
             renderProducts();
             renderBulkCalculatorItems();
           }
@@ -13387,7 +13386,7 @@
 
         if (catRes.ok) {
           const cats = await catRes.json();
-          if (Array.isArray(cats) && cats.length > 0) {
+          if (Array.isArray(cats)) {
             CATEGORIES = cats;
             adminCategories = cats;
             localStorage.setItem('sikar_admin_categories', JSON.stringify(cats));
@@ -14039,7 +14038,7 @@
           if (!ev.data) return;
           if (ev.data.type === 'BUNDLES_UPDATED') {
             loadStorefrontBundles();
-          } else if (ev.data.type === 'CMS_UPDATED') {
+          } else if (ev.data.type === 'CMS_UPDATED' || ev.data.type === 'CATALOG_UPDATED') {
             syncStorefrontFromBackend();
           } else if (ev.data.type === 'REVIEWS_UPDATED') {
             try {
@@ -14057,6 +14056,9 @@
         }
         if (!e.key || e.key === 'sikar_admin_texts') {
           applyLiveSiteTexts();
+        }
+        if (!e.key || e.key === 'sikar_admin_products' || e.key === 'sikar_admin_categories') {
+          syncStorefrontFromBackend();
         }
         if (!e.key || e.key === 'sikar_admin_reviews') {
           try {

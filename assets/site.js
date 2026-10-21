@@ -616,24 +616,20 @@ async function loadCatalogFromBackend() {
     if (pRes.ok) {
       const pData = await pRes.json();
       if (Array.isArray(pData)) {
-        const cached = JSON.parse(localStorage.getItem('sikar_admin_products') || '[]');
-        const serverIds = new Set(pData.map(p => p.id));
-        const localOnly = cached.filter(p => !serverIds.has(p.id) && (String(p.id).startsWith('p_') || String(p.id).startsWith('custom_')));
-        const merged = [...localOnly, ...pData];
-        merged.sort((a, b) => {
+        pData.sort((a, b) => {
           const ordA = a.display_order !== undefined ? a.display_order : 50;
           const ordB = b.display_order !== undefined ? b.display_order : 50;
           if (ordA !== ordB) return ordA - ordB;
           return (b.created_at || '').localeCompare(a.created_at || '');
         });
-        PRODUCTS = merged;
-        localStorage.setItem('sikar_admin_products', JSON.stringify(merged));
+        PRODUCTS = pData;
+        localStorage.setItem('sikar_admin_products', JSON.stringify(pData));
       }
     }
 
     if (cRes.ok) {
       const cData = await cRes.json();
-      if (Array.isArray(cData) && cData.length > 0) {
+      if (Array.isArray(cData)) {
         CATEGORIES = cData;
         localStorage.setItem('sikar_admin_categories', JSON.stringify(cData));
       }
@@ -826,7 +822,6 @@ function ensureMobileMenuElements() {
     const backdrop = document.createElement('div');
     backdrop.className = 'mobile-menu-backdrop';
     backdrop.id = 'mobile-menu-backdrop';
-    backdrop.style.cssText = 'position: fixed; inset: 0; background: rgba(15, 23, 42, 0.6); z-index: 1000; opacity: 0; visibility: hidden; pointer-events: none;';
     backdrop.onclick = () => toggleMobileMenu(false);
     document.body.appendChild(backdrop);
 
@@ -834,7 +829,7 @@ function ensureMobileMenuElements() {
     drawer.className = 'mobile-menu-drawer';
     drawer.id = 'mobile-menu-drawer';
     drawer.setAttribute('aria-label', 'Site Navigation');
-    drawer.style.cssText = 'position: fixed; top: 0; left: -340px; width: 320px; max-width: 86vw; height: 100%; height: 100dvh; background: #FFFFFF; z-index: 1001; display: flex; flex-direction: column; overflow-y: auto;';
+    drawer.style.cssText = 'position: fixed; top: 0; left: -340px; width: 320px; max-width: 86vw; height: 100%; height: 100dvh; background: #FFFFFF; z-index: 1001; display: flex; flex-direction: column; overflow-y: auto; transition: left 0.28s ease;';
     drawer.innerHTML = `
       <div class="mobile-menu-header">
         <div class="mobile-menu-brand">
@@ -933,7 +928,38 @@ function toggleMobileMenu(open) {
   }
   if (backdrop) {
     backdrop.classList.toggle('open', open);
+    if (open) {
+      backdrop.style.opacity = '1';
+      backdrop.style.visibility = 'visible';
+      backdrop.style.pointerEvents = 'auto';
+    } else {
+      backdrop.style.opacity = '0';
+      backdrop.style.visibility = 'hidden';
+      backdrop.style.pointerEvents = 'none';
+    }
   }
+}
+
+if (typeof document !== 'undefined') {
+  document.addEventListener('click', (e) => {
+    const drawer = document.getElementById('mobile-menu-drawer');
+    if (!drawer || !drawer.classList.contains('open')) return;
+    const isInsideDrawer = drawer.contains(e.target);
+    const isHamburger = e.target && e.target.closest && e.target.closest('.nav-hamburger-btn');
+    if (!isInsideDrawer && !isHamburger) {
+      toggleMobileMenu(false);
+    }
+  }, true);
+
+  document.addEventListener('touchstart', (e) => {
+    const drawer = document.getElementById('mobile-menu-drawer');
+    if (!drawer || !drawer.classList.contains('open')) return;
+    const isInsideDrawer = drawer.contains(e.target);
+    const isHamburger = e.target && e.target.closest && e.target.closest('.nav-hamburger-btn');
+    if (!isInsideDrawer && !isHamburger) {
+      toggleMobileMenu(false);
+    }
+  }, { passive: true });
 }
 
 function flyProductToCart(sourceElement) {
@@ -2442,25 +2468,17 @@ if (typeof window !== 'undefined') {
     }
   };
 
-  // Wire up page inputs to open the expanded modal
+  // Wire up search modal triggers without blocking direct typing in search bars
   function bindSearchTriggers() {
     ensureSearchModalHTML();
 
-    document.querySelectorAll('.nav-search-bar, .nav-search-input, #global-search-input, #header-nav-search-bar').forEach(el => {
+    document.querySelectorAll('[data-open-search-modal]').forEach(el => {
       if (el.dataset.searchModalBound) return;
       el.dataset.searchModalBound = 'true';
 
       el.addEventListener('click', function(e) {
-        if (e.target && e.target.closest('#search-clear-btn')) return;
         e.preventDefault();
-        const currentVal = (this.value !== undefined) ? this.value : (this.querySelector('input')?.value || '');
-        window.openGlobalSearchModal(currentVal);
-      });
-
-      el.addEventListener('focus', function(e) {
-        e.preventDefault();
-        const currentVal = (this.value !== undefined) ? this.value : '';
-        window.openGlobalSearchModal(currentVal);
+        window.openGlobalSearchModal();
       });
     });
 

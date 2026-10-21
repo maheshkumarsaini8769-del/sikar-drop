@@ -6967,21 +6967,16 @@
         }
 
         if (prods && Array.isArray(prods)) {
-          // Merge with any freshly added local products that are not yet returned by server
-          const existingLocal = JSON.parse(localStorage.getItem('sikar_admin_products') || '[]');
-          const serverIds = new Set(prods.map(p => p.id));
-          const localOnly = existingLocal.filter(p => !serverIds.has(p.id) && (String(p.id).startsWith('p_') || String(p.id).startsWith('custom_')));
-          const merged = [...localOnly, ...prods];
-          merged.sort((a, b) => {
+          prods.sort((a, b) => {
             const ordA = a.display_order !== undefined ? a.display_order : 50;
             const ordB = b.display_order !== undefined ? b.display_order : 50;
             if (ordA !== ordB) return ordA - ordB;
             return (b.created_at || '').localeCompare(a.created_at || '');
           });
-          adminProducts = merged;
-          localStorage.setItem('sikar_admin_products', JSON.stringify(merged));
+          adminProducts = prods;
+          localStorage.setItem('sikar_admin_products', JSON.stringify(prods));
         }
-        if (cats && Array.isArray(cats) && cats.length > 0) {
+        if (cats && Array.isArray(cats)) {
           adminCategories = cats;
           localStorage.setItem('sikar_admin_categories', JSON.stringify(cats));
         }
@@ -12848,6 +12843,7 @@
         }
         await syncFromBackend();
         renderProductsTable();
+        notifyStorefrontSync('CATALOG_UPDATED');
       } catch (err) {
         console.warn('Backend product save note:', err);
       }
@@ -12861,9 +12857,10 @@
         showToast('Product removed from catalog.');
 
         try {
-          await sikarApi.delete(`/api/products/${id}`);
+          await sikarApi.delete(`/api/products/${encodeURIComponent(id)}`);
           await syncFromBackend();
           renderProductsTable();
+          notifyStorefrontSync('CATALOG_UPDATED');
         } catch (err) {
           console.warn('Backend product delete note:', err);
         }
@@ -12995,6 +12992,7 @@
         await syncFromBackend();
         renderCategoriesTable();
         populateCategorySelectDropdown();
+        notifyStorefrontSync('CATALOG_UPDATED');
       } catch (err) {
         console.warn('Backend category sync note:', err);
       }
@@ -13008,10 +13006,11 @@
         populateCategorySelectDropdown();
 
         try {
-          await sikarApi.delete(`/api/categories/${id}?reassignTo=water`);
+          await sikarApi.delete(`/api/categories/${encodeURIComponent(id)}?reassignTo=water`);
           await syncFromBackend();
           renderCategoriesTable();
           populateCategorySelectDropdown();
+          notifyStorefrontSync('CATALOG_UPDATED');
           showToast(`Category '${id}' delete ho gayi!`);
         } catch (err) {
           console.error(err);
