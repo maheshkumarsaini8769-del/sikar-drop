@@ -894,6 +894,7 @@ function ensureMobileMenuElements() {
       </div>
     `;
     document.body.appendChild(drawer);
+    if (typeof applySiteTexts === 'function') applySiteTexts();
   }
 
   // Also ensure hamburger button exists in navbar if not present

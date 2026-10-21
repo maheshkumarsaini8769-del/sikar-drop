@@ -10287,6 +10287,15 @@
             if (clean.length >= 10) return clean;
           }
         }
+        const cachedSet = localStorage.getItem('sikar_settings');
+        if (cachedSet) {
+          const parsedSet = JSON.parse(cachedSet);
+          if (parsedSet && (parsedSet.whatsapp || parsedSet.whatsappNumber)) {
+            const clean = String(parsedSet.whatsapp || parsedSet.whatsappNumber).replace(/\D/g, '');
+            if (clean.length === 10) return '91' + clean;
+            if (clean.length >= 10) return clean;
+          }
+        }
       } catch (e) {}
 
       const raw = (adminTexts && (adminTexts.whatsappNumber || adminTexts.whatsapp)) ||
@@ -13350,11 +13359,12 @@
     async function syncStorefrontFromBackend() {
       try {
         const t = Date.now();
-        const [prodRes, catRes, setRes, zonesRes] = await Promise.all([
+        const [prodRes, catRes, setRes, zonesRes, textsRes] = await Promise.all([
           fetch(`/api/products?_t=${t}`, { cache: 'no-store' }),
           fetch(`/api/categories?_t=${t}`, { cache: 'no-store' }),
           fetch(`/api/settings?_t=${t}`, { cache: 'no-store' }),
-          fetch(`/api/delivery-zones?_t=${t}`, { cache: 'no-store' })
+          fetch(`/api/delivery-zones?_t=${t}`, { cache: 'no-store' }),
+          fetch(`/api/site-texts?_t=${t}`, { cache: 'no-store' })
         ]);
 
         if (zonesRes && zonesRes.ok) {
@@ -13403,6 +13413,21 @@
             localStorage.setItem('sikar_settings', JSON.stringify(settings));
             localStorage.setItem('sikar_theme', settings.active_theme || 'normal');
             applyActiveFestivalTheme(settings);
+            if (settings.whatsapp) {
+              if (!adminTexts) adminTexts = {};
+              adminTexts.whatsappNumber = settings.whatsapp;
+              localStorage.setItem('sikar_admin_texts', JSON.stringify(adminTexts));
+              applyLiveSiteTexts();
+            }
+          }
+        }
+
+        if (textsRes && textsRes.ok) {
+          const texts = await textsRes.json();
+          if (texts && typeof texts === 'object') {
+            adminTexts = { ...(typeof DEFAULT_TEXTS !== 'undefined' ? DEFAULT_TEXTS : {}), ...texts };
+            localStorage.setItem('sikar_admin_texts', JSON.stringify(adminTexts));
+            applyLiveSiteTexts();
           }
         }
 

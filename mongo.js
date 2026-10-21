@@ -65,11 +65,17 @@ async function deleteDoc(collectionName, filter) {
   try {
     const database = await getMongoDb();
     if (!database) return;
-    await database.collection(collectionName).deleteOne(filter);
+    let query = filter;
+    if (filter && (filter._id || filter.id || filter.key)) {
+      const targetVal = String(filter._id || filter.id || filter.key);
+      query = { $or: [{ _id: targetVal }, { id: targetVal }, { key: targetVal }] };
+    }
+    await database.collection(collectionName).deleteMany(query);
   } catch (err) {
     console.warn(`[MongoDB] deleteDoc error on ${collectionName}:`, err.message);
   }
 }
+
 
 module.exports = {
   MONGODB_URI,

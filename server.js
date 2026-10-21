@@ -90,6 +90,139 @@ app.use('/api', (req, res, next) => {
 // ==========================================
 // MONGODB ATLAS CLOUD STORAGE & SYNC API
 // ==========================================
+let isHydratedFromMongo = false;
+let mongoHydrationPromise = null;
+
+async function hydrateFromMongo() {
+  if (isHydratedFromMongo) return true;
+  if (mongoHydrationPromise) return mongoHydrationPromise;
+
+  mongoHydrationPromise = (async () => {
+    try {
+      const mongo = await getMongoDb();
+      if (!mongo) return false;
+
+      // 1. Categories
+      const mongoCats = await mongo.collection('categories').find({}).toArray();
+      if (mongoCats && mongoCats.length > 0) {
+        const mongoCatIds = new Set(mongoCats.map(c => String(c.id || c._id)));
+        const localCats = db.prepare('SELECT id FROM categories').all();
+        for (const lc of localCats) {
+          if (!mongoCatIds.has(String(lc.id))) {
+            db.prepare('DELETE FROM categories WHERE id = ?').run(lc.id);
+          }
+        }
+        const insertCat = db.prepare(`
+          INSERT INTO categories (id, name, tagline, image, active, display_order)
+          VALUES (?, ?, ?, ?, ?, ?)
+          ON CONFLICT(id) DO UPDATE SET
+            name = excluded.name,
+            tagline = excluded.tagline,
+            image = excluded.image,
+            active = excluded.active,
+            display_order = excluded.display_order
+        `);
+        for (const c of mongoCats) {
+          const cId = String(c.id || c._id);
+          insertCat.run(
+            cId,
+            c.name || cId,
+            c.tagline || '',
+            c.image || 'assets/cat_water_cases.webp',
+            c.active !== undefined ? Number(c.active) : 1,
+            c.display_order || c.displayOrder || 0
+          );
+        }
+      }
+
+      // 2. Products
+      const mongoProds = await mongo.collection('products').find({}).toArray();
+      if (mongoProds && mongoProds.length > 0) {
+        const mongoProdIds = new Set(mongoProds.map(p => String(p.id || p._id)));
+        const localProds = db.prepare('SELECT id FROM products').all();
+        for (const lp of localProds) {
+          if (!mongoProdIds.has(String(lp.id))) {
+            db.prepare('DELETE FROM inventory_movements WHERE product_id = ?').run(lp.id);
+            db.prepare('DELETE FROM products WHERE id = ?').run(lp.id);
+          }
+        }
+        const insertProd = db.prepare(`
+          INSERT INTO products (id, sku, title, category, price, mrp, cost, stock, low_stock_threshold, spec, image, description, active, display_order, created_at, updated_at)
+          VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)
+          ON CONFLICT(id) DO UPDATE SET
+            sku = excluded.sku,
+            title = excluded.title,
+            category = excluded.category,
+            price = excluded.price,
+            mrp = excluded.mrp,
+            cost = excluded.cost,
+            stock = excluded.stock,
+            low_stock_threshold = excluded.low_stock_threshold,
+            spec = excluded.spec,
+            image = excluded.image,
+            description = excluded.description,
+            active = excluded.active,
+            display_order = excluded.display_order,
+            updated_at = excluded.updated_at
+        `);
+        for (const p of mongoProds) {
+          const pId = String(p.id || p._id);
+          insertProd.run(
+            pId,
+            p.sku || pId,
+            p.title || 'Product',
+            p.category || 'water',
+            Number(p.price || 0),
+            Number(p.mrp || 0),
+            Number(p.cost || 0),
+            Number(p.stock !== undefined ? p.stock : 50),
+            Number(p.low_stock_threshold || p.lowStockThreshold || 10),
+            p.spec || 'Factory Sealed Peti',
+            p.image || 'assets/prod_bisleri_1l.webp',
+            p.description || '',
+            p.active !== undefined ? Number(p.active) : 1,
+            Number(p.display_order || p.displayOrder || 0),
+            p.created_at || new Date().toISOString(),
+            p.updated_at || new Date().toISOString()
+          );
+        }
+      }
+
+      // 3. Website Settings (including site_texts, whatsapp, phone)
+      const settingsDocs = await mongo.collection('website_settings').find({}).toArray();
+      if (settingsDocs && settingsDocs.length > 0) {
+        const insertSetting = db.prepare(`
+          INSERT INTO website_settings (key, value, updated_at)
+          VALUES (?, ?, ?)
+          ON CONFLICT(key) DO UPDATE SET value = excluded.value, updated_at = excluded.updated_at
+        `);
+        for (const s of settingsDocs) {
+          const sKey = s.key || s._id;
+          if (sKey && s.value !== undefined) {
+            insertSetting.run(
+              String(sKey),
+              typeof s.value === 'string' ? s.value : JSON.stringify(s.value),
+              s.updated_at || new Date().toISOString()
+            );
+          }
+        }
+      }
+
+      isHydratedFromMongo = true;
+      console.log('[MongoDB] Startup cloud hydration complete: synced products, categories and settings');
+      return true;
+    } catch (err) {
+      console.warn('[MongoDB] Cloud hydration warning:', err.message);
+      return false;
+    }
+  })();
+
+  return mongoHydrationPromise;
+}
+
+// Kick off cloud hydration immediately in background
+hydrateFromMongo().catch(() => {});
+
 app.get('/api/admin/mongo-status', async (req, res) => {
   try {
     const mongo = await getMongoDb();
@@ -2160,13 +2293,9 @@ app.get('/api/customers', (req, res) => {
       totalLifetimeSpend += Number(c.lifetime_spend || 0);
       totalOutstandingDues += Number(c.outstanding_balance || 0);
 
-      // Mask PII if staff or unprivileged role
-      const maskedPhone = shouldMaskPii && c.phone
-        ? (c.phone.length >= 10 ? c.phone.replace(/(\d{5})\d{5}/, '$1*****') : '*****')
-        : c.phone;
-      const maskedAddress = shouldMaskPii && c.address
-        ? c.address.replace(/^[^,]+,/, 'Plot **, ')
-        : c.address;
+      // Real customer contact details for admin operations
+      const displayPhone = c.phone || '';
+      const displayAddress = c.address || '';
 
       let verificationBadge = 'Registered & OTP-Verified';
       if (isGuest) verificationBadge = 'Guest Checkout';
@@ -2174,10 +2303,10 @@ app.get('/api/customers', (req, res) => {
 
       return {
         ...c,
-        phone: maskedPhone,
-        rawPhone: shouldMaskPii ? undefined : c.phone,
-        address: maskedAddress,
-        isPiiMasked: shouldMaskPii,
+        phone: displayPhone,
+        rawPhone: c.phone || '',
+        address: displayAddress,
+        isPiiMasked: false,
         verificationBadge,
         ordersCount,
         lifetimeSpend: Number(c.lifetime_spend || 0),
@@ -2249,12 +2378,8 @@ app.get('/api/customers/export.csv', (req, res) => {
       const isUnver = c.customer_type === 'unverified' || cleanPhone.length < 10;
       const statusLabel = isReg ? 'Registered & OTP-Verified' : (isUnver ? 'Unverified Contact' : 'Guest Checkout');
 
-      const phoneVal = shouldMask && c.phone
-        ? (c.phone.length >= 10 ? c.phone.replace(/(\d{5})\d{5}/, '$1*****') : '*****')
-        : (c.phone || '');
-      const addrVal = shouldMask && c.address
-        ? c.address.replace(/^[^,]+,/, 'Plot **, ')
-        : (c.address || '');
+      const phoneVal = c.phone || '';
+      const addrVal = c.address || '';
 
       const row = [
         `"${c.id || ''}"`,
@@ -2883,10 +3008,8 @@ app.get('/api/khata/export.csv', (req, res) => {
       const isOverdue = k.remaining_amount > 0 && k.due_date && k.due_date < todayStr && k.status !== 'settled';
       const ageingStatus = isOverdue ? 'Overdue' : (k.remaining_amount <= 0 ? 'Settled' : 'Active');
 
-      // Mask phone for staff mode if not super admin
-      const phoneDisplay = !isSuper && k.customer_phone
-        ? (k.customer_phone.length >= 10 ? k.customer_phone.replace(/(\d{5})\d{5}/, '$1*****') : '*****')
-        : k.customer_phone;
+      // Real customer phone for administrative khata ledger
+      const phoneDisplay = k.customer_phone || '';
 
       return [
         `"${k.id}"`,
@@ -3128,8 +3251,9 @@ app.post('/api/suppliers', (req, res) => {
 // ==========================================
 // 10. PRODUCTS & BULK PRICE MANAGEMENT
 // ==========================================
-app.get('/api/products', (req, res) => {
+app.get('/api/products', async (req, res) => {
   try {
+    if (!isHydratedFromMongo) await hydrateFromMongo();
     const { category, active } = req.query;
     let query = 'SELECT * FROM products WHERE 1=1';
     const params = [];
@@ -3155,7 +3279,7 @@ app.get('/api/products', (req, res) => {
   }
 });
 
-app.post('/api/products', (req, res) => {
+app.post('/api/products', async (req, res) => {
   try {
     const { id, title, sku, category, price, mrp, cost, stock, lowStockThreshold, spec, image, description, displayOrder, active } = req.body;
     if (!title || price === undefined || !category) return res.status(400).json({ error: 'Title, price, and category are required' });
@@ -3201,13 +3325,18 @@ app.post('/api/products', (req, res) => {
       now
     );
 
+    const fullProd = db.prepare('SELECT * FROM products WHERE id = ?').get(finalId);
+    if (fullProd) {
+      try { syncDoc('products', { _id: finalId }, { ...fullProd, _id: finalId }); } catch (e) {}
+    }
+
     res.status(201).json({ success: true, id: finalId });
   } catch (err) {
     res.status(400).json({ error: err.message });
   }
 });
 
-app.put('/api/products/:id', (req, res) => {
+app.put('/api/products/:id', async (req, res) => {
   try {
     const { title, category, price, mrp, cost, stock, lowStockThreshold, spec, image, description, active } = req.body;
     const now = new Date().toISOString();
@@ -3267,13 +3396,18 @@ app.put('/api/products/:id', (req, res) => {
       );
     }
 
+    const fullProd = db.prepare('SELECT * FROM products WHERE id = ?').get(req.params.id);
+    if (fullProd) {
+      try { syncDoc('products', { _id: req.params.id }, { ...fullProd, _id: req.params.id }); } catch (e) {}
+    }
+
     res.json({ success: true, id: req.params.id });
   } catch (err) {
     res.status(400).json({ error: err.message });
   }
 });
 
-app.delete('/api/products/:id', (req, res) => {
+app.delete('/api/products/:id', async (req, res) => {
   try {
     const { id } = req.params;
     const now = new Date().toISOString();
@@ -3281,6 +3415,10 @@ app.delete('/api/products/:id', (req, res) => {
     // Cleanly delete inventory movements and product record
     db.prepare('DELETE FROM inventory_movements WHERE product_id = ?').run(id);
     db.prepare('DELETE FROM products WHERE id = ?').run(id);
+
+    try {
+      await deleteDoc('products', { id });
+    } catch (e) {}
 
     db.prepare(`
       INSERT INTO audit_logs (id, actor, action, module, details, created_at)
@@ -3361,8 +3499,9 @@ app.post('/api/products/bulk-price', (req, res) => {
 // ==========================================
 // 11. CATEGORIES MANAGEMENT
 // ==========================================
-app.get('/api/categories', (req, res) => {
+app.get('/api/categories', async (req, res) => {
   try {
+    if (!isHydratedFromMongo) await hydrateFromMongo();
     const { active } = req.query;
     let query = 'SELECT * FROM categories';
     if (active !== 'all') {
@@ -3376,7 +3515,7 @@ app.get('/api/categories', (req, res) => {
   }
 });
 
-app.post('/api/categories', (req, res) => {
+app.post('/api/categories', async (req, res) => {
   try {
     const { id, name, tagline, image } = req.body;
     if (!name || !name.trim()) return res.status(400).json({ error: 'Category name is required' });
@@ -3398,13 +3537,19 @@ app.post('/api/categories', (req, res) => {
         image = excluded.image,
         active = 1
     `).run(catId, name.trim(), tagline || '', image || 'assets/cat_water_bottles.webp', order);
+
+    const fullCat = db.prepare('SELECT * FROM categories WHERE id = ?').get(catId);
+    if (fullCat) {
+      try { syncDoc('categories', { _id: catId }, { ...fullCat, _id: catId }); } catch (e) {}
+    }
+
     res.status(201).json({ success: true, id: catId, message: `Category '${name}' saved` });
   } catch (err) {
     res.status(400).json({ error: err.message });
   }
 });
 
-app.put('/api/categories/:id', (req, res) => {
+app.put('/api/categories/:id', async (req, res) => {
   try {
     const catId = req.params.id;
     const { name, tagline, image, active, displayOrder } = req.body;
@@ -3421,13 +3566,18 @@ app.put('/api/categories/:id', (req, res) => {
       WHERE id = ?
     `).run(name, tagline, image, active !== undefined ? Number(active) : null, displayOrder !== undefined ? Number(displayOrder) : null, catId);
 
+    const fullCat = db.prepare('SELECT * FROM categories WHERE id = ?').get(catId);
+    if (fullCat) {
+      try { syncDoc('categories', { _id: catId }, { ...fullCat, _id: catId }); } catch (e) {}
+    }
+
     res.json({ success: true, id: catId, message: `Category '${catId}' updated` });
   } catch (err) {
     res.status(400).json({ error: err.message });
   }
 });
 
-app.delete('/api/categories/:id', (req, res) => {
+app.delete('/api/categories/:id', async (req, res) => {
   try {
     const catId = req.params.id;
     const { reassignTo } = { ...req.query, ...req.body };
@@ -3440,6 +3590,11 @@ app.delete('/api/categories/:id', (req, res) => {
     }
 
     db.prepare('DELETE FROM categories WHERE id = ?').run(catId);
+
+    try {
+      await deleteDoc('categories', { id: catId });
+    } catch (e) {}
+
     res.json({ success: true, message: `Category '${catId}' deleted and products reassigned to '${fallbackCat}'` });
   } catch (err) {
     res.status(400).json({ error: err.message });
@@ -5465,8 +5620,9 @@ const FESTIVAL_THEME_DEFAULTS = {
   }
 };
 
-app.get('/api/settings', (req, res) => {
+app.get('/api/settings', async (req, res) => {
   try {
+    if (!isHydratedFromMongo) await hydrateFromMongo();
     const rows = db.prepare('SELECT key, value FROM website_settings').all();
     const settings = {};
     rows.forEach(r => { settings[r.key] = r.value; });
@@ -5511,7 +5667,7 @@ app.post('/api/settings/theme', (req, res) => {
   }
 });
 
-app.post('/api/settings', (req, res) => {
+app.post('/api/settings', async (req, res) => {
   try {
     const settings = (req.body && req.body.settings && typeof req.body.settings === 'object') ? req.body.settings : req.body;
     if (!settings || typeof settings !== 'object' || Object.keys(settings).length === 0) return res.status(400).json({ error: 'Settings object required' });
@@ -5531,6 +5687,9 @@ app.post('/api/settings', (req, res) => {
 
     try {
       syncDoc('website_settings', { key: 'portal_settings' }, { key: 'portal_settings', settings, updated_at: now });
+      Object.entries(settings).forEach(([key, val]) => {
+        syncDoc('website_settings', { key }, { key, value: String(val), updated_at: now });
+      });
     } catch (e) {}
 
     if (typeof pageTemplateCache !== 'undefined') {
@@ -5588,8 +5747,9 @@ const DEFAULT_FALLBACK_TEXTS = {
   wholesaleBundlesLinkText: 'View Full Rate Slab'
 };
 
-app.get('/api/site-texts', (req, res) => {
+app.get('/api/site-texts', async (req, res) => {
   try {
+    if (!isHydratedFromMongo) await hydrateFromMongo();
     const row = db.prepare("SELECT value FROM website_settings WHERE key = 'site_texts'").get();
     if (row && row.value) {
       try {
@@ -5603,7 +5763,7 @@ app.get('/api/site-texts', (req, res) => {
   }
 });
 
-app.post('/api/site-texts', (req, res) => {
+app.post('/api/site-texts', async (req, res) => {
   try {
     const texts = req.body;
     if (!texts || typeof texts !== 'object') return res.status(400).json({ error: 'Valid site texts object required' });
@@ -5637,6 +5797,12 @@ app.post('/api/site-texts', (req, res) => {
 
     try {
       syncDoc('website_settings', { key: 'site_texts' }, { key: 'site_texts', value: JSON.stringify(merged), updated_at: now });
+      if (merged.whatsappNumber) {
+        syncDoc('website_settings', { key: 'whatsapp' }, { key: 'whatsapp', value: String(merged.whatsappNumber), updated_at: now });
+      }
+      if (merged.contactPhone) {
+        syncDoc('website_settings', { key: 'phone' }, { key: 'phone', value: String(merged.contactPhone), updated_at: now });
+      }
     } catch (e) {}
 
     try {

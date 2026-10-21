@@ -5311,9 +5311,8 @@
             <span id="modal-cust-id" style="font-size: 0.76rem; font-weight: 800; background: #E0F2FE; color: #0284C7; padding: 3px 8px; border-radius: 4px;">CUST-1002</span>
             <span id="modal-cust-badge" style="font-size: 0.74rem; font-weight: 800; padding: 3px 8px; border-radius: 999px;">Truecaller Verified</span>
             <span id="modal-cust-repeat-pill" style="font-size: 0.74rem; font-weight: 800; background: #EFF6FF; color: #1D4ED8; padding: 3px 8px; border-radius: 999px; border: 1px solid #BFDBFE;">Repeat Buyer</span>
-          </div>
           <div style="display: flex; align-items: center; gap: 10px; font-size: 0.84rem; color: var(--text-muted); flex-wrap: wrap;" id="modal-cust-contact-row">
-            <span id="modal-cust-phone">Mobile: +91 98290 *****</span>
+            <span id="modal-cust-phone">Mobile: +91 98290 12345</span>
             <span>&bull;</span>
             <span id="modal-cust-corridor">Corridor: Piprali Road Mandi</span>
             <span>&bull;</span>
@@ -11523,11 +11522,8 @@
 
     async function fetchCustomersFromBackend() {
       try {
-        const isSuper = currentOperator && (currentOperator.role === 'Super Admin' || currentOperator.perms === 'all');
         const role = currentOperator ? currentOperator.role : 'Admin';
-        const maskParam = (customerPiiRevealed && isSuper) ? 'false' : 'true';
-
-        const data = await sikarApi.get(`/api/customers?mask=${maskParam}&role=${encodeURIComponent(role)}`);
+        const data = await sikarApi.get(`/api/customers?mask=false&role=${encodeURIComponent(role)}`);
         const custList = Array.isArray(data) ? data : (data && data.customers ? data.customers : []);
 
         if (custList.length > 0) {
@@ -11572,15 +11568,7 @@
     }
 
     function toggleCustomerPiiMask() {
-      const isSuper = currentOperator && (currentOperator.role === 'Super Admin' || currentOperator.perms === 'all');
-      if (!isSuper) {
-        showToast('Access Restricted: Only Super Admin can unmask customer personal information.');
-        return;
-      }
-
-      customerPiiRevealed = !customerPiiRevealed;
-      fetchCustomersFromBackend();
-      showToast(customerPiiRevealed ? 'Customer PII unmasked for authorized Super Admin view.' : 'Customer PII masked for privacy.');
+      showToast('Wholesale customer contact directory displays live verified phone numbers.');
     }
 
     function renderCustomersList(query) {
@@ -11591,17 +11579,10 @@
       const cont = document.getElementById('customers-cards-container');
       if (!cont) return;
 
-      const isSuper = currentOperator && (currentOperator.role === 'Super Admin' || currentOperator.perms === 'all');
-      const maskEnabled = !customerPiiRevealed || !isSuper;
-
       // Update PII toggle button text
       const piiText = document.getElementById('cust-pii-btn-text');
       if (piiText) {
-        if (!isSuper) {
-          piiText.textContent = 'PII Protected (Staff Mode)';
-        } else {
-          piiText.textContent = customerPiiRevealed ? 'Showing Full PII (Admin)' : 'PII Protected (Masked)';
-        }
+        piiText.textContent = 'Wholesale Contacts (Live)';
       }
 
       // 1. Calculate Summary KPIs across entire customer database
@@ -11699,10 +11680,8 @@
           ? `<span style="font-size: 0.72rem; font-weight: 800; background: #EFF6FF; color: #1D4ED8; padding: 2px 7px; border-radius: 999px; border: 1px solid #BFDBFE;">Repeat Buyer: ${ordersCount} Orders</span>`
           : `<span style="font-size: 0.72rem; font-weight: 700; color: #64748B;">1st Order</span>`;
 
-        // PII Masking
-        const displayPhone = maskEnabled && c.phone
-          ? (c.phone.length >= 10 ? c.phone.replace(/(\d{5})\d{5}/, '$1*****') : '*****')
-          : (c.phone || 'N/A');
+        // Real unmasked mobile phone
+        const displayPhone = c.rawPhone || c.phone || 'N/A';
 
         return `
           <div class="customer-card-box">
@@ -11753,7 +11732,7 @@
               <button type="button" class="btn-portal-primary" style="flex: 1; padding: 6px 12px; font-size: 0.8rem; justify-content: center;" onclick="openCustomerHistory('${escapeHTML(c.id)}')">
                 View History &amp; Orders
               </button>
-              <button type="button" class="btn-portal-outline" style="padding: 6px 10px; font-size: 0.8rem;" onclick="sendCustomerWhatsAppMessage('${escapeHTML(c.phone)}')" title="Chat on WhatsApp">
+              <button type="button" class="btn-portal-outline" style="padding: 6px 10px; font-size: 0.8rem;" onclick="sendCustomerWhatsAppMessage('${escapeHTML(c.rawPhone || c.phone)}')" title="Chat on WhatsApp">
                 <svg width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5"><path d="M21 11.5a8.38 8.38 0 0 1-.9 3.8 8.5 8.5 0 0 1-7.6 4.7 8.38 8.38 0 0 1-3.8-.9L3 21l1.9-5.7a8.38 8.38 0 0 1-.9-3.8 8.5 8.5 0 0 1 4.7-7.6 8.38 8.38 0 0 1 3.8-.9h.5a8.48 8.48 0 0 1 8 8v.5z"></path></svg>
               </button>
             </div>
@@ -11819,7 +11798,7 @@
           }
 
           // Contact details
-          document.getElementById('modal-cust-phone').textContent = `Mobile: +91 ${c.phone}`;
+          document.getElementById('modal-cust-phone').textContent = `Mobile: +91 ${c.rawPhone || c.phone}`;
           document.getElementById('modal-cust-corridor').textContent = `Corridor: ${c.corridor || 'Sikar Mandi'}`;
           document.getElementById('modal-cust-address').textContent = c.address || 'Address on file';
 
@@ -11999,8 +11978,15 @@
 
     function sendCustomerWhatsAppMessage(phoneParam) {
       const phone = phoneParam || activeCustPhone;
-      if (!phone) return;
-      const clean = phone.replace(/[^0-9]/g, '').slice(-10);
+      if (!phone) {
+        showToast('No phone number available for WhatsApp.');
+        return;
+      }
+      const clean = String(phone).replace(/\D/g, '').slice(-10);
+      if (clean.length < 10) {
+        showToast('Valid 10-digit mobile number required: ' + phone);
+        return;
+      }
       window.open(`https://wa.me/91${clean}?text=${encodeURIComponent('Namaste! Sikar Drop Wholesale Depot regarding your beverage order.')}`, '_blank');
     }
 
@@ -14347,16 +14333,26 @@
       setV('cfg-whatsapp-phone', t.whatsappNumber || '919829000000');
       setV('cfg-contact-address', t.contactAddress || '');
     }
+    window.populateCmsForm = renderCmsForm;
 
-    function saveSiteTextsFromPortal() {
+    async function saveSiteTextsFromPortal() {
       const getV = (id, fallback) => {
         const el = document.getElementById(id);
-        return el ? el.value.trim() : fallback;
+        const val = el ? el.value.trim() : '';
+        return val || fallback || '';
       };
 
-      const rawWa = getV('cms-whatsapp-number', adminTexts.whatsappNumber || '919829000000');
+      const rawWa = (document.getElementById('cms-whatsapp-number')?.value.trim()) ||
+                    (document.getElementById('cfg-whatsapp-phone')?.value.trim()) ||
+                    adminTexts.whatsappNumber ||
+                    '919829000000';
       const cleanWa = String(rawWa).replace(/\D/g, '');
       const finalWa = cleanWa.length === 10 ? ('91' + cleanWa) : (cleanWa || '919829000000');
+
+      const elCmsWa = document.getElementById('cms-whatsapp-number');
+      if (elCmsWa) elCmsWa.value = finalWa;
+      const elCfgWa = document.getElementById('cfg-whatsapp-phone');
+      if (elCfgWa) elCfgWa.value = finalWa;
 
       adminTexts = {
         heroPill: getV('cms-hero-pill', adminTexts.heroPill || 'Trusted by 10,000+ Families in Sikar'),
@@ -14407,27 +14403,22 @@
       localStorage.setItem('sikar_admin_texts', JSON.stringify(adminTexts));
       notifyStorefrontSync('CMS_UPDATED');
 
-      fetch('/api/site-texts', {
-        method: 'POST',
-        headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify(adminTexts)
-      }).catch(e => console.warn('Sync site texts error:', e));
-
-      fetch('/api/settings', {
-        method: 'POST',
-        headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify({
+      try {
+        await sikarApi.post('/api/site-texts', adminTexts);
+        await sikarApi.post('/api/settings', {
           phone: adminTexts.contactPhone,
           helpline: adminTexts.helpline,
           whatsapp: adminTexts.whatsappNumber,
           address: adminTexts.contactAddress
-        })
-      }).catch(() => {});
+        });
+      } catch (e) {
+        console.warn('Sync site texts note:', e);
+      }
 
       showToast('All Homepage slides, about, contact phone & WhatsApp numbers saved live!');
     }
 
-    function saveContactSettingsFromPortal(e) {
+    async function saveContactSettingsFromPortal(e) {
       if (e) e.preventDefault();
       const phone = document.getElementById('cfg-contact-phone')?.value.trim() || '+91 98290 11223';
       const rawWa = document.getElementById('cfg-whatsapp-phone')?.value.trim() || '919829000000';
@@ -14443,7 +14434,7 @@
       const cmsAddr = document.getElementById('cms-contact-address');
       if (cmsAddr) cmsAddr.value = address;
 
-      saveSiteTextsFromPortal();
+      await saveSiteTextsFromPortal();
     }
 
     // =========================================================
@@ -15591,6 +15582,7 @@
     // INITIALIZATION ON DOM READY
     window.addEventListener('DOMContentLoaded', () => {
       checkAuth();
+      renderCmsForm();
       syncFromBackend().catch(err => console.warn('Initial sync warning:', err));
 
       // Close search dropdown on click outside

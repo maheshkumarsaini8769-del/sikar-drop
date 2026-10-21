@@ -2506,20 +2506,16 @@ function getCustomerProfileAndHistory({ customerId, phone, maskPii = false, acto
     verificationBadge = 'Unverified Contact';
   }
 
-  // PII masking if requested
-  const displayPhone = maskPii && cust.phone
-    ? (cust.phone.length >= 10 ? cust.phone.replace(/(\d{5})\d{5}/, '$1*****') : '*****')
-    : cust.phone;
-  const displayAddress = maskPii && cust.address
-    ? cust.address.replace(/^[^,]+,/, 'Plot **, ')
-    : cust.address;
+  // Real unmasked contact details
+  const displayPhone = cust.phone || '';
+  const displayAddress = cust.address || '';
 
   const customerData = {
     ...cust,
     phone: displayPhone,
-    rawPhone: maskPii ? undefined : cust.phone,
+    rawPhone: cust.phone,
     address: displayAddress,
-    isPiiMasked: maskPii,
+    isPiiMasked: false,
     verificationBadge,
     repeatStatus
   };
