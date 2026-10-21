@@ -749,6 +749,25 @@
         // Clear cart
         localStorage.setItem('sikar_cart', '{}');
 
+        // Persist order details to customer order history
+        const cleanPhone = String(phone || '').replace(/\D/g, '').slice(-10);
+        try {
+          localStorage.setItem('sikar_last_order_id', orderId);
+          if (cleanPhone) localStorage.setItem('sikar_last_order_phone', cleanPhone);
+          const myOrders = JSON.parse(localStorage.getItem('sikar_my_orders') || '[]');
+          myOrders.unshift({
+            id: orderId,
+            phone: cleanPhone,
+            customerName: name,
+            total: finalAmount,
+            corridor: corridor,
+            date: new Date().toISOString(),
+            status: 'pending',
+            itemsDesc: items.map(it => `${it.quantity || 1}x ${it.title}`).join(', ')
+          });
+          localStorage.setItem('sikar_my_orders', JSON.stringify(myOrders.slice(0, 20)));
+        } catch (e) {}
+
         // Show confirmation and trigger WhatsApp
         alert(`Order ${orderId} confirmed successfully! Dispatching to Sikar Drop tempo delivery.`);
         try {
@@ -762,7 +781,10 @@
           return;
         }
         setTimeout(() => {
-          window.location.href = `/track.html?id=${encodeURIComponent(orderId)}`;
+          const targetUrl = cleanPhone 
+            ? `/track.html?id=${encodeURIComponent(orderId)}&phone=${encodeURIComponent(cleanPhone)}`
+            : `/track.html?id=${encodeURIComponent(orderId)}`;
+          window.location.href = targetUrl;
         }, 1000);
       } catch (err) {
         console.error('Order submission error:', err);

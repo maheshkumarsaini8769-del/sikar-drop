@@ -5228,3 +5228,423 @@
     font-size: 0.72rem !important;
   }
 }
+
+/* ==========================================
+   MOBILE MENU DRAWER & NAVIGATION BAR
+   ========================================== */
+.nav-hamburger-btn {
+  display: inline-flex;
+  align-items: center;
+  gap: 7px;
+  background: #F1F5F9;
+  border: 1px solid var(--border-subtle);
+  border-radius: var(--radius-xs);
+  padding: 8px 12px;
+  color: #0F172A;
+  font-family: var(--font-heading);
+  font-weight: 700;
+  font-size: 0.86rem;
+  cursor: pointer;
+  transition: all 0.2s ease;
+  line-height: 1;
+}
+
+.nav-hamburger-btn:hover {
+  background: #E2E8F0;
+  color: var(--primary);
+  border-color: #CBD5E1;
+}
+
+.mobile-menu-backdrop {
+  position: fixed;
+  inset: 0;
+  background: rgba(15, 23, 42, 0.6);
+  backdrop-filter: blur(4px);
+  -webkit-backdrop-filter: blur(4px);
+  z-index: 1000;
+  opacity: 0;
+  visibility: hidden;
+  transition: opacity 0.28s ease, visibility 0.28s ease;
+}
+
+.mobile-menu-backdrop.open {
+  opacity: 1;
+  visibility: visible;
+}
+
+.mobile-menu-drawer {
+  position: fixed;
+  top: 0;
+  left: -340px;
+  width: 320px;
+  max-width: 86vw;
+  height: 100%;
+  height: 100dvh;
+  background: #FFFFFF;
+  z-index: 1001;
+  box-shadow: 4px 0 24px rgba(15, 23, 42, 0.18);
+  display: flex;
+  flex-direction: column;
+  transition: left 0.3s cubic-bezier(0.16, 1, 0.3, 1);
+  overflow-y: auto;
+}
+
+.mobile-menu-drawer.open {
+  left: 0 !important;
+}
+
+.mobile-menu-header {
+  padding: 18px 20px;
+  background: #0B192C;
+  color: #FFFFFF;
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  border-bottom: 1px solid rgba(255, 255, 255, 0.08);
+}
+
+.mobile-menu-brand {
+  display: flex;
+  align-items: center;
+  gap: 10px;
+}
+
+.mobile-menu-brand-icon {
+  width: 32px;
+  height: 32px;
+  object-fit: contain;
+}
+
+.mobile-menu-brand-text {
+  font-family: var(--font-heading);
+  font-size: 1.05rem;
+  font-weight: 800;
+  color: #FFFFFF;
+  line-height: 1.2;
+}
+
+.mobile-menu-brand-sub {
+  font-size: 0.7rem;
+  color: #38BDF8;
+  font-weight: 600;
+  display: block;
+}
+
+.mobile-menu-close-btn {
+  background: rgba(255, 255, 255, 0.1);
+  border: none;
+  color: #FFFFFF;
+  width: 32px;
+  height: 32px;
+  border-radius: 6px;
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  cursor: pointer;
+  transition: background 0.2s;
+}
+
+.mobile-menu-close-btn:hover {
+  background: rgba(255, 255, 255, 0.22);
+}
+
+.mobile-menu-nav {
+  padding: 14px 12px;
+  flex: 1;
+  display: flex;
+  flex-direction: column;
+  gap: 4px;
+}
+
+.mobile-menu-link {
+  display: flex;
+  align-items: center;
+  gap: 12px;
+  padding: 11px 14px;
+  color: #1E293B;
+  font-size: 0.94rem;
+  font-weight: 600;
+  text-decoration: none;
+  border-radius: 8px;
+  transition: all 0.18s ease;
+}
+
+.mobile-menu-link svg {
+  width: 19px;
+  height: 19px;
+  color: #64748B;
+  flex-shrink: 0;
+  transition: color 0.18s ease;
+}
+
+.mobile-menu-link:hover,
+.mobile-menu-link.active {
+  background: #E0F2FE;
+  color: #0284C7;
+}
+
+.mobile-menu-link:hover svg,
+.mobile-menu-link.active svg {
+  color: #0284C7;
+}
+
+.mobile-menu-link .menu-badge {
+  margin-left: auto;
+  font-size: 0.7rem;
+  font-weight: 800;
+  padding: 2px 7px;
+  border-radius: 4px;
+  background: #0284C7;
+  color: #FFFFFF;
+}
+
+.mobile-menu-footer {
+  padding: 16px;
+  background: #F8FAFC;
+  border-top: 1px solid var(--border-subtle);
+  display: flex;
+  flex-direction: column;
+  gap: 10px;
+}
+
+.mobile-menu-call-btn {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  gap: 8px;
+  padding: 10px 14px;
+  background: #0F3D64;
+  color: #FFFFFF;
+  text-decoration: none;
+  font-size: 0.86rem;
+  font-weight: 700;
+  border-radius: 6px;
+  text-align: center;
+}
+
+.mobile-menu-wa-btn {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  gap: 8px;
+  padding: 10px 14px;
+  background: #22C55E;
+  color: #FFFFFF;
+  text-decoration: none;
+  font-size: 0.86rem;
+  font-weight: 700;
+  border-radius: 6px;
+  text-align: center;
+}
+
+/* ==========================================
+   EXACT 3-PROCESS ORDER TRACKER (Order Placed -> Processing -> Delivered)
+   ========================================== */
+.track-three-steps-card {
+  background: #FFFFFF;
+  border: 1.5px solid var(--border-subtle);
+  border-radius: var(--radius-sm);
+  padding: 28px 24px;
+  margin-bottom: 24px;
+  box-shadow: 0 2px 8px rgba(15, 23, 42, 0.04);
+}
+
+.tracking-stepper-3 {
+  display: flex;
+  align-items: flex-start;
+  justify-content: space-between;
+  position: relative;
+  margin: 28px 0 24px;
+  gap: 8px;
+}
+
+.stepper-step-3 {
+  flex: 1;
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  text-align: center;
+  position: relative;
+  z-index: 2;
+}
+
+.stepper-circle-3 {
+  width: 44px;
+  height: 44px;
+  border-radius: 50%;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  font-weight: 800;
+  font-size: 1rem;
+  background: #E2E8F0;
+  color: #64748B;
+  border: 3px solid #FFFFFF;
+  box-shadow: 0 0 0 2px #CBD5E1;
+  transition: all 0.3s ease;
+  margin-bottom: 10px;
+}
+
+.stepper-step-3.active .stepper-circle-3 {
+  background: #0284C7;
+  color: #FFFFFF;
+  box-shadow: 0 0 0 3px rgba(2, 132, 199, 0.35);
+  animation: pulse-ring 2s infinite;
+}
+
+.stepper-step-3.completed .stepper-circle-3 {
+  background: #16A34A;
+  color: #FFFFFF;
+  box-shadow: 0 0 0 2px #16A34A;
+}
+
+.stepper-step-3.cancelled .stepper-circle-3 {
+  background: #DC2626;
+  color: #FFFFFF;
+  box-shadow: 0 0 0 2px #DC2626;
+}
+
+.stepper-line-3 {
+  position: absolute;
+  top: 22px;
+  height: 4px;
+  background: #E2E8F0;
+  z-index: 1;
+  transition: background 0.3s ease;
+}
+
+.stepper-line-3.line-1 {
+  left: 16%;
+  width: 34%;
+}
+
+.stepper-line-3.line-2 {
+  left: 50%;
+  width: 34%;
+}
+
+.stepper-line-3.filled {
+  background: #16A34A;
+}
+
+.stepper-line-3.active-fill {
+  background: linear-gradient(90deg, #16A34A 0%, #0284C7 100%);
+}
+
+.stepper-step-title {
+  font-family: var(--font-heading);
+  font-size: 0.95rem;
+  font-weight: 800;
+  color: #0F172A;
+  margin-bottom: 2px;
+  line-height: 1.25;
+}
+
+.stepper-step-desc {
+  font-size: 0.78rem;
+  color: #64748B;
+  line-height: 1.3;
+}
+
+.stepper-step-3.active .stepper-step-title {
+  color: #0284C7;
+}
+
+.stepper-step-3.completed .stepper-step-title {
+  color: #16A34A;
+}
+
+@keyframes pulse-ring {
+  0% { box-shadow: 0 0 0 2px rgba(2, 132, 199, 0.4); }
+  50% { box-shadow: 0 0 0 7px rgba(2, 132, 199, 0.12); }
+  100% { box-shadow: 0 0 0 2px rgba(2, 132, 199, 0.4); }
+}
+
+/* CUSTOMER ORDERS LIST CARDS */
+.phone-orders-wrapper {
+  margin-bottom: 22px;
+}
+
+.phone-orders-title {
+  font-family: var(--font-heading);
+  font-size: 1rem;
+  font-weight: 800;
+  color: #0F172A;
+  margin-bottom: 10px;
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+}
+
+.phone-orders-grid {
+  display: grid;
+  grid-template-columns: repeat(auto-fill, minmax(240px, 1fr));
+  gap: 10px;
+}
+
+.phone-order-card-btn {
+  background: #FFFFFF;
+  border: 1.5px solid var(--border-subtle);
+  border-radius: var(--radius-xs);
+  padding: 12px 14px;
+  text-align: left;
+  cursor: pointer;
+  transition: all 0.2s ease;
+  display: flex;
+  flex-direction: column;
+  gap: 4px;
+}
+
+.phone-order-card-btn:hover,
+.phone-order-card-btn.selected {
+  border-color: #0284C7;
+  background: #F0F9FF;
+  box-shadow: 0 2px 8px rgba(2, 132, 199, 0.12);
+}
+
+.phone-order-card-top {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+}
+
+.phone-order-card-id {
+  font-family: var(--font-heading);
+  font-weight: 800;
+  font-size: 0.92rem;
+  color: #0F172A;
+}
+
+.phone-order-card-total {
+  font-weight: 800;
+  font-size: 0.9rem;
+  color: #0369A1;
+}
+
+.phone-order-card-items {
+  font-size: 0.78rem;
+  color: #64748B;
+  white-space: nowrap;
+  overflow: hidden;
+  text-overflow: ellipsis;
+}
+
+@media (max-width: 640px) {
+  .tracking-stepper-3 {
+    gap: 4px;
+  }
+  .stepper-circle-3 {
+    width: 36px;
+    height: 36px;
+    font-size: 0.85rem;
+  }
+  .stepper-line-3 {
+    top: 18px;
+  }
+  .stepper-step-title {
+    font-size: 0.82rem;
+  }
+  .stepper-step-desc {
+    font-size: 0.7rem;
+  }
+}
