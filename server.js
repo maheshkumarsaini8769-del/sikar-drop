@@ -238,19 +238,6 @@ app.get('/favicon.png', (req, res) => {
 // ==========================================
 // 2. AUTHENTICATION & SUB-ADMIN RBAC
 // ==========================================
-app.get('/api/diag', (req, res) => {
-  try {
-    res.json({
-      dirname: __dirname,
-      cwd: process.cwd(),
-      dirname_files: fs.readdirSync(__dirname),
-      cwd_files: fs.readdirSync(process.cwd())
-    });
-  } catch (err) {
-    res.status(500).json({ error: err.message });
-  }
-});
-
 app.post('/api/auth/login', (req, res) => {
   try {
     const { email, username, password, pin } = req.body;
