@@ -42,7 +42,7 @@ const {
   fixReconciliationDiscrepancies
 } = require('./db.js');
 
-const { syncDoc, getMongoDb, MONGODB_URI } = require('./mongo.js');
+const { syncDoc, deleteDoc, getMongoDb, MONGODB_URI } = require('./mongo.js');
 
 const app = express();
 const PORT = process.env.PORT || 8090;
@@ -481,20 +481,20 @@ app.post('/api/auth/credentials', handleCredentialsUpdate);
 
 app.get('/api/auth/subadmins', (req, res) => {
   try {
-    const users = db.prepare("SELECT id, username, name, role, pin, permissions_json, active, created_at, last_login FROM admin_users WHERE id != 'ADM-01'").all();
+    const users = db.prepare("SELECT id, username, name, role, pin, permissions_json, active, created_at, last_login FROM admin_users ORDER BY CASE WHEN id = 'ADM-01' THEN 0 ELSE 1 END, id ASC").all();
     const formatted = users.map(u => {
       let parsedPerms = [];
       try {
         parsedPerms = JSON.parse(u.permissions_json || '[]');
       } catch (e) {
-        parsedPerms = ['dashboard'];
+        parsedPerms = u.id === 'ADM-01' ? ['all'] : ['dashboard'];
       }
       return {
         id: u.id,
         name: u.name,
         email: u.username,
         username: u.username,
-        role: u.role,
+        role: u.role || (u.id === 'ADM-01' ? 'Super Admin' : 'Staff'),
         pass: u.pin,
         pin: u.pin,
         perms: parsedPerms,
@@ -518,24 +518,37 @@ app.post('/api/auth/subadmins', (req, res) => {
     if (!finalUsername || !name) return res.status(400).json({ error: 'Username/email and name are required' });
 
     const now = new Date().toISOString();
-    const cleanPerms = Array.isArray(permissions) && permissions.length > 0 ? permissions : ['dashboard'];
+    const isSuper = (role && String(role).toLowerCase().includes('super')) || finalUsername === 'maheshsaini10101@gmail.com';
+    const cleanPerms = isSuper ? ['all'] : (Array.isArray(permissions) && permissions.length > 0 ? permissions : ['dashboard']);
     const permsJson = JSON.stringify(cleanPerms);
+    const finalRole = isSuper ? 'Super Admin' : (role || 'Staff');
 
     const existing = db.prepare('SELECT id, name FROM admin_users WHERE LOWER(TRIM(username)) = ? OR LOWER(TRIM(id)) = ?').get(finalUsername, finalUsername);
     if (existing) {
-      if (existing.id === 'ADM-01') {
-        return res.status(400).json({ error: 'Cannot modify primary Super Admin via sub-admin management' });
-      }
       db.prepare(`
         UPDATE admin_users 
         SET name = ?, role = ?, pin = ?, permissions_json = ?, active = 1
         WHERE id = ?
-      `).run(name.trim(), role || 'Staff', finalPin, permsJson, existing.id);
+      `).run(name.trim(), finalRole, finalPin, permsJson, existing.id);
 
       db.prepare(`
         INSERT INTO audit_logs (id, actor, action, module, details, created_at)
         VALUES (?, 'Super Admin', 'SUBADMIN_UPDATED', 'subadmin', ?, ?)
-      `).run('AUD-' + Math.floor(100000 + Math.random() * 900000), `Updated credentials for sub-admin account ${finalUsername} (${name})`, now);
+      `).run('AUD-' + Math.floor(100000 + Math.random() * 900000), `Updated credentials for account ${finalUsername} (${name})`, now);
+
+      const updatedDoc = {
+        _id: existing.id,
+        id: existing.id,
+        name: name.trim(),
+        username: finalUsername,
+        email: finalUsername,
+        role: finalRole,
+        pin: finalPin,
+        permissions: cleanPerms,
+        active: true,
+        updated_at: now
+      };
+      try { syncDoc('admin_users', { _id: existing.id }, updatedDoc); } catch (e) {}
 
       return res.status(200).json({
         success: true,
@@ -545,27 +558,41 @@ app.post('/api/auth/subadmins', (req, res) => {
           name: name.trim(),
           email: finalUsername,
           username: finalUsername,
-          role: role || 'Staff',
+          role: finalRole,
           pass: finalPin,
           pin: finalPin,
           perms: cleanPerms,
           permissions: cleanPerms,
           active: true
         },
-        message: `Staff credentials updated for ${name} (${role || 'Staff'})`
+        message: `Credentials updated for ${name} (${finalRole})`
       });
     }
 
-    const id = 'ADM-' + Math.floor(100 + Math.random() * 900);
+    const id = isSuper ? ('ADM-SA-' + Math.floor(100 + Math.random() * 900)) : ('ADM-' + Math.floor(100 + Math.random() * 900));
     db.prepare(`
       INSERT INTO admin_users (id, username, name, role, pin, permissions_json, active, created_at)
       VALUES (?, ?, ?, ?, ?, ?, 1, ?)
-    `).run(id, finalUsername, name.trim(), role || 'Staff', finalPin, permsJson, now);
+    `).run(id, finalUsername, name.trim(), finalRole, finalPin, permsJson, now);
 
     db.prepare(`
       INSERT INTO audit_logs (id, actor, action, module, details, created_at)
       VALUES (?, 'Super Admin', 'SUBADMIN_CREATED', 'subadmin', ?, ?)
-    `).run('AUD-' + Math.floor(100000 + Math.random() * 900000), `Created sub-admin account ${finalUsername} (${name}) with role ${role || 'Staff'}`, now);
+    `).run('AUD-' + Math.floor(100000 + Math.random() * 900000), `Created admin account ${finalUsername} (${name}) with role ${finalRole}`, now);
+
+    const newDoc = {
+      _id: id,
+      id,
+      name: name.trim(),
+      username: finalUsername,
+      email: finalUsername,
+      role: finalRole,
+      pin: finalPin,
+      permissions: cleanPerms,
+      active: true,
+      created_at: now
+    };
+    try { syncDoc('admin_users', { _id: id }, newDoc); } catch (e) {}
 
     res.status(201).json({
       success: true,
@@ -575,14 +602,14 @@ app.post('/api/auth/subadmins', (req, res) => {
         name: name.trim(),
         email: finalUsername,
         username: finalUsername,
-        role: role || 'Staff',
+        role: finalRole,
         pass: finalPin,
         pin: finalPin,
         perms: cleanPerms,
         permissions: cleanPerms,
         active: true
       },
-      message: `Staff account created for ${name} (${role || 'Staff'})`
+      message: `Account created for ${name} (${finalRole})`
     });
   } catch (err) {
     res.status(500).json({ error: err.message });
@@ -592,22 +619,22 @@ app.post('/api/auth/subadmins', (req, res) => {
 app.put('/api/auth/subadmins/:id', (req, res) => {
   try {
     const { id } = req.params;
-    if (id === 'ADM-01') return res.status(400).json({ error: 'Cannot modify primary Super Admin' });
     const target = db.prepare('SELECT * FROM admin_users WHERE id = ? OR LOWER(TRIM(username)) = ?').get(id, id.toLowerCase());
-    if (!target) return res.status(404).json({ error: 'Sub-admin account not found' });
+    if (!target) return res.status(404).json({ error: 'Admin account not found' });
 
     const { name, email, username, role, pin, password, permissions, active } = req.body;
     const finalUsername = String(email || username || target.username).trim().toLowerCase();
     const finalName = name ? name.trim() : target.name;
-    const finalRole = role ? role.trim() : target.role;
+    const isSuper = (role && String(role).toLowerCase().includes('super')) || target.id === 'ADM-01' || finalUsername === 'maheshsaini10101@gmail.com';
+    const finalRole = isSuper ? 'Super Admin' : (role ? role.trim() : target.role);
     const finalPin = (password || pin) ? String(password || pin).trim() : target.pin;
-    const finalPerms = Array.isArray(permissions) ? JSON.stringify(permissions) : target.permissions_json;
+    const finalPerms = isSuper ? JSON.stringify(['all']) : (Array.isArray(permissions) ? JSON.stringify(permissions) : target.permissions_json);
     const finalActive = active !== undefined ? (active ? 1 : 0) : target.active;
 
     if (finalUsername !== target.username.toLowerCase()) {
       const clash = db.prepare('SELECT id FROM admin_users WHERE LOWER(TRIM(username)) = ? AND id != ?').get(finalUsername, target.id);
       if (clash) {
-        return res.status(400).json({ error: 'This email or username is already in use by another sub-admin account' });
+        return res.status(400).json({ error: 'This email or username is already in use by another account' });
       }
     }
 
@@ -621,11 +648,25 @@ app.put('/api/auth/subadmins/:id', (req, res) => {
     db.prepare(`
       INSERT INTO audit_logs (id, actor, action, module, details, created_at)
       VALUES (?, 'Super Admin', 'SUBADMIN_UPDATED', 'subadmin', ?, ?)
-    `).run('AUD-' + Math.floor(100000 + Math.random() * 900000), `Updated sub-admin ${target.id} (${finalName})`, now);
+    `).run('AUD-' + Math.floor(100000 + Math.random() * 900000), `Updated admin ${target.id} (${finalName})`, now);
+
+    const updatedDoc = {
+      _id: target.id,
+      id: target.id,
+      name: finalName,
+      username: finalUsername,
+      email: finalUsername,
+      role: finalRole,
+      pin: finalPin,
+      permissions: JSON.parse(finalPerms),
+      active: finalActive === 1,
+      updated_at: now
+    };
+    try { syncDoc('admin_users', { _id: target.id }, updatedDoc); } catch (e) {}
 
     res.json({
       success: true,
-      message: `Sub-admin ${finalName} credentials updated successfully`,
+      message: `Account ${finalName} credentials updated successfully`,
       subadmin: {
         id: target.id,
         name: finalName,
@@ -647,16 +688,18 @@ app.put('/api/auth/subadmins/:id', (req, res) => {
 app.delete('/api/auth/subadmins/:id', (req, res) => {
   try {
     const { id } = req.params;
-    if (id === 'ADM-01') return res.status(400).json({ error: 'Cannot delete primary super admin account' });
+    if (id === 'ADM-01') return res.status(400).json({ error: 'Cannot delete primary master super admin account' });
     const target = db.prepare('SELECT * FROM admin_users WHERE id = ? OR LOWER(TRIM(username)) = ?').get(id, id.toLowerCase());
     if (!target) return res.status(404).json({ error: 'Sub-admin account not found' });
-    if (target.id === 'ADM-01') return res.status(400).json({ error: 'Cannot delete primary super admin account' });
+    if (target.id === 'ADM-01') return res.status(400).json({ error: 'Cannot delete primary master super admin account' });
 
     db.prepare('DELETE FROM admin_users WHERE id = ?').run(target.id);
     db.prepare(`
       INSERT INTO audit_logs (id, actor, action, module, details, created_at)
       VALUES (?, 'Super Admin', 'SUBADMIN_DELETED', 'subadmin', ?, ?)
     `).run('AUD-' + Math.floor(100000 + Math.random() * 900000), `Revoked sub-admin access for ${target.username} (${target.name})`, new Date().toISOString());
+
+    try { deleteDoc('admin_users', { _id: target.id }); } catch (e) {}
 
     res.json({ success: true, message: `Account for ${target.name} has been revoked` });
   } catch (err) {
@@ -1371,10 +1414,12 @@ app.get('/api/orders', (req, res) => {
     }
 
     // Filter by phone
-    const effectivePhone = (phone || '').trim();
-    if (effectivePhone) {
+    const rawPhone = (phone || '').trim();
+    if (rawPhone) {
+      const cleanDigits = rawPhone.replace(/\D/g, '').slice(-10);
+      const searchTarget = cleanDigits.length >= 7 ? cleanDigits : rawPhone;
       whereClauses.push("(customer_phone LIKE ? OR login_phone LIKE ? OR delivery_phone LIKE ?)");
-      const phPattern = `%${effectivePhone}%`;
+      const phPattern = `%${searchTarget}%`;
       params.push(phPattern, phPattern, phPattern);
     }
 
@@ -3422,18 +3467,65 @@ app.post('/api/coupons', (req, res) => {
     const maxDiscount = req.body.maxDiscount !== undefined ? req.body.maxDiscount : (req.body.max_discount || 0);
     const expiryDate = req.body.expiryDate || req.body.expiry_date || '';
     const desc = req.body.desc || '';
+    const active = req.body.active !== undefined ? (req.body.active ? 1 : 0) : 1;
 
     if (!code || discountVal === undefined) return res.status(400).json({ error: 'Code and discount value are required' });
 
     const now = new Date().toISOString();
+    const upperCode = code.trim().toUpperCase();
     db.prepare(`
       INSERT OR REPLACE INTO coupons (code, discount_type, discount_val, min_order, max_discount, usage_limit, per_user_limit, used_count, expiry_date, active, desc, created_at)
-      VALUES (?, ?, ?, ?, ?, 100, 1, 0, ?, 1, ?, ?)
-    `).run(code.toUpperCase(), discountType, discountVal, minOrder, maxDiscount, expiryDate, desc, now);
+      VALUES (?, ?, ?, ?, ?, 100, 1, 0, ?, ?, ?, ?)
+    `).run(upperCode, discountType, discountVal, minOrder, maxDiscount, expiryDate, active, desc, now);
 
-    res.status(201).json({ success: true, code: code.toUpperCase() });
+    const doc = {
+      _id: upperCode,
+      code: upperCode,
+      discount_type: discountType,
+      discount_val: discountVal,
+      min_order: minOrder,
+      max_discount: maxDiscount,
+      expiry_date: expiryDate,
+      active: active === 1,
+      desc: desc,
+      created_at: now
+    };
+    try { syncDoc('coupons', { _id: upperCode }, doc); } catch (e) {}
+
+    res.status(201).json({ success: true, code: upperCode, coupon: doc });
   } catch (err) {
     res.status(400).json({ error: err.message });
+  }
+});
+
+app.put('/api/coupons/:code', (req, res) => {
+  try {
+    const { code } = req.params;
+    const upperCode = code.trim().toUpperCase();
+    const existing = db.prepare('SELECT * FROM coupons WHERE code = ?').get(upperCode);
+    if (!existing) return res.status(404).json({ error: 'Coupon not found' });
+
+    const { active, discountVal, discount_val, minOrder, min_order, maxDiscount, max_discount, desc, expiryDate, expiry_date } = req.body || {};
+    const newActive = active !== undefined ? (active ? 1 : 0) : existing.active;
+    const newDisc = (discountVal !== undefined ? discountVal : (discount_val !== undefined ? discount_val : existing.discount_val));
+    const newMin = (minOrder !== undefined ? minOrder : (min_order !== undefined ? min_order : existing.min_order));
+    const newMax = (maxDiscount !== undefined ? maxDiscount : (max_discount !== undefined ? max_discount : existing.max_discount));
+    const newDesc = desc !== undefined ? desc : existing.desc;
+    const newExpiry = (expiryDate !== undefined ? expiryDate : (expiry_date !== undefined ? expiry_date : existing.expiry_date));
+
+    db.prepare(`
+      UPDATE coupons
+      SET active = ?, discount_val = ?, min_order = ?, max_discount = ?, desc = ?, expiry_date = ?
+      WHERE code = ?
+    `).run(newActive, newDisc, newMin, newMax, newDesc, newExpiry, upperCode);
+
+    const updated = db.prepare('SELECT * FROM coupons WHERE code = ?').get(upperCode);
+    const doc = { ...updated, _id: upperCode, active: updated.active === 1 };
+    try { syncDoc('coupons', { _id: upperCode }, doc); } catch (e) {}
+
+    res.json({ success: true, coupon: doc, message: `Coupon ${upperCode} updated` });
+  } catch (err) {
+    res.status(500).json({ error: err.message });
   }
 });
 
@@ -3498,8 +3590,10 @@ app.post('/api/coupons/validate', (req, res) => {
 app.delete('/api/coupons/:code', (req, res) => {
   try {
     const { code } = req.params;
-    db.prepare('DELETE FROM coupons WHERE code = ?').run(code.toUpperCase());
-    res.json({ success: true, message: `Coupon ${code} deleted` });
+    const upperCode = code.trim().toUpperCase();
+    db.prepare('DELETE FROM coupons WHERE code = ?').run(upperCode);
+    try { deleteDoc('coupons', { _id: upperCode }); } catch (e) {}
+    res.json({ success: true, message: `Coupon ${upperCode} deleted` });
   } catch (err) {
     res.status(500).json({ error: err.message });
   }
@@ -3612,6 +3706,11 @@ app.post('/api/cms', (req, res) => {
           .run(key, String(value), now);
       }
     })();
+
+    try {
+      syncDoc('website_content', { _id: 'all_content' }, { _id: 'all_content', content: updates, updated_at: now });
+    } catch (e) {}
+
     res.json({ success: true });
   } catch (err) {
     res.status(400).json({ error: err.message });
@@ -5430,6 +5529,10 @@ app.post('/api/settings', (req, res) => {
       });
     })();
 
+    try {
+      syncDoc('website_settings', { key: 'portal_settings' }, { key: 'portal_settings', settings, updated_at: now });
+    } catch (e) {}
+
     res.json({ success: true, message: 'Settings saved successfully' });
   } catch (err) {
     res.status(400).json({ error: err.message });
@@ -5463,7 +5566,8 @@ const DEFAULT_FALLBACK_TEXTS = {
   slide3BtnText: 'Explore Cold Drinks',
   slide3BtnLink: 'products',
   topPolicy: '100% Factory-Sealed Bottles & Cases Only • We Do Not Supply 20L Water Jars (Campers)',
-  helpline: '+91 98290 00000',
+  helpline: '+91 98290 11223',
+  whatsappNumber: '919829000000',
   brandTagline: 'Pure Water. Healthy Life.',
   truckTitle: 'Free Delivery in Sikar',
   truckSub: 'On orders above 5 Petis / Marriage Garden Bookings',
@@ -5471,7 +5575,7 @@ const DEFAULT_FALLBACK_TEXTS = {
   bulkSub: 'For Offices, Hotels, Schools & Marriage Gardens',
   aboutStory: 'Sikar Drop was established in 2024 with a singular objective: eliminating contaminated 20L camper jars completely and providing 100% genuine factory-sealed bottled water and chilled beverages across Sikar Mandi.',
   contactAddress: 'Plot 14-B, Near Krishi Upaj Mandi, Station Road Bypass, Sikar (Raj.) 332001',
-  contactPhone: '+91 98290 00000 / +91 98290 84210',
+  contactPhone: '+91 98290 11223',
   footerCamper: 'We do not supply 20L plastic water jars (campers) in Sikar. Only 100% factory-sealed branded bottles and crates are supplied.',
   footerAbout: 'Sikar\'s premier wholesale beverage depot. Providing 100% factory-sealed mineral water bottle cases, chilled cold drink crates, fruit juices, and soda can trays directly to wedding gardens, kirana stores, coaching canteens, and residences.',
   wholesaleBundlesTag: 'Mandi Direct Wholesale • 100% Factory Sealed',
@@ -5507,6 +5611,10 @@ app.post('/api/site-texts', (req, res) => {
       VALUES ('site_texts', ?, ?)
       ON CONFLICT(key) DO UPDATE SET value = excluded.value, updated_at = excluded.updated_at
     `).run(JSON.stringify(merged), now);
+
+    try {
+      syncDoc('website_settings', { key: 'site_texts' }, { key: 'site_texts', value: JSON.stringify(merged), updated_at: now });
+    } catch (e) {}
 
     try {
       db.prepare(`

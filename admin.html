@@ -2218,7 +2218,7 @@
         <span class="tab-badge-pill danger" id="badge-khata-due" style="display:none;">1 Due</span>
       </button>
 
-      <button type="button" class="sidebar-tab-btn" data-tab="settings" onclick="switchTab('settings')">
+      <button type="button" class="sidebar-tab-btn" data-tab="delivery" onclick="switchTab('delivery')">
         <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M20 10c0 6-8 12-8 12s-8-6-8-12a8 8 0 0 1 16 0Z"/><circle cx="12" cy="10" r="3"/></svg>
         <span>Delivery Areas &amp; Pincodes</span>
       </button>
@@ -2291,7 +2291,7 @@
 
       <button type="button" class="sidebar-tab-btn" data-tab="users" onclick="switchTab('users')">
         <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M16 21v-2a4 4 0 0 0-4-4H6a4 4 0 0 0-4 4v2"/><circle cx="9" cy="7" r="4"/><path d="M22 21v-2a4 4 0 0 0-3-3.87"/><path d="M16 3.13a4 4 0 0 1 0 7.75"/></svg>
-        <span>Users Directory &amp; OTP Logins</span>
+        <span>Customer Directory &amp; Truecaller Logins</span>
       </button>
 
       <button type="button" class="sidebar-tab-btn" data-tab="subadmin" onclick="switchTab('subadmin')">
@@ -2301,7 +2301,7 @@
 
       <button type="button" class="sidebar-tab-btn" data-tab="settings" onclick="switchTab('settings')">
         <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M12.22 2h-.44a2 2 0 0 0-2 2v.18a2 2 0 0 1-1 1.73l-.43.25a2 2 0 0 1-2 0l-.15-.08a2 2 0 0 0-2.73.73l-.22.38a2 2 0 0 0 .73 2.73l.15.1a2 2 0 0 1 1 1.72v.51a2 2 0 0 1-1 1.74l-.15.09a2 2 0 0 0-.73 2.73l.22.38a2 2 0 0 0 2.73.73l.15-.08a2 2 0 0 1 2 0l.43.25a2 2 0 0 1 1 1.73V20a2 2 0 0 0 2 2h.44a2 2 0 0 0 2-2v-.18a2 2 0 0 1 1-1.73l.43-.25a2 2 0 0 1 2 0l.15.08a2 2 0 0 0 2.73-.73l.22-.39a2 2 0 0 0-.73-2.73l-.15-.08a2 2 0 0 1-1-1.74v-.5a2 2 0 0 1 1-1.74l.15-.09a2 2 0 0 0 .73-2.73l-.22-.38a2 2 0 0 0-2.73-.73l-.15.08a2 2 0 0 1-2 0l-.43-.25a2 2 0 0 1-1-1.73V4a2 2 0 0 0-2-2z"/><circle cx="12" cy="12" r="3"/></svg>
-        <span>Business &amp; Delivery Settings</span>
+        <span>Business &amp; System Settings</span>
       </button>
 
     </div>
@@ -3630,7 +3630,7 @@
             <span class="stat-kpi-delta" id="cust-kpi-total-sub">Direct Database Records</span>
           </div>
           <div class="stat-kpi-card" style="border-top: 3px solid #15803D;">
-            <span class="stat-kpi-label">Registered &amp; OTP-Verified</span>
+            <span class="stat-kpi-label">Truecaller Verified Buyers</span>
             <div class="stat-kpi-val tabular" style="color: #15803D;" id="cust-kpi-verified">0</div>
             <span class="stat-kpi-delta positive" id="cust-kpi-verified-sub">Verified Mobile Auth</span>
           </div>
@@ -4477,7 +4477,7 @@
             </div>
             <div style="background: #F0FDF4; border: 1px solid #86EFAC; padding: 6px 14px; border-radius: var(--radius-xs); display: flex; align-items: center; gap: 8px;">
               <span style="display: inline-block; width: 8px; height: 8px; border-radius: 50%; background: #16A34A;"></span>
-              <span style="font-size: 0.82rem; font-weight: 700; color: #166534;">WhatsApp OTP Active (Default: 9999)</span>
+              <span style="font-size: 0.82rem; font-weight: 700; color: #166534;">Truecaller 1-Tap Verification Active (Zero OTP)</span>
             </div>
           </div>
           <div class="portal-table-wrapper">
@@ -4700,14 +4700,18 @@
               <label for="cms-about-story">About Us Mission &amp; Depot Philosophy</label>
               <textarea id="cms-about-story" class="portal-textarea" rows="3"></textarea>
             </div>
-            <div class="portal-form-grid-2">
+            <div class="portal-form-grid-3">
               <div class="portal-field-group">
                 <label for="cms-contact-address">Depot Physical Address (Sikar Mandi)</label>
                 <input type="text" id="cms-contact-address" class="portal-input">
               </div>
               <div class="portal-field-group">
-                <label for="cms-contact-phone">Contact Phone &amp; WhatsApp</label>
-                <input type="text" id="cms-contact-phone" class="portal-input">
+                <label for="cms-contact-phone">Customer Support &amp; Helpline Phone</label>
+                <input type="text" id="cms-contact-phone" class="portal-input" placeholder="+91 98290 11223">
+              </div>
+              <div class="portal-field-group">
+                <label for="cms-whatsapp-number">Live WhatsApp Number (Order Dispatch &amp; Chat)</label>
+                <input type="text" id="cms-whatsapp-number" class="portal-input" placeholder="9829000000 or 919829000000">
               </div>
             </div>
           </div>
@@ -5072,9 +5076,9 @@
       </section>
 
       <!-- =======================================================
-           TAB 17: DELIVERY LOCATIONS & SECURITY SETTINGS
+           TAB 17: SERVICEABLE DELIVERY LOCATIONS & PINCODES
            ======================================================= -->
-      <section id="pane-settings" class="tab-pane">
+      <section id="pane-delivery" class="tab-pane">
         <!-- SERVICEABLE DELIVERY AREAS & LOCATIONS MANAGER -->
         <div class="portal-card" style="margin-bottom: 24px;">
           <div class="portal-card-header" style="flex-wrap: wrap; gap: 12px;">
@@ -5151,7 +5155,12 @@
             </table>
           </div>
         </div>
+      </section>
 
+      <!-- =======================================================
+           TAB 18: BUSINESS & SYSTEM SETTINGS
+           ======================================================= -->
+      <section id="pane-settings" class="tab-pane">
         <div class="portal-card">
           <div class="portal-card-header">
             <div>
@@ -5240,6 +5249,47 @@
             </div>
           </form>
         </div>
+
+        <!-- STOREFRONT CONTACT PHONE & WHATSAPP NUMBERS CONFIGURATION CARD -->
+        <div class="portal-card" style="margin-top: 24px;">
+          <div class="portal-card-header" style="flex-wrap: wrap; gap: 12px;">
+            <div>
+              <h2 style="display: flex; align-items: center; gap: 8px;">
+                <svg viewBox="0 0 24 24" width="22" height="22" fill="#22C55E"><path d="M12 2a10 10 0 0 1 10 10c0 5.52-4.48 10-10 10a9.96 9.96 0 0 1-5.1-1.4L2 22l1.43-4.8A9.97 9.97 0 0 1 2 12C2 6.48 6.48 2 12 2m0 1.8A8.2 8.2 0 0 0 3.8 12c0 1.63.48 3.16 1.3 4.47l-.87 2.92 3.03-.83A8.17 8.17 0 0 0 12 20.2a8.2 8.2 0 0 0 8.2-8.2A8.2 8.2 0 0 0 12 3.8z"/></svg>
+                <span>Storefront Contact Phone &amp; WhatsApp Order Dispatch Numbers</span>
+              </h2>
+              <p>Configure the customer support helpline and WhatsApp number used for receiving online customer orders, floating WhatsApp chat, and storefront call links.</p>
+            </div>
+            <span class="portal-badge badge-success">Live Sync Active</span>
+          </div>
+
+          <form onsubmit="saveContactSettingsFromPortal(event)" style="max-width: 680px;">
+            <div class="portal-form-grid-2">
+              <div class="portal-field-group">
+                <label for="cfg-contact-phone">Customer Support Helpline Phone</label>
+                <input type="text" id="cfg-contact-phone" class="portal-input" placeholder="+91 98290 11223" required>
+                <small style="color: var(--text-muted); font-size: 0.76rem; display: block; margin-top: 4px;">Appears in header, footer, and call links.</small>
+              </div>
+
+              <div class="portal-field-group">
+                <label for="cfg-whatsapp-phone">WhatsApp Order Dispatch Number</label>
+                <input type="text" id="cfg-whatsapp-phone" class="portal-input" placeholder="9829000000 or 919829000000" required>
+                <small style="color: var(--text-muted); font-size: 0.76rem; display: block; margin-top: 4px;">Orders placed on website are sent directly to this WhatsApp.</small>
+              </div>
+            </div>
+
+            <div class="portal-field-group" style="margin-top: 12px;">
+              <label for="cfg-contact-address">Depot Physical Address (Sikar Mandi)</label>
+              <input type="text" id="cfg-contact-address" class="portal-input" placeholder="Plot 14-B, Near Krishi Upaj Mandi, Station Road Bypass, Sikar (Raj.) 332001">
+            </div>
+
+            <div style="display: flex; align-items: center; gap: 12px; margin-top: 18px;">
+              <button type="submit" class="btn-portal-primary" style="background: #16A34A; border-color: #15803D;">
+                <span>Save Contact &amp; WhatsApp Settings</span>
+              </button>
+            </div>
+          </form>
+        </div>
       </section>
 
     </div>
@@ -5259,7 +5309,7 @@
           <div style="display: flex; align-items: center; gap: 8px; flex-wrap: wrap; margin-bottom: 4px;">
             <h3 style="font-family: var(--font-heading); font-size: 1.4rem; font-weight: 900; margin: 0;" id="modal-cust-name">Customer History</h3>
             <span id="modal-cust-id" style="font-size: 0.76rem; font-weight: 800; background: #E0F2FE; color: #0284C7; padding: 3px 8px; border-radius: 4px;">CUST-1002</span>
-            <span id="modal-cust-badge" style="font-size: 0.74rem; font-weight: 800; padding: 3px 8px; border-radius: 999px;">Registered &amp; OTP-Verified</span>
+            <span id="modal-cust-badge" style="font-size: 0.74rem; font-weight: 800; padding: 3px 8px; border-radius: 999px;">Truecaller Verified</span>
             <span id="modal-cust-repeat-pill" style="font-size: 0.74rem; font-weight: 800; background: #EFF6FF; color: #1D4ED8; padding: 3px 8px; border-radius: 999px; border: 1px solid #BFDBFE;">Repeat Buyer</span>
           </div>
           <div style="display: flex; align-items: center; gap: 10px; font-size: 0.84rem; color: var(--text-muted); flex-wrap: wrap;" id="modal-cust-contact-row">
@@ -6049,6 +6099,7 @@
       <p style="font-size: 0.82rem; color: var(--text-muted); margin-bottom: 18px;">Customers can enter this code in cart drawer for wholesale discounts.</p>
 
       <form onsubmit="handleCouponSave(event)">
+        <input type="hidden" id="cpn-edit-idx" value="">
         <div class="portal-form-grid-2">
           <div class="portal-field-group">
             <label for="cpn-code-input">Coupon Code (Uppercase) *</label>
@@ -6073,7 +6124,12 @@
           <label for="cpn-desc-input">Description / Promo Badge</label>
           <input type="text" id="cpn-desc-input" class="portal-input" placeholder="e.g. 10% Off Sikar Mandi Special">
         </div>
-        <button type="submit" class="btn-portal-primary" style="width: 100%; justify-content: center;">Create Coupon</button>
+        <div class="portal-field-group" style="margin-bottom: 14px;">
+          <label style="display:flex; align-items:center; gap:8px; font-weight:600; font-size:0.86rem; cursor:pointer;">
+            <input type="checkbox" id="cpn-active-input" checked> Enable Coupon (Active on Storefront)
+          </label>
+        </div>
+        <button type="submit" class="btn-portal-primary" id="cpn-submit-btn" style="width: 100%; justify-content: center;">Save Coupon Code</button>
       </form>
     </div>
   </div>
@@ -6207,8 +6263,18 @@
             <input type="text" id="staff-name-input" class="portal-input" required>
           </div>
           <div class="portal-field-group">
-            <label for="staff-role-input">Designation / Role Title *</label>
-            <input type="text" id="staff-role-input" class="portal-input" placeholder="e.g. Dispatch Incharge" required>
+            <label for="staff-role-select">Designation / Access Role *</label>
+            <select id="staff-role-select" class="portal-select" onchange="handleStaffRoleChange(this.value)">
+              <option value="Super Admin">Super Admin (Full System Authority)</option>
+              <option value="Store Sub-Admin" selected>Store Sub-Admin</option>
+              <option value="Logistics Operator">Logistics Operator</option>
+              <option value="Accountant">Accountant</option>
+              <option value="Catalog Manager">Catalog Manager</option>
+              <option value="Dispatch Officer">Dispatch Officer</option>
+              <option value="Delivery Specialist">Delivery Specialist</option>
+              <option value="custom">Custom Designation Title...</option>
+            </select>
+            <input type="text" id="staff-role-input" class="portal-input" style="display:none; margin-top:6px;" placeholder="e.g. Regional Manager">
           </div>
         </div>
         <div class="portal-form-grid-2">
@@ -6248,13 +6314,14 @@
             <label style="display:flex; align-items:center; gap:8px; font-weight:600; font-size:0.84rem;"><input type="checkbox" name="staff-perms" value="contact_inbox"> Contact Desk Inbox</label>
             <label style="display:flex; align-items:center; gap:8px; font-weight:600; font-size:0.84rem;"><input type="checkbox" name="staff-perms" value="cms"> Homepage Texts &amp; Banners</label>
             <label style="display:flex; align-items:center; gap:8px; font-weight:600; font-size:0.84rem;"><input type="checkbox" name="staff-perms" value="seo"> Branding &amp; Google SEO Manager</label>
-            <label style="display:flex; align-items:center; gap:8px; font-weight:600; font-size:0.84rem;"><input type="checkbox" name="staff-perms" value="users"> Users Directory &amp; OTP Logins</label>
+            <label style="display:flex; align-items:center; gap:8px; font-weight:600; font-size:0.84rem;"><input type="checkbox" name="staff-perms" value="delivery" checked> Delivery Areas &amp; Pincodes</label>
+            <label style="display:flex; align-items:center; gap:8px; font-weight:600; font-size:0.84rem;"><input type="checkbox" name="staff-perms" value="users"> Customer Directory &amp; Truecaller Logins</label>
             <label style="display:flex; align-items:center; gap:8px; font-weight:600; font-size:0.84rem;"><input type="checkbox" name="staff-perms" value="subadmin"> Sub-Admins &amp; Page Access</label>
-            <label style="display:flex; align-items:center; gap:8px; font-weight:600; font-size:0.84rem;"><input type="checkbox" name="staff-perms" value="settings"> Business &amp; Delivery Settings</label>
+            <label style="display:flex; align-items:center; gap:8px; font-weight:600; font-size:0.84rem;"><input type="checkbox" name="staff-perms" value="settings"> Business &amp; System Settings</label>
           </div>
         </div>
 
-        <button type="submit" class="btn-portal-primary" style="width: 100%; justify-content: center;">Create Sub-Admin Account</button>
+        <button type="submit" class="btn-portal-primary" id="staff-modal-submit-btn" style="width: 100%; justify-content: center;">Save Admin Account</button>
       </form>
     </div>
   </div>
@@ -6715,6 +6782,7 @@
     ];
 
     const DEFAULT_SUBADMINS = [
+      { id: 'ADM-01', name: 'Mahesh Kumar Saini', email: 'maheshsaini10101@gmail.com', username: 'maheshsaini10101@gmail.com', pass: 'mahesh99830', pin: 'mahesh99830', role: 'Super Admin', perms: ['all'], permissions: ['all'] },
       { id: 'ADM-SUB', name: 'Operations Sub-Admin', email: 'subadmin@sikardrop.in', username: 'subadmin@sikardrop.in', pass: 'subadmin123', pin: 'subadmin123', role: 'Store Sub-Admin', perms: ['dashboard', 'orders', 'pos', 'inventory', 'khata', 'reports', 'purchases', 'bundles', 'coupons', 'products', 'categories', 'reviews', 'bulk', 'subadmin'] },
       { id: 'ADM-02', name: 'Ramesh Kumawat', email: 'ramesh@sikardrop.in', username: 'ramesh@sikardrop.in', pass: 'sikar123', pin: 'sikar123', role: 'Logistics Operator', perms: ['dashboard', 'orders', 'pos', 'inventory'] },
       { id: 'ADM-03', name: 'Dinesh Accountant', email: 'dinesh@sikardrop.in', username: 'dinesh@sikardrop.in', pass: 'dinesh123', pin: 'dinesh123', role: 'Accountant', perms: ['dashboard', 'orders', 'pos', 'khata', 'reports', 'purchases'] },
@@ -6881,6 +6949,23 @@
           if (currentTab === 'bundles') applyAdminBundlesRender();
         }
 
+        if (coupons && Array.isArray(coupons) && coupons.length > 0) {
+          adminCoupons = coupons.map(c => ({
+            code: c.code,
+            pct: c.discount_val !== undefined ? c.discount_val : (c.pct || 10),
+            discount_val: c.discount_val !== undefined ? c.discount_val : (c.pct || 10),
+            discount_type: c.discount_type || 'percentage',
+            minOrder: c.min_order !== undefined ? c.min_order : (c.minOrder || 0),
+            min_order: c.min_order !== undefined ? c.min_order : (c.minOrder || 0),
+            maxDiscount: c.max_discount !== undefined ? c.max_discount : (c.maxDiscount || 500),
+            max_discount: c.max_discount !== undefined ? c.max_discount : (c.maxDiscount || 500),
+            active: c.active === 1 || c.active === true,
+            desc: c.desc || c.description || ''
+          }));
+          localStorage.setItem('sikar_admin_coupons', JSON.stringify(adminCoupons));
+          if (currentTab === 'coupons') renderCouponsTable();
+        }
+
         if (prods && Array.isArray(prods)) {
           // Merge with any freshly added local products that are not yet returned by server
           const existingLocal = JSON.parse(localStorage.getItem('sikar_admin_products') || '[]');
@@ -6947,7 +7032,7 @@
             address: c.address || '',
             verified: c.verified !== undefined ? Number(c.verified) : 1,
             customer_type: c.customer_type || (c.verified === 1 ? 'registered' : 'guest'),
-            verificationBadge: c.verificationBadge || (c.verified === 1 ? 'Registered & OTP-Verified' : 'Guest Checkout'),
+            verificationBadge: c.verificationBadge || (c.verified === 1 ? 'Truecaller Verified' : 'Guest Checkout'),
             ordersCount: c.ordersCount !== undefined ? Number(c.ordersCount) : Number(c.total_orders || 1),
             lifetimeSpend: c.lifetimeSpend !== undefined ? Number(c.lifetimeSpend) : Number(c.lifetime_spend || c.total_spent || 0),
             outstanding_balance: Number(c.outstanding_balance || 0),
@@ -7453,9 +7538,11 @@
       const perms = currentOperator.permissions || currentOperator.perms || 'all';
       if (perms === 'all') return true;
       if (Array.isArray(perms)) {
+        if (tabId === 'delivery') return perms.includes('all') || perms.includes('delivery') || perms.includes('settings') || perms.includes('orders');
         return perms.includes('all') || perms.includes(tabId);
       }
       if (typeof perms === 'string') {
+        if (tabId === 'delivery') return perms === 'all' || perms.includes('delivery') || perms.includes('settings') || perms.includes('orders');
         return perms === 'all' || perms.includes(tabId);
       }
       return false;
@@ -7496,6 +7583,7 @@
         pos: 'POS Manual Cash Sale (Stock Sync)',
         customers: 'Online Sales & Customer History',
         khata: 'Khata & Pending Payments Ledger',
+        delivery: 'Serviceable Delivery Locations & Pincodes',
         products: 'Products & Box Pricing',
         categories: 'Categories Management',
         bundles: 'Wholesale Event Bundles & Commercial Deals',
@@ -7507,9 +7595,9 @@
         contact_inbox: 'Contact Desk Inbox',
         cms: 'Homepage Texts & Banners',
         seo: 'Branding & Google SEO Manager',
-        users: 'Users Directory & OTP Logins',
+        users: 'Customer Directory & Truecaller Logins',
         subadmin: 'Sub-Admins & Page Access',
-        settings: 'Business & Delivery Settings'
+        settings: 'Business & System Settings'
       };
       if (breadcrumb) breadcrumb.textContent = tabNames[tabId] || tabId;
 
@@ -7527,6 +7615,7 @@
       else if (tabId === 'pos') renderPosForm();
       else if (tabId === 'khata') { renderKhataTable(); fetchKhataFromBackend(); }
       else if (tabId === 'customers') { renderCustomersList(); fetchCustomersFromBackend(); }
+      else if (tabId === 'delivery') renderDeliveryZonesTable();
       else if (tabId === 'inventory') renderInventoryTable();
       else if (tabId === 'purchases') renderPurchasesTable();
       else if (tabId === 'products') renderProductsTable();
@@ -7541,7 +7630,11 @@
       else if (tabId === 'social') renderSocialStats();
       else if (tabId === 'subadmin') renderSubAdminTable();
       else if (tabId === 'seo') renderSeoForm();
-      else if (tabId === 'settings') { renderDeliveryZonesTable(); renderAdminCredentials(); loadTruecallerConfig(); }
+      else if (tabId === 'settings') {
+        renderAdminCredentials();
+        loadTruecallerConfig();
+        if (typeof renderCmsForm === 'function') renderCmsForm();
+      }
     }
 
     function toggleMobileSidebar(force) {
@@ -11452,7 +11545,7 @@
             address: c.address || '',
             verified: c.verified !== undefined ? c.verified : 1,
             customer_type: c.customer_type || (c.verified === 1 ? 'registered' : 'guest'),
-            verificationBadge: c.verificationBadge || (c.verified === 1 ? 'Registered & OTP-Verified' : 'Guest Checkout'),
+            verificationBadge: c.verificationBadge || (c.verified === 1 ? 'Truecaller Verified' : 'Guest Checkout'),
             ordersCount: c.ordersCount !== undefined ? c.ordersCount : (c.total_orders || 1),
             lifetimeSpend: c.lifetimeSpend !== undefined ? c.lifetimeSpend : (c.lifetime_spend || 0),
             outstanding_balance: c.outstanding_balance || 0,
@@ -11594,7 +11687,7 @@
         const isGuest = c.customer_type === 'guest' || (!isReg && !isUnver);
 
         let badgeStyle = 'background: #DCFCE7; color: #166534; border: 1px solid #BBF7D0;';
-        let badgeLabel = 'Registered &amp; OTP-Verified';
+        let badgeLabel = 'Truecaller Verified';
         if (isGuest) {
           badgeStyle = 'background: #F1F5F9; color: #475569; border: 1px solid #CBD5E1;';
           badgeLabel = 'Guest Checkout';
@@ -11714,7 +11807,7 @@
             const isGuest = c.customer_type === 'guest' || (c.verified === 0 && c.customer_type !== 'unverified');
             if (isReg) {
               vBadge.style.cssText = 'font-size:0.74rem; font-weight:800; padding:3px 8px; border-radius:999px; background:#DCFCE7; color:#166534; border:1px solid #BBF7D0;';
-              vBadge.textContent = 'Registered & OTP-Verified';
+              vBadge.textContent = 'Truecaller Verified';
             } else if (isGuest) {
               vBadge.style.cssText = 'font-size:0.74rem; font-weight:800; padding:3px 8px; border-radius:999px; background:#F1F5F9; color:#475569; border:1px solid #CBD5E1;';
               vBadge.textContent = 'Guest Checkout';
@@ -13866,11 +13959,17 @@
       const tbody = document.getElementById('coupons-table-tbody');
       if (!tbody) return;
 
+      if (!adminCoupons || adminCoupons.length === 0) {
+        tbody.innerHTML = `<tr><td colspan="7" style="text-align:center; padding:24px; color:var(--text-muted); font-size:0.86rem;">No coupons configured yet. Click "+ Add New Coupon" to create promotional discounts.</td></tr>`;
+        return;
+      }
+
       tbody.innerHTML = adminCoupons.map((c, idx) => {
         const discountVal = c.pct !== undefined ? c.pct : (c.discount_val !== undefined ? c.discount_val : 0);
         const minOrder = c.minOrder !== undefined ? c.minOrder : (c.min_order !== undefined ? c.min_order : 0);
         const maxDiscount = c.maxDiscount !== undefined ? c.maxDiscount : (c.max_discount !== undefined ? c.max_discount : 0);
         const descText = c.desc || c.description || '';
+        const isActive = c.active === 1 || c.active === true;
         return `
         <tr>
           <td><code style="font-weight:900; font-size:0.95rem; color:#0284C7;">${escapeHTML(c.code)}</code></td>
@@ -13878,49 +13977,152 @@
           <td class="tabular">₹${minOrder}</td>
           <td class="tabular">₹${maxDiscount}</td>
           <td><small style="color:var(--text-muted);">${escapeHTML(descText)}</small></td>
-          <td><span class="badge-status ${c.active ? 'completed' : 'cancelled'}">${c.active ? 'Active' : 'Disabled'}</span></td>
           <td>
-            <button type="button" class="btn-tbl-action danger" onclick="deleteCoupon(${idx})">Delete</button>
+            <span class="badge-status ${isActive ? 'completed' : 'cancelled'}">
+              ${isActive ? 'Active' : 'Disabled'}
+            </span>
+          </td>
+          <td>
+            <div style="display:flex; align-items:center; gap:6px;">
+              <button type="button" class="btn-tbl-action" style="${isActive ? 'background:#16A34A; color:#FFFFFF;' : 'background:#64748B; color:#FFFFFF;'}" onclick="toggleCouponActive(${idx})">
+                ${isActive ? 'Disable' : 'Enable'}
+              </button>
+              <button type="button" class="btn-tbl-action" style="background:#0284C7; color:#FFFFFF;" onclick="openEditCouponModal(${idx})">Edit</button>
+              <button type="button" class="btn-tbl-action danger" onclick="deleteCoupon(${idx})">Delete</button>
+            </div>
           </td>
         </tr>
       `;}).join('');
     }
 
     function openAddCouponModal() {
+      document.getElementById('cpn-edit-idx').value = '';
+      const codeInput = document.getElementById('cpn-code-input');
+      codeInput.value = '';
+      codeInput.readOnly = false;
+      document.getElementById('cpn-pct-input').value = '10';
+      document.getElementById('cpn-min-input').value = '1000';
+      document.getElementById('cpn-max-input').value = '500';
+      document.getElementById('cpn-desc-input').value = '';
+      document.getElementById('cpn-active-input').checked = true;
+      const title = document.querySelector('#coupon-modal h3');
+      if (title) title.textContent = 'Add Promo Coupon Code';
+      const btn = document.getElementById('cpn-submit-btn');
+      if (btn) btn.textContent = 'Create Coupon';
       openModal('coupon-modal');
+    }
+
+    function openEditCouponModal(idx) {
+      const c = adminCoupons[idx];
+      if (!c) return;
+      document.getElementById('cpn-edit-idx').value = idx;
+      const codeInput = document.getElementById('cpn-code-input');
+      codeInput.value = c.code || '';
+      codeInput.readOnly = true;
+      document.getElementById('cpn-pct-input').value = c.pct !== undefined ? c.pct : (c.discount_val || 10);
+      document.getElementById('cpn-min-input').value = c.minOrder !== undefined ? c.minOrder : (c.min_order || 1000);
+      document.getElementById('cpn-max-input').value = c.maxDiscount !== undefined ? c.maxDiscount : (c.max_discount || 500);
+      document.getElementById('cpn-desc-input').value = c.desc || c.description || '';
+      document.getElementById('cpn-active-input').checked = c.active === 1 || c.active === true;
+      const title = document.querySelector('#coupon-modal h3');
+      if (title) title.textContent = `Edit Coupon: ${c.code}`;
+      const btn = document.getElementById('cpn-submit-btn');
+      if (btn) btn.textContent = 'Save Changes';
+      openModal('coupon-modal');
+    }
+
+    async function toggleCouponActive(idx) {
+      const c = adminCoupons[idx];
+      if (!c) return;
+      const currentActive = c.active === 1 || c.active === true;
+      const newActive = !currentActive;
+      c.active = newActive;
+      localStorage.setItem('sikar_admin_coupons', JSON.stringify(adminCoupons));
+      renderCouponsTable();
+
+      try {
+        await fetch('/api/coupons/' + encodeURIComponent(c.code), {
+          method: 'PUT',
+          headers: { 'Content-Type': 'application/json' },
+          body: JSON.stringify({ active: newActive })
+        });
+        showToast(`Coupon ${c.code} is now ${newActive ? 'Active' : 'Disabled'}.`);
+      } catch (err) {
+        console.warn('Coupon toggle error:', err);
+      }
     }
 
     async function handleCouponSave(e) {
       e.preventDefault();
+      const editIdx = document.getElementById('cpn-edit-idx').value;
       const code = document.getElementById('cpn-code-input').value.trim().toUpperCase();
       const pct = parseFloat(document.getElementById('cpn-pct-input').value) || 10;
-      const min = parseFloat(document.getElementById('cpn-min-input').value) || 1000;
+      const min = parseFloat(document.getElementById('cpn-min-input').value) || 0;
       const max = parseFloat(document.getElementById('cpn-max-input').value) || 500;
       const desc = document.getElementById('cpn-desc-input').value.trim() || 'Wholesale Discount';
+      const active = document.getElementById('cpn-active-input').checked;
 
-      const couponObj = { code: code, pct: pct, minOrder: min, maxDiscount: max, active: true, desc: desc };
-      adminCoupons.push(couponObj);
+      const couponObj = {
+        code,
+        pct,
+        discount_val: pct,
+        minOrder: min,
+        min_order: min,
+        maxDiscount: max,
+        max_discount: max,
+        active,
+        desc
+      };
+
+      if (editIdx !== '') {
+        const idx = parseInt(editIdx, 10);
+        adminCoupons[idx] = couponObj;
+        try {
+          await fetch('/api/coupons/' + encodeURIComponent(code), {
+            method: 'PUT',
+            headers: { 'Content-Type': 'application/json' },
+            body: JSON.stringify({
+              discountVal: pct,
+              minOrder: min,
+              maxDiscount: max,
+              desc,
+              active
+            })
+          });
+        } catch (err) {
+          console.warn('Coupon update error:', err);
+        }
+        showToast(`Coupon ${code} updated successfully!`);
+      } else {
+        const existingIdx = adminCoupons.findIndex(c => c.code === code);
+        if (existingIdx > -1) {
+          adminCoupons[existingIdx] = couponObj;
+        } else {
+          adminCoupons.push(couponObj);
+        }
+        try {
+          await fetch('/api/coupons', {
+            method: 'POST',
+            headers: { 'Content-Type': 'application/json' },
+            body: JSON.stringify({
+              code,
+              discountType: 'percentage',
+              discountVal: pct,
+              minOrder: min,
+              maxDiscount: max,
+              desc,
+              active
+            })
+          });
+        } catch (err) {
+          console.warn('Coupon create error:', err);
+        }
+        showToast(`Coupon code ${code} activated live!`);
+      }
+
       localStorage.setItem('sikar_admin_coupons', JSON.stringify(adminCoupons));
       closeModal('coupon-modal');
       renderCouponsTable();
-
-      try {
-        await fetch('/api/coupons', {
-          method: 'POST',
-          headers: { 'Content-Type': 'application/json' },
-          body: JSON.stringify({
-            code: code,
-            discountType: 'percentage',
-            discountVal: pct,
-            minOrder: min,
-            maxDiscount: max,
-            desc: desc
-          })
-        });
-      } catch (err) {
-        console.warn('Coupon backend sync error:', err);
-      }
-      showToast(`Coupon code ${code} activated live!`);
     }
 
     async function deleteCoupon(idx) {
@@ -14039,7 +14241,7 @@
                 <td><strong>${escapeHTML(u.name || 'Customer')}</strong></td>
                 <td>${escapeHTML(u.phone || 'N/A')}</td>
                 <td>${escapeHTML(u.email || 'N/A')}</td>
-                <td><span class="badge-status confirmed">OTP VERIFIED</span></td>
+                <td><span class="badge-status confirmed">TRUECALLER VERIFIED</span></td>
                 <td><small>${escapeHTML(u.loginTime ? new Date(u.loginTime).toLocaleDateString('en-IN') : (u.created_at || 'Recent'))}</small></td>
                 <td class="tabular"><strong>${u.total_orders || 0}</strong></td>
               </tr>
@@ -14134,9 +14336,14 @@
       setV('cms-wholesale-link', t.wholesaleBundlesLinkText || 'View Full Rate Slab');
       setV('cms-about-story', t.aboutStory || '');
       setV('cms-contact-address', t.contactAddress || '');
-      setV('cms-contact-phone', t.contactPhone || '');
+      setV('cms-contact-phone', t.contactPhone || t.helpline || '+91 98290 11223');
+      setV('cms-whatsapp-number', t.whatsappNumber || '919829000000');
       setV('cms-footer-camper', t.footerCamper);
       setV('cms-footer-about', t.footerAbout);
+
+      setV('cfg-contact-phone', t.contactPhone || t.helpline || '+91 98290 11223');
+      setV('cfg-whatsapp-phone', t.whatsappNumber || '919829000000');
+      setV('cfg-contact-address', t.contactAddress || '');
     }
 
     function saveSiteTextsFromPortal() {
@@ -14144,6 +14351,10 @@
         const el = document.getElementById(id);
         return el ? el.value.trim() : fallback;
       };
+
+      const rawWa = getV('cms-whatsapp-number', adminTexts.whatsappNumber || '919829000000');
+      const cleanWa = String(rawWa).replace(/\D/g, '');
+      const finalWa = cleanWa.length === 10 ? ('91' + cleanWa) : (cleanWa || '919829000000');
 
       adminTexts = {
         heroPill: getV('cms-hero-pill', adminTexts.heroPill || 'Trusted by 10,000+ Families in Sikar'),
@@ -14185,19 +14396,52 @@
         wholesaleBundlesLinkText: getV('cms-wholesale-link', adminTexts.wholesaleBundlesLinkText || 'View Full Rate Slab'),
         aboutStory: getV('cms-about-story', adminTexts.aboutStory || ''),
         contactAddress: getV('cms-contact-address', adminTexts.contactAddress || ''),
-        contactPhone: getV('cms-contact-phone', adminTexts.contactPhone || ''),
+        contactPhone: getV('cms-contact-phone', adminTexts.contactPhone || '+91 98290 11223'),
+        whatsappNumber: finalWa,
         footerCamper: getV('cms-footer-camper', adminTexts.footerCamper),
         footerAbout: getV('cms-footer-about', adminTexts.footerAbout)
       };
 
       localStorage.setItem('sikar_admin_texts', JSON.stringify(adminTexts));
       notifyStorefrontSync('CMS_UPDATED');
+
       fetch('/api/site-texts', {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
         body: JSON.stringify(adminTexts)
       }).catch(e => console.warn('Sync site texts error:', e));
-      showToast('All Homepage slides, about and contact copy saved live to database!');
+
+      fetch('/api/settings', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({
+          phone: adminTexts.contactPhone,
+          helpline: adminTexts.helpline,
+          whatsapp: adminTexts.whatsappNumber,
+          address: adminTexts.contactAddress
+        })
+      }).catch(() => {});
+
+      showToast('All Homepage slides, about, contact phone & WhatsApp numbers saved live!');
+    }
+
+    function saveContactSettingsFromPortal(e) {
+      if (e) e.preventDefault();
+      const phone = document.getElementById('cfg-contact-phone')?.value.trim() || '+91 98290 11223';
+      const rawWa = document.getElementById('cfg-whatsapp-phone')?.value.trim() || '919829000000';
+      const address = document.getElementById('cfg-contact-address')?.value.trim() || '';
+
+      const cleanWaDigits = rawWa.replace(/\D/g, '');
+      const finalWa = cleanWaDigits.length === 10 ? ('91' + cleanWaDigits) : (cleanWaDigits || '919829000000');
+
+      const cmsPh = document.getElementById('cms-contact-phone');
+      if (cmsPh) cmsPh.value = phone;
+      const cmsWa = document.getElementById('cms-whatsapp-number');
+      if (cmsWa) cmsWa.value = finalWa;
+      const cmsAddr = document.getElementById('cms-contact-address');
+      if (cmsAddr) cmsAddr.value = address;
+
+      saveSiteTextsFromPortal();
     }
 
     // =========================================================
@@ -14505,12 +14749,31 @@
     // =========================================================
     // 15. SUB-ADMIN ROLES
     // =========================================================
+    function handleStaffRoleChange(val) {
+      const customInput = document.getElementById('staff-role-input');
+      if (val === 'custom') {
+        if (customInput) {
+          customInput.style.display = 'block';
+          customInput.required = true;
+          customInput.focus();
+        }
+      } else {
+        if (customInput) {
+          customInput.style.display = 'none';
+          customInput.required = false;
+        }
+        if (val === 'Super Admin') {
+          document.querySelectorAll('input[name="staff-perms"]').forEach(cb => cb.checked = true);
+        }
+      }
+    }
+
     function renderSubAdminTable() {
       const tbody = document.getElementById('subadmin-table-tbody');
       if (!tbody) return;
 
       if (!adminSubAdmins || adminSubAdmins.length === 0) {
-        tbody.innerHTML = `<tr><td colspan="5" style="text-align:center; padding:24px; color:var(--text-muted); font-size:0.86rem;">No staff sub-admin accounts created yet. Click "+ Add New Sub-Admin" above to configure operator accounts.</td></tr>`;
+        tbody.innerHTML = `<tr><td colspan="5" style="text-align:center; padding:24px; color:var(--text-muted); font-size:0.86rem;">No admin accounts found. Click "+ Add New Sub-Admin" above to configure accounts.</td></tr>`;
         return;
       }
 
@@ -14518,9 +14781,10 @@
         const perms = Array.isArray(s.perms) ? s.perms : (Array.isArray(s.permissions) ? s.permissions : []);
         const email = s.email || s.username || 'staff@sikardrop.in';
         const isCurrentActive = currentOperator && (currentOperator.id === s.id || currentOperator.email === email || currentOperator.username === s.username);
+        const isSuperAdmin = (s.role && String(s.role).toLowerCase().includes('super')) || s.id === 'ADM-01' || email === 'maheshsaini10101@gmail.com';
 
         return `
-        <tr style="${isCurrentActive ? 'background: #F0FDF4;' : ''}">
+        <tr style="${isCurrentActive ? 'background: #F0FDF4;' : (isSuperAdmin ? 'background: #FFFBEB;' : '')}">
           <td>
             <strong>${escapeHTML(s.name)}</strong>
             ${s.id ? `<span style="display:block; font-size:0.7rem; color:var(--text-muted); font-family:monospace; margin-top:2px;">ID: ${escapeHTML(s.id)}</span>` : ''}
@@ -14529,10 +14793,18 @@
             <code>${escapeHTML(email)}</code>
             ${s.pass || s.pin ? `<span style="display:block; font-size:0.7rem; color:var(--text-muted); margin-top:2px;">Pass: ${escapeHTML(s.pass || s.pin)}</span>` : ''}
           </td>
-          <td><span class="badge-status confirmed" style="font-weight:700;">${escapeHTML(s.role || 'Operator Staff')}</span></td>
+          <td>
+            ${isSuperAdmin 
+              ? `<span class="badge-status" style="background:#FEF3C7; color:#92400E; border:1px solid #FCD34D; font-weight:800; font-size:0.75rem; padding:3px 8px; border-radius:4px;">SUPER ADMIN (FULL ACCESS)</span>`
+              : `<span class="badge-status confirmed" style="font-weight:700;">${escapeHTML(s.role || 'Operator Staff')}</span>`
+            }
+          </td>
           <td>
             <div style="display:flex; flex-wrap:wrap; gap:4px; max-width:320px;">
-              ${perms.map(p => `<span style="font-size:0.72rem; font-weight:700; background:#E0F2FE; color:#0369A1; padding:2px 7px; border-radius:4px; border:1px solid #BAE6FD;">${escapeHTML(p)}</span>`).join('')}
+              ${perms.includes('all') || isSuperAdmin
+                ? `<span style="font-size:0.72rem; font-weight:800; background:#DCFCE7; color:#15803D; padding:2px 7px; border-radius:4px; border:1px solid #86EFAC;">All Modules (Super Admin)</span>`
+                : perms.map(p => `<span style="font-size:0.72rem; font-weight:700; background:#E0F2FE; color:#0369A1; padding:2px 7px; border-radius:4px; border:1px solid #BAE6FD;">${escapeHTML(p)}</span>`).join('')
+              }
             </div>
           </td>
           <td>
@@ -14541,7 +14813,10 @@
                 ${isCurrentActive ? 'Active Now' : 'Test Login'}
               </button>
               <button type="button" class="btn-tbl-action" style="background:#0284C7; color:#FFFFFF;" onclick="openEditSubAdminModal(${idx})">Edit</button>
-              <button type="button" class="btn-tbl-action danger" onclick="deleteSubAdmin(${idx})">Revoke</button>
+              ${s.id === 'ADM-01'
+                ? `<span style="font-size:0.72rem; font-weight:700; color:#0369A1; background:#E0F2FE; border:1px solid #BAE6FD; padding:4px 8px; border-radius:4px;">Master Account</span>`
+                : `<button type="button" class="btn-tbl-action danger" onclick="deleteSubAdmin(${idx})">Revoke</button>`
+              }
             </div>
           </td>
         </tr>
@@ -14555,14 +14830,15 @@
       const staff = adminSubAdmins[idx];
       if (!staff) return;
 
+      const isSuper = (staff.role && String(staff.role).toLowerCase().includes('super')) || staff.id === 'ADM-01';
       currentOperator = {
         id: staff.id || ('ADM-SUB-' + (idx + 1)),
         name: staff.name,
         email: staff.email || staff.username,
         username: staff.username || staff.email,
-        role: staff.role || 'Staff Operator',
-        perms: staff.perms || staff.permissions || ['dashboard'],
-        permissions: staff.perms || staff.permissions || ['dashboard']
+        role: staff.role || (isSuper ? 'Super Admin' : 'Staff Operator'),
+        perms: isSuper ? ['all'] : (staff.perms || staff.permissions || ['dashboard']),
+        permissions: isSuper ? ['all'] : (staff.perms || staff.permissions || ['dashboard'])
       };
 
       adminAuth = true;
@@ -14595,12 +14871,18 @@
     function openAddSubAdminModal() {
       editingSubAdminIdx = null;
       document.getElementById('staff-name-input').value = '';
-      document.getElementById('staff-role-input').value = '';
+      const roleSelect = document.getElementById('staff-role-select');
+      if (roleSelect) roleSelect.value = 'Store Sub-Admin';
+      const roleInput = document.getElementById('staff-role-input');
+      if (roleInput) {
+        roleInput.value = '';
+        roleInput.style.display = 'none';
+      }
       document.getElementById('staff-email-input').value = '';
       document.getElementById('staff-pass-input').value = '';
       document.querySelectorAll('input[name="staff-perms"]').forEach(cb => cb.checked = false);
       const titleEl = document.querySelector('#subadmin-modal h3');
-      if (titleEl) titleEl.textContent = 'Add Staff Sub-Admin Account';
+      if (titleEl) titleEl.textContent = 'Add Sub-Admin / Super Admin Account';
       openModal('subadmin-modal');
     }
 
@@ -14610,17 +14892,39 @@
       editingSubAdminIdx = idx;
 
       document.getElementById('staff-name-input').value = s.name || '';
-      document.getElementById('staff-role-input').value = s.role || 'Staff Operator';
+      
+      const roleSelect = document.getElementById('staff-role-select');
+      const roleInput = document.getElementById('staff-role-input');
+      const standardRoles = ['Super Admin', 'Store Sub-Admin', 'Logistics Operator', 'Accountant', 'Catalog Manager', 'Dispatch Officer', 'Delivery Specialist'];
+      
+      const roleVal = s.role || 'Staff Operator';
+      if (roleSelect) {
+        if (standardRoles.includes(roleVal)) {
+          roleSelect.value = roleVal;
+          if (roleInput) {
+            roleInput.value = '';
+            roleInput.style.display = 'none';
+          }
+        } else {
+          roleSelect.value = 'custom';
+          if (roleInput) {
+            roleInput.value = roleVal;
+            roleInput.style.display = 'block';
+          }
+        }
+      }
+
       document.getElementById('staff-email-input').value = s.email || s.username || '';
       document.getElementById('staff-pass-input').value = s.pass || s.pin || '';
 
       const perms = Array.isArray(s.perms) ? s.perms : (Array.isArray(s.permissions) ? s.permissions : []);
+      const isSuper = roleVal === 'Super Admin' || perms.includes('all') || s.id === 'ADM-01';
       document.querySelectorAll('input[name="staff-perms"]').forEach(cb => {
-        cb.checked = perms.includes(cb.value);
+        cb.checked = isSuper || perms.includes(cb.value);
       });
 
       const titleEl = document.querySelector('#subadmin-modal h3');
-      if (titleEl) titleEl.textContent = `Edit Staff Sub-Admin: ${s.name}`;
+      if (titleEl) titleEl.textContent = `Edit Admin Account: ${s.name}`;
 
       openModal('subadmin-modal');
     }
@@ -14628,14 +14932,24 @@
     async function handleSubAdminSave(e) {
       e.preventDefault();
       const name = document.getElementById('staff-name-input').value.trim();
-      const role = document.getElementById('staff-role-input').value.trim();
+      const roleSelect = document.getElementById('staff-role-select');
+      const roleInput = document.getElementById('staff-role-input');
+      let role = 'Store Sub-Admin';
+      if (roleSelect) {
+        role = roleSelect.value === 'custom' ? (roleInput ? roleInput.value.trim() : 'Staff Operator') : roleSelect.value;
+      }
       const email = document.getElementById('staff-email-input').value.trim();
       const pass = document.getElementById('staff-pass-input').value.trim();
 
+      const isSuper = role === 'Super Admin' || email === 'maheshsaini10101@gmail.com';
       const perms = [];
-      document.querySelectorAll('input[name="staff-perms"]:checked').forEach(cb => {
-        perms.push(cb.value);
-      });
+      if (isSuper) {
+        perms.push('all');
+      } else {
+        document.querySelectorAll('input[name="staff-perms"]:checked').forEach(cb => {
+          perms.push(cb.value);
+        });
+      }
 
       if (!name || !email || !pass) {
         showToast('Please fill in name, email and password.');
@@ -14683,13 +14997,13 @@
             localStorage.setItem('sikar_admin_subadmins', JSON.stringify(adminSubAdmins));
           }
           renderSubAdminTable();
-          showToast(`Staff account for ${name} (${role}) saved successfully! Password: ${pass}`);
+          showToast(`Account for ${name} (${role}) saved successfully! Password: ${pass}`);
           editingSubAdminIdx = null;
           return;
         }
       } catch (err) {
         console.warn('Backend subadmin save notice:', err);
-        showToast(err.message || 'Error saving staff account');
+        showToast(err.message || 'Error saving account');
       }
 
       if (isEditing) {
@@ -14709,7 +15023,7 @@
       localStorage.setItem('sikar_admin_subadmins', JSON.stringify(adminSubAdmins));
       closeModal('subadmin-modal');
       renderSubAdminTable();
-      showToast(`Staff account saved for ${name} (${role})!`);
+      showToast(`Account saved for ${name} (${role})!`);
       editingSubAdminIdx = null;
     }
 
@@ -15265,6 +15579,10 @@
       if (e.key === 'sikar_admin_purchases') {
         adminPurchases = JSON.parse(e.newValue) || DEFAULT_PURCHASES;
         if (currentTab === 'purchases') renderPurchasesTable();
+      }
+      if (e.key === 'sikar_delivery_zones') {
+        adminDeliveryZones = JSON.parse(e.newValue) || [];
+        if (currentTab === 'delivery') renderDeliveryZonesTable();
       }
     });
 

@@ -724,6 +724,41 @@ function applyStorefrontSiteTexts(t) {
   if (notice && (t.footerCamper || t.footer_camper)) {
     notice.innerHTML = '<strong>Strict Policy Notice:</strong> ' + escapeHTML(t.footerCamper || t.footer_camper);
   }
+
+  // DYNAMIC LIVE WHATSAPP NUMBER BINDING
+  const rawWa = t.whatsappNumber || t.whatsapp;
+  if (rawWa) {
+    const digitsOnly = String(rawWa).replace(/\D/g, '');
+    const cleanWa = digitsOnly.length === 10 ? ('91' + digitsOnly) : digitsOnly;
+    if (cleanWa.length >= 10) {
+      document.querySelectorAll('a[href*="wa.me"]').forEach(a => {
+        try {
+          const url = new URL(a.href);
+          const txt = url.searchParams.get('text');
+          a.href = `https://wa.me/${cleanWa}${txt ? `?text=${encodeURIComponent(txt)}` : ''}`;
+        } catch (e) {
+          a.href = `https://wa.me/${cleanWa}`;
+        }
+      });
+      const floatWa = document.querySelector('.btn-floating-whatsapp');
+      if (floatWa) {
+        floatWa.href = `https://wa.me/${cleanWa}?text=${encodeURIComponent('Hello Sikar Water Bottle Supply, I want to inquire about wholesale water bottle and beverage cases delivery.')}`;
+      }
+    }
+  }
+
+  // DYNAMIC LIVE CONTACT PHONE NUMBER BINDING
+  const rawPh = t.contactPhone || t.helpline;
+  if (rawPh) {
+    const cleanPh = String(rawPh).replace(/[^0-9+]/g, '');
+    document.querySelectorAll('.mobile-menu-call-btn, a[href^="tel:"]').forEach(a => {
+      a.href = 'tel:' + cleanPh;
+      const span = a.querySelector('span');
+      if (span && span.textContent.includes('Call Mandi Depot')) {
+        span.textContent = `Call Mandi Depot: ${rawPh}`;
+      }
+    });
+  }
 }
 
 // 3. CART MANAGEMENT & FLYING ANIMATION
@@ -777,7 +812,7 @@ function ensureMobileMenuElements() {
         </a>
         <a href="/products" class="mobile-menu-link">
           <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2"><path d="M6 2 3 6v14a2 2 0 0 0 2 2h14a2 2 0 0 0 2-2V6l-3-4Z"></path><path d="M3 6h18"></path><path d="M16 10a4 4 0 0 1-8 0"></path></svg>
-          <span>Beverages &amp; Water</span>
+          <span>Products &amp; Water</span>
         </a>
         <a href="/categories" class="mobile-menu-link">
           <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2"><rect x="3" y="3" width="7" height="7"></rect><rect x="14" y="3" width="7" height="7"></rect><rect x="14" y="14" width="7" height="7"></rect><rect x="3" y="14" width="7" height="7"></rect></svg>
@@ -1593,7 +1628,9 @@ async function dispatchFinalWhatsAppOrder() {
       } catch (e) {}
 
       // Open WhatsApp Dispatch
-      const depotPhone = '919829000000';
+      const rawDepotWa = (SITE_TEXTS && (SITE_TEXTS.whatsappNumber || SITE_TEXTS.whatsapp)) || (JSON.parse(localStorage.getItem('sikar_admin_texts') || '{}').whatsappNumber) || '919829000000';
+      const cleanDepotDigits = String(rawDepotWa).replace(/\D/g, '');
+      const depotPhone = cleanDepotDigits.length === 10 ? ('91' + cleanDepotDigits) : (cleanDepotDigits || '919829000000');
       const itemsList = items.map(i => `• ${i.title} x ${i.quantity} = Rs.${i.price * i.quantity}`).join('\n');
       const normL = loginPhoneVal.replace(/\D/g, '').slice(-10);
       const normD = deliveryPhoneVal.replace(/\D/g, '').slice(-10);

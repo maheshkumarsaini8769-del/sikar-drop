@@ -4119,7 +4119,7 @@
         bottom: 0;
         left: 0;
         right: 0;
-        height: calc(62px + env(safe-area-inset-bottom, 0px));
+        height: calc(56px + env(safe-area-inset-bottom, 0px));
         background: rgba(255, 255, 255, 0.96);
         backdrop-filter: blur(12px);
         -webkit-backdrop-filter: blur(12px);
@@ -4128,11 +4128,11 @@
         z-index: 995;
         align-items: center;
         justify-content: space-around;
-        padding: 4px 6px env(safe-area-inset-bottom, 4px);
+        padding: 3px 6px env(safe-area-inset-bottom, 3px);
       }
 
       body {
-        padding-bottom: calc(76px + env(safe-area-inset-bottom, 0px)) !important;
+        padding-bottom: calc(72px + env(safe-area-inset-bottom, 0px)) !important;
       }
 
       .dock-tab-btn {
@@ -4141,14 +4141,14 @@
         flex-direction: column;
         align-items: center;
         justify-content: center;
-        gap: 3px;
+        gap: 2px;
         background: transparent;
         border: none;
         color: #64748B;
-        font-size: 0.68rem;
+        font-size: 0.65rem;
         font-weight: 700;
         cursor: pointer;
-        padding: 6px 0;
+        padding: 5px 0;
         position: relative;
         text-decoration: none;
         touch-action: manipulation;
@@ -4161,8 +4161,16 @@
       }
 
       .dock-tab-btn svg {
-        width: 20px;
-        height: 20px;
+        width: 18px;
+        height: 18px;
+        max-width: 18px;
+        max-height: 18px;
+        flex-shrink: 0;
+      }
+
+      .dock-tab-btn span {
+        font-size: 0.65rem;
+        white-space: nowrap;
       }
 
       .dock-tab-btn.active {
@@ -4171,16 +4179,17 @@
 
       .dock-cart-counter {
         position: absolute;
-        top: 2px;
-        right: 18px;
+        top: 1px;
+        right: -8px;
         background: #DC2626;
         color: #FFFFFF;
-        font-size: 0.64rem;
+        font-size: 0.62rem;
         font-weight: 800;
         border-radius: var(--radius-pill);
-        padding: 1px 5px;
-        min-width: 16px;
+        padding: 1px 4px;
+        min-width: 15px;
         text-align: center;
+        line-height: 1.2;
       }
     }
 
@@ -4397,7 +4406,7 @@
       </a>
       <a href="/products" class="mobile-menu-link">
         <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2"><path d="M6 2 3 6v14a2 2 0 0 0 2 2h14a2 2 0 0 0 2-2V6l-3-4Z"></path><path d="M3 6h18"></path><path d="M16 10a4 4 0 0 1-8 0"></path></svg>
-        <span>Beverages &amp; Water</span>
+        <span>Products &amp; Water</span>
       </a>
       <a href="/categories" class="mobile-menu-link">
         <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2"><rect x="3" y="3" width="7" height="7"></rect><rect x="14" y="3" width="7" height="7"></rect><rect x="14" y="14" width="7" height="7"></rect><rect x="3" y="14" width="7" height="7"></rect></svg>
@@ -5282,43 +5291,36 @@
             </div>
 
             <div class="timeline-steps-box">
+              <!-- Step 1: Order Placed -->
               <div class="timeline-step-row">
-                <div class="timeline-step-dot done">
+                <div class="timeline-step-dot done" id="vtrack-step-1">
                   <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="3"><polyline points="20 6 9 17 4 12"/></svg>
                 </div>
                 <div class="timeline-step-content">
-                  <strong>Order Logged &amp; Verified</strong>
-                  <span>Sikar Central Depot received sealed cases request</span>
+                  <strong>1. Order Placed</strong>
+                  <span id="vtrack-desc-1">Booking Confirmed &amp; Logged at Depot</span>
                 </div>
               </div>
 
+              <!-- Step 2: Processing -->
               <div class="timeline-step-row">
-                <div class="timeline-step-dot done">
-                  <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="3"><polyline points="20 6 9 17 4 12"/></svg>
+                <div class="timeline-step-dot active" id="vtrack-step-2">
+                  <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5"><rect x="1" y="3" width="15" height="13"></rect><polygon points="16 8 20 8 23 11 23 16 16 16 8"></polygon><circle cx="5.5" cy="18.5" r="2.5"></circle><circle cx="18.5" cy="18.5" r="2.5"></circle></svg>
                 </div>
                 <div class="timeline-step-content">
-                  <strong>Factory-Sealed Cases Loaded</strong>
-                  <span>100% Quality checked • Tamper seals verified</span>
+                  <strong id="vtrack-processing-title">2. Processing</strong>
+                  <span id="vtrack-processing-desc">Depot Packing &amp; Tempo Dispatch in Sikar</span>
                 </div>
               </div>
 
+              <!-- Step 3: Delivered -->
               <div class="timeline-step-row">
-                <div class="timeline-step-dot active">
-                  <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5"><rect x="1" y="3" width="15" height="13"></rect><polygon points="16 8 20 8 23 11 23 16 16 16 16 8"></polygon><circle cx="5.5" cy="18.5" r="2.5"></circle><circle cx="18.5" cy="18.5" r="2.5"></circle></svg>
-                </div>
-                <div class="timeline-step-content">
-                  <strong>Tempo In-Transit (Vehicle: RJ-23-GA-4821)</strong>
-                  <span>Dispatched via Nawalgarh / Piprali Road corridor • Expected in 30 mins</span>
-                </div>
-              </div>
-
-              <div class="timeline-step-row">
-                <div class="timeline-step-dot">
+                <div class="timeline-step-dot" id="vtrack-step-3">
                   <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5"><circle cx="12" cy="12" r="10"></circle><polyline points="12 6 12 12 16 14"></polyline></svg>
                 </div>
                 <div class="timeline-step-content">
-                  <strong>Delivery &amp; On-Site Unloading</strong>
-                  <span>Cash / UPI Payment on Delivery at your venue</span>
+                  <strong>3. Delivered</strong>
+                  <span id="vtrack-desc-3">Unloaded &amp; Verified at Destination</span>
                 </div>
               </div>
             </div>
@@ -9576,7 +9578,10 @@
         `*Policy Confirmed:* 100% factory-sealed bottles only (No 20L campers).\n` +
         `Please confirm tempo dispatch!`;
 
-      const waUrl = `https://wa.me/919829000000?text=${encodeURIComponent(message)}`;
+      const rawWa = (adminTexts && (adminTexts.whatsappNumber || adminTexts.whatsapp)) || (typeof SITE_TEXTS !== 'undefined' && (SITE_TEXTS.whatsappNumber || SITE_TEXTS.whatsapp)) || '919829000000';
+      const cleanWaDigits = String(rawWa).replace(/\D/g, '');
+      const depotWa = cleanWaDigits.length === 10 ? ('91' + cleanWaDigits) : (cleanWaDigits || '919829000000');
+      const waUrl = `https://wa.me/${depotWa}?text=${encodeURIComponent(message)}`;
 
       cart = {};
       appliedCoupon = null;
@@ -9585,6 +9590,12 @@
       updateCartUI();
       renderProducts();
       closeOrderConfirmModal();
+
+      const cleanCustPhone = loginPhoneVal.replace(/\D/g, '').slice(-10);
+      try {
+        localStorage.setItem('sikar_last_order_id', orderId);
+        if (cleanCustPhone) localStorage.setItem('sikar_last_order_phone', cleanCustPhone);
+      } catch (e) {}
 
       try {
         const win = window.open(waUrl, '_blank');
@@ -9596,9 +9607,9 @@
       }
       showToast(`Order #${orderId} logged & sent to WhatsApp!`);
 
-      document.getElementById('track-order-id-input').value = orderId;
-      navigatePage('track');
-      lookupOrderStatus();
+      setTimeout(() => {
+        window.location.href = `/track?id=${encodeURIComponent(orderId)}${cleanCustPhone ? `&phone=${encodeURIComponent(cleanCustPhone)}` : ''}`;
+      }, 1000);
     }
 
     function renderTrackingUI(order) {
@@ -9607,64 +9618,56 @@
       const idDisp = document.getElementById('track-display-id');
       if (idDisp) idDisp.textContent = `Order #${order.id}`;
 
-      const stageLabels = {
-        'logged': 'Stage 1: Order Logged (Pending)',
-        'pending': 'Stage 1: Order Logged (Pending)',
-        'loaded': 'Stage 2: Factory-Sealed Petis Loaded (Confirmed)',
-        'confirmed': 'Stage 2: Factory-Sealed Petis Loaded (Confirmed)',
-        'processing': 'Stage 2: Factory-Sealed Petis Loaded (Confirmed)',
-        'transit': 'Stage 3: Out For Delivery (Dispatched in Tempo)',
-        'out_for_delivery': 'Stage 3: Out For Delivery (Dispatched in Tempo)',
-        'delivered': 'Stage 4: Delivered & Unloaded (Completed)',
-        'completed': 'Stage 4: Delivered & Unloaded (Completed)',
-        'cancelled': 'Order Cancelled'
-      };
+      const s = String(order.status || 'pending').toLowerCase();
+      let stageNum = 1;
+      let badgeLabel = 'ORDER PLACED';
+      let badgeBg = '#E0F2FE';
+      let badgeColor = '#0369A1';
+
+      if (s === 'delivered' || s === 'completed') {
+        stageNum = 3;
+        badgeLabel = 'DELIVERED';
+        badgeBg = '#DCFCE7';
+        badgeColor = '#15803D';
+      } else if (s === 'cancelled') {
+        stageNum = 0;
+        badgeLabel = 'CANCELLED';
+        badgeBg = '#FEE2E2';
+        badgeColor = '#DC2626';
+      } else if (s === 'processing' || s === 'confirmed' || s === 'loaded' || s === 'transit' || s === 'out_for_delivery' || s === 'shipped') {
+        stageNum = 2;
+        badgeLabel = 'PROCESSING';
+        badgeBg = '#FEF3C7';
+        badgeColor = '#B45309';
+      }
 
       const resultBox = document.getElementById('track-result-box');
       if (resultBox) {
-        const badgeEl = resultBox.querySelector('span[style*="border-radius: var(--radius-pill)"]');
+        const badgeEl = resultBox.querySelector('span[style*="border-radius: var(--radius-pill)"]') || resultBox.querySelector('.badge-status');
         if (badgeEl) {
-          badgeEl.textContent = stageLabels[order.status] || 'Active Dispatch';
-          if (order.status === 'delivered' || order.status === 'completed') {
-            badgeEl.style.background = '#DCFCE7';
-            badgeEl.style.color = '#15803D';
-          } else if (order.status === 'cancelled') {
-            badgeEl.style.background = '#FEE2E2';
-            badgeEl.style.color = '#DC2626';
-          } else {
-            badgeEl.style.background = '#E0F2FE';
-            badgeEl.style.color = '#0369A1';
-          }
+          badgeEl.textContent = badgeLabel;
+          badgeEl.style.background = badgeBg;
+          badgeEl.style.color = badgeColor;
         }
       }
 
-      const dots = document.querySelectorAll('#track-result-box .timeline-step-dot');
-      if (dots && dots.length === 4) {
-        const s = order.status;
-        const stageNum = (s === 'delivered' || s === 'completed') ? 4 :
-                         (s === 'transit' || s === 'out_for_delivery') ? 3 :
-                         (s === 'loaded' || s === 'confirmed' || s === 'processing') ? 2 : 1;
-        dots.forEach((dot, idx) => {
-          dot.className = 'timeline-step-dot';
-          const stepNumber = idx + 1;
-          if (stepNumber < stageNum) {
-            dot.classList.add('done');
-          } else if (stepNumber === stageNum) {
-            if (stageNum === 4) {
-              dot.classList.add('done');
-            } else {
-              dot.classList.add('active');
-            }
-          }
-        });
+      const step1 = document.getElementById('vtrack-step-1');
+      const step2 = document.getElementById('vtrack-step-2');
+      const step3 = document.getElementById('vtrack-step-3');
+
+      if (step1) {
+        step1.className = 'timeline-step-dot ' + (stageNum >= 1 ? 'done' : '');
+      }
+      if (step2) {
+        step2.className = 'timeline-step-dot ' + (stageNum > 2 ? 'done' : (stageNum === 2 ? 'active' : ''));
+      }
+      if (step3) {
+        step3.className = 'timeline-step-dot ' + (stageNum === 3 ? 'done' : '');
       }
 
-      const stepContents = document.querySelectorAll('#track-result-box .timeline-step-content');
-      if (stepContents && stepContents[2]) {
-        const titleStrong = stepContents[2].querySelector('strong');
-        if (titleStrong) {
-          titleStrong.textContent = `Tempo In-Transit (Vehicle: ${order.vehicle || 'RJ-23-GA-4821'})`;
-        }
+      const desc2 = document.getElementById('vtrack-processing-desc');
+      if (desc2 && order.vehicle) {
+        desc2.textContent = `Tempo Dispatched: ${order.vehicle} via Sikar Corridor`;
       }
     }
 
@@ -10238,6 +10241,19 @@
     function navigatePage(pageName) {
       togglePagesSidebar(false);
 
+      if (pageName === 'admin') {
+        window.location.href = '/admin';
+        return;
+      }
+      if (pageName === 'categories') {
+        window.location.href = '/categories';
+        return;
+      }
+      if (pageName === 'products') {
+        window.location.href = '/products';
+        return;
+      }
+
       const views = ['home', 'about', 'why', 'faq', 'contact', 'track', 'wishlist', 'bulk', 'admin', 'driver'];
       views.forEach(v => {
         const el = document.getElementById(`view-${v}`);
@@ -10256,10 +10272,7 @@
       const activeDockBtn = document.getElementById(`dock-btn-${pageName}`);
       if (activeDockBtn) activeDockBtn.classList.add('active');
 
-      if (pageName === 'admin') {
-        window.location.href = 'admin.html';
-        return;
-      } else if (pageName === 'driver') {
+      if (pageName === 'driver') {
         document.getElementById('view-driver').style.display = 'block';
         renderDriverView();
         window.scrollTo({ top: 0, behavior: 'smooth' });
@@ -10286,15 +10299,14 @@
       } else if (pageName === 'contact') {
         document.getElementById('view-contact').style.display = 'block';
         window.scrollTo({ top: 0, behavior: 'smooth' });
-      } else if (pageName === 'categories') {
-        window.location.href = '/categories';
-        return;
-      } else if (pageName === 'products') {
-        window.location.href = '/products';
-        return;
       } else {
-        document.getElementById('view-home').style.display = 'block';
-        window.scrollTo({ top: 0, behavior: 'smooth' });
+        const homeView = document.getElementById('view-home');
+        if (homeView) homeView.style.display = 'block';
+        const homeNavBtn = document.getElementById('nav-btn-home');
+        if (homeNavBtn) homeNavBtn.classList.add('active');
+        const homeDockBtn = document.getElementById('dock-btn-home');
+        if (homeDockBtn) homeDockBtn.classList.add('active');
+        window.scrollTo({ top: 0, behavior: 'instant' });
       }
     }
 
@@ -13616,6 +13628,34 @@
         }
       }
     });
+
+    // BACK/FORWARD CACHE & HISTORY POPSTATE RESTORATION
+    window.addEventListener('pageshow', function (event) {
+      const hash = window.location.hash.replace('#', '');
+      if (!hash || hash === 'home') {
+        const homeView = document.getElementById('view-home');
+        if (homeView) homeView.style.display = 'block';
+        const homeNavBtn = document.getElementById('nav-btn-home');
+        if (homeNavBtn) homeNavBtn.classList.add('active');
+        const homeDockBtn = document.getElementById('dock-btn-home');
+        if (homeDockBtn) homeDockBtn.classList.add('active');
+      }
+    });
+
+    window.addEventListener('popstate', function (event) {
+      const hash = window.location.hash.replace('#', '');
+      if (!hash || hash === 'home') {
+        const homeView = document.getElementById('view-home');
+        if (homeView) homeView.style.display = 'block';
+        const homeNavBtn = document.getElementById('nav-btn-home');
+        if (homeNavBtn) homeNavBtn.classList.add('active');
+        const homeDockBtn = document.getElementById('dock-btn-home');
+        if (homeDockBtn) homeDockBtn.classList.add('active');
+        window.scrollTo({ top: 0, behavior: 'instant' });
+      } else if (typeof navigatePage === 'function') {
+        navigatePage(hash);
+      }
+    });
   </script>
 
   <!-- MOBILE BOTTOM NAVIGATION DOCK -->
@@ -13626,20 +13666,16 @@
     </a>
     <a href="/products" class="dock-tab-btn" id="dock-btn-products">
       <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2"><path d="M6 2 3 6v14a2 2 0 0 0 2 2h14a2 2 0 0 0 2-2V6l-3-4Z"></path><path d="M3 6h18"></path><path d="M16 10a4 4 0 0 1-8 0"></path></svg>
-      <span>Beverages</span>
+      <span>Products</span>
     </a>
     <a href="/categories" class="dock-tab-btn" id="dock-btn-categories">
       <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2"><rect x="3" y="3" width="7" height="7"></rect><rect x="14" y="3" width="7" height="7"></rect><rect x="14" y="14" width="7" height="7"></rect><rect x="3" y="14" width="7" height="7"></rect></svg>
       <span>Categories</span>
     </a>
     <a href="/track" class="dock-tab-btn" id="dock-btn-track">
-      <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2"><circle cx="12" cy="12" r="10"></circle><polyline points="12 6 12 12 16 14"></polyline></svg>
+      <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2"><rect x="1" y="3" width="15" height="13"></rect><polygon points="16 8 20 8 23 11 23 16 16 16 8"></polygon><circle cx="5.5" cy="18.5" r="2.5"></circle><circle cx="18.5" cy="18.5" r="2.5"></circle></svg>
       <span>Track Order</span>
     </a>
-    <button type="button" class="dock-tab-btn" id="dock-btn-menu" onclick="toggleMobileMenu(true)">
-      <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2"><line x1="3" y1="6" x2="21" y2="6"></line><line x1="3" y1="12" x2="21" y2="12"></line><line x1="3" y1="18" x2="21" y2="18"></line></svg>
-      <span>Menu</span>
-    </button>
     <button type="button" class="dock-tab-btn" id="dock-btn-cart" onclick="toggleCartDrawer(true)">
       <div style="position: relative; display: inline-flex;">
         <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2"><circle cx="9" cy="21" r="1"></circle><circle cx="20" cy="21" r="1"></circle><path d="M1 1h4l2.68 13.39a2 2 0 0 0 2 1.61h9.72a2 2 0 0 0 2-1.61L23 6H6"></path></svg>

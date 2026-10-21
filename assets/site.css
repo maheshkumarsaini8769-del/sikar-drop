@@ -31,10 +31,11 @@
       --shadow-md: 0 4px 12px rgba(15, 23, 42, 0.06);
       --shadow-card: 0 1px 3px rgba(15, 23, 42, 0.05), 0 4px 12px rgba(15, 23, 42, 0.04);
 
-      --radius-xs: 6px;
+      --radius-xs: 8px;
       --radius-sm: 10px;
       --radius-md: 14px;
       --radius-lg: 20px;
+      --radius-btn: 8px;
       --radius-pill: 9999px;
 
       --font-body: 'Be Vietnam Pro', system-ui, -apple-system, sans-serif;
@@ -396,7 +397,7 @@
       background: #0369A1;
       color: #FFFFFF;
       border: none;
-      border-radius: var(--radius-pill);
+      border-radius: var(--radius-sm);
       font-size: 0.86rem;
       font-weight: 700;
       cursor: pointer;
@@ -906,7 +907,7 @@
       font-size: 0.92rem;
       font-weight: 800;
       padding: 10px 22px;
-      border-radius: var(--radius-pill);
+      border-radius: var(--radius-sm);
       display: inline-flex;
       align-items: center;
       gap: 6px;
@@ -4031,7 +4032,7 @@
         bottom: 0;
         left: 0;
         right: 0;
-        height: calc(62px + env(safe-area-inset-bottom, 0px));
+        height: calc(56px + env(safe-area-inset-bottom, 0px));
         background: rgba(255, 255, 255, 0.96);
         backdrop-filter: blur(12px);
         -webkit-backdrop-filter: blur(12px);
@@ -4040,11 +4041,11 @@
         z-index: 995;
         align-items: center;
         justify-content: space-around;
-        padding: 4px 6px env(safe-area-inset-bottom, 4px);
+        padding: 3px 6px env(safe-area-inset-bottom, 3px);
       }
 
       body {
-        padding-bottom: calc(76px + env(safe-area-inset-bottom, 0px)) !important;
+        padding-bottom: calc(72px + env(safe-area-inset-bottom, 0px)) !important;
       }
 
       .dock-tab-btn {
@@ -4053,14 +4054,14 @@
         flex-direction: column;
         align-items: center;
         justify-content: center;
-        gap: 3px;
+        gap: 2px;
         background: transparent;
         border: none;
         color: #64748B;
-        font-size: 0.68rem;
+        font-size: 0.65rem;
         font-weight: 700;
         cursor: pointer;
-        padding: 6px 0;
+        padding: 5px 0;
         position: relative;
         text-decoration: none;
         touch-action: manipulation;
@@ -4073,8 +4074,16 @@
       }
 
       .dock-tab-btn svg {
-        width: 20px;
-        height: 20px;
+        width: 18px;
+        height: 18px;
+        max-width: 18px;
+        max-height: 18px;
+        flex-shrink: 0;
+      }
+
+      .dock-tab-btn span {
+        font-size: 0.65rem;
+        white-space: nowrap;
       }
 
       .dock-tab-btn.active {
@@ -4083,16 +4092,17 @@
 
       .dock-cart-counter {
         position: absolute;
-        top: 2px;
-        right: 18px;
+        top: 1px;
+        right: -8px;
         background: #DC2626;
         color: #FFFFFF;
-        font-size: 0.64rem;
+        font-size: 0.62rem;
         font-weight: 800;
         border-radius: var(--radius-pill);
-        padding: 1px 5px;
-        min-width: 16px;
+        padding: 1px 4px;
+        min-width: 15px;
         text-align: center;
+        line-height: 1.2;
       }
     }
 
@@ -5232,21 +5242,35 @@
 /* ==========================================
    MOBILE MENU DRAWER & NAVIGATION BAR
    ========================================== */
+@media (min-width: 1081px) {
+  .nav-hamburger-btn {
+    display: none !important;
+  }
+}
+
 .nav-hamburger-btn {
   display: inline-flex;
   align-items: center;
-  gap: 7px;
+  justify-content: center;
   background: #F1F5F9;
   border: 1px solid var(--border-subtle);
   border-radius: var(--radius-xs);
-  padding: 8px 12px;
+  width: 36px;
+  height: 36px;
+  padding: 0;
   color: #0F172A;
-  font-family: var(--font-heading);
-  font-weight: 700;
-  font-size: 0.86rem;
   cursor: pointer;
   transition: all 0.2s ease;
-  line-height: 1;
+  flex-shrink: 0;
+}
+
+.nav-hamburger-btn svg {
+  width: 18px;
+  height: 18px;
+}
+
+.nav-hamburger-btn span {
+  display: none !important;
 }
 
 .nav-hamburger-btn:hover {

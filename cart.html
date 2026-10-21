@@ -321,6 +321,12 @@
           <!-- CHECKOUT DETAILS FORM -->
           <div class="cart-card-surface">
             <h2 style="font-family: var(--font-heading); font-size: 1.22rem; font-weight: 800; color: var(--navy-dark); margin: 0 0 14px 0;">Delivery Information</h2>
+
+            <!-- TRUECALLER VERIFIED STATUS BANNER -->
+            <div id="cart-auth-status-banner" style="display: none; padding: 10px 14px; background: #EFF6FF; border: 1.5px solid #BFDBFE; border-radius: var(--radius-xs); margin-bottom: 14px; font-size: 0.84rem; color: #1D4ED8; font-weight: 700; align-items: center; justify-content: space-between;">
+              <span id="cart-auth-status-text">Logged in via Truecaller: +91 XXXXX</span>
+              <button type="button" onclick="handleCartSwitchUser()" style="background: none; border: none; color: #0066F5; font-size: 0.78rem; font-weight: 700; text-decoration: underline; cursor: pointer;">Change Number</button>
+            </div>
             
             <form id="checkout-dispatch-form" onsubmit="handleCartFormSubmit(event)">
               <div class="checkout-form-group">
@@ -391,7 +397,7 @@
     </a>
     <a href="/products" class="dock-tab-btn" id="dock-btn-products">
       <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2"><path d="M6 2 3 6v14a2 2 0 0 0 2 2h14a2 2 0 0 0 2-2V6l-3-4Z"></path><path d="M3 6h18"></path><path d="M16 10a4 4 0 0 1-8 0"></path></svg>
-      <span>Beverages</span>
+      <span>Products</span>
     </a>
     <a href="/categories" class="dock-tab-btn" id="dock-btn-categories">
       <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2"><rect x="3" y="3" width="7" height="7"></rect><rect x="14" y="3" width="7" height="7"></rect><rect x="14" y="14" width="7" height="7"></rect><rect x="3" y="14" width="7" height="7"></rect></svg>
@@ -419,6 +425,7 @@
       await initStorefrontTheme();
       await loadCatalogFromBackend();
       renderFullCartPage();
+      checkUserAuthCart();
     });
 
     function getCartItemDetails(id) {
@@ -640,12 +647,24 @@
         return;
       }
 
-      const name = document.getElementById('order-cust-name').value.trim();
-      const phone = document.getElementById('order-cust-phone').value.trim();
+      // TRUECALLER LOGIN GATE
+      const activeUser = JSON.parse(localStorage.getItem('sikar_user') || 'null');
+      if (!activeUser || !activeUser.phone) {
+        openCartLoginModal();
+        return;
+      }
+
+      const name = document.getElementById('order-cust-name').value.trim() || activeUser.name || 'Valued Customer';
+      const phone = document.getElementById('order-cust-phone').value.trim() || activeUser.phone;
       const corridor = document.getElementById('order-delivery-corridor').value;
       const address = document.getElementById('order-cust-address').value.trim();
-      const payMethod = document.querySelector('input[name="pay-method"]:checked').value;
+      const payMethod = document.querySelector('input[name="pay-method"]:checked')?.value || 'COD';
       const notes = document.getElementById('order-notes').value.trim();
+
+      if (!corridor || !address) {
+        alert('Please select your Sikar delivery area and enter your street address.');
+        return;
+      }
 
       const btn = document.getElementById('btn-place-order');
       btn.disabled = true;
@@ -730,7 +749,7 @@
         } catch (e) {}
 
         // Format WhatsApp slip
-        let waText = `*SIKAR DROP — WHOLESALE DISPATCH ORDER*\n`;
+        let waText = `*SIKAR WATER BOTTLE SUPPLY — WHOLESALE DISPATCH ORDER*\n`;
         waText += `*Order ID:* ${orderId}\n`;
         waText += `*Customer:* ${name} (${phone})\n`;
         waText += `*Delivery Area:* ${corridor}\n`;
@@ -768,16 +787,20 @@
           localStorage.setItem('sikar_my_orders', JSON.stringify(myOrders.slice(0, 20)));
         } catch (e) {}
 
+        const rawDepotWa = (SITE_TEXTS && (SITE_TEXTS.whatsappNumber || SITE_TEXTS.whatsapp)) || (JSON.parse(localStorage.getItem('sikar_admin_texts') || '{}').whatsappNumber) || '919829000000';
+        const cleanDepotDigits = String(rawDepotWa).replace(/\D/g, '');
+        const depotPhone = cleanDepotDigits.length === 10 ? ('91' + cleanDepotDigits) : (cleanDepotDigits || '919829000000');
+
         // Show confirmation and trigger WhatsApp
-        alert(`Order ${orderId} confirmed successfully! Dispatching to Sikar Drop tempo delivery.`);
+        alert(`Order ${orderId} confirmed successfully! Dispatching to Sikar Water Bottle Supply tempo delivery.`);
         try {
-          const win = window.open(`https://wa.me/919829000000?text=${encodeURIComponent(waText)}`, '_blank');
+          const win = window.open(`https://wa.me/${depotPhone}?text=${encodeURIComponent(waText)}`, '_blank');
           if (!win || win.closed || typeof win.closed === 'undefined') {
-            window.location.href = `https://wa.me/919829000000?text=${encodeURIComponent(waText)}`;
+            window.location.href = `https://wa.me/${depotPhone}?text=${encodeURIComponent(waText)}`;
             return;
           }
         } catch (e) {
-          window.location.href = `https://wa.me/919829000000?text=${encodeURIComponent(waText)}`;
+          window.location.href = `https://wa.me/${depotPhone}?text=${encodeURIComponent(waText)}`;
           return;
         }
         setTimeout(() => {
@@ -793,7 +816,208 @@
         btn.innerHTML = '<span>CONFIRM &amp; DISPATCH ORDER</span><svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2"><line x1="5" y1="12" x2="19" y2="12"></line><polyline points="12 5 19 12 12 19"></polyline></svg>';
       }
     }
+
+    // TRUECALLER MODAL & VERIFICATION HELPERS
+    let cartTcPollTimer = null;
+
+    function checkUserAuthCart() {
+      const user = JSON.parse(localStorage.getItem('sikar_user') || 'null');
+      const banner = document.getElementById('cart-auth-status-banner');
+      const bannerText = document.getElementById('cart-auth-status-text');
+      const nameInput = document.getElementById('order-cust-name');
+      const phoneInput = document.getElementById('order-cust-phone');
+
+      if (user && user.phone) {
+        if (nameInput && (!nameInput.value || nameInput.value === '')) nameInput.value = user.name || '';
+        if (phoneInput && (!phoneInput.value || phoneInput.value === '')) phoneInput.value = String(user.phone).replace(/\D/g, '').slice(-10);
+        if (banner && bannerText) {
+          bannerText.innerHTML = `<strong>Truecaller 1-Tap Verified:</strong> ${user.name ? user.name + ' • ' : ''}+91 ${user.phone}`;
+          banner.style.display = 'flex';
+        }
+      } else {
+        if (banner) banner.style.display = 'none';
+      }
+    }
+
+    function handleCartSwitchUser() {
+      localStorage.removeItem('sikar_user');
+      const banner = document.getElementById('cart-auth-status-banner');
+      if (banner) banner.style.display = 'none';
+      const nameInput = document.getElementById('order-cust-name');
+      const phoneInput = document.getElementById('order-cust-phone');
+      if (nameInput) nameInput.value = '';
+      if (phoneInput) {
+        phoneInput.value = '';
+        phoneInput.focus();
+      }
+      openCartLoginModal();
+    }
+
+    function openCartLoginModal() {
+      const modal = document.getElementById('cart-login-modal');
+      const phoneInput = document.getElementById('cart-tc-phone-input');
+      const nameInput = document.getElementById('cart-tc-name-input');
+      const existingPhone = document.getElementById('order-cust-phone')?.value.trim();
+      const existingName = document.getElementById('order-cust-name')?.value.trim();
+
+      if (phoneInput && existingPhone) phoneInput.value = existingPhone.replace(/\D/g, '').slice(-10);
+      if (nameInput && existingName) nameInput.value = existingName;
+
+      if (modal) modal.style.display = 'flex';
+    }
+
+    function closeCartLoginModal() {
+      const modal = document.getElementById('cart-login-modal');
+      if (modal) modal.style.display = 'none';
+      if (cartTcPollTimer) clearInterval(cartTcPollTimer);
+    }
+
+    async function startCartTruecaller1TapFlow() {
+      const tcBtn = document.getElementById('cart-btn-truecaller-1tap');
+      const tcLabel = document.getElementById('cart-btn-tc-label');
+      const tcMsg = document.getElementById('cart-tc-polling-msg');
+      const tcText = document.getElementById('cart-tc-status-text');
+      const phoneInput = document.getElementById('cart-tc-phone-input');
+      const nameInput = document.getElementById('cart-tc-name-input');
+
+      const rawPhone = phoneInput ? phoneInput.value.trim() : '';
+      const cleanPhone = rawPhone.replace(/\D/g, '').slice(-10);
+
+      if (!cleanPhone || cleanPhone.length !== 10) {
+        alert('Please enter your 10-digit mobile number first.');
+        if (phoneInput) phoneInput.focus();
+        return;
+      }
+
+      const enteredName = nameInput ? nameInput.value.trim() : (document.getElementById('order-cust-name')?.value.trim() || 'Customer');
+
+      try {
+        if (tcBtn) tcBtn.disabled = true;
+        if (tcLabel) tcLabel.textContent = 'CONNECTING TRUECALLER...';
+        if (tcMsg) tcMsg.style.display = 'flex';
+        if (tcText) {
+          tcText.textContent = `Verifying if +91 ${cleanPhone} is active on this device...`;
+          tcText.style.color = '#1D4ED8';
+        }
+
+        const initRes = await fetch('/api/truecaller/init', {
+          method: 'POST',
+          headers: { 'Content-Type': 'application/json' },
+          body: JSON.stringify({ phone: cleanPhone, name: enteredName })
+        });
+        const initData = await initRes.json();
+        if (!initRes.ok || !initData.deepLinkUrl) {
+          throw new Error(initData.error || 'Failed to initialize Truecaller verification.');
+        }
+
+        const requestId = initData.requestId;
+        window.location.href = initData.deepLinkUrl;
+
+        let attempts = 0;
+        if (cartTcPollTimer) clearInterval(cartTcPollTimer);
+
+        cartTcPollTimer = setInterval(async () => {
+          attempts++;
+          try {
+            const statusRes = await fetch(`/api/truecaller/status?requestId=${encodeURIComponent(requestId)}`);
+            const statusData = await statusRes.json();
+
+            if (statusRes.ok && statusData.verified && statusData.user) {
+              clearInterval(cartTcPollTimer);
+              const verifiedUser = {
+                id: statusData.user.id || ('CUST-' + Math.floor(1000 + Math.random() * 9000)),
+                name: statusData.user.name || enteredName,
+                phone: cleanPhone,
+                verified: true,
+                channel: 'Truecaller SIM Verified'
+              };
+              localStorage.setItem('sikar_user', JSON.stringify(verifiedUser));
+              checkUserAuthCart();
+              closeCartLoginModal();
+              // Proceed with order placement immediately!
+              handleCartFormSubmit();
+              return;
+            }
+
+            if (statusData && statusData.status === 'mismatch') {
+              clearInterval(cartTcPollTimer);
+              if (tcBtn) tcBtn.disabled = false;
+              if (tcLabel) tcLabel.textContent = 'MISMATCH - RETRY';
+              if (tcText) {
+                tcText.textContent = statusData.error || `SIM Mismatch: Entered number (+91 ${cleanPhone}) does not match this device's SIM.`;
+                tcText.style.color = '#DC2626';
+              }
+              return;
+            }
+
+            if (attempts > 30) {
+              clearInterval(cartTcPollTimer);
+              if (tcBtn) tcBtn.disabled = false;
+              if (tcLabel) tcLabel.textContent = 'VERIFY WITH TRUECALLER';
+              if (tcText) {
+                tcText.textContent = 'Verification timed out. Please tap Verify again.';
+                tcText.style.color = '#DC2626';
+              }
+            }
+          } catch (e) {
+            console.warn('Poll error:', e);
+          }
+        }, 1500);
+      } catch (err) {
+        if (tcBtn) tcBtn.disabled = false;
+        if (tcLabel) tcLabel.textContent = 'VERIFY WITH TRUECALLER';
+        alert(err.message || 'Truecaller connection error.');
+      }
+    }
   </script>
 
+  <!-- TRUECALLER VERIFICATION MODAL -->
+  <div class="modal-backdrop" id="cart-login-modal" role="dialog" aria-modal="true" aria-labelledby="cart-login-title" style="display: none; position: fixed; inset: 0; background: rgba(15, 23, 42, 0.65); z-index: 9999; align-items: center; justify-content: center; backdrop-filter: blur(4px);">
+    <div class="auth-modal-dialog" style="max-width: 440px; text-align: center; padding: 26px 22px; background: #FFFFFF; border-radius: 16px; box-shadow: 0 20px 40px rgba(0,0,0,0.2); position: relative; margin: 16px; width: 100%;">
+      <button type="button" class="modal-close-icon" onclick="closeCartLoginModal()" aria-label="Close login dialog" style="position: absolute; right: 14px; top: 14px; background: none; border: none; cursor: pointer; color: #64748B;">
+        <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" width="20" height="20"><line x1="18" y1="6" x2="6" y2="18"></line><line x1="6" y1="6" x2="18" y2="18"></line></svg>
+      </button>
+
+      <div style="margin: 0 auto 12px; width: 58px; height: 58px; border-radius: 50%; background: linear-gradient(135deg, #EBF5FF 0%, #DBEAFE 100%); display: flex; align-items: center; justify-content: center; border: 2px solid #BFDBFE; box-shadow: 0 4px 14px rgba(0, 102, 245, 0.15);">
+        <svg viewBox="0 0 24 24" width="32" height="32" fill="#0066F5">
+          <path d="M12 2C6.48 2 2 6.48 2 12c0 1.85.5 3.58 1.38 5.07L2.1 21.9l4.98-1.28C8.51 21.49 10.2 22 12 22c5.52 0 10-4.48 10-10S17.52 2 12 2zm-1 14.5l-3.5-3.5 1.41-1.41L11 13.67l5.59-5.59L18 9.5l-7 7z"/>
+        </svg>
+      </div>
+
+      <h3 id="cart-login-title" style="margin: 0 0 4px; font-size: 1.28rem; font-family: var(--font-heading); font-weight: 800; color: #0B192C;">
+        Truecaller Mobile Verification
+      </h3>
+      <p style="font-size: 0.84rem; color: #64748B; margin: 0 0 16px; line-height: 1.4;">
+        Verify your mobile number to confirm your order dispatch with Zero OTP.
+      </p>
+
+      <div style="margin: 0 0 12px; text-align: left;">
+        <label for="cart-tc-phone-input" style="font-weight: 700; color: #0F172A; font-size: 0.84rem; display: flex; justify-content: space-between; margin-bottom: 4px;">
+          <span>Mobile Number</span>
+          <span style="font-size: 0.72rem; color: #0066F5; font-weight: 700;">Zero OTP • 1-Tap SIM Check</span>
+        </label>
+        <div style="position: relative; display: flex; align-items: center;">
+          <span style="position: absolute; left: 14px; font-weight: 800; color: #64748B; font-size: 1rem;">+91</span>
+          <input type="tel" id="cart-tc-phone-input" placeholder="98290 12345" maxlength="10" value="" style="padding-left: 52px; font-weight: 800; letter-spacing: 0.05em; font-size: 1.05rem; width: 100%; border: 1.5px solid #CBD5E1; border-radius: 10px; height: 46px; background: #FFFFFF; box-sizing: border-box;">
+        </div>
+      </div>
+
+      <div style="margin: 0 0 14px; text-align: left;">
+        <label for="cart-tc-name-input" style="font-weight: 700; color: #0F172A; font-size: 0.84rem; margin-bottom: 4px; display: block;">Your Name (Party Name)</label>
+        <input type="text" id="cart-tc-name-input" placeholder="e.g. Ramesh Saini" style="font-weight: 600; width: 100%; border: 1.5px solid #CBD5E1; border-radius: 10px; height: 42px; padding: 0 14px; background: #FFFFFF; box-sizing: border-box;">
+      </div>
+
+      <button type="button" id="cart-btn-truecaller-1tap" onclick="startCartTruecaller1TapFlow()" style="background: #0066F5; border: 1px solid #0056D2; display: flex; align-items: center; justify-content: center; gap: 10px; padding: 13px 20px; border-radius: 10px; font-weight: 800; font-size: 0.98rem; color: #FFFFFF; cursor: pointer; transition: all 0.2s; width: 100%; box-shadow: 0 6px 18px rgba(0, 102, 245, 0.35);">
+        <svg viewBox="0 0 24 24" width="22" height="22" fill="#FFFFFF"><path d="M12 2C6.48 2 2 6.48 2 12c0 1.85.5 3.58 1.38 5.07L2.1 21.9l4.98-1.28C8.51 21.49 10.2 22 12 22c5.52 0 10-4.48 10-10S17.52 2 12 2zm-1 14.5l-3.5-3.5 1.41-1.41L11 13.67l5.59-5.59L18 9.5l-7 7z"/></svg>
+        <span id="cart-btn-tc-label">VERIFY WITH TRUECALLER</span>
+      </button>
+
+      <div id="cart-tc-polling-msg" style="display: none; flex-direction: column; align-items: center; gap: 8px; background: #EFF6FF; border: 1.5px solid #BFDBFE; padding: 12px 14px; border-radius: 12px; margin-top: 14px;">
+        <span style="font-size: 0.82rem; color: #1D4ED8; font-weight: 700;" id="cart-tc-status-text">
+          Checking Truecaller... Please tap Continue inside Truecaller.
+        </span>
+      </div>
+    </div>
+  </div>
 </body>
 </html>
