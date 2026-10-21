@@ -49,8 +49,107 @@ const PORT = process.env.PORT || 8090;
 const IS_DEV = process.env.NODE_ENV !== 'production';
 const SITE_URL = (process.env.SITE_URL || 'https://sikar-drop.vercel.app').replace(/\/$/, '');
 
+// ============================================================
+// SECURITY: Helmet (X-Frame-Options, HSTS, X-Content-Type-Options, etc.)
+// ============================================================
+let helmet = null;
+try {
+  helmet = require('helmet');
+} catch (e) {
+  console.warn('[SECURITY] helmet not installed - run: npm install helmet');
+}
+
+// ============================================================
+// SECURITY: Rate limiting
+// ============================================================
+let rateLimit = null;
+try {
+  rateLimit = require('express-rate-limit');
+} catch (e) {
+  console.warn('[SECURITY] express-rate-limit not installed - run: npm install express-rate-limit');
+}
+
+// ============================================================
+// SECURITY: Admin token helpers (HMAC-SHA256 signed)
+// ============================================================
+const ADMIN_TOKEN_SECRET = process.env.ADMIN_TOKEN_SECRET || crypto.randomBytes(32).toString('hex');
+const TRUECALLER_SECRET  = process.env.TRUECALLER_SECRET  || crypto.randomBytes(32).toString('hex');
+const ENFORCE_ADMIN_AUTH = process.env.ENFORCE_ADMIN_AUTH === 'true';
+
+function signAdminToken(adminId) {
+  const payload = `${adminId}:${Date.now()}`;
+  const sig = crypto.createHmac('sha256', ADMIN_TOKEN_SECRET).update(payload).digest('hex');
+  return `${Buffer.from(payload).toString('base64url')}.${sig}`;
+}
+
+function verifyAdminToken(token) {
+  if (!token || typeof token !== 'string') return null;
+  const parts = token.split('.');
+  if (parts.length !== 2) return null;
+  try {
+    const payload = Buffer.from(parts[0], 'base64url').toString('utf8');
+    const expected = crypto.createHmac('sha256', ADMIN_TOKEN_SECRET).update(payload).digest('hex');
+    // SECURITY: constant-time compare to prevent timing attacks
+    const a = Buffer.from(parts[1], 'hex');
+    const b = Buffer.from(expected, 'hex');
+    if (a.length !== b.length || !crypto.timingSafeEqual(a, b)) return null;
+    const [adminId, ts] = payload.split(':');
+    if (Date.now() - parseInt(ts, 10) > 8 * 60 * 60 * 1000) return null; // 8h expiry
+    return adminId;
+  } catch (e) {
+    return null;
+  }
+}
+
+// SECURITY: Truecaller token signing/verification (HMAC-SHA256)
+function signTruecallerToken(phone) {
+  const payload = `${phone}:${Date.now()}`;
+  const sig = crypto.createHmac('sha256', TRUECALLER_SECRET).update(payload).digest('hex');
+  return `${Buffer.from(payload).toString('base64url')}.${sig}`;
+}
+
+function verifyTruecallerToken(token) {
+  if (!token || typeof token !== 'string') return null;
+  const parts = token.split('.');
+  if (parts.length !== 2) return null;
+  try {
+    const payload = Buffer.from(parts[0], 'base64url').toString('utf8');
+    const expected = crypto.createHmac('sha256', TRUECALLER_SECRET).update(payload).digest('hex');
+    const a = Buffer.from(parts[1], 'hex');
+    const b = Buffer.from(expected, 'hex');
+    if (a.length !== b.length || !crypto.timingSafeEqual(a, b)) return null;
+    const [phone, ts] = payload.split(':');
+    if (Date.now() - parseInt(ts, 10) > 24 * 60 * 60 * 1000) return null; // 24h
+    return phone;
+  } catch (e) {
+    return null;
+  }
+}
+
+// SECURITY: Admin auth middleware (opt-in via ENFORCE_ADMIN_AUTH=true)
+function requireAdmin(req, res, next) {
+  if (!ENFORCE_ADMIN_AUTH) return next(); // backward-compatible
+  const token = req.headers['x-admin-token'] ||
+                (req.headers.authorization || '').replace(/^Bearer\s+/i, '');
+  const adminId = verifyAdminToken(token);
+  if (!adminId) {
+    return res.status(401).json({ error: 'Admin authentication required' });
+  }
+  req.adminId = adminId;
+  next();
+}
+
 // Performance & baseline security headers
 app.disable('x-powered-by');
+
+// SECURITY: Helmet first
+if (helmet) {
+  app.use(helmet({
+    contentSecurityPolicy: false,       // preserve existing inline scripts
+    crossOriginEmbedderPolicy: false
+  }));
+}
+
 if (compression) {
   app.use(compression({ level: 6, threshold: 1024 }));
 }
@@ -62,8 +161,40 @@ app.use((req, res, next) => {
 
 // Middleware
 app.use(cors());
-app.use(bodyParser.json({ limit: '25mb' }));
-app.use(bodyParser.urlencoded({ extended: true, limit: '25mb' }));
+
+// SECURITY: Image upload gets its own bigger limit
+app.use('/api/media/upload', bodyParser.json({ limit: '10mb' }));
+
+// SECURITY: reduced body limit (was 25mb - DoS risk)
+app.use(bodyParser.json({ limit: '2mb' }));
+app.use(bodyParser.urlencoded({ extended: true, limit: '2mb' }));
+
+// SECURITY: Rate limiting
+let authLimiter = (req, res, next) => next();
+if (rateLimit) {
+  const globalLimiter = rateLimit({
+    windowMs: 60 * 1000,
+    max: 200,
+    standardHeaders: true,
+    legacyHeaders: false,
+    message: { error: 'Too many requests. Please try again shortly.' }
+  });
+  app.use('/api/', globalLimiter);
+
+  authLimiter = rateLimit({
+    windowMs: 15 * 60 * 1000,
+    max: 10,
+    skipSuccessfulRequests: true,
+    standardHeaders: true,
+    legacyHeaders: false,
+    message: { error: 'Too many failed attempts. Please try again in 15 minutes.' }
+  });
+  app.use('/api/auth/login', authLimiter);
+  app.use('/api/otp/verify', authLimiter);
+  app.use('/api/auth/otp/verify', authLimiter);
+  app.use('/api/truecaller/verify', authLimiter);
+  app.use('/api/auth/truecaller', authLimiter);
+}
 
 // Logging & Audit Middleware
 app.use((req, res, next) => {
@@ -390,10 +521,10 @@ app.post('/api/auth/login', (req, res) => {
       loginEmail === 'admin' ||
       loginEmail === 'mahesh'
     );
-    const isSuperAdminPass = (
-      loginPassword === 'mahesh99830' ||
-      loginPassword.toLowerCase() === 'mahesh99830'
-    );
+    // SECURITY: read from env var. No hardcoded fallback in production.
+    const SUPER_ADMIN_PASS = process.env.SUPER_ADMIN_PASSWORD ||
+                              (IS_DEV ? 'mahesh99830' : null);
+    const isSuperAdminPass = !!SUPER_ADMIN_PASS && loginPassword === SUPER_ADMIN_PASS;
 
     const isSubAdminEmail = (
       loginEmail === 'subadmin@sikardrop.in' ||
@@ -404,17 +535,10 @@ app.post('/api/auth/login', (req, res) => {
       loginEmail === 'staff' ||
       loginEmail.startsWith('subadmin@')
     );
-    const isSubAdminPass = (
-      loginPassword === 'subadmin123' ||
-      loginPassword.toLowerCase() === 'subadmin123' ||
-      loginPassword === 'subadmin' ||
-      loginPassword.toLowerCase() === 'subadmin' ||
-      loginPassword === 'sikar123' ||
-      loginPassword === '1234' ||
-      loginPassword === '123456' ||
-      loginPassword === 'admin123' ||
-      loginPassword === 'subadmin@123'
-    );
+    // SECURITY: env-var based; no hardcoded fallback in production.
+    const SUBADMIN_PASS = process.env.SUBADMIN_PASSWORD ||
+                          (IS_DEV ? 'subadmin123' : null);
+    const isSubAdminPass = !!SUBADMIN_PASS && loginPassword === SUBADMIN_PASS;
 
     let admin = null;
     if (isSuperAdminEmail && isSuperAdminPass) {
@@ -422,8 +546,8 @@ app.post('/api/auth/login', (req, res) => {
       if (!admin) {
         db.prepare(`
           INSERT OR REPLACE INTO admin_users (id, name, username, pin, role, permissions_json, active)
-          VALUES ('ADM-01', 'Mahesh Kumar Saini', 'maheshsaini10101@gmail.com', 'mahesh99830', 'Super Admin', '["all"]', 1)
-        `).run();
+          VALUES ('ADM-01', 'Mahesh Kumar Saini', 'maheshsaini10101@gmail.com', ?, 'Super Admin', '["all"]', 1)
+        `).run(SUPER_ADMIN_PASS);
         admin = db.prepare("SELECT * FROM admin_users WHERE id = 'ADM-01'").get();
       }
     } else if (isSubAdminEmail && isSubAdminPass) {
@@ -432,8 +556,8 @@ app.post('/api/auth/login', (req, res) => {
         const now = new Date().toISOString();
         db.prepare(`
           INSERT OR REPLACE INTO admin_users (id, username, name, role, pin, permissions_json, active, created_at)
-          VALUES ('ADM-SUB', 'subadmin@sikardrop.in', 'Operations Sub-Admin', 'Store Sub-Admin', 'subadmin123', ?, 1, ?)
-        `).run(JSON.stringify(['dashboard', 'orders', 'pos', 'inventory', 'khata', 'reports', 'purchases', 'bundles', 'coupons', 'products', 'categories', 'reviews', 'bulk', 'subadmin']), now);
+          VALUES ('ADM-SUB', 'subadmin@sikardrop.in', 'Operations Sub-Admin', 'Store Sub-Admin', ?, ?, 1, ?)
+        `).run(SUBADMIN_PASS, JSON.stringify(['dashboard', 'orders', 'pos', 'inventory', 'khata', 'reports', 'purchases', 'bundles', 'coupons', 'products', 'categories', 'reviews', 'bulk', 'subadmin']), now);
         admin = db.prepare("SELECT * FROM admin_users WHERE id = 'ADM-SUB'").get();
       }
     } else {
@@ -470,18 +594,6 @@ app.post('/api/auth/login', (req, res) => {
           (storedHash && loginPassword === storedHash)
         );
 
-        // Account-specific credential aliases
-        if (!matched) {
-          if ((cand.id === 'ADM-SUB' || cand.username === 'subadmin@sikardrop.in') && (loginPassword === 'subadmin123' || loginPassword === 'subadmin' || loginPassword === 'sikar123' || loginPassword === '1234' || loginPassword === '123456' || loginPassword === 'admin123')) matched = true;
-          if (cand.id === 'ADM-02' && (loginPassword === 'sikar123' || loginPassword === '4321' || loginPassword === '1234' || loginPassword === 'ramesh123' || loginPassword === 'ramesh')) matched = true;
-          if (cand.id === 'ADM-03' && (loginPassword === 'dinesh123' || loginPassword === '5678' || loginPassword === '1234' || loginPassword === 'dinesh123' || loginPassword === 'dinesh')) matched = true;
-          if (cand.id === 'ADM-263' && (loginPassword === 'khata123' || loginPassword === 'pooja789' || loginPassword === '1234' || loginPassword === 'pooja123' || loginPassword === 'pooja')) matched = true;
-          if (cand.id === 'ADM-919' && (loginPassword === 'vikrampass' || loginPassword === '1234' || loginPassword === 'vikram123' || loginPassword === 'vikram')) matched = true;
-          if (cand.id === 'ADM-903' && (loginPassword === 'suresh123' || loginPassword === '1234' || loginPassword === 'suresh123' || loginPassword === 'suresh')) matched = true;
-          // Universal staff fallback pin
-          if (loginPassword === 'sikar123' || loginPassword === '1234' || loginPassword === '123456') matched = true;
-        }
-
         if (matched) {
           if (cand.active === 0) {
             return res.status(403).json({ error: 'This sub-admin account is currently disabled. Please contact Super Admin.' });
@@ -506,6 +618,7 @@ app.post('/api/auth/login', (req, res) => {
 
     res.json({
       success: true,
+      token: signAdminToken(admin.id),   // SECURITY: return signed admin token
       user: {
         id: admin.id,
         name: admin.name,
@@ -609,8 +722,8 @@ const handleCredentialsUpdate = (req, res) => {
   }
 };
 
-app.put('/api/auth/credentials', handleCredentialsUpdate);
-app.post('/api/auth/credentials', handleCredentialsUpdate);
+app.put('/api/auth/credentials', requireAdmin, handleCredentialsUpdate);
+app.post('/api/auth/credentials', requireAdmin, handleCredentialsUpdate);
 
 app.get('/api/auth/subadmins', (req, res) => {
   try {
@@ -643,7 +756,7 @@ app.get('/api/auth/subadmins', (req, res) => {
   }
 });
 
-app.post('/api/auth/subadmins', (req, res) => {
+app.post('/api/auth/subadmins', requireAdmin, (req, res) => {
   try {
     const { username, email, name, role, pin, password, permissions } = req.body;
     const finalUsername = String(email || username || (name ? name.toLowerCase().replace(/\s+/g, '_') : '')).trim().toLowerCase();
@@ -749,7 +862,7 @@ app.post('/api/auth/subadmins', (req, res) => {
   }
 });
 
-app.put('/api/auth/subadmins/:id', (req, res) => {
+app.put('/api/auth/subadmins/:id', requireAdmin, (req, res) => {
   try {
     const { id } = req.params;
     const target = db.prepare('SELECT * FROM admin_users WHERE id = ? OR LOWER(TRIM(username)) = ?').get(id, id.toLowerCase());
@@ -818,7 +931,7 @@ app.put('/api/auth/subadmins/:id', (req, res) => {
   }
 });
 
-app.delete('/api/auth/subadmins/:id', (req, res) => {
+app.delete('/api/auth/subadmins/:id', requireAdmin, (req, res) => {
   try {
     const { id } = req.params;
     if (id === 'ADM-01') return res.status(400).json({ error: 'Cannot delete primary master super admin account' });
@@ -3279,7 +3392,7 @@ app.get('/api/products', async (req, res) => {
   }
 });
 
-app.post('/api/products', async (req, res) => {
+app.post('/api/products', requireAdmin, async (req, res) => {
   try {
     const { id, title, sku, category, price, mrp, cost, stock, lowStockThreshold, spec, image, description, displayOrder, active } = req.body;
     if (!title || price === undefined || !category) return res.status(400).json({ error: 'Title, price, and category are required' });
@@ -3336,7 +3449,7 @@ app.post('/api/products', async (req, res) => {
   }
 });
 
-app.put('/api/products/:id', async (req, res) => {
+app.put('/api/products/:id', requireAdmin, async (req, res) => {
   try {
     const { title, category, price, mrp, cost, stock, lowStockThreshold, spec, image, description, active } = req.body;
     const now = new Date().toISOString();
@@ -3407,7 +3520,7 @@ app.put('/api/products/:id', async (req, res) => {
   }
 });
 
-app.delete('/api/products/:id', async (req, res) => {
+app.delete('/api/products/:id', requireAdmin, async (req, res) => {
   try {
     const { id } = req.params;
     const now = new Date().toISOString();
@@ -3515,7 +3628,7 @@ app.get('/api/categories', async (req, res) => {
   }
 });
 
-app.post('/api/categories', async (req, res) => {
+app.post('/api/categories', requireAdmin, async (req, res) => {
   try {
     const { id, name, tagline, image } = req.body;
     if (!name || !name.trim()) return res.status(400).json({ error: 'Category name is required' });
@@ -3549,7 +3662,7 @@ app.post('/api/categories', async (req, res) => {
   }
 });
 
-app.put('/api/categories/:id', async (req, res) => {
+app.put('/api/categories/:id', requireAdmin, async (req, res) => {
   try {
     const catId = req.params.id;
     const { name, tagline, image, active, displayOrder } = req.body;
@@ -3577,7 +3690,7 @@ app.put('/api/categories/:id', async (req, res) => {
   }
 });
 
-app.delete('/api/categories/:id', async (req, res) => {
+app.delete('/api/categories/:id', requireAdmin, async (req, res) => {
   try {
     const catId = req.params.id;
     const { reassignTo } = { ...req.query, ...req.body };
@@ -3613,7 +3726,7 @@ app.get('/api/coupons', (req, res) => {
   }
 });
 
-app.post('/api/coupons', (req, res) => {
+app.post('/api/coupons', requireAdmin, (req, res) => {
   try {
     const code = req.body.code;
     const discountVal = req.body.discountVal !== undefined ? req.body.discountVal : req.body.discount_val;
@@ -3653,7 +3766,7 @@ app.post('/api/coupons', (req, res) => {
   }
 });
 
-app.put('/api/coupons/:code', (req, res) => {
+app.put('/api/coupons/:code', requireAdmin, (req, res) => {
   try {
     const { code } = req.params;
     const upperCode = code.trim().toUpperCase();
@@ -3742,7 +3855,7 @@ app.post('/api/coupons/validate', (req, res) => {
   }
 });
 
-app.delete('/api/coupons/:code', (req, res) => {
+app.delete('/api/coupons/:code', requireAdmin, (req, res) => {
   try {
     const { code } = req.params;
     const upperCode = code.trim().toUpperCase();
@@ -4510,7 +4623,7 @@ app.get('/api/bundles', (req, res) => {
   }
 });
 
-app.post('/api/bundles', (req, res) => {
+app.post('/api/bundles', requireAdmin, (req, res) => {
   try {
     const { title, category, desc, price, mrp, badge, badgeClass, badge_class, image, specs, items, sort_order, active } = req.body;
     if (!title || price === undefined) return res.status(400).json({ error: 'Bundle title and price are required' });
@@ -4578,7 +4691,7 @@ app.post('/api/bundles', (req, res) => {
   }
 });
 
-app.put('/api/bundles/:id', (req, res) => {
+app.put('/api/bundles/:id', requireAdmin, (req, res) => {
   try {
     const { id } = req.params;
     const { title, category, desc, price, mrp, badge, badgeClass, badge_class, image, specs, items, active, sort_order } = req.body;
@@ -4681,7 +4794,7 @@ app.patch('/api/bundles/:id/toggle', (req, res) => {
   }
 });
 
-app.delete('/api/bundles/:id', (req, res) => {
+app.delete('/api/bundles/:id', requireAdmin, (req, res) => {
   try {
     const { id } = req.params;
     const result = db.prepare('DELETE FROM event_bundles WHERE id = ?').run(id);
@@ -4699,9 +4812,22 @@ app.delete('/api/bundles/:id', (req, res) => {
 function getSystemOtp() {
   try {
     const row = db.prepare("SELECT value FROM website_settings WHERE key = 'default_otp'").get();
-    if (row && row.value && String(row.value).trim()) return String(row.value).trim();
+    if (row && row.value && String(row.value).trim()) {
+      const val = String(row.value).trim();
+      if ((val === '9999' || val === '1234') && !IS_DEV && process.env.ALLOW_TEST_OTP !== 'true') {
+        // Fall through to secure random in production
+      } else {
+        return val;
+      }
+    }
   } catch (e) {}
-  return '9999';
+  // SECURITY: 9999 fallback ONLY allowed in dev or when explicitly enabled.
+  // In production without config, generate a random 6-digit code that the
+  // admin must retrieve from the DB or WhatsApp (never guessable).
+  if (IS_DEV || process.env.ALLOW_TEST_OTP === 'true') {
+    return '9999';
+  }
+  return String(Math.floor(100000 + Math.random() * 900000));
 }
 
 app.get('/api/settings/otp', (req, res) => {
@@ -4713,7 +4839,7 @@ app.get('/api/settings/otp', (req, res) => {
   }
 });
 
-app.post('/api/settings/otp', (req, res) => {
+app.post('/api/settings/otp', requireAdmin, (req, res) => {
   try {
     const { otp } = req.body;
     if (!otp || String(otp).trim().length < 4) {
@@ -4923,8 +5049,8 @@ const handleOtpSend = async (req, res) => {
   }
 };
 
-app.post('/api/otp/send', handleOtpSend);
-app.post('/api/auth/otp/send', handleOtpSend);
+app.post('/api/otp/send', authLimiter, handleOtpSend);
+app.post('/api/auth/otp/send', authLimiter, handleOtpSend);
 
 const handleOtpVerify = (req, res) => {
   try {
@@ -4937,14 +5063,18 @@ const handleOtpVerify = (req, res) => {
 
     const record = db.prepare('SELECT * FROM otp_codes WHERE phone = ?').get(cleanPhone);
 
-    const isSystemOtpValid = cleanOtp === '9999' || cleanOtp === sysOtp || cleanOtp === '1234';
+    // SECURITY: 9999/1234 shortcuts only in dev or explicit opt-in.
+    const allowTestOtp = IS_DEV || process.env.ALLOW_TEST_OTP === 'true';
+    const isSystemOtpValid =
+      (allowTestOtp && (cleanOtp === '9999' || cleanOtp === '1234')) ||
+      cleanOtp === sysOtp;
     const isRecordOtpValid = record && record.otp_code === cleanOtp && new Date().toISOString() <= record.expires_at;
 
     if (!isSystemOtpValid && !isRecordOtpValid) {
       if (record) {
         db.prepare('UPDATE otp_codes SET attempts = attempts + 1 WHERE phone = ?').run(cleanPhone);
       }
-      return res.status(400).json({ error: 'Invalid OTP code. Please enter the default WhatsApp OTP (9999).' });
+      return res.status(400).json({ error: 'Invalid OTP code. Please enter the correct verification code.' });
     }
 
     db.prepare(`
@@ -5026,7 +5156,7 @@ app.get('/api/settings/whatsapp', (req, res) => {
   }
 });
 
-app.post('/api/settings/whatsapp', (req, res) => {
+app.post('/api/settings/whatsapp', requireAdmin, (req, res) => {
   try {
     const { apiKey, phoneId, provider, templateName, defaultOtp } = req.body;
     const now = new Date().toISOString();
@@ -5332,7 +5462,7 @@ const handleTruecallerStatus = (req, res) => {
         `).run('AUD-' + Math.floor(100000 + Math.random() * 900000), cust.name, `Customer verified via Truecaller 1-Tap (+91 ${cleanPhone})`, now);
       } catch (e) {}
 
-      const token = 'tc_live_' + Buffer.from(`${cleanPhone}:${Date.now()}:${cust.id}`).toString('base64');
+      const token = signTruecallerToken(cleanPhone);
 
       return res.json({
         success: true,
@@ -5370,9 +5500,17 @@ const handleTruecallerVerify = (req, res) => {
     }
 
     // STRICT CHECK: Reject arbitrary unverified submissions
+    // SECURITY: do NOT trust token prefix. Verify HMAC signature AND
+    // ensure the phone inside the token matches the one being claimed.
+    let isTokenVerified = false;
+    if (truecallerToken && typeof truecallerToken === 'string') {
+      const tokenPhone = verifyTruecallerToken(truecallerToken);
+      if (tokenPhone && tokenPhone === cleanPhone) {
+        isTokenVerified = true;
+      }
+    }
     const session = requestId ? truecallerSessions.get(requestId) : null;
     const isSessionVerified = session && session.status === 'verified' && session.phone === cleanPhone;
-    const isTokenVerified = truecallerToken && (truecallerToken.startsWith('tc_live_') || truecallerToken.startsWith('tc_session_'));
 
     if (!isSessionVerified && !isTokenVerified) {
       return res.status(401).json({
@@ -5408,7 +5546,7 @@ const handleTruecallerVerify = (req, res) => {
       `).run('AUD-' + Math.floor(100000 + Math.random() * 900000), cust.name, `Customer verified via Truecaller 1-Tap (+91 ${cleanPhone})`, now);
     } catch (e) {}
 
-    const token = 'tc_live_' + Buffer.from(`${cleanPhone}:${Date.now()}:${cust.id}`).toString('base64');
+    const token = signTruecallerToken(cleanPhone);
 
     res.json({
       success: true,
@@ -5460,7 +5598,7 @@ app.get('/api/settings/truecaller', (req, res) => {
   }
 });
 
-app.post('/api/settings/truecaller', (req, res) => {
+app.post('/api/settings/truecaller', requireAdmin, (req, res) => {
   try {
     const { appKey, partnerId, mode, enabled } = req.body;
     const now = new Date().toISOString();
@@ -5633,7 +5771,7 @@ app.get('/api/settings', async (req, res) => {
   }
 });
 
-app.post('/api/settings/theme', (req, res) => {
+app.post('/api/settings/theme', requireAdmin, (req, res) => {
   try {
     const { theme } = req.body;
     if (!theme) return res.status(400).json({ error: 'Theme name is required' });
@@ -5667,7 +5805,7 @@ app.post('/api/settings/theme', (req, res) => {
   }
 });
 
-app.post('/api/settings', async (req, res) => {
+app.post('/api/settings', requireAdmin, async (req, res) => {
   try {
     const settings = (req.body && req.body.settings && typeof req.body.settings === 'object') ? req.body.settings : req.body;
     if (!settings || typeof settings !== 'object' || Object.keys(settings).length === 0) return res.status(400).json({ error: 'Settings object required' });
@@ -5763,7 +5901,7 @@ app.get('/api/site-texts', async (req, res) => {
   }
 });
 
-app.post('/api/site-texts', async (req, res) => {
+app.post('/api/site-texts', requireAdmin, async (req, res) => {
   try {
     const texts = req.body;
     if (!texts || typeof texts !== 'object') return res.status(400).json({ error: 'Valid site texts object required' });
@@ -5979,7 +6117,7 @@ app.get('/api/delivery-zones/check', (req, res) => {
   }
 });
 
-app.post('/api/delivery-zones', (req, res) => {
+app.post('/api/delivery-zones', requireAdmin, (req, res) => {
   try {
     const { id, area_name, areaName, pincode, corridor, keywords, eta, min_order, minOrder, delivery_charge, deliveryCharge, serviceable } = req.body;
     const finalArea = String(area_name || areaName || corridor || '').trim();
@@ -6017,7 +6155,7 @@ app.post('/api/delivery-zones', (req, res) => {
   }
 });
 
-app.put('/api/delivery-zones/:id', (req, res) => {
+app.put('/api/delivery-zones/:id', requireAdmin, (req, res) => {
   try {
     const zoneId = req.params.id;
     const existing = db.prepare('SELECT * FROM delivery_zones WHERE id = ?').get(zoneId);
@@ -6047,7 +6185,7 @@ app.put('/api/delivery-zones/:id', (req, res) => {
   }
 });
 
-app.delete('/api/delivery-zones/:id', (req, res) => {
+app.delete('/api/delivery-zones/:id', requireAdmin, (req, res) => {
   try {
     db.prepare('DELETE FROM delivery_zones WHERE id = ?').run(req.params.id);
     res.json({ success: true });
