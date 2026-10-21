@@ -2199,6 +2199,7 @@ function createOnlineOrderTransaction({ orderId: customOrderId, customerName, cu
 
     // Customer record
     const cleanPrimary = (primaryPhone || '').replace(/\D/g, '');
+    const isInvalidPhone = cleanPrimary.length < 10;
     // SECURITY: OTP system removed. Legacy otp_codes.verified lookup kept
     // ONLY for backward compat with users who verified via OTP before migration.
     const legacyOtpRec = cleanPrimary.length >= 10

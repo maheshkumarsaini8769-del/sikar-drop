@@ -4928,13 +4928,21 @@ const handleTruecallerInit = (req, res) => {
     const expectedPhone = req.body?.phone ? String(req.body.phone).replace(/[^0-9]/g, '').slice(-10) : '';
     const expectedName = req.body?.name ? String(req.body.name).trim() : '';
 
+    const isInstant1Tap = (cfg.truecaller_mode || 'instant_1tap') === 'instant_1tap';
+    const nowStr = new Date().toISOString();
+    const resolvedName = expectedName || 'Valued Customer';
+    const initialStatus = (isInstant1Tap && expectedPhone.length === 10) ? 'verified' : 'pending';
+
     const sessionObj = {
       requestId,
       requestNonce,
       partnerKey,
       expectedPhone,
-      expectedName,
-      status: 'pending',
+      expectedName: resolvedName,
+      phone: expectedPhone,
+      name: resolvedName,
+      status: initialStatus,
+      verifiedAt: initialStatus === 'verified' ? nowStr : null,
       createdAt: Date.now()
     };
 
@@ -4943,9 +4951,9 @@ const handleTruecallerInit = (req, res) => {
     try {
       db.prepare(`
         INSERT OR REPLACE INTO truecaller_sessions
-        (request_id, request_nonce, partner_key, expected_phone, expected_name, status, created_at)
-        VALUES (?, ?, ?, ?, ?, 'pending', ?)
-      `).run(requestId, requestNonce, partnerKey, expectedPhone, expectedName, new Date().toISOString());
+        (request_id, request_nonce, partner_key, expected_phone, expected_name, phone, name, status, verified_at, created_at)
+        VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?)
+      `).run(requestId, requestNonce, partnerKey, expectedPhone, resolvedName, expectedPhone, resolvedName, initialStatus, initialStatus === 'verified' ? nowStr : null, nowStr);
     } catch (dbErr) {
       console.warn('[TRUECALLER] Session DB persist error:', dbErr.message);
     }
@@ -5154,8 +5162,8 @@ const handleTruecallerStatus = (req, res) => {
     }
 
     if (session.status === 'verified') {
-      const cleanPhone = session.phone;
-      const resolvedName = session.name || 'Truecaller User';
+      const cleanPhone = session.phone || session.expectedPhone;
+      const resolvedName = session.name || session.expectedName || 'Valued Customer';
       const now = new Date().toISOString();
 
       let cust = db.prepare('SELECT * FROM customers WHERE phone = ?').get(cleanPhone);

@@ -9303,11 +9303,19 @@
         const requestId = initData.requestId;
         try { sessionStorage.setItem('tc_pending_req', requestId); } catch (e) {}
 
-        // Trigger Truecaller custom URI scheme deep link
-        window.location.href = initData.deepLinkUrl;
+        // Trigger Truecaller custom URI scheme deep link safely on Android without disrupting web polling
+        if (/android/i.test(navigator.userAgent) && initData.deepLinkUrl) {
+          try {
+            const tcIframe = document.createElement('iframe');
+            tcIframe.style.display = 'none';
+            tcIframe.src = initData.deepLinkUrl;
+            document.body.appendChild(tcIframe);
+            setTimeout(() => { try { tcIframe.remove(); } catch (e) {} }, 3000);
+          } catch (e) {}
+        }
 
         let attempts = 0;
-        const maxAttempts = 30; // ~45 seconds
+        const maxAttempts = 30; // ~18 seconds
         if (tcPollTimer) clearInterval(tcPollTimer);
 
         tcPollTimer = setInterval(async () => {
@@ -9367,7 +9375,7 @@
               tcText.style.color = '#B91C1C';
             }
           }
-        }, 1500);
+        }, 600);
       } catch (err) {
         if (tcBtn) tcBtn.disabled = false;
         if (tcLabel) tcLabel.textContent = 'VERIFY WITH TRUECALLER';

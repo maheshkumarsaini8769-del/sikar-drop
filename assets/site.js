@@ -1414,11 +1414,19 @@ async function startTruecaller1TapFlow() {
     const requestId = initData.requestId;
     try { sessionStorage.setItem('tc_pending_req', requestId); } catch (e) {}
 
-    // Trigger Truecaller custom URI scheme deep link
-    window.location.href = initData.deepLinkUrl;
+    // Trigger Truecaller custom URI scheme deep link safely on Android without disrupting web polling
+    if (/android/i.test(navigator.userAgent) && initData.deepLinkUrl) {
+      try {
+        const tcIframe = document.createElement('iframe');
+        tcIframe.style.display = 'none';
+        tcIframe.src = initData.deepLinkUrl;
+        document.body.appendChild(tcIframe);
+        setTimeout(() => { try { tcIframe.remove(); } catch (e) {} }, 3000);
+      } catch (e) {}
+    }
 
     let attempts = 0;
-    const maxAttempts = 30; // ~45 seconds
+    const maxAttempts = 30; // ~18 seconds
     if (sikarTcPollTimer) clearInterval(sikarTcPollTimer);
 
     sikarTcPollTimer = setInterval(async () => {
@@ -1478,7 +1486,7 @@ async function startTruecaller1TapFlow() {
           tcText.style.color = '#B91C1C';
         }
       }
-    }, 1500);
+    }, 600);
   } catch (err) {
     if (tcBtn) tcBtn.disabled = false;
     if (tcLabel) tcLabel.textContent = 'VERIFY WITH TRUECALLER';
@@ -1493,7 +1501,7 @@ async function startTruecaller1TapFlow() {
 }
 
 function handleAuthSuccess(userData, method = 'Truecaller Verified') {
-  currentUser = {
+  const verifiedUser = {
     id: userData.id || ('CUST-' + Math.floor(1000 + Math.random() * 9000)),
     name: userData.name || 'Valued Customer',
     phone: String(userData.phone).replace(/[^0-9]/g, '').slice(-10),
@@ -1503,7 +1511,10 @@ function handleAuthSuccess(userData, method = 'Truecaller Verified') {
     verifiedBy: method,
     truecallerBadge: true
   };
-  localStorage.setItem('sikar_user', JSON.stringify(currentUser));
+  // Keep both the window property and any page-level binding in sync.
+  window.currentUser = verifiedUser;
+  currentUser = verifiedUser;
+  localStorage.setItem('sikar_user', JSON.stringify(verifiedUser));
 
   const existingIdx = (typeof adminUsers !== 'undefined' && Array.isArray(adminUsers))
     ? adminUsers.findIndex(u => (u.phone && u.phone === currentUser.phone))
@@ -1806,7 +1817,7 @@ async function dispatchFinalWhatsAppOrder() {
       method: 'POST',
       headers: { 'Content-Type': 'application/json' },
       body: JSON.stringify({
-        customerName: currentUser ? currentUser.name : 'Valued Customer',
+        customerName: signedInUser ? signedInUser.name : 'Valued Customer',
         customerPhone: loginPhoneVal,
         loginPhone: loginPhoneVal,
         deliveryPhone: deliveryPhoneVal,
@@ -1842,14 +1853,14 @@ async function dispatchFinalWhatsAppOrder() {
 
       // Persist order to customer order history for live tracking
       try {
-        const cleanPhone = String(loginPhoneVal || deliveryPhoneVal || (currentUser && currentUser.phone) || '').replace(/\D/g, '').slice(-10);
+        const cleanPhone = String(loginPhoneVal || deliveryPhoneVal || (signedInUser && signedInUser.phone) || '').replace(/\D/g, '').slice(-10);
         localStorage.setItem('sikar_last_order_id', orderId);
         if (cleanPhone) localStorage.setItem('sikar_last_order_phone', cleanPhone);
         const myOrders = JSON.parse(localStorage.getItem('sikar_my_orders') || '[]');
         myOrders.unshift({
           id: orderId,
           phone: cleanPhone,
-          customerName: currentUser ? currentUser.name : 'Valued Customer',
+          customerName: signedInUser ? signedInUser.name : 'Valued Customer',
           total: finalTotal,
           corridor: corridor,
           date: new Date().toISOString(),
@@ -1870,7 +1881,7 @@ async function dispatchFinalWhatsAppOrder() {
         ? `Login Phone: ${loginPhoneVal}\nAddress Phone: ${deliveryPhoneVal}`
         : `Phone: ${loginPhoneVal}`;
 
-      const msg = `*NEW SIKAR DROP BILTY DISPATCH*\nOrder ID: ${orderId}\nCustomer: ${currentUser ? currentUser.name : 'Customer'}\n${phoneLines}\nCorridor: ${corridor}\nAddress: ${fullAddress}\n\n*Items Ordered:*\n${itemsList}\n\n*Total Amount:* Rs.${finalTotal}\n*Camper Notice:* 100% Factory Sealed Cases Only.`;
+      const msg = `*NEW SIKAR DROP BILTY DISPATCH*\nOrder ID: ${orderId}\nCustomer: ${signedInUser ? signedInUser.name : 'Customer'}\n${phoneLines}\nCorridor: ${corridor}\nAddress: ${fullAddress}\n\n*Items Ordered:*\n${itemsList}\n\n*Total Amount:* Rs.${finalTotal}\n*Camper Notice:* 100% Factory Sealed Cases Only.`;
 
       const waUrl = `https://wa.me/${depotPhone}?text=${encodeURIComponent(msg)}`;
       showToast(`Order #${orderId} booked! Dispatching to WhatsApp...`);
