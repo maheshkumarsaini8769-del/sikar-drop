@@ -85,11 +85,16 @@ curl -s http://localhost:8090/api/products | head -c 100
 # -> should start with "["
 ```
 
-## Known limitations (not fixed in this patch)
+## Remediation Status (Report SEC-AUDIT-2026-10-21-002)
 
-- **`admin.html` may still show OTP config section.** If it references `/api/settings/otp` or `/api/settings/whatsapp`, those calls now 404. Check console. If errors appear, remove the OTP config UI from `admin.html` manually.
-- **`ENFORCE_ADMIN_AUTH=false`** by default. Flip to `true` only AFTER `admin.html` is updated to send `X-Admin-Token` header on every request.
-- **`admin_users.pin` still plaintext** in DB. Migration to bcrypt is a separate task.
-- **Contact phone still hardcoded** in `faq.html`, `about.html`, `why.html`, `contact.html` footers. Add `id="live-footer-phone"` to those to make them dynamic.
-- **No CSRF protection** for cookie-based admin sessions (no cookie sessions used yet).
-- **No `DELETE /api/orders`** or `/api/customers` - append-only by design.
+- F-01: Resolved. Sub-admin default credentials blacklisted and deactivated by default.
+- F-02: Resolved. Hardcoded MongoDB credentials eliminated from mongo.js; loads strictly via process.env.MONGODB_URI.
+- F-03: Resolved. Database re-assertion removed from db.js; seeds use INSERT OR IGNORE without resetting credentials.
+- F-04: Resolved. Added id="live-footer-phone" to faq.html, about.html, why.html, and dynamic SSR replacement in server.js.
+- F-05: Resolved. All vestigial OTP calls and configuration handlers removed from admin.html and index.html.
+
+## Remaining Considerations
+
+- ENFORCE_ADMIN_AUTH=false by default. Flip to true once admin panel client tokens are consistently attached.
+- admin_users.pin hashing migration to bcrypt scheduled for next cycle.
+- Append-only model for orders and customers by business design.

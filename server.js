@@ -545,6 +545,28 @@ app.post('/api/auth/login', (req, res) => {
       return res.status(400).json({ error: 'Email and password are required' });
     }
 
+    // SECURITY: Block all known default seeded passwords unless explicitly set in environment
+    const DISALLOWED_DEFAULT_PASSWORDS = new Set([
+      'sikar123',
+      'dinesh123',
+      'pooja789',
+      'vikrampass',
+      'suresh123',
+      'subadmin123',
+      'mahesh99830',
+      '1234',
+      '123456',
+      'admin123',
+      'password'
+    ]);
+
+    const isEnvSuperPass = Boolean(process.env.SUPER_ADMIN_PASSWORD && loginPassword === process.env.SUPER_ADMIN_PASSWORD);
+    const isEnvSubPass = Boolean(process.env.SUBADMIN_PASSWORD && loginPassword === process.env.SUBADMIN_PASSWORD);
+
+    if (DISALLOWED_DEFAULT_PASSWORDS.has(loginPassword) && !isEnvSuperPass && !isEnvSubPass) {
+      return res.status(401).json({ error: 'Default or insecure password disabled. Password reset required.' });
+    }
+
     const emailPrefix = loginEmail.includes('@') ? loginEmail.split('@')[0] : loginEmail;
     const isSuperAdminEmail = (
       loginEmail === 'maheshsaini10101@gmail.com' ||
@@ -569,8 +591,7 @@ app.post('/api/auth/login', (req, res) => {
       loginEmail.startsWith('subadmin@')
     );
     // SECURITY: env-var based; no hardcoded fallback in production.
-    const SUBADMIN_PASS = process.env.SUBADMIN_PASSWORD ||
-                          (IS_DEV ? 'subadmin123' : null);
+    const SUBADMIN_PASS = process.env.SUBADMIN_PASSWORD || null;
     const isSubAdminPass = !!SUBADMIN_PASS && loginPassword === SUBADMIN_PASS;
 
     let admin = null;
@@ -629,8 +650,15 @@ app.post('/api/auth/login', (req, res) => {
       );
 
       for (const cand of candidates) {
+        if (cand.active === 0) {
+          continue; // Inactive or disabled accounts cannot log in
+        }
         const storedPin = String(cand.pin || '').trim();
         const storedHash = String(cand.password_hash || '').trim();
+
+        if (storedPin.startsWith('DISABLED_') || storedPin === '') {
+          continue; // Accounts with locked or disabled PIN cannot authenticate
+        }
 
         let matched = (
           loginPassword === storedPin ||
@@ -639,9 +667,6 @@ app.post('/api/auth/login', (req, res) => {
         );
 
         if (matched) {
-          if (cand.active === 0) {
-            return res.status(403).json({ error: 'This sub-admin account is currently disabled. Please contact Super Admin.' });
-          }
           admin = cand;
           break;
         }
@@ -2071,6 +2096,7 @@ app.post('/api/orders', (req, res) => {
       subtotal,
       discount,
       total,
+      couponCode: b.couponCode || b.coupon_code || '',
       paymentMethod,
       paymentStatus,
       notes,
@@ -6225,8 +6251,11 @@ function renderStorefrontPage(file) {
       if (rawPh) {
         const cleanPh = String(rawPh).replace(/[^0-9+]/g, '');
         html = html.replace(/\+91 98290 11223/g, rawPh);
+        html = html.replace(/\+91 98290 12345/g, rawPh);
         html = html.replace(/tel:\+?919829011223/g, 'tel:' + cleanPh);
+        html = html.replace(/tel:\+?919829012345/g, 'tel:' + cleanPh);
         html = html.replace(/tel:9829000000/g, 'tel:' + cleanPh);
+        html = html.replace(/<span id="live-footer-phone">[^<]*<\/span>/g, `<span id="live-footer-phone">${escapeSeoHtml(rawPh)}</span>`);
       }
       if (t.heroPill) {
         html = html.replace(/<span id="live-hero-pill-text">[^<]*<\/span>/, `<span id="live-hero-pill-text">${escapeSeoHtml(t.heroPill)}</span>`);

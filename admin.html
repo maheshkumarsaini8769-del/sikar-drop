@@ -6813,7 +6813,6 @@
     };
 
     const DEFAULT_PIN = '1234';
-    const DEFAULT_OTP = '9999';
 
     // APP STATE (LOADED FROM LOCALSTORAGE)
     let adminProducts = JSON.parse(localStorage.getItem('sikar_admin_products')) || DEFAULT_PRODUCTS;
@@ -6833,7 +6832,6 @@
     let adminUsers = JSON.parse(localStorage.getItem('sikar_admin_users')) || DEFAULT_USERS;
     let adminSeo = JSON.parse(localStorage.getItem('sikar_admin_seo')) || DEFAULT_SEO;
     let adminPin = localStorage.getItem('sikar_admin_pin') || DEFAULT_PIN;
-    let adminOtp = localStorage.getItem('sikar_admin_otp') || DEFAULT_OTP;
 
     let adminAuth = sessionStorage.getItem('sikar_portal_auth') === 'true';
     let currentOperator = JSON.parse(sessionStorage.getItem('sikar_portal_operator')) || (adminAuth ? { id: 'ADM-01', name: 'Mahesh Kumar Saini', role: 'Super Admin', email: 'maheshsaini10101@gmail.com', username: 'maheshsaini10101@gmail.com', perms: 'all' } : null);
@@ -14249,28 +14247,6 @@
           <td class="tabular"><strong>${u.orders || 1}</strong></td>
         </tr>
       `).join('');
-    }
-
-    async function saveDefaultOtp() {
-      const otp = document.getElementById('cfg-default-otp').value.trim() || '9999';
-      adminOtp = otp;
-      localStorage.setItem('sikar_admin_otp', adminOtp);
-
-      try {
-        const res = await fetch('/api/settings/otp', {
-          method: 'POST',
-          headers: { 'Content-Type': 'application/json' },
-          body: JSON.stringify({ otp: adminOtp })
-        });
-        const data = await res.json();
-        if (res.ok) {
-          showToast(`Default OTP updated live to '${adminOtp}'!`);
-        } else {
-          showToast(data.error || `Default OTP saved: '${adminOtp}'`);
-        }
-      } catch (e) {
-        showToast(`Default OTP saved locally: '${adminOtp}'`);
-      }
     }
 
     // =========================================================

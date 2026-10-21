@@ -1149,6 +1149,144 @@ function calculateSubtotal() {
   return sub;
 }
 
+// ==========================================
+// 3.5 UNIFIED CHECKOUT GATE
+// Every storefront page funnels through the same flow:
+//   Add to Cart -> Click "Place Order"
+//     -> Already logged in  => straight to the order-confirm step
+//     -> Not logged in      => login first, then CONTINUE to the order step
+// Pages that do not ship their own login / order-confirm markup get the
+// shared modals injected automatically by ensureCheckoutModals().
+// ==========================================
+
+const SIKAR_LOGIN_MODAL_HTML = `
+  <div class="modal-backdrop" id="login-modal" role="dialog" aria-modal="true" aria-labelledby="login-modal-title" data-sikar-injected="1">
+    <div class="auth-modal-dialog" style="max-width: 440px; text-align: center; padding: 26px 22px;">
+      <button type="button" class="modal-close-icon" onclick="closeLoginModal()" aria-label="Close login dialog" style="position: absolute; right: 14px; top: 14px; background: none; border: none; cursor: pointer; color: #64748B;">
+        <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" width="20" height="20"><line x1="18" y1="6" x2="6" y2="18"></line><line x1="6" y1="6" x2="18" y2="18"></line></svg>
+      </button>
+      <div style="margin: 0 auto 12px; width: 58px; height: 58px; border-radius: 50%; background: linear-gradient(135deg, #EBF5FF 0%, #DBEAFE 100%); display: flex; align-items: center; justify-content: center; border: 2px solid #BFDBFE; box-shadow: 0 4px 14px rgba(0, 102, 245, 0.15);">
+        <svg viewBox="0 0 24 24" width="32" height="32" fill="#0066F5">
+          <path d="M12 2C6.48 2 2 6.48 2 12c0 1.85.5 3.58 1.38 5.07L2.1 21.9l4.98-1.28C8.51 21.49 10.2 22 12 22c5.52 0 10-4.48 10-10S17.52 2 12 2zm-1 14.5l-3.5-3.5 1.41-1.41L11 13.67l5.59-5.59L18 9.5l-7 7z"></path>
+        </svg>
+      </div>
+      <h3 id="login-modal-title" style="margin: 0 0 4px; font-size: 1.28rem; font-family: var(--font-heading); font-weight: 800; color: #0B192C;">
+        Truecaller Mobile Verification
+      </h3>
+      <p style="font-size: 0.84rem; color: #64748B; margin: 0 0 16px; line-height: 1.4;">
+        Verify your mobile number to continue with your order dispatch.
+      </p>
+      <div style="margin: 0 0 12px; text-align: left;">
+        <label for="login-phone-input" style="font-weight: 700; color: #0F172A; font-size: 0.84rem; display: flex; justify-content: space-between; margin-bottom: 4px;">
+          <span>Mobile Number</span>
+          <span style="font-size: 0.72rem; color: #0066F5; font-weight: 700;">Zero OTP &bull; 1-Tap SIM Check</span>
+        </label>
+        <div style="position: relative; display: flex; align-items: center;">
+          <span style="position: absolute; left: 14px; font-weight: 800; color: #64748B; font-size: 1rem;">+91</span>
+          <input type="tel" id="login-phone-input" placeholder="98290 12345" maxlength="10" value="" style="padding-left: 52px; font-weight: 800; letter-spacing: 0.05em; font-size: 1.05rem; width: 100%; border: 1.5px solid #CBD5E1; border-radius: 10px; height: 46px; background: #FFFFFF; box-sizing: border-box;">
+        </div>
+      </div>
+      <div style="margin: 0 0 14px; text-align: left;">
+        <label for="login-name-input" style="font-weight: 700; color: #0F172A; font-size: 0.84rem; display: block; margin-bottom: 4px;">Your Name (Optional)</label>
+        <input type="text" id="login-name-input" placeholder="e.g. Ramesh Saini" style="width: 100%; font-weight: 600; padding: 10px 12px; border: 1.5px solid #CBD5E1; border-radius: 10px; height: 42px; background: #FFFFFF; box-sizing: border-box;">
+      </div>
+      <button type="button" id="btn-truecaller-1tap" onclick="startTruecaller1TapFlow()" style="background: #0066F5; border: 1px solid #0056D2; display: flex; align-items: center; justify-content: center; gap: 10px; padding: 13px 20px; border-radius: 10px; font-weight: 800; font-size: 0.98rem; color: #FFFFFF; cursor: pointer; transition: all 0.2s; width: 100%; box-shadow: 0 6px 18px rgba(0, 102, 245, 0.35);">
+        <svg viewBox="0 0 24 24" width="22" height="22" fill="#FFFFFF"><path d="M12 2C6.48 2 2 6.48 2 12c0 1.85.5 3.58 1.38 5.07L2.1 21.9l4.98-1.28C8.51 21.49 10.2 22 12 22c5.52 0 10-4.48 10-10S17.52 2 12 2zm-1 14.5l-3.5-3.5 1.41-1.41L11 13.67l5.59-5.59L18 9.5l-7 7z"></path></svg>
+        <span id="btn-tc-label">VERIFY WITH TRUECALLER</span>
+      </button>
+      <div id="truecaller-polling-msg" style="display: none; flex-direction: column; align-items: center; gap: 8px; background: #EFF6FF; border: 1.5px solid #BFDBFE; padding: 12px 14px; border-radius: 12px; margin-top: 14px;">
+        <span style="font-size: 0.82rem; color: #1D4ED8; font-weight: 700;" id="tc-status-text">
+          Checking Truecaller... Please tap Continue inside Truecaller.
+        </span>
+      </div>
+    </div>
+  </div>`;
+
+const SIKAR_ORDER_CONFIRM_MODAL_HTML = `
+  <div class="modal-backdrop" id="order-confirm-modal" role="dialog" aria-modal="true" aria-labelledby="order-confirm-title" data-sikar-injected="1">
+    <div class="order-confirm-dialog">
+      <button type="button" class="modal-close-icon" onclick="closeOrderConfirmModal()" aria-label="Close confirmation dialog" style="position: absolute; right: 14px; top: 14px; background: none; border: none; cursor: pointer; color: #64748B;">
+        <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" width="20" height="20"><line x1="18" y1="6" x2="6" y2="18"></line><line x1="6" y1="6" x2="18" y2="18"></line></svg>
+      </button>
+      <h3 id="order-confirm-title" style="margin: 0 0 4px; font-size: 1.2rem; font-weight: 800; color: #0B192C;">Confirm Order Dispatch</h3>
+      <p style="font-size: 0.84rem; color: #64748B; margin: 0 0 16px;">Logged in successfully. Confirm the delivery details to dispatch your order.</p>
+      <div style="border-top: 1px solid var(--border-subtle); border-bottom: 1px solid var(--border-subtle); padding: 14px 0; margin-bottom: 16px;">
+        <div style="display: flex; justify-content: space-between; margin-bottom: 6px;">
+          <span style="font-size: 0.84rem; color: var(--text-muted);">Customer:</span>
+          <strong id="confirm-customer-name" style="font-size: 0.9rem; color: #0B192C;">Valued Customer</strong>
+        </div>
+        <div style="display: flex; justify-content: space-between; margin-bottom: 6px;">
+          <span style="font-size: 0.84rem; color: var(--text-muted);">Login Mobile No.:</span>
+          <strong id="confirm-customer-phone" style="font-size: 0.9rem; color: #0B192C;">+91 98290 XXXXX</strong>
+        </div>
+        <div style="display: flex; justify-content: space-between; margin-bottom: 6px;">
+          <span style="font-size: 0.84rem; color: var(--text-muted);">Total Selected:</span>
+          <strong id="confirm-total-petis" style="font-size: 0.9rem; color: #0369A1;">0 Cases</strong>
+        </div>
+        <div style="display: flex; justify-content: space-between;">
+          <span style="font-size: 0.84rem; color: var(--text-muted);">Grand Total:</span>
+          <strong id="confirm-total-amount" style="color: #0F3D64; font-size: 1.15rem;">&#8377;0</strong>
+        </div>
+      </div>
+      <div class="form-group-field">
+        <label for="delivery-phone-input">Delivery / Address Mobile Number</label>
+        <input type="tel" id="delivery-phone-input" placeholder="e.g. 94140 55667 (Receiver / Address Mobile)" maxlength="10">
+        <div style="font-size: 0.73rem; color: var(--text-light); margin-top: 3px;">Leave unchanged if your login number and delivery address number are the same.</div>
+      </div>
+      <div class="form-group-field">
+        <label for="delivery-corridor-select">Select Sikar Delivery Area</label>
+        <select id="delivery-corridor-select" style="padding: 10px; border: 1.5px solid var(--border-subtle); border-radius: var(--radius-xs); font-weight: 600;">
+          <option value="Piprali Road (Coaching Hub & Marriage Gardens)">Piprali Road</option>
+        </select>
+      </div>
+      <div class="form-group-field">
+        <label for="delivery-note-input">Address / Landmark Note</label>
+        <input type="text" id="delivery-note-input" placeholder="e.g. Near Prince School">
+      </div>
+      <button type="button" class="btn-checkout-gate" id="btn-confirm-dispatch-order" onclick="dispatchFinalWhatsAppOrder()">
+        <span>CONFIRM &amp; DISPATCH ORDER</span>
+      </button>
+    </div>
+  </div>`;
+
+function ensureCheckoutModals() {
+  if (!document.body) return;
+  if (!document.getElementById('login-modal')) {
+    const wrap = document.createElement('div');
+    wrap.innerHTML = SIKAR_LOGIN_MODAL_HTML;
+    const modal = wrap.firstElementChild;
+    if (modal) document.body.appendChild(modal);
+  }
+  if (!document.getElementById('order-confirm-modal')) {
+    const wrap = document.createElement('div');
+    wrap.innerHTML = SIKAR_ORDER_CONFIRM_MODAL_HTML;
+    const modal = wrap.firstElementChild;
+    if (modal) document.body.appendChild(modal);
+  }
+}
+
+// Canonical "user is signed in" check. Reads localStorage every time so a
+// login performed on another page (or another tab) is always respected.
+function getSignedInUser() {
+  let user = null;
+  try {
+    user = JSON.parse(localStorage.getItem('sikar_user') || 'null');
+  } catch (e) {
+    user = null;
+  }
+  if (!user || !user.phone) {
+    try {
+      const fallback = JSON.parse(sessionStorage.getItem('sikar_portal_operator') || 'null');
+      if (fallback && fallback.phone) user = fallback;
+    } catch (e) {}
+  }
+  if (user && user.phone) {
+    window.currentUser = user;
+    return user;
+  }
+  return null;
+}
+
 function proceedToCheckout() {
   const totalItems = Object.values(cart).reduce((a, b) => a + b, 0);
   if (totalItems === 0) {
@@ -1160,13 +1298,24 @@ function proceedToCheckout() {
     window.SikarAnalytics.trackCheckoutStart(totalItems, calculateSubtotal());
   }
 
-  // Check login
-  if (!currentUser) {
-    openLoginModal();
+  ensureCheckoutModals();
+
+  // Login gate: signed-in users continue straight to the order step,
+  // guests verify first and are then resumed automatically.
+  if (!getSignedInUser()) {
+    window.loginPurpose = 'checkout';
+    if (typeof loginPurpose !== 'undefined') loginPurpose = 'checkout';
+    openLoginModal('checkout');
+    showToast('Please verify your mobile number to place the order.');
     return;
   }
 
   openOrderConfirmModal();
+}
+
+// Backwards-compatible alias used by the informational pages.
+function initiateCheckoutGate() {
+  return proceedToCheckout();
 }
 
 function openLoginModal(purpose = 'nav') {

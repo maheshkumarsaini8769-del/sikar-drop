@@ -12278,24 +12278,9 @@
       }
     }
 
-    // 9. USERS & OTP HUB
+    // 9. USERS DIRECTORY
     async function renderUsersHub() {
       const tbody = document.getElementById('admin-users-tbody');
-      const otpInput = document.getElementById('adm-default-otp');
-
-      // Fetch current system OTP from backend
-      try {
-        const otpRes = await fetch('/api/settings/otp');
-        if (otpRes.ok) {
-          const otpData = await otpRes.json();
-          if (otpData && otpData.default_otp) {
-            adminOtp = String(otpData.default_otp);
-            localStorage.setItem('sikar_admin_otp', adminOtp);
-          }
-        }
-      } catch (e) {}
-
-      if (otpInput) otpInput.value = adminOtp || '9999';
       if (!tbody) return;
 
       // Try fetching live users from server
@@ -12308,7 +12293,7 @@
               <tr>
                 <td><strong>${escapeHTML(u.name || 'Customer')}</strong></td>
                 <td>${escapeHTML(u.phone || u.email || 'N/A')}</td>
-                <td><span class="badge-status in-transit">WHATSAPP / OTP</span></td>
+                <td><span class="badge-status in-transit">TRUECALLER / WHATSAPP</span></td>
                 <td>${escapeHTML(u.loginTime ? new Date(u.loginTime).toLocaleDateString('en-IN') : (u.created_at || 'Recent'))}</td>
                 <td><span class="badge-status delivered">Verified (${u.total_orders || 0} orders)</span></td>
               </tr>
@@ -12323,37 +12308,11 @@
         <tr>
           <td><strong>${escapeHTML(u.name)}</strong></td>
           <td>${escapeHTML(u.phone || u.email)}</td>
-          <td><span class="badge-status in-transit">${(u.channel || 'whatsapp').toUpperCase()}</span></td>
+          <td><span class="badge-status in-transit">${(u.channel || 'truecaller').toUpperCase()}</span></td>
           <td>${u.loginTime || 'Recent'}</td>
           <td><span class="badge-status delivered">Verified</span></td>
         </tr>
       `).join('');
-    }
-
-    async function saveAdminOtpConfig() {
-      const otp = document.getElementById('adm-default-otp').value.trim();
-      if (!otp || otp.length < 4) {
-        showToast('OTP must be at least 4 digits');
-        return;
-      }
-      adminOtp = otp;
-      localStorage.setItem('sikar_admin_otp', adminOtp);
-
-      try {
-        const res = await fetch('/api/settings/otp', {
-          method: 'POST',
-          headers: { 'Content-Type': 'application/json' },
-          body: JSON.stringify({ otp: adminOtp })
-        });
-        const data = await res.json();
-        if (res.ok) {
-          showToast(`Default OTP saved live: ${adminOtp}`);
-        } else {
-          showToast(data.error || `Default OTP updated to ${adminOtp}`);
-        }
-      } catch (e) {
-        showToast(`Default OTP updated locally to ${adminOtp}`);
-      }
     }
 
     // 10. SOCIAL MEDIA ANALYTICS

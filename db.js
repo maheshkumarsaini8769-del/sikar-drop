@@ -1121,54 +1121,26 @@ function seedDefaultData() {
     }
   })();
 
-  // 11. SEED DEFAULT ADMIN USERS & GUARANTEE AUTHORIZED CREDENTIALS
-  const upsertAdmin = db.prepare(`
-    INSERT INTO admin_users (id, username, name, role, pin, permissions_json, active, created_at)
-    VALUES (?, ?, ?, ?, ?, ?, 1, ?)
-    ON CONFLICT(id) DO UPDATE SET
-      username = excluded.username,
-      name = excluded.name,
-      role = excluded.role,
-      pin = excluded.pin,
-      permissions_json = excluded.permissions_json,
-      active = 1
+  // 11. SEED DEFAULT ADMIN USERS (IDEMPOTENT, NON-OVERWRITING)
+  // SECURITY: Use INSERT OR IGNORE so existing credentials and passwords in SQLite
+  // are never overwritten on boot. Sub-admin accounts are inactive by default without credentials.
+  const insertAdminIfMissing = db.prepare(`
+    INSERT OR IGNORE INTO admin_users (id, username, name, role, pin, permissions_json, active, created_at)
+    VALUES (?, ?, ?, ?, ?, ?, ?, ?)
   `);
 
   const initialAdmins = [
-    { id: 'ADM-01', username: 'maheshkumarsaini8769@gmail.com', name: 'Mahesh Kumar Saini', role: 'Super Admin', pin: 'mahesh99830', perms: ['all'] },
-    { id: 'ADM-SUB', username: 'subadmin@sikardrop.in', name: 'Operations Sub-Admin', role: 'Store Sub-Admin', pin: 'subadmin123', perms: ['dashboard', 'orders', 'pos', 'inventory', 'khata', 'reports', 'purchases', 'bundles', 'coupons', 'products', 'categories', 'reviews', 'bulk', 'subadmin'] },
-    { id: 'ADM-02', username: 'ramesh@sikardrop.in', name: 'Ramesh Kumawat', role: 'Logistics Operator', pin: 'sikar123', perms: ['dashboard', 'orders', 'pos', 'inventory'] },
-    { id: 'ADM-03', username: 'dinesh@sikardrop.in', name: 'Dinesh Accountant', role: 'Accountant', pin: 'dinesh123', perms: ['dashboard', 'orders', 'pos', 'khata', 'reports', 'purchases'] },
-    { id: 'ADM-263', username: 'pooja@sikardrop.in', name: 'Pooja Sharma', role: 'Catalog Manager', pin: 'pooja789', perms: ['inventory', 'bundles', 'coupons', 'products'] },
-    { id: 'ADM-919', username: 'vikram@sikardrop.in', name: 'Vikram Delivery', role: 'Delivery Specialist', pin: 'vikrampass', perms: ['orders', 'pos'] },
-    { id: 'ADM-903', username: 'suresh@sikardrop.in', name: 'Suresh Logistics', role: 'Dispatch Officer', pin: 'suresh123', perms: ['orders', 'inventory'] }
+    { id: 'ADM-01', username: 'maheshkumarsaini8769@gmail.com', name: 'Mahesh Kumar Saini', role: 'Super Admin', pin: 'DISABLED_ENV_AUTH_REQUIRED', perms: ['all'], active: 1 },
+    { id: 'ADM-SUB', username: 'subadmin@sikardrop.in', name: 'Operations Sub-Admin', role: 'Store Sub-Admin', pin: 'DISABLED_ENV_AUTH_REQUIRED', perms: ['dashboard', 'orders', 'pos', 'inventory', 'khata', 'reports', 'purchases', 'bundles', 'coupons', 'products', 'categories', 'reviews', 'bulk', 'subadmin'], active: 0 },
+    { id: 'ADM-02', username: 'ramesh@sikardrop.in', name: 'Ramesh Kumawat', role: 'Logistics Operator', pin: 'DISABLED_SEEDED_CREDENTIAL', perms: ['dashboard', 'orders', 'pos', 'inventory'], active: 0 },
+    { id: 'ADM-03', username: 'dinesh@sikardrop.in', name: 'Dinesh Accountant', role: 'Accountant', pin: 'DISABLED_SEEDED_CREDENTIAL', perms: ['dashboard', 'orders', 'pos', 'khata', 'reports', 'purchases'], active: 0 },
+    { id: 'ADM-263', username: 'pooja@sikardrop.in', name: 'Pooja Sharma', role: 'Catalog Manager', pin: 'DISABLED_SEEDED_CREDENTIAL', perms: ['inventory', 'bundles', 'coupons', 'products'], active: 0 },
+    { id: 'ADM-919', username: 'vikram@sikardrop.in', name: 'Vikram Delivery', role: 'Delivery Specialist', pin: 'DISABLED_SEEDED_CREDENTIAL', perms: ['orders', 'pos'], active: 0 },
+    { id: 'ADM-903', username: 'suresh@sikardrop.in', name: 'Suresh Logistics', role: 'Dispatch Officer', pin: 'DISABLED_SEEDED_CREDENTIAL', perms: ['orders', 'inventory'], active: 0 }
   ];
 
   db.transaction(() => {
-    initialAdmins.forEach(a => upsertAdmin.run(a.id, a.username, a.name, a.role, a.pin, JSON.stringify(a.perms), now));
-    // Explicitly guarantee ADM-01 credentials regardless of prior database state
-    db.prepare(`
-      UPDATE admin_users SET
-        username = 'maheshkumarsaini8769@gmail.com',
-        pin = 'mahesh99830',
-        name = 'Mahesh Kumar Saini',
-        role = 'Super Admin',
-        permissions_json = '["all"]',
-        active = 1
-      WHERE id = 'ADM-01' OR username = 'admin' OR username = 'maheshkumarsaini8769@gmail.com'
-    `).run();
-
-    // Explicitly guarantee ADM-SUB credentials
-    db.prepare(`
-      UPDATE admin_users SET
-        username = 'subadmin@sikardrop.in',
-        pin = 'subadmin123',
-        name = 'Operations Sub-Admin',
-        role = 'Store Sub-Admin',
-        permissions_json = '["dashboard","orders","pos","inventory","khata","reports","purchases","bundles","coupons","products","categories","reviews","bulk","subadmin"]',
-        active = 1
-      WHERE id = 'ADM-SUB' OR username = 'subadmin@sikardrop.in' OR username = 'subadmin'
-    `).run();
+    initialAdmins.forEach(a => insertAdminIfMissing.run(a.id, a.username, a.name, a.role, a.pin, JSON.stringify(a.perms), a.active, now));
   })();
 
   // 12. SEED INITIAL AUDIT LOG
@@ -2142,8 +2114,67 @@ function createOnlineOrderTransaction({ orderId: customOrderId, customerName, cu
     const sessionId = String(attribution.sessionId || attribution.session_id || '').trim();
     const visitorId = String(attribution.visitorId || attribution.visitor_id || '').trim();
 
-    // Check stock for all items
-    for (const item of items) {
+    // SERVER-AUTHORITATIVE PRICING
+    // Client-supplied prices/totals are never trusted. Unit prices are always
+    // re-read from the catalogue and the coupon is re-validated against the
+    // coupons table, so a tampered payload can never change what is billed.
+    const pricedItems = items.map((item) => {
+      const pid = String(item.id || item.productId || '').trim();
+      const pqty = Math.max(1, Number(item.qty || item.quantity || 1));
+      let unitPrice = 0;
+      let unitTitle = String(item.title || '').trim();
+
+      if (pid) {
+        const prod = db.prepare('SELECT title, price FROM products WHERE id = ?').get(pid);
+        if (prod) {
+          unitPrice = Number(prod.price || 0);
+          if (!unitTitle) unitTitle = prod.title;
+        } else {
+          const bundle = db.prepare('SELECT title, price FROM event_bundles WHERE id = ?').get(pid);
+          if (bundle) {
+            unitPrice = Number(bundle.price || 0);
+            if (!unitTitle) unitTitle = bundle.title;
+          }
+        }
+      }
+      if (!unitPrice) unitPrice = Number(item.price || 0);
+
+      return {
+        id: pid,
+        productId: pid,
+        title: unitTitle || 'Wholesale Peti',
+        price: unitPrice,
+        qty: pqty,
+        quantity: pqty,
+        total: unitPrice * pqty
+      };
+    });
+
+    const authoritativeSubtotal = pricedItems.reduce((sum, it) => sum + it.price * it.qty, 0);
+
+    // Coupon is re-validated server-side (active, not expired, min order met).
+    let finalDiscount = 0;
+    const cleanCoupon = String(couponCode || '').trim().toUpperCase();
+    if (cleanCoupon) {
+      const cp = db.prepare('SELECT * FROM coupons WHERE UPPER(code) = ?').get(cleanCoupon);
+      if (cp && Number(cp.active) === 1) {
+        const notExpired = !cp.expiry_date || (new Date(cp.expiry_date + 'T23:59:59').getTime() >= Date.now());
+        const minOrderMet = authoritativeSubtotal >= Number(cp.min_order || 0);
+        const usageOk = !cp.usage_limit || Number(cp.used_count || 0) < Number(cp.usage_limit);
+        if (notExpired && minOrderMet && usageOk) {
+          const pct = Number(cp.discount_val || 0);
+          const rawDiscount = cp.discount_type === 'fixed' ? pct : Math.round((authoritativeSubtotal * pct) / 100);
+          const capped = cp.max_discount ? Math.min(rawDiscount, Number(cp.max_discount)) : rawDiscount;
+          finalDiscount = Math.max(0, Math.min(capped, authoritativeSubtotal));
+        }
+      }
+    }
+
+    const finalSubtotal = authoritativeSubtotal;
+    const finalTotal = Math.max(0, finalSubtotal - finalDiscount);
+
+    // Check stock for all items (using the server-priced quantities)
+    for (const item of pricedItems) {
       const pid = item.id || item.productId;
       const pqty = Number(item.qty || item.quantity || 1);
       const prod = db.prepare('SELECT id, title, stock FROM products WHERE id = ?').get(pid);
@@ -2154,13 +2185,10 @@ function createOnlineOrderTransaction({ orderId: customOrderId, customerName, cu
 
     // Deduct stock and log movement
     let totalItemsCount = 0;
-    let computedTotal = 0;
-    for (const item of items) {
+    for (const item of pricedItems) {
       const pid = item.id || item.productId;
       const pqty = Number(item.qty || item.quantity || 1);
-      const price = Number(item.price || 0);
       totalItemsCount += pqty;
-      computedTotal += price * pqty;
 
       const current = db.prepare('SELECT stock FROM products WHERE id = ?').get(pid);
       if (current) {
@@ -2174,10 +2202,6 @@ function createOnlineOrderTransaction({ orderId: customOrderId, customerName, cu
         `).run('MOV-' + Math.floor(100000 + Math.random() * 900000), pid, -pqty, beforeStock, afterStock, orderId, `Online Order ${orderId}`, now);
       }
     }
-
-    const finalSubtotal = subtotal !== undefined ? Number(subtotal) : computedTotal;
-    const finalDiscount = Number(discount || 0);
-    const finalTotal = total !== undefined ? Number(total) : Math.max(0, finalSubtotal - finalDiscount);
 
     // Customer record
     const cleanPrimary = (primaryPhone || '').replace(/\D/g, '');
@@ -2235,7 +2259,7 @@ function createOnlineOrderTransaction({ orderId: customOrderId, customerName, cu
       VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, 'pending', '', ?, 'Within 40 Mins', ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)
     `).run(
       orderId, custId, customerName, primaryPhone, finalLoginPhone, finalDeliveryPhone,
-      corridor || 'Sikar', finalAddress, JSON.stringify(items), totalItemsCount,
+      corridor || 'Sikar', finalAddress, JSON.stringify(pricedItems), totalItemsCount,
       finalSubtotal, finalDiscount, finalTotal, paymentMethod, finalPaymentStatus,
       now.split('T')[0], notes, activityLog, now, now,
       utmSource, utmMedium, utmCampaign, utmContent, utmTerm, attributionPlatform, sessionId
@@ -2268,7 +2292,27 @@ function createOnlineOrderTransaction({ orderId: customOrderId, customerName, cu
       );
     }
 
-    return { orderId, total: finalTotal, itemsCount: totalItemsCount, status: 'pending', loginPhone: finalLoginPhone, deliveryPhone: finalDeliveryPhone, customerPhone: primaryPhone, customerName, items };
+    // Increment coupon usage only when a discount was actually granted
+    if (finalDiscount > 0 && cleanCoupon) {
+      try {
+        db.prepare('UPDATE coupons SET used_count = COALESCE(used_count, 0) + 1 WHERE UPPER(code) = ?').run(cleanCoupon);
+      } catch (e) {}
+    }
+
+    return {
+      orderId,
+      total: finalTotal,
+      subtotal: finalSubtotal,
+      discount: finalDiscount,
+      couponCode: finalDiscount > 0 ? cleanCoupon : '',
+      itemsCount: totalItemsCount,
+      status: 'pending',
+      loginPhone: finalLoginPhone,
+      deliveryPhone: finalDeliveryPhone,
+      customerPhone: primaryPhone,
+      customerName,
+      items: pricedItems
+    };
   });
 
   return runTx();

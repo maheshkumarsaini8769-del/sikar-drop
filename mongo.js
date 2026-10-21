@@ -1,3 +1,14 @@
+// Load environment variables if not already loaded
+if (!process.env.MONGODB_URI && typeof process.loadEnvFile === 'function') {
+  try {
+    process.loadEnvFile('.env.local');
+  } catch (e) {
+    try {
+      process.loadEnvFile('.env');
+    } catch (e2) {}
+  }
+}
+
 let MongoClient;
 try {
   MongoClient = require('mongodb').MongoClient;
@@ -9,7 +20,7 @@ try {
   }
 }
 
-const MONGODB_URI = process.env.MONGODB_URI || 'mongodb+srv://maheshkumarsaini8769_db_user:Ka8fOssJDUVhBpWh@cluster0.pogwbu9.mongodb.net/sikar_drop?retryWrites=true&w=majority';
+const MONGODB_URI = (process.env.MONGODB_URI || '').trim();
 const DB_NAME = 'sikar_drop';
 
 let client = null;
@@ -17,7 +28,7 @@ let db = null;
 let connectionPromise = null;
 
 async function getMongoDb() {
-  if (!MongoClient) {
+  if (!MongoClient || !MONGODB_URI) {
     return null;
   }
   if (db) return db;
