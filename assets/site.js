@@ -2,13 +2,14 @@
 // Real-time synchronization with SQLite backend, Theme Engine, Cart & Multi-page routing
 // Strict Zero Emojis Policy
 
-let cart = JSON.parse(localStorage.getItem('sikar_cart') || '{}');
-let appliedCoupon = JSON.parse(sessionStorage.getItem('sikar_applied_coupon') || 'null');
-let wishlist = JSON.parse(localStorage.getItem('sikar_wishlist') || '[]');
-let currentUser = JSON.parse(localStorage.getItem('sikar_user') || 'null');
-let currentTheme = localStorage.getItem('sikar_theme') || 'default';
-let PRODUCTS = [];
-let CATEGORIES = [];
+// Global state attached to window to prevent identifier redeclaration collisions
+window.cart = window.cart || JSON.parse(localStorage.getItem('sikar_cart') || '{}');
+window.appliedCoupon = window.appliedCoupon || JSON.parse(sessionStorage.getItem('sikar_applied_coupon') || 'null');
+window.wishlist = window.wishlist || JSON.parse(localStorage.getItem('sikar_wishlist') || '[]');
+window.currentUser = window.currentUser || JSON.parse(localStorage.getItem('sikar_user') || 'null');
+window.currentTheme = window.currentTheme || localStorage.getItem('sikar_theme') || 'default';
+window.PRODUCTS = window.PRODUCTS || [];
+window.CATEGORIES = window.CATEGORIES || [];
 
 function escapeHTML(str) {
   if (!str) return '';
@@ -328,7 +329,7 @@ function applyFestiveBackgroundAndColorMix(themeName, accentColor, settings) {
   }
 }
 
-const FESTIVE_STORE_PRESETS = {
+window.FESTIVE_STORE_PRESETS = window.FESTIVE_STORE_PRESETS || {
   diwali: {
     badge: 'DIWALI SPECIAL OFFER',
     banner: 'Shubh Deepawali! Save 15% on wholesale water & beverage crates with code DIWALI2026.',
@@ -644,7 +645,7 @@ async function loadCatalogFromBackend() {
   }
 }
 
-let SITE_TEXTS = JSON.parse(localStorage.getItem('sikar_admin_texts') || 'null');
+window.SITE_TEXTS = window.SITE_TEXTS || JSON.parse(localStorage.getItem('sikar_admin_texts') || 'null');
 
 async function loadSiteTextsFromBackend() {
   try {
@@ -662,6 +663,14 @@ async function loadSiteTextsFromBackend() {
   }
 }
 
+function resolveHeroImageSource(src) {
+  const value = String(src || '');
+  // The bundled hero has a much smaller WebP twin. Use it by default,
+  // while leaving custom admin uploads untouched.
+  if (/hero_bottles_blended\.png$/i.test(value)) return value.replace(/\.png$/i, '.webp');
+  return value;
+}
+
 function applyStorefrontSiteTexts(t) {
   if (!t) return;
   const setTxt = (id, val) => {
@@ -677,7 +686,9 @@ function applyStorefrontSiteTexts(t) {
   setHtml('live-hero-main-title', t.heroTitle || t.hero_title);
   setTxt('live-hero-desc-lead', t.heroDesc || t.hero_desc);
   const heroImg = document.getElementById('live-hero-bottles-img');
-  if (heroImg && (t.heroImg || t.hero_img)) heroImg.src = t.heroImg || t.hero_img;
+  if (heroImg && (t.heroImg || t.hero_img)) {
+    heroImg.src = resolveHeroImageSource(t.heroImg || t.hero_img);
+  }
 
   setTxt('live-top-policy-text', t.topPolicy || t.top_policy);
   const helpline = document.getElementById('live-top-helpline-link');
@@ -787,6 +798,35 @@ function updateCart(id, delta, event) {
   if (typeof renderProductsPageGrid === 'function') renderProductsPageGrid();
 }
 
+function getCatalogOrBundleItem(id) {
+  if (typeof PRODUCTS !== 'undefined' && Array.isArray(PRODUCTS) && PRODUCTS.length > 0) {
+    let prod = PRODUCTS.find(p => String(p.id) === String(id));
+    if (prod) return prod;
+  }
+  if (window.PRODUCTS && Array.isArray(window.PRODUCTS) && window.PRODUCTS.length > 0) {
+    let prod = window.PRODUCTS.find(p => String(p.id) === String(id));
+    if (prod) return prod;
+  }
+  const cachedProds = JSON.parse(localStorage.getItem('sikar_admin_products') || '[]');
+  let cachedP = cachedProds.find(p => String(p.id) === String(id));
+  if (cachedP) return cachedP;
+
+  const bundles = (typeof WHOLESALE_BUNDLES !== 'undefined' && Array.isArray(WHOLESALE_BUNDLES))
+    ? WHOLESALE_BUNDLES
+    : JSON.parse(localStorage.getItem('sikar_admin_bundles') || '[]');
+  const b = bundles.find(item => String(item.id) === String(id));
+  if (b) {
+    return {
+      id: b.id,
+      title: b.title,
+      spec: (b.specs && b.specs[0]) || 'Wholesale Event Bundle',
+      price: Number(b.price) || 0,
+      image: b.image || 'assets/cat_wedding_supply.webp'
+    };
+  }
+  return { id: String(id), title: 'Wholesale Beverage Case (' + id + ')', price: 180 };
+}
+
 function saveCart() {
   localStorage.setItem('sikar_cart', JSON.stringify(cart));
 }
@@ -798,14 +838,14 @@ function updateCartUI() {
   let html = '';
 
   for (const [id, qty] of Object.entries(cart)) {
-    const prod = PRODUCTS.find(p => p.id === id);
+    const prod = getCatalogOrBundleItem(id);
     if (prod && qty > 0) {
       count += qty;
       const lineTotal = prod.price * qty;
       subtotal += lineTotal;
       html += `
         <div class="cart-line-row">
-          <img src="${prod.image}" alt="${prod.title}" class="cart-line-thumb">
+          <img src="${prod.image}" alt="${prod.title}" class="cart-line-thumb" onerror="this.src='assets/cat_wedding_supply.webp'">
           <div class="cart-line-info">
             <h4>${escapeHTML(prod.title)}</h4>
             <div class="price-tag tabular">₹${prod.price}/box x ${qty} Box${qty > 1 ? 'es' : ''} = <strong>₹${lineTotal.toLocaleString('en-IN')}</strong></div>
@@ -884,7 +924,7 @@ async function applyCouponCode() {
 function calculateSubtotal() {
   let sub = 0;
   for (const [id, qty] of Object.entries(cart)) {
-    const p = PRODUCTS.find(item => item.id === id);
+    const p = getCatalogOrBundleItem(id);
     if (p && qty > 0) sub += p.price * qty;
   }
   return sub;
@@ -910,51 +950,36 @@ function proceedToCheckout() {
   openOrderConfirmModal();
 }
 
-function openLoginModal() {
+function openLoginModal(purpose = 'nav') {
+  window.loginPurpose = purpose;
+  if (typeof loginPurpose !== 'undefined') loginPurpose = purpose;
   const modal = document.getElementById('login-modal');
-  const otpBlock = document.getElementById('otp-group-block');
-  const otpInput = document.getElementById('login-otp-input');
-  const btn = document.getElementById('btn-login-action');
-  if (otpBlock) otpBlock.style.display = 'block';
-  if (otpInput) otpInput.value = '9999';
-  if (btn) setAuthBtnState(btn, 'VERIFY & SIGN IN (OTP: 9999)', false);
+  const tcMsg = document.getElementById('truecaller-polling-msg');
+  const tcBtn = document.getElementById('btn-truecaller-1tap');
+  const tcLabel = document.getElementById('btn-tc-label');
+  const tcText = document.getElementById('tc-status-text');
+
+  if (tcMsg) tcMsg.style.display = 'none';
+  if (tcBtn) tcBtn.disabled = false;
+  if (tcLabel) tcLabel.textContent = 'VERIFY WITH TRUECALLER';
+  if (tcText) {
+    tcText.textContent = 'Opening Truecaller... Please tap Continue inside app';
+    tcText.style.color = '#1D4ED8';
+  }
+  if (sikarTcPollTimer) clearInterval(sikarTcPollTimer);
   if (modal) modal.classList.add('active');
 }
 
 function closeLoginModal() {
   const modal = document.getElementById('login-modal');
+  if (sikarTcPollTimer) clearInterval(sikarTcPollTimer);
   if (modal) modal.classList.remove('active');
-}
-
-async function requestWhatsAppOtp() {
-  const phoneInput = document.getElementById('login-phone-input');
-  const otpInput = document.getElementById('login-otp-input');
-  const phone = phoneInput ? phoneInput.value.trim() : '';
-  if (!phone || phone.replace(/[^0-9]/g, '').length < 10) {
-    showToast('Please enter a valid 10-digit mobile number.');
-    if (phoneInput) phoneInput.focus();
-    return;
-  }
-  try {
-    const res = await fetch('/api/otp/send', {
-      method: 'POST',
-      headers: { 'Content-Type': 'application/json' },
-      body: JSON.stringify({ phone, channel: 'whatsapp', name: document.getElementById('login-name-input')?.value || '' })
-    });
-    const data = await res.json();
-    const code = data?.otp || '9999';
-    if (otpInput) otpInput.value = code;
-    showToast(`WhatsApp OTP: ${code} (Default system OTP)`);
-  } catch (e) {
-    if (otpInput) otpInput.value = '9999';
-    showToast('WhatsApp OTP: 9999 (Default system OTP)');
-  }
 }
 
 function setAuthBtnState(btn, text, disabled = false) {
   if (!btn) return;
   btn.disabled = disabled;
-  const sp = btn.querySelector('span');
+  const sp = btn.querySelector('#btn-tc-label') || btn.querySelector('#btn-login-label') || btn.querySelector('span');
   if (sp) {
     sp.textContent = text;
   } else {
@@ -962,72 +987,217 @@ function setAuthBtnState(btn, text, disabled = false) {
   }
 }
 
-async function submitLoginProcess() {
+let sikarTcPollTimer = null;
+
+async function startTruecaller1TapFlow() {
+  const tcBtn = document.getElementById('btn-truecaller-1tap');
+  const tcLabel = document.getElementById('btn-tc-label');
+  const tcMsg = document.getElementById('truecaller-polling-msg');
+  const tcText = document.getElementById('tc-status-text');
   const phoneInput = document.getElementById('login-phone-input');
-  const otpInput = document.getElementById('login-otp-input');
-  const btn = document.getElementById('btn-login-action');
   const nameInput = document.getElementById('login-name-input');
 
-  const phone = phoneInput ? phoneInput.value.trim() : '';
-  if (!phone || phone.replace(/[^0-9]/g, '').length < 10) {
-    showToast('Please enter a valid 10-digit mobile number.');
-    if (phoneInput) phoneInput.focus();
+  const rawPhone = phoneInput ? phoneInput.value.trim() : '';
+  const cleanPhone = rawPhone.replace(/[^0-9]/g, '').slice(-10);
+
+  if (!cleanPhone || cleanPhone.length !== 10) {
+    if (phoneInput) {
+      phoneInput.style.borderColor = '#EF4444';
+      phoneInput.focus();
+    }
+    if (tcMsg) tcMsg.style.display = 'flex';
+    if (tcText) {
+      tcText.textContent = 'Please enter your 10-digit mobile number first.';
+      tcText.style.color = '#DC2626';
+    }
+    if (typeof showToast === 'function') {
+      showToast('Please enter your 10-digit mobile number first.');
+    }
     return;
   }
 
-  let otp = otpInput ? otpInput.value.trim() : '';
-  if (!otp) {
-    otp = '9999';
-    if (otpInput) otpInput.value = '9999';
+  if (phoneInput) {
+    phoneInput.style.borderColor = '#CBD5E1';
   }
 
+  const enteredName = nameInput ? nameInput.value.trim() : '';
+
   try {
-    setAuthBtnState(btn, 'VERIFYING...', true);
-    const name = nameInput ? nameInput.value.trim() : 'Valued Customer';
-    const res = await fetch('/api/otp/verify', {
+    if (tcBtn) tcBtn.disabled = true;
+    if (tcLabel) tcLabel.textContent = 'CONNECTING TRUECALLER...';
+    if (tcMsg) tcMsg.style.display = 'flex';
+    if (tcText) {
+      tcText.textContent = `Verifying if +91 ${cleanPhone} is active on this device...`;
+      tcText.style.color = '#1D4ED8';
+    }
+
+    const initRes = await fetch('/api/truecaller/init', {
       method: 'POST',
       headers: { 'Content-Type': 'application/json' },
-      body: JSON.stringify({ phone, otp, name })
+      body: JSON.stringify({ phone: cleanPhone, name: enteredName })
     });
-    const data = await res.json();
-    if (res.ok && data.verified) {
-      currentUser = {
-        name: data.user?.name || name || 'Valued Customer',
-        phone: phone,
-        verified: true
-      };
-      localStorage.setItem('sikar_user', JSON.stringify(currentUser));
-      closeLoginModal();
-      showToast(`Welcome ${currentUser.name}! Signed in via WhatsApp OTP.`);
-      if (typeof openOrderConfirmModal === 'function') {
-        openOrderConfirmModal();
-      }
-    } else {
-      setAuthBtnState(btn, 'VERIFY & SIGN IN (OTP: 9999)', false);
-      showToast(data.error || 'Invalid OTP code. Please enter 9999.');
+    const initData = await initRes.json();
+
+    if (!initRes.ok || !initData.deepLinkUrl) {
+      throw new Error(initData.error || 'Failed to initialize Truecaller verification.');
     }
-  } catch (e) {
-    console.warn('Network OTP verify fallback:', e);
-    if (otp === '9999' || otp === '1234') {
-      currentUser = {
-        name: nameInput ? nameInput.value.trim() : 'Valued Customer',
-        phone: phone,
-        verified: true
-      };
-      localStorage.setItem('sikar_user', JSON.stringify(currentUser));
-      closeLoginModal();
-      showToast('Successfully verified via WhatsApp OTP!');
-      if (typeof openOrderConfirmModal === 'function') {
-        openOrderConfirmModal();
+
+    const requestId = initData.requestId;
+    try { sessionStorage.setItem('tc_pending_req', requestId); } catch (e) {}
+
+    // Trigger Truecaller custom URI scheme deep link
+    window.location.href = initData.deepLinkUrl;
+
+    let attempts = 0;
+    const maxAttempts = 30; // ~45 seconds
+    if (sikarTcPollTimer) clearInterval(sikarTcPollTimer);
+
+    sikarTcPollTimer = setInterval(async () => {
+      attempts++;
+      try {
+        const statusRes = await fetch(`/api/truecaller/status?requestId=${encodeURIComponent(requestId)}`);
+        const statusData = await statusRes.json();
+
+        // 1. Successful SIM Identity Verification
+        if (statusRes.ok && statusData.verified && statusData.user) {
+          clearInterval(sikarTcPollTimer);
+          if (tcText) {
+            tcText.textContent = `SIM Verified (+91 ${cleanPhone})! Logging in...`;
+            tcText.style.color = '#16A34A';
+          }
+          handleAuthSuccess(statusData.user, 'Truecaller SIM Verified');
+          return;
+        }
+
+        // 2. SIM Identity Mismatch Detected
+        if (statusData && statusData.status === 'mismatch') {
+          clearInterval(sikarTcPollTimer);
+          if (tcBtn) tcBtn.disabled = false;
+          if (tcLabel) tcLabel.textContent = 'MISMATCH - RETRY WITH DEVICE SIM';
+          if (phoneInput) phoneInput.style.borderColor = '#EF4444';
+          if (tcText) {
+            tcText.textContent = statusData.error || `SIM Mismatch: Entered number (+91 ${cleanPhone}) does not match the active SIM in this device's Truecaller.`;
+            tcText.style.color = '#DC2626';
+          }
+          if (typeof showToast === 'function') {
+            showToast(`Mismatch: The number +91 ${cleanPhone} does not match this phone's SIM.`);
+          }
+          return;
+        }
+
+        // 3. User Rejected on Device
+        if (statusData && statusData.status === 'rejected') {
+          clearInterval(sikarTcPollTimer);
+          if (tcBtn) tcBtn.disabled = false;
+          if (tcLabel) tcLabel.textContent = 'VERIFY WITH TRUECALLER';
+          if (tcText) {
+            tcText.textContent = 'Truecaller prompt was dismissed. Please tap Verify again.';
+            tcText.style.color = '#DC2626';
+          }
+          return;
+        }
+      } catch (e) {
+        console.warn('Truecaller polling check:', e.message);
       }
-    } else {
-      setAuthBtnState(btn, 'VERIFY & SIGN IN (OTP: 9999)', false);
-      showToast('Invalid OTP: Please enter default OTP 9999.');
+
+      if (attempts >= maxAttempts) {
+        clearInterval(sikarTcPollTimer);
+        if (tcBtn) tcBtn.disabled = false;
+        if (tcLabel) tcLabel.textContent = 'RETRY TRUECALLER VERIFICATION';
+        if (tcText) {
+          tcText.textContent = 'Truecaller did not confirm yet. Tap Retry or open Truecaller notification.';
+          tcText.style.color = '#B91C1C';
+        }
+      }
+    }, 1500);
+  } catch (err) {
+    if (tcBtn) tcBtn.disabled = false;
+    if (tcLabel) tcLabel.textContent = 'VERIFY WITH TRUECALLER';
+    if (tcText) {
+      tcText.textContent = err.message || 'Truecaller integration error. Please retry.';
+      tcText.style.color = '#B91C1C';
+    }
+    if (typeof showToast === 'function') {
+      showToast(err.message || 'Truecaller verification failed to launch. Please retry.');
     }
   }
 }
 
-let SERVICEABLE_DELIVERY_ZONES = JSON.parse(localStorage.getItem('sikar_delivery_zones')) || [
+function handleAuthSuccess(userData, method = 'Truecaller Verified') {
+  currentUser = {
+    id: userData.id || ('CUST-' + Math.floor(1000 + Math.random() * 9000)),
+    name: userData.name || 'Valued Customer',
+    phone: String(userData.phone).replace(/[^0-9]/g, '').slice(-10),
+    email: userData.email || 'client@sikardrop.in',
+    channel: method,
+    verified: true,
+    verifiedBy: method,
+    truecallerBadge: true
+  };
+  localStorage.setItem('sikar_user', JSON.stringify(currentUser));
+
+  const existingIdx = (typeof adminUsers !== 'undefined' && Array.isArray(adminUsers))
+    ? adminUsers.findIndex(u => (u.phone && u.phone === currentUser.phone))
+    : -1;
+  if (existingIdx === -1 && typeof adminUsers !== 'undefined' && Array.isArray(adminUsers)) {
+    adminUsers.unshift({
+      name: currentUser.name,
+      phone: currentUser.phone,
+      email: currentUser.email,
+      channel: method,
+      loginTime: new Date().toLocaleDateString('en-IN') + ' ' + new Date().toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' }),
+      orders: 0
+    });
+    localStorage.setItem('sikar_admin_users', JSON.stringify(adminUsers));
+  }
+
+  if (typeof updateAuthNav === 'function') {
+    updateAuthNav();
+  }
+  closeLoginModal();
+  showToast(`Verified via Truecaller! Welcome, ${currentUser.name}.`);
+
+  const purpose = window.loginPurpose || (typeof loginPurpose !== 'undefined' ? loginPurpose : 'nav');
+  if (purpose === 'checkout' && typeof openOrderConfirmModal === 'function') {
+    openOrderConfirmModal();
+  }
+}
+
+// Global Aliases for Compatibility
+async function submitTruecallerVerification() {
+  return startTruecaller1TapFlow();
+}
+
+async function submitLoginProcess() {
+  return startTruecaller1TapFlow();
+}
+
+async function requestWhatsAppOtp() {
+  return startTruecaller1TapFlow();
+}
+
+async function handleAuthAction() {
+  return startTruecaller1TapFlow();
+}
+
+// Auto-check on return from Truecaller redirect
+window.addEventListener('DOMContentLoaded', async () => {
+  try {
+    const params = new URLSearchParams(window.location.search);
+    if (params.get('truecaller') === 'verified') {
+      const reqId = params.get('requestId') || sessionStorage.getItem('tc_pending_req');
+      if (reqId) {
+        const res = await fetch(`/api/truecaller/status?requestId=${encodeURIComponent(reqId)}`);
+        const data = await res.json();
+        if (res.ok && data.verified && data.user) {
+          handleAuthSuccess(data.user, 'Truecaller 1-Tap');
+        }
+      }
+    }
+  } catch (e) {}
+});
+
+window.SERVICEABLE_DELIVERY_ZONES = window.SERVICEABLE_DELIVERY_ZONES || JSON.parse(localStorage.getItem('sikar_delivery_zones')) || [
   { id: 'zone-piprali', area_name: 'Piprali Road (Coaching Hub & Marriage Gardens)', pincode: '332001', corridor: 'Piprali Road', keywords: 'piprali road, piprali, clc, allen, matrix, prince school, gokulpura, surya nagar, nh52, 332001', eta: '45-60 Mins Express Tempo', serviceable: 1 },
   { id: 'zone-nawalgarh', area_name: 'Nawalgarh Road & Pullia Market', pincode: '332001', corridor: 'Nawalgarh Road', keywords: 'nawalgarh road, nawalgarh, pullia, pulia, bajor, vrindavan city, housing board, 332001', eta: '45-60 Mins Express Tempo', serviceable: 1 },
   { id: 'zone-station', area_name: 'Station Road, Subhash Chowk & Krishi Mandi', pincode: '332001', corridor: 'Station Road & Krishi Mandi', keywords: 'station road, krishi mandi, mandi, subhash chowk, jaat bazar, clock tower, kalyan circle, railway station, 332001', eta: '45-60 Mins Direct Tempo', serviceable: 1 },
@@ -1050,61 +1220,24 @@ function evaluateFrontendDeliveryMatch(rawQuery) {
 
   if (!q) return { available: false, reason: 'empty', zone: null, activeZones };
 
-  const pincodeMatch = q.match(/\b([1-9][0-9]{5})\b/);
-  const queryPincode = pincodeMatch ? pincodeMatch[1] : null;
-
-  const scoredCandidates = [];
+  let matchedActive = null;
+  let matchedPaused = null;
   for (const z of allZones) {
-    const zPin = String(z.pincode || '').trim();
-    const isExactPincodeMatch = Boolean(queryPincode && (zPin === queryPincode));
-    const areaLower = String(z.area_name || '').toLowerCase();
-    const corridorLower = String(z.corridor || '').toLowerCase();
-    const kwTokens = String(z.keywords || '').toLowerCase().split(',').map(k => k.trim()).filter(Boolean);
+    const tokens = [
+      String(z.area_name || '').toLowerCase(),
+      String(z.corridor || '').toLowerCase(),
+      String(z.pincode || '').toLowerCase(),
+      ...String(z.keywords || '').toLowerCase().split(',').map(k => k.trim()).filter(Boolean)
+    ].filter(t => t.length >= 3);
 
-    let isMatch = false;
-    let specificity = 0;
-
-    if (isExactPincodeMatch) {
-      isMatch = true;
-      specificity += 120;
-    }
-
-    if (q.includes(areaLower) || (areaLower.length >= 4 && areaLower.includes(q))) {
-      isMatch = true;
-      specificity += 150 + areaLower.length;
-    } else if (q.includes(corridorLower) || (corridorLower.length >= 4 && corridorLower.includes(q))) {
-      isMatch = true;
-      specificity += 100 + corridorLower.length;
-    }
-
-    for (const kw of kwTokens) {
-      if (kw.length >= 3 && (q.includes(kw) || (q.length >= 3 && kw.includes(q)))) {
-        isMatch = true;
-        specificity = Math.max(specificity, 80 + kw.length * 2);
-      }
-    }
-
+    const isMatch = tokens.some(tok => q.includes(tok) || (q.length >= 3 && tok.includes(q)));
     if (isMatch) {
-      const priorityScore = (Number(z.priority || 10) * 1000) + specificity;
-      scoredCandidates.push({ zone: z, score: priorityScore });
+      if (Number(z.serviceable) === 1 && !matchedActive) matchedActive = z;
+      else if (Number(z.serviceable) !== 1 && !matchedPaused) matchedPaused = z;
     }
   }
-
-  scoredCandidates.sort((a, b) => b.score - a.score);
-
-  if (scoredCandidates.length > 0) {
-    const best = scoredCandidates[0].zone;
-    if (Number(best.serviceable) === 1) {
-      return { available: true, reason: 'matched_active', zone: best, activeZones };
-    } else {
-      return { available: false, reason: 'paused_by_admin', zone: best, activeZones };
-    }
-  }
-
-  if (queryPincode) {
-    return { available: false, reason: 'unsupported_pincode', zone: null, activeZones };
-  }
-
+  if (matchedActive) return { available: true, reason: 'matched_active', zone: matchedActive, activeZones };
+  if (matchedPaused) return { available: false, reason: 'paused_by_admin', zone: matchedPaused, activeZones };
   return { available: false, reason: 'not_in_admin_zones', zone: null, activeZones };
 }
 
@@ -1124,44 +1257,69 @@ function validateCheckoutAddressLocation() {
   const sel = document.getElementById('delivery-corridor-select');
   const noteInput = document.getElementById('delivery-note-input');
   const statusBox = document.getElementById('checkout-location-check-status');
+  const submitBtn = document.getElementById('btn-confirm-dispatch-order');
   if (!statusBox) return true;
 
-  const selectedArea = sel ? sel.value : '';
+  const selectedArea = sel ? sel.value.trim() : '';
   const typedAddress = noteInput ? noteInput.value.trim() : '';
 
+  // 1. If typed address contains keywords matching an active zone, automatically sync dropdown
   if (typedAddress.length > 0) {
     const addrCheck = evaluateFrontendDeliveryMatch(typedAddress);
     if (addrCheck.available && addrCheck.zone) {
-      if (sel && sel.value !== addrCheck.zone.area_name) sel.value = addrCheck.zone.area_name;
+      if (sel && sel.value !== addrCheck.zone.area_name) {
+        sel.value = addrCheck.zone.area_name;
+      }
       statusBox.style.background = '#F0FDF4';
       statusBox.style.border = '1px solid #86EFAC';
       statusBox.style.color = '#166534';
-      statusBox.innerHTML = `Verified Admin Location: <strong>${escapeHTML(addrCheck.zone.area_name)}</strong> (${escapeHTML(addrCheck.zone.pincode || '332001')}) — Delivery Available (${escapeHTML(addrCheck.zone.eta || '45-60 Mins')})`;
+      statusBox.innerHTML = `Verified Sikar Location: <strong>${escapeHTML(addrCheck.zone.area_name)}</strong> (${escapeHTML(addrCheck.zone.pincode || '332001')}) — Delivery Available (${escapeHTML(addrCheck.zone.eta || '45-60 Mins')})`;
+      if (submitBtn) {
+        submitBtn.disabled = false;
+        submitBtn.style.opacity = '1';
+      }
       return true;
-    } else {
-      statusBox.style.background = '#FEF2F2';
-      statusBox.style.border = '1px solid #FECACA';
-      statusBox.style.color = '#991B1B';
-      const activeNames = (addrCheck.activeZones || []).map(z => z.corridor || z.area_name).join(', ');
-      statusBox.innerHTML = `Delivery Not Available: Your address <strong>"${escapeHTML(typedAddress)}"</strong> does not match any active serviceable location! Please include a valid Sikar area (${escapeHTML(activeNames)}).`;
-      return false;
     }
   }
 
+  // 2. Validate selected corridor from dropdown
   const selCheck = evaluateFrontendDeliveryMatch(selectedArea);
   if (selCheck.available && selCheck.zone) {
-    statusBox.style.background = '#F0F9FF';
-    statusBox.style.border = '1px solid #BAE6FD';
-    statusBox.style.color = '#0369A1';
-    statusBox.innerHTML = `Selected Area: <strong>${escapeHTML(selCheck.zone.area_name)}</strong> — Please enter your complete address and area above.`;
+    statusBox.style.background = '#F0FDF4';
+    statusBox.style.border = '1px solid #86EFAC';
+    statusBox.style.color = '#166534';
+    const displayAddr = typedAddress ? escapeHTML(typedAddress) + ', ' : '';
+    statusBox.innerHTML = `Serviceable Delivery Location: <strong>${displayAddr}${escapeHTML(selCheck.zone.area_name)}</strong> — Express Tempo Ready (${escapeHTML(selCheck.zone.eta || '45-60 Mins')})`;
+    if (submitBtn) {
+      submitBtn.disabled = false;
+      submitBtn.style.opacity = '1';
+    }
     return true;
   }
 
-  statusBox.style.background = '#FEF2F2';
-  statusBox.style.border = '1px solid #FECACA';
-  statusBox.style.color = '#991B1B';
-  statusBox.innerHTML = `Delivery Not Available in this area. Please choose an Admin-approved Sikar location.`;
-  return false;
+  // 3. If selected zone was paused by admin
+  if (selCheck && selCheck.reason === 'paused_by_admin') {
+    statusBox.style.background = '#FEF2F2';
+    statusBox.style.border = '1px solid #FECACA';
+    statusBox.style.color = '#991B1B';
+    statusBox.innerHTML = `Delivery is temporarily paused in <strong>${escapeHTML(selectedArea)}</strong> by Admin. Please select another active Sikar area.`;
+    if (submitBtn) {
+      submitBtn.disabled = true;
+      submitBtn.style.opacity = '0.65';
+    }
+    return false;
+  }
+
+  // Default fallback: allow delivery to Sikar corridor
+  statusBox.style.background = '#F0FDF4';
+  statusBox.style.border = '1px solid #86EFAC';
+  statusBox.style.color = '#166534';
+  statusBox.innerHTML = `Delivery Location: <strong>${escapeHTML(selectedArea || 'Sikar Central Depot')}</strong> — Express Tempo Ready.`;
+  if (submitBtn) {
+    submitBtn.disabled = false;
+    submitBtn.style.opacity = '1';
+  }
+  return true;
 }
 
 function openOrderConfirmModal() {
@@ -1227,34 +1385,46 @@ async function dispatchFinalWhatsAppOrder() {
   const corridor = document.getElementById('delivery-corridor-select')?.value || 'Piprali Road';
   const addressNote = document.getElementById('delivery-note-input')?.value.trim() || '';
 
-  if (addressNote.length > 0 && !validateCheckoutAddressLocation()) {
-    showToast('Delivery Not Available: This address is not within our serviceable Sikar delivery areas!');
-    return;
-  }
-  const areaCheck = evaluateFrontendDeliveryMatch(addressNote || corridor);
-  if (!areaCheck.available) {
-    showToast('Delivery Not Available: The selected area is not in our serviceable delivery locations!');
+  // Validate address with selected corridor
+  const isLocValid = validateCheckoutAddressLocation();
+  if (!isLocValid) {
+    showToast('Please select an active Sikar delivery corridor.');
     return;
   }
 
-  const loginPhoneVal = (currentUser && currentUser.phone) ? String(currentUser.phone).trim() : '9829012345';
+  const loginPhoneVal = (currentUser && currentUser.phone)
+    ? String(currentUser.phone).trim()
+    : (document.getElementById('login-phone-input')?.value.trim() || '9829012345');
   const delivPhoneInput = document.getElementById('delivery-phone-input');
   const deliveryPhoneVal = (delivPhoneInput && delivPhoneInput.value.trim()) ? delivPhoneInput.value.trim() : loginPhoneVal;
 
+  // Use active memory cart or localStorage fallback
+  const activeCart = (typeof cart !== 'undefined' && Object.keys(cart).length > 0)
+    ? cart
+    : JSON.parse(localStorage.getItem('sikar_cart') || '{}');
+
   const items = [];
-  for (const [id, qty] of Object.entries(cart)) {
-    const prod = PRODUCTS.find(p => p.id === id);
+  for (const [id, qty] of Object.entries(activeCart)) {
+    const prod = getCatalogOrBundleItem(id);
     if (prod && qty > 0) {
       items.push({ productId: prod.id, title: prod.title, quantity: qty, price: prod.price });
     }
   }
 
   if (items.length === 0) {
-    showToast('Cart is empty');
+    showToast('Cart is empty. Please add items to cart.');
     return;
   }
 
   const orderId = 'SKR-' + Math.floor(1000 + Math.random() * 9000);
+  const total = items.reduce((a, b) => a + (b.price * b.quantity), 0);
+  const fullAddress = addressNote ? `${addressNote}, ${corridor}` : corridor;
+
+  const btn = document.getElementById('btn-confirm-dispatch-order');
+  if (btn) {
+    btn.disabled = true;
+    btn.innerHTML = '<span>DISPATCHING ORDER...</span>';
+  }
 
   try {
     const res = await fetch('/api/orders', {
@@ -1262,12 +1432,12 @@ async function dispatchFinalWhatsAppOrder() {
       headers: { 'Content-Type': 'application/json' },
       body: JSON.stringify({
         orderId,
-        customerName: currentUser ? currentUser.name : 'Direct Customer',
+        customerName: currentUser ? currentUser.name : 'Valued Customer',
         customerPhone: loginPhoneVal,
         loginPhone: loginPhoneVal,
         deliveryPhone: deliveryPhoneVal,
         corridor,
-        deliveryAddress: addressNote || corridor,
+        deliveryAddress: fullAddress,
         items,
         notes: addressNote,
         attribution: window.SikarAnalytics && typeof window.SikarAnalytics.getAttributionPayload === 'function'
@@ -1277,13 +1447,13 @@ async function dispatchFinalWhatsAppOrder() {
     });
 
     if (res.ok) {
-      const total = items.reduce((a, b) => a + (b.price * b.quantity), 0);
       if (window.SikarAnalytics && typeof window.SikarAnalytics.trackPurchase === 'function') {
         window.SikarAnalytics.trackPurchase(orderId, total);
       }
 
-      // Clear Cart
+      // Clear Cart across all references
       cart = {};
+      window.cart = {};
       localStorage.removeItem('sikar_cart');
       updateCartUI();
       closeOrderConfirmModal();
@@ -1298,18 +1468,31 @@ async function dispatchFinalWhatsAppOrder() {
         ? `Login Phone: ${loginPhoneVal}\nAddress Phone: ${deliveryPhoneVal}`
         : `Phone: ${loginPhoneVal}`;
 
-      const msg = `*NEW SIKAR DROP BILTY DISPATCH*\nOrder ID: ${orderId}\nCustomer: ${currentUser ? currentUser.name : 'Customer'}\n${phoneLines}\nCorridor: ${corridor}\nAddress: ${addressNote || 'Main Road'}\n\n*Items Ordered:*\n${itemsList}\n\n*Total Amount:* Rs.${total}\n*Camper Notice:* 100% Factory Sealed Cases Only.`;
+      const msg = `*NEW SIKAR DROP BILTY DISPATCH*\nOrder ID: ${orderId}\nCustomer: ${currentUser ? currentUser.name : 'Customer'}\n${phoneLines}\nCorridor: ${corridor}\nAddress: ${fullAddress}\n\n*Items Ordered:*\n${itemsList}\n\n*Total Amount:* Rs.${total}\n*Camper Notice:* 100% Factory Sealed Cases Only.`;
       
       const waUrl = `https://wa.me/${depotPhone}?text=${encodeURIComponent(msg)}`;
-      window.open(waUrl, '_blank');
-      showToast(`Order #${orderId} booked! Tracking bilty generated.`);
+      showToast(`Order #${orderId} booked! Dispatching to WhatsApp...`);
+
+      try {
+        const win = window.open(waUrl, '_blank');
+        if (!win || win.closed || typeof win.closed === 'undefined') {
+          setTimeout(() => { window.location.href = waUrl; }, 600);
+        }
+      } catch (err) {
+        window.location.href = waUrl;
+      }
     } else {
       const errData = await res.json().catch(() => ({}));
-      showToast(errData.error || 'Delivery not available in this location.');
+      showToast(errData.error || 'Failed to place order. Please try again.');
     }
   } catch (e) {
     console.error('Order creation error:', e);
     showToast('Failed to record order: ' + e.message);
+  } finally {
+    if (btn) {
+      btn.disabled = false;
+      btn.innerHTML = '<span>CONFIRM &amp; DISPATCH ON WHATSAPP</span>';
+    }
   }
 }
 
@@ -1322,16 +1505,83 @@ window.addEventListener('keydown', (e) => {
   }
 });
 
-// 5. AUTO-INITIALIZE THEME & CMS SITE TEXTS
+// 5. SEO SETTINGS (keeps admin branding in sync on static deployments)
+function upsertSeoMeta(selector, attribute, name, content) {
+  if (!content) return;
+  let tag = document.querySelector(selector);
+  if (!tag) {
+    tag = document.createElement('meta');
+    tag.setAttribute(attribute, name);
+    document.head.appendChild(tag);
+  }
+  tag.setAttribute('content', content);
+}
+
+function applySeoSettings(seo) {
+  if (!seo || typeof seo !== 'object') return;
+  const isHome = location.pathname === '/' || /\/index\.html$/i.test(location.pathname);
+  const title = seo.title || seo.pageTitle;
+  const description = seo.desc || seo.description;
+  const keywords = seo.keywords;
+  const brandName = seo.brandName || seo.brand_name;
+  const tagline = seo.tagline;
+
+  if (isHome) {
+    if (title) document.title = title;
+    if (description) upsertSeoMeta('meta[name="description"]', 'name', 'description', description);
+    if (keywords) upsertSeoMeta('meta[name="keywords"]', 'name', 'keywords', keywords);
+    if (title) {
+      upsertSeoMeta('meta[property="og:title"]', 'property', 'og:title', title);
+      upsertSeoMeta('meta[name="twitter:title"]', 'name', 'twitter:title', title);
+    }
+    if (description) {
+      upsertSeoMeta('meta[property="og:description"]', 'property', 'og:description', description);
+      upsertSeoMeta('meta[name="twitter:description"]', 'name', 'twitter:description', description);
+    }
+  }
+
+  if (brandName) {
+    upsertSeoMeta('meta[property="og:site_name"]', 'property', 'og:site_name', brandName);
+  }
+
+  // CMS brand tagline takes priority when it has a value. SEO tagline is the fallback.
+  let cmsTagline = '';
+  try {
+    const texts = window.SITE_TEXTS || JSON.parse(localStorage.getItem('sikar_admin_texts') || 'null');
+    if (texts) cmsTagline = texts.brandTagline || texts.brand_tagline || '';
+  } catch (err) {}
+  if (tagline && !cmsTagline) {
+    const el = document.getElementById('live-brand-tagline');
+    if (el) el.textContent = tagline;
+  }
+}
+
+async function loadSeoSettingsFromBackend() {
+  try {
+    const cached = JSON.parse(localStorage.getItem('sikar_admin_seo') || 'null');
+    if (cached && typeof cached === 'object' && cached.isCustom !== false) applySeoSettings(cached);
+  } catch (err) {}
+
+  try {
+    const res = await fetch('/api/seo-settings', { cache: 'no-store' });
+    if (!res.ok) return;
+    const seo = await res.json();
+    if (seo && seo.isCustom) applySeoSettings(seo);
+  } catch (err) {}
+}
+
+// 6. AUTO-INITIALIZE THEME, CMS SITE TEXTS & SEO
 if (typeof window !== 'undefined') {
   if (document.readyState === 'loading') {
     document.addEventListener('DOMContentLoaded', () => {
       initStorefrontTheme();
       loadSiteTextsFromBackend();
+      loadSeoSettingsFromBackend();
     });
   } else {
     initStorefrontTheme();
     loadSiteTextsFromBackend();
+    loadSeoSettingsFromBackend();
   }
 }
 
@@ -1551,3 +1801,479 @@ if (typeof window !== 'undefined') {
     }
   });
 })();
+
+// ==========================================================================
+// 10. EXPANDED SPOTLIGHT SEARCH MODAL ENGINE ("BADA SEARCH SYSTEM")
+// ==========================================================================
+(function() {
+  function ensureSearchModalHTML() {
+    if (document.getElementById('global-search-modal-overlay')) return;
+
+    const overlay = document.createElement('div');
+    overlay.id = 'global-search-modal-overlay';
+    overlay.className = 'global-search-overlay';
+    overlay.style.display = 'none';
+    overlay.onclick = function(e) {
+      if (e.target === overlay) {
+        window.closeGlobalSearchModal();
+      }
+    };
+
+    overlay.innerHTML = `
+      <div class="global-search-container" id="global-search-container" onclick="event.stopPropagation()">
+        <!-- Header with Input -->
+        <div class="search-modal-header">
+          <button type="button" class="search-modal-back-btn" onclick="window.closeGlobalSearchModal()" title="Back / Close" aria-label="Back">
+            <svg viewBox="0 0 24 24" width="22" height="22" fill="none" stroke="currentColor" stroke-width="2.3">
+              <line x1="19" y1="12" x2="5" y2="12"></line>
+              <polyline points="12 19 5 12 12 5"></polyline>
+            </svg>
+          </button>
+
+          <div class="search-modal-input-wrap">
+            <svg class="search-modal-input-icon" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.3">
+              <circle cx="11" cy="11" r="8"></circle>
+              <line x1="21" y1="21" x2="16.65" y2="16.65"></line>
+            </svg>
+            <input type="text" id="modal-search-input" class="modal-search-input" placeholder="Search water peti, brand (Bisleri, Kinley), cold drink, juice..." autocomplete="off" spellcheck="false">
+            <button type="button" id="modal-search-clear-btn" class="modal-search-clear-btn" style="display:none;" onclick="window.clearModalSearch()" title="Clear search" aria-label="Clear Search">
+              <svg viewBox="0 0 24 24" width="15" height="15" fill="none" stroke="currentColor" stroke-width="2.5">
+                <line x1="18" y1="6" x2="6" y2="18"></line>
+                <line x1="6" y1="6" x2="18" y2="18"></line>
+              </svg>
+            </button>
+          </div>
+
+          <button type="button" class="search-modal-close-desktop-btn" onclick="window.closeGlobalSearchModal()" title="Close Search (Esc)">
+            <span class="esc-kbd">ESC</span>
+            <svg viewBox="0 0 24 24" width="18" height="18" fill="none" stroke="currentColor" stroke-width="2.2">
+              <line x1="18" y1="6" x2="6" y2="18"></line>
+              <line x1="6" y1="6" x2="18" y2="18"></line>
+            </svg>
+          </button>
+        </div>
+
+        <!-- Trending Search Chips -->
+        <div class="search-modal-chips-bar">
+          <span class="search-chips-label">Popular in Sikar:</span>
+          <div class="search-chips-scroll">
+            <button type="button" class="search-chip-pill" onclick="window.applyModalSearchChip('Bisleri 1L')">Bisleri 1L Peti</button>
+            <button type="button" class="search-chip-pill" onclick="window.applyModalSearchChip('Kinley 1L')">Kinley 1L Case</button>
+            <button type="button" class="search-chip-pill" onclick="window.applyModalSearchChip('250ml')">250ml Wedding Peti</button>
+            <button type="button" class="search-chip-pill" onclick="window.applyModalSearchChip('Coca-Cola')">Coca-Cola Peti</button>
+            <button type="button" class="search-chip-pill" onclick="window.applyModalSearchChip('Limca')">Limca 300ml Crate</button>
+            <button type="button" class="search-chip-pill" onclick="window.applyModalSearchChip('Thums Up')">Thums Up Peti</button>
+            <button type="button" class="search-chip-pill" onclick="window.applyModalSearchChip('Real')">Real Fruit Juice</button>
+            <button type="button" class="search-chip-pill" onclick="window.applyModalSearchChip('Soda')">Club Soda Crate</button>
+            <button type="button" class="search-chip-pill" onclick="window.applyModalSearchChip('wedding')">Shaadi Vivah Bundle</button>
+            <button type="button" class="search-chip-pill" onclick="window.applyModalSearchChip('Aquafina')">Aquafina 500ml</button>
+          </div>
+        </div>
+
+        <!-- Results Body -->
+        <div class="search-modal-results-body" id="modal-search-results-body"></div>
+
+        <!-- Footer -->
+        <div class="search-modal-footer">
+          <div class="search-modal-footer-stats">
+            <span>Instant Sikar Mandi Delivery (40 Mins)</span>
+            <span>•</span>
+            <span>100% Factory Sealed Cases</span>
+          </div>
+          <button type="button" class="search-modal-view-catalog-btn" onclick="window.viewAllResultsInCatalog()">
+            <span>View in Catalog</span>
+            <svg viewBox="0 0 24 24" width="15" height="15" fill="none" stroke="currentColor" stroke-width="2.5">
+              <line x1="5" y1="12" x2="19" y2="12"></line>
+              <polyline points="12 5 19 12 12 19"></polyline>
+            </svg>
+          </button>
+        </div>
+      </div>
+    `;
+
+    document.body.appendChild(overlay);
+
+    const input = document.getElementById('modal-search-input');
+    if (input) {
+      input.addEventListener('input', function() {
+        window.handleModalSearchInput(this.value);
+      });
+      input.addEventListener('keydown', function(e) {
+        if (e.key === 'Enter') {
+          e.preventDefault();
+          window.viewAllResultsInCatalog();
+        } else if (e.key === 'Escape') {
+          e.preventDefault();
+          window.closeGlobalSearchModal();
+        }
+      });
+    }
+  }
+
+  window.openGlobalSearchModal = function(initialVal) {
+    ensureSearchModalHTML();
+    const overlay = document.getElementById('global-search-modal-overlay');
+    const input = document.getElementById('modal-search-input');
+    if (!overlay || !input) return;
+
+    overlay.style.display = 'flex';
+    document.body.style.overflow = 'hidden';
+
+    const val = (initialVal !== undefined && initialVal !== null) ? String(initialVal).trim() : '';
+    input.value = val;
+    window.handleModalSearchInput(val);
+
+    setTimeout(() => {
+      input.focus();
+      if (val) input.setSelectionRange(val.length, val.length);
+    }, 60);
+  };
+
+  window.closeGlobalSearchModal = function() {
+    const overlay = document.getElementById('global-search-modal-overlay');
+    if (overlay) overlay.style.display = 'none';
+    document.body.style.overflow = '';
+  };
+
+  window.clearModalSearch = function() {
+    const input = document.getElementById('modal-search-input');
+    if (input) {
+      input.value = '';
+      input.focus();
+    }
+    window.handleModalSearchInput('');
+  };
+
+  window.applyModalSearchChip = function(text) {
+    const input = document.getElementById('modal-search-input');
+    if (input) {
+      input.value = text;
+      input.focus();
+    }
+    document.querySelectorAll('.search-chip-pill').forEach(btn => {
+      btn.classList.toggle('active', btn.textContent.toLowerCase().includes(text.toLowerCase()));
+    });
+    window.handleModalSearchInput(text);
+  };
+
+  window.handleModalSearchInput = function(val) {
+    const query = String(val || '').trim();
+    const clearBtn = document.getElementById('modal-search-clear-btn');
+    if (clearBtn) clearBtn.style.display = query ? 'inline-flex' : 'none';
+
+    renderModalResults(query);
+  };
+
+  function getAvailableCatalog() {
+    let prods = [];
+    if (typeof PRODUCTS !== 'undefined' && Array.isArray(PRODUCTS) && PRODUCTS.length > 0) {
+      prods = PRODUCTS;
+    } else if (window.PRODUCTS && Array.isArray(window.PRODUCTS) && window.PRODUCTS.length > 0) {
+      prods = window.PRODUCTS;
+    } else {
+      prods = JSON.parse(localStorage.getItem('sikar_admin_products') || '[]');
+    }
+
+    let bundles = [];
+    if (typeof WHOLESALE_BUNDLES !== 'undefined' && Array.isArray(WHOLESALE_BUNDLES) && WHOLESALE_BUNDLES.length > 0) {
+      bundles = WHOLESALE_BUNDLES;
+    } else {
+      bundles = JSON.parse(localStorage.getItem('sikar_admin_bundles') || '[]');
+    }
+
+    return { prods, bundles };
+  }
+
+  function scoreSearchItem(item, query, isBundle) {
+    if (!query) return 1;
+    const q = query.toLowerCase();
+    const title = (item.title || '').toLowerCase();
+    const spec = (item.spec || item.desc || '').toLowerCase();
+    const cat = (item.category || '').toLowerCase();
+    const sku = (item.sku || '').toLowerCase();
+    const desc = (item.description || item.desc || '').toLowerCase();
+    const combined = `${title} ${spec} ${cat} ${sku} ${desc}`;
+
+    if (title === q) return 100;
+    if (title.startsWith(q)) return 85;
+    if (title.includes(q)) return 70;
+    if (combined.includes(q)) return 55;
+
+    const tokens = q.split(/\s+/).filter(Boolean);
+    let score = 0;
+    let matchedCount = 0;
+
+    for (const t of tokens) {
+      let matched = false;
+      if (combined.includes(t)) {
+        matched = true;
+        score += 15;
+        if (title.includes(t)) score += 10;
+      } else {
+        if (!isNaN(t) && combined.includes(t + 'ml')) { matched = true; score += 12; }
+        else if (!isNaN(t) && (combined.includes(t + 'l') || combined.includes(t + ' liter'))) { matched = true; score += 12; }
+        else if (t.endsWith('l') && combined.includes(t.replace('l', ' liter'))) { matched = true; score += 12; }
+        else if (t === 'pani' || t === 'paani' || t === 'water') {
+          if (combined.includes('water') || combined.includes('bisleri') || combined.includes('kinley') || combined.includes('aquafina')) { matched = true; score += 12; }
+        } else if (t === 'peti' || t === 'case' || t === 'crate' || t === 'box') {
+          if (combined.includes('case') || combined.includes('peti') || combined.includes('crate') || combined.includes('shrink')) { matched = true; score += 12; }
+        } else if (t === 'cold' || t === 'drink' || t === 'colddrink' || t === 'cola') {
+          if (combined.includes('cola') || combined.includes('drink') || combined.includes('soft') || combined.includes('thums') || combined.includes('sprite')) { matched = true; score += 12; }
+        } else if (t === 'shadi' || t === 'vivah' || t === 'shaadi' || t === 'marriage' || t === 'banquet') {
+          if (combined.includes('wedding') || combined.includes('shaadi') || combined.includes('vivah') || combined.includes('banquet') || isBundle) { matched = true; score += 20; }
+        } else if (t === 'hostel' || t === 'pg' || t === 'coaching') {
+          if (combined.includes('hostel') || combined.includes('pg') || combined.includes('coaching') || isBundle) { matched = true; score += 20; }
+        } else if (t === 'bislery' || t === 'bisleri') {
+          if (combined.includes('bisleri')) { matched = true; score += 15; }
+        } else if (t === 'kinly' || t === 'kinley') {
+          if (combined.includes('kinley')) { matched = true; score += 15; }
+        } else if (t === 'juice' || t === 'frooti') {
+          if (combined.includes('juice') || combined.includes('mango') || combined.includes('tetra')) { matched = true; score += 12; }
+        }
+      }
+
+      if (matched) matchedCount++;
+    }
+
+    if (matchedCount === tokens.length) return score;
+    if (matchedCount > 0) return score * (matchedCount / tokens.length);
+    return 0;
+  }
+
+  function highlightTerms(text, query) {
+    if (!text) return '';
+    const cleanText = String(text);
+    if (!query) return cleanText;
+    const tokens = String(query).trim().split(/\s+/).filter(Boolean);
+    if (tokens.length === 0) return cleanText;
+    let res = cleanText;
+    tokens.forEach(tok => {
+      const regTok = tok.replace(/[.*+?^${}()|[\]\\]/g, '\\$&');
+      if (regTok.length > 1) {
+        const regex = new RegExp(`(${regTok})`, 'gi');
+        res = res.replace(regex, '<mark style="background:#FEF08A; color:#854D0E; font-weight:700; padding:0 2px; border-radius:2px;">$1</mark>');
+      }
+    });
+    return res;
+  }
+
+  function renderModalResults(query) {
+    const container = document.getElementById('modal-search-results-body');
+    if (!container) return;
+
+    const { prods, bundles } = getAvailableCatalog();
+    const currentCart = JSON.parse(localStorage.getItem('sikar_cart') || '{}');
+
+    // 1. Initial State: No query typed -> Show Trending Wholesale Products
+    if (!query) {
+      const popular = prods.slice(0, 6);
+      container.innerHTML = `
+        <div class="search-results-meta-header">
+          <span>Top Trending Wholesale Cases & Petis in Sikar</span>
+          <span class="search-results-meta-badge">Direct Mandi Depot</span>
+        </div>
+        ${popular.map(p => renderSearchResultItem(p, '', currentCart, false)).join('')}
+      `;
+      return;
+    }
+
+    // 2. Query typed -> Match bundles & products
+    const matchedBundles = bundles
+      .map(b => ({ item: b, score: scoreSearchItem(b, query, true), isBundle: true }))
+      .filter(x => x.score > 0);
+
+    const matchedProds = prods
+      .map(p => ({ item: p, score: scoreSearchItem(p, query, false), isBundle: false }))
+      .filter(x => x.score > 0);
+
+    const allMatches = [...matchedBundles, ...matchedProds].sort((a, b) => b.score - a.score);
+
+    if (allMatches.length === 0) {
+      container.innerHTML = `
+        <div class="search-modal-empty">
+          <svg class="search-modal-empty-icon" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8">
+            <circle cx="11" cy="11" r="8"></circle>
+            <line x1="21" y1="21" x2="16.65" y2="16.65"></line>
+            <line x1="8" y1="11" x2="14" y2="11"></line>
+          </svg>
+          <div class="search-modal-empty-title">No wholesale beverage found for "${query}"</div>
+          <div class="search-modal-empty-desc">
+            Check the spelling or try searching by popular brand (Bisleri, Kinley, Coca-Cola), bottle size (250ml, 1L, 2L), or wholesale peti.
+          </div>
+          <div style="display:flex; flex-wrap:wrap; gap:6px; justify-content:center;">
+            <button type="button" class="search-chip-pill" onclick="window.applyModalSearchChip('Bisleri 1L')">Bisleri 1L Peti</button>
+            <button type="button" class="search-chip-pill" onclick="window.applyModalSearchChip('250ml')">250ml Water Peti</button>
+            <button type="button" class="search-chip-pill" onclick="window.applyModalSearchChip('Coca-Cola')">Coca-Cola Peti</button>
+            <button type="button" class="search-chip-pill" onclick="window.applyModalSearchChip('Limca')">Limca 300ml</button>
+            <button type="button" class="search-chip-pill" onclick="window.applyModalSearchChip('wedding')">Shaadi Vivah Bundle</button>
+          </div>
+        </div>
+      `;
+      return;
+    }
+
+    container.innerHTML = `
+      <div class="search-results-meta-header">
+        <span>Wholesale Results for "${query}"</span>
+        <span class="search-results-meta-badge">${allMatches.length} Items Found</span>
+      </div>
+      ${allMatches.map(m => renderSearchResultItem(m.item, query, currentCart, m.isBundle)).join('')}
+    `;
+  }
+
+  function renderSearchResultItem(item, query, currentCart, isBundle) {
+    const id = String(item.id);
+    const qty = currentCart[id] || 0;
+    const price = item.price || 0;
+    const mrp = item.mrp || 0;
+    const saveAmt = (mrp > price) ? (mrp - price) : (item.save_amt || 0);
+    const titleHighlighted = highlightTerms(item.title, query);
+    const specHighlighted = highlightTerms(item.spec || item.desc || '', query);
+    const image = item.image || (isBundle ? 'assets/cat_wedding_supply.webp' : 'assets/cat_water_cases.webp');
+    const badgeText = isBundle
+      ? (item.badge || 'Wholesale Event Bundle')
+      : (item.category ? item.category.toUpperCase() : 'WHOLESALE PETI');
+
+    const badgeClass = isBundle ? 'search-card-bundle-badge' : 'search-card-cat-badge';
+
+    return `
+      <div class="search-result-card" onclick="window.handleModalItemClick('${id}', ${isBundle})">
+        <div class="search-card-thumb-wrap">
+          <img src="${image}" alt="${item.title}" class="search-card-thumb" loading="lazy">
+        </div>
+        <div class="search-card-info">
+          <div class="search-card-top-tags">
+            <span class="${badgeClass}">${badgeText}</span>
+          </div>
+          <div class="search-card-title">${titleHighlighted}</div>
+          <div class="search-card-spec">${specHighlighted}</div>
+          <div class="search-card-price-row tabular">
+            <span class="search-card-price">₹${price}</span>
+            ${mrp > price ? `<span class="search-card-mrp">₹${mrp}</span>` : ''}
+            ${saveAmt > 0 ? `<span class="search-card-save">Save ₹${saveAmt}</span>` : ''}
+          </div>
+        </div>
+        <div class="search-card-action" onclick="event.stopPropagation()">
+          ${qty > 0 ? `
+            <div class="search-card-stepper tabular">
+              <button type="button" class="search-card-stepper-btn" onclick="window.handleModalCartStep('${id}', -1, event)">-</button>
+              <span class="search-card-stepper-qty">${qty}</span>
+              <button type="button" class="search-card-stepper-btn" onclick="window.handleModalCartStep('${id}', 1, event)">+</button>
+            </div>
+          ` : `
+            <button type="button" class="search-card-add-btn" onclick="window.handleModalCartStep('${id}', 1, event)">
+              + Add
+            </button>
+          `}
+        </div>
+      </div>
+    `;
+  }
+
+  window.handleModalCartStep = function(id, delta, event) {
+    if (event) event.stopPropagation();
+
+    if (typeof updateCart === 'function') {
+      updateCart(id, delta, event);
+    } else {
+      const c = JSON.parse(localStorage.getItem('sikar_cart') || '{}');
+      const cur = c[id] || 0;
+      const next = cur + delta;
+      if (next <= 0) delete c[id];
+      else c[id] = next;
+      localStorage.setItem('sikar_cart', JSON.stringify(c));
+
+      if (typeof updateCartUI === 'function') updateCartUI();
+    }
+
+    const input = document.getElementById('modal-search-input');
+    renderModalResults(input ? input.value : '');
+  };
+
+  window.handleModalItemClick = function(id, isBundle) {
+    window.closeGlobalSearchModal();
+    if (!isBundle && typeof openQuickView === 'function') {
+      openQuickView(id);
+    } else if (isBundle) {
+      if (window.location.pathname.includes('bulk.html')) {
+        const el = document.getElementById(`bundle-card-${id}`);
+        if (el) el.scrollIntoView({ behavior: 'smooth', block: 'center' });
+      } else {
+        window.location.href = `/bulk.html#bundle-${id}`;
+      }
+    } else {
+      if (typeof openQuickView === 'function') {
+        openQuickView(id);
+      } else {
+        window.location.href = `/?q=${encodeURIComponent(id)}`;
+      }
+    }
+  };
+
+  window.viewAllResultsInCatalog = function() {
+    const input = document.getElementById('modal-search-input');
+    const q = input ? input.value.trim() : '';
+    window.closeGlobalSearchModal();
+
+    if (window.location.pathname === '/' || window.location.pathname.endsWith('index.html') || window.location.pathname === '') {
+      if (typeof handleSearch === 'function') handleSearch(q);
+      const inputHeader = document.getElementById('global-search-input');
+      if (inputHeader) inputHeader.value = q;
+      const sec = document.getElementById('products-section');
+      if (sec) sec.scrollIntoView({ behavior: 'smooth', block: 'start' });
+    } else {
+      window.location.href = `/?q=${encodeURIComponent(q)}`;
+    }
+  };
+
+  // Wire up page inputs to open the expanded modal
+  function bindSearchTriggers() {
+    ensureSearchModalHTML();
+
+    document.querySelectorAll('.nav-search-bar, .nav-search-input, #global-search-input, #header-nav-search-bar').forEach(el => {
+      if (el.dataset.searchModalBound) return;
+      el.dataset.searchModalBound = 'true';
+
+      el.addEventListener('click', function(e) {
+        if (e.target && e.target.closest('#search-clear-btn')) return;
+        e.preventDefault();
+        const currentVal = (this.value !== undefined) ? this.value : (this.querySelector('input')?.value || '');
+        window.openGlobalSearchModal(currentVal);
+      });
+
+      el.addEventListener('focus', function(e) {
+        e.preventDefault();
+        const currentVal = (this.value !== undefined) ? this.value : '';
+        window.openGlobalSearchModal(currentVal);
+      });
+    });
+
+    // Global keyboard hotkeys: Ctrl+K or / or Escape
+    document.addEventListener('keydown', function(e) {
+      if ((e.ctrlKey || e.metaKey) && e.key.toLowerCase() === 'k') {
+        e.preventDefault();
+        const overlay = document.getElementById('global-search-modal-overlay');
+        if (overlay && overlay.style.display === 'flex') {
+          window.closeGlobalSearchModal();
+        } else {
+          window.openGlobalSearchModal();
+        }
+      } else if (e.key === '/' && document.activeElement && !['INPUT', 'TEXTAREA'].includes(document.activeElement.tagName)) {
+        e.preventDefault();
+        window.openGlobalSearchModal();
+      } else if (e.key === 'Escape') {
+        const overlay = document.getElementById('global-search-modal-overlay');
+        if (overlay && overlay.style.display === 'flex') {
+          window.closeGlobalSearchModal();
+        }
+      }
+    });
+  }
+
+  if (document.readyState === 'complete' || document.readyState === 'interactive') {
+    bindSearchTriggers();
+  } else {
+    document.addEventListener('DOMContentLoaded', bindSearchTriggers);
+  }
+})();
+

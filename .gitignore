@@ -12,3 +12,4 @@ data/*-shm
 .env
 .env.local
 .env*
+scratch/

@@ -1,0 +1,11 @@
+node_modules
+scratch
+.git
+.impeccable
+*.log
+*.bak
+data/*-wal
+data/*-shm
+.env.local
+.env*
+test_*.js

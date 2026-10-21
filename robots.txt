@@ -3,5 +3,7 @@ Allow: /
 Disallow: /admin
 Disallow: /admin/
 Disallow: /api/
+Disallow: /cart
+Disallow: /track
 
 Sitemap: https://sikar-drop.vercel.app/sitemap.xml

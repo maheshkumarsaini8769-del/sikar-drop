@@ -1,6 +1,6 @@
 const puppeteer = require('puppeteer');
 
-const BASE_URL = 'http://127.0.0.1:8080';
+const BASE_URL = process.env.BASE_URL || 'http://127.0.0.1:8090';
 
 // Colors for clean output
 const PASS = '\x1b[32m[PASS]\x1b[0m';
@@ -125,7 +125,7 @@ async function runAudit() {
         unit: 'Peti',
         rating: 4.8,
         reviews_count: 14,
-        image: 'assets/cat_chilled_cans.jpg',
+        image: 'assets/cat_chilled_cans.webp',
         badge: 'Fresh Batch',
         badge_class: 'new',
         active: 1
@@ -152,7 +152,7 @@ async function runAudit() {
         mrp: testProdMrp,
         pieces: '24 Cans',
         unit: 'Peti',
-        image: 'assets/cat_chilled_cans.jpg'
+        image: 'assets/cat_chilled_cans.webp'
       })
     });
     assert(putProdRes.ok, `Product updated via Admin API`);
@@ -188,7 +188,7 @@ async function runAudit() {
         id: testCatId,
         name: testCatName,
         tagline: 'Fast Delivery in Sikar',
-        image: 'assets/cat_chilled_cans.jpg',
+        image: 'assets/cat_chilled_cans.webp',
         display_order: 99
       })
     });

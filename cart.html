@@ -3,8 +3,10 @@
 <head>
   <meta charset="UTF-8">
   <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <meta name="robots" content="noindex, follow">
+  <meta name="theme-color" content="#0284C7">
   
-  <title>Your Wholesale Dispatch Cart | Sikar Drop Depot</title>
+  <title>Your Wholesale Dispatch Cart | Sikar Water Bottle Supply</title>
   <meta name="description" content="Review your wholesale beverage carton order, apply promo coupons, and confirm local Sikar delivery on Sikar Drop. Fast tempo unloading across Piprali & Nawalgarh Road.">
     <!-- FAVICONS -->
   <link rel="icon" type="image/svg+xml" href="/favicon.svg">
@@ -197,12 +199,10 @@
       <!-- 1. BRAND LOGO -->
       <a href="/" class="brand-block">
         <div class="brand-icon-drop">
-          <svg viewBox="0 0 24 24" fill="currentColor">
-            <path d="M12 2.69l5.66 5.66a8 8 0 1 1-11.31 0z"></path>
-          </svg>
+          <img src="/assets/sikar_drop_icon.webp" alt="Sikar Drop Logo" class="brand-logo-img" width="36" height="36">
         </div>
         <div class="brand-text-col">
-          <div class="brand-title">SIKAR <span class="accent-blue">DROP</span></div>
+          <div class="brand-title"><span class="brand-name-main">SIKAR</span> <span class="accent-blue brand-name-sub">WATER BOTTLE SUPPLY</span></div>
           <span class="brand-tagline">Pure Water. Healthy Life.</span>
         </div>
       </a>
@@ -221,12 +221,12 @@
       </nav>
 
       <!-- 3. SEARCH BAR -->
-      <div class="nav-search-bar">
+      <div class="nav-search-bar" onclick="if(window.openGlobalSearchModal) window.openGlobalSearchModal(this.querySelector('input')?.value)">
         <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.3">
           <circle cx="11" cy="11" r="8"></circle>
           <line x1="21" y1="21" x2="16.65" y2="16.65"></line>
         </svg>
-        <input type="text" class="nav-search-input" placeholder="Search water, pack, brand..." onkeyup="if(event.key==='Enter') window.location.href='/products?q=' + encodeURIComponent(this.value)">
+        <input type="text" class="nav-search-input" placeholder="Search water, pack, brand..." onclick="if(window.openGlobalSearchModal) { event.stopPropagation(); window.openGlobalSearchModal(this.value); }" onfocus="if(window.openGlobalSearchModal) window.openGlobalSearchModal(this.value)" autocomplete="off">
       </div>
 
       <!-- 4. RIGHT ACTION ICONS -->
@@ -336,15 +336,21 @@
               <div class="checkout-form-group">
                 <label for="order-delivery-corridor">Sikar Delivery Locality / Corridor *</label>
                 <select id="order-delivery-corridor" required onchange="verifyAreaAvailability(this.value)">
-                  <option value="">-- Loading Serviceable Delivery Areas... --</option>
+                  <option value="">-- Select Your Sikar Area --</option>
+                  <option value="Piprali Road (Coaching Hub & Marriage Gardens)">Piprali Road (Coaching Hub & Marriage Gardens)</option>
+                  <option value="Nawalgarh Road & Pullia Market">Nawalgarh Road & Pullia Market</option>
+                  <option value="Station Road, Subhash Chowk & Krishi Mandi">Station Road, Subhash Chowk & Krishi Mandi</option>
+                  <option value="Fatehpur Road & Sabalpura Corridor">Fatehpur Road & Sabalpura Corridor</option>
+                  <option value="Rani Sati Road, Silver Jubilee & Collectorate">Rani Sati Road & Silver Jubilee Road</option>
+                  <option value="Salasar Stand, Jaipur Road & Industrial Area">Salasar Stand, Jaipur Road & RIICO</option>
                 </select>
               </div>
 
-              <div id="corridor-availability-alert" style="display: none; padding: 10px 14px; border-radius: var(--radius-xs); font-size: 0.82rem; font-weight: 700; margin-bottom: 12px; line-height: 1.45;"></div>
+              <div id="corridor-availability-alert" style="display: none; padding: 8px 12px; border-radius: var(--radius-xs); font-size: 0.8rem; font-weight: 700; margin-bottom: 12px;"></div>
 
               <div class="checkout-form-group">
-                <label for="order-cust-address">Street Address, Colony / Landmark *</label>
-                <textarea id="order-cust-address" rows="2" required placeholder="Shop number, colony name, landmark, 6-digit pincode..." oninput="handleAddressInput(this.value)"></textarea>
+                <label for="order-cust-address">Street Address / Landmark *</label>
+                <textarea id="order-cust-address" rows="2" required placeholder="Shop number, marriage garden gate, colony name, landmark..."></textarea>
               </div>
 
               <div class="checkout-form-group">
@@ -408,24 +414,31 @@
   <script src="assets/site.js"></script>
   <script>
     let pageAppliedCoupon = null;
-    let activeDeliveryZones = [];
-    let currentCalculatedShippingFee = 0;
-    let currentSelectedZone = null;
 
     window.addEventListener('DOMContentLoaded', async () => {
       await initStorefrontTheme();
       await loadCatalogFromBackend();
-      await loadCartDeliveryZones();
       renderFullCartPage();
-
-      // Listen for payment method radio button changes
-      document.querySelectorAll('input[name="pay-method"]').forEach(r => {
-        r.addEventListener('change', () => {
-          const corridor = document.getElementById('order-delivery-corridor')?.value;
-          if (corridor) verifyAreaAvailability(corridor);
-        });
-      });
     });
+
+    function getCartItemDetails(id) {
+      let prod = PRODUCTS.find(p => String(p.id) === String(id));
+      if (prod) return prod;
+      const bundles = (typeof WHOLESALE_BUNDLES !== 'undefined' && Array.isArray(WHOLESALE_BUNDLES))
+        ? WHOLESALE_BUNDLES
+        : JSON.parse(localStorage.getItem('sikar_admin_bundles') || '[]');
+      const b = bundles.find(item => String(item.id) === String(id));
+      if (b) {
+        return {
+          id: b.id,
+          title: b.title,
+          spec: (b.specs && b.specs[0]) || 'Wholesale Event Bundle',
+          price: Number(b.price) || 0,
+          image: b.image || 'assets/cat_wedding_supply.webp'
+        };
+      }
+      return null;
+    }
 
     function renderFullCartPage() {
       const cart = JSON.parse(localStorage.getItem('sikar_cart') || '{}');
@@ -444,7 +457,7 @@
 
       for (const [id, qty] of Object.entries(cart)) {
         if (qty <= 0) continue;
-        const prod = PRODUCTS.find(p => String(p.id) === String(id));
+        const prod = getCartItemDetails(id);
         if (!prod) continue;
 
         totalItems += qty;
@@ -453,10 +466,10 @@
 
         html += `
           <div class="cart-item-row" id="cart-row-${prod.id}">
-            <img src="${prod.image}" alt="${prod.title}" class="cart-item-img">
+            <img src="${prod.image}" alt="${prod.title}" class="cart-item-img" onerror="this.src='assets/cat_wedding_supply.webp'">
             <div class="cart-item-details">
               <h3 class="cart-item-title">${escapeHTML(prod.title)}</h3>
-              <p class="cart-item-sub">${escapeHTML(prod.spec || 'Wholesale Peti')} • ₹${prod.price}/box</p>
+              <p class="cart-item-sub">${escapeHTML(prod.spec || 'Wholesale Peti')} • ₹${prod.price.toLocaleString('en-IN')}/unit</p>
               <div class="cart-item-price tabular">₹${lineTotal.toLocaleString('en-IN')}</div>
             </div>
             <div style="display: flex; align-items: center; gap: 6px;">
@@ -503,7 +516,7 @@
         discountRow.style.display = 'none';
       }
 
-      const grandTotal = Math.max(0, subtotal - discountAmt + (currentCalculatedShippingFee || 0));
+      const grandTotal = Math.max(0, subtotal - discountAmt);
       subtotalEl.textContent = `₹${subtotal.toLocaleString('en-IN')}`;
       totalEl.textContent = `₹${grandTotal.toLocaleString('en-IN')}`;
     }
@@ -519,8 +532,6 @@
       }
       localStorage.setItem('sikar_cart', JSON.stringify(cart));
       renderFullCartPage();
-      const corridor = document.getElementById('order-delivery-corridor')?.value;
-      if (corridor) verifyAreaAvailability(corridor);
       showToast(delta > 0 ? 'Quantity increased' : 'Cart updated');
     }
 
@@ -578,176 +589,34 @@
       }
     }
 
-    async function loadCartDeliveryZones() {
-      try {
-        const res = await fetch('/api/delivery-zones');
-        if (res.ok) {
-          const data = await res.json();
-          if (Array.isArray(data)) {
-            activeDeliveryZones = data;
-            populateCartDeliverySelect();
-          }
-        }
-      } catch (err) {
-        console.warn('Failed to load delivery zones:', err);
-      }
-    }
-
-    function populateCartDeliverySelect() {
-      const sel = document.getElementById('order-delivery-corridor');
-      if (!sel) return;
-      const active = activeDeliveryZones.filter(z => Number(z.serviceable) === 1);
-      if (active.length === 0) {
-        sel.innerHTML = '<option value="">No serviceable delivery zones active</option>';
-        return;
-      }
-      const prevVal = sel.value;
-      sel.innerHTML = '<option value="">-- Select Your Sikar Delivery Area --</option>' +
-        active.map(z => `
-          <option value="${escapeHTML(z.area_name)}" data-pincode="${escapeHTML(z.pincode)}" data-id="${escapeHTML(z.id)}">
-            ${escapeHTML(z.area_name)} (Pincode: ${escapeHTML(z.pincode)})
-          </option>
-        `).join('');
-      if (prevVal && active.some(z => z.area_name === prevVal)) {
-        sel.value = prevVal;
-      }
-    }
-
-    let addressCheckTimer = null;
-    function handleAddressInput(text) {
-      clearTimeout(addressCheckTimer);
-      addressCheckTimer = setTimeout(() => {
-        const t = (text || '').trim();
-        const sel = document.getElementById('order-delivery-corridor');
-        if (!sel) return;
-        const currentSelVal = sel.value;
-        const checkTarget = t.length >= 4 ? `${currentSelVal} ${t}` : currentSelVal;
-        if (checkTarget) {
-          verifyAreaAvailability(checkTarget);
-        }
-      }, 350);
-    }
-
-    async function verifyAreaAvailability(queryLocation) {
+    async function verifyAreaAvailability(areaName) {
       const alertBox = document.getElementById('corridor-availability-alert');
-      const delivChargeEl = document.getElementById('page-delivery-charge');
-      const totalEl = document.getElementById('page-cart-total');
-      const btn = document.getElementById('btn-place-order');
-      const codRadio = document.querySelector('input[name="pay-method"][value="COD"]');
-      const upiRadio = document.querySelector('input[name="pay-method"][value="UPI"]');
-
-      const cart = JSON.parse(localStorage.getItem('sikar_cart') || '{}');
-      let subtotal = 0;
-      for (const [id, qty] of Object.entries(cart)) {
-        if (qty <= 0) continue;
-        const prod = PRODUCTS.find(p => String(p.id) === String(id));
-        if (prod) subtotal += prod.price * qty;
-      }
-
-      let discountAmt = 0;
-      if (pageAppliedCoupon && subtotal >= (pageAppliedCoupon.minOrder || 0)) {
-        discountAmt = Math.min(Math.round((subtotal * pageAppliedCoupon.pct) / 100), pageAppliedCoupon.maxDiscount || 500);
-      }
-
-      if (!queryLocation) {
-        if (alertBox) alertBox.style.display = 'none';
-        currentCalculatedShippingFee = 0;
-        currentSelectedZone = null;
-        if (delivChargeEl) delivChargeEl.innerHTML = '<span style="color:var(--text-muted);">Select Area</span>';
-        if (totalEl) totalEl.textContent = '₹' + Math.max(0, subtotal - discountAmt).toLocaleString('en-IN');
-        if (codRadio) codRadio.disabled = false;
-        if (btn) { btn.disabled = false; btn.style.opacity = '1'; }
+      if (!areaName) {
+        alertBox.style.display = 'none';
         return;
       }
 
       try {
-        const payMethod = document.querySelector('input[name="pay-method"]:checked')?.value || 'COD';
-        const res = await fetch(`/api/delivery-zones/check?area=${encodeURIComponent(queryLocation)}&subtotal=${subtotal}&paymentMethod=${payMethod}`);
+        const res = await fetch(`/api/delivery-zones/check?area=${encodeURIComponent(areaName)}`);
         const data = await res.json();
-        currentSelectedZone = data.zone;
-
-        if (alertBox) alertBox.style.display = 'block';
-
-        if (data.available && data.zone) {
-          currentCalculatedShippingFee = Number(data.shippingFee || 0);
-
-          // Synchronize dropdown if matched from address
-          const sel = document.getElementById('order-delivery-corridor');
-          if (sel && (!sel.value || sel.value !== data.zone.area_name)) {
-            const hasOption = Array.from(sel.options).some(o => o.value === data.zone.area_name);
-            if (hasOption) sel.value = data.zone.area_name;
-          }
-
-          // COD Policy Enforcement
-          const codAllowed = Boolean(data.codAvailable);
-          if (codRadio && upiRadio) {
-            if (!codAllowed) {
-              codRadio.disabled = true;
-              upiRadio.checked = true;
-            } else {
-              codRadio.disabled = false;
-            }
-          }
-
-          // Shipping Charge UI
-          if (delivChargeEl) {
-            if (currentCalculatedShippingFee === 0) {
-              delivChargeEl.innerHTML = '<strong style="color: #15803D;">FREE Express</strong>';
-            } else {
-              delivChargeEl.innerHTML = `<strong style="color: #0F172A;">₹${currentCalculatedShippingFee}</strong>`;
-            }
-          }
-
-          // Grand Total UI
-          const grandTotal = Math.max(0, subtotal - discountAmt + currentCalculatedShippingFee);
-          if (totalEl) totalEl.textContent = '₹' + grandTotal.toLocaleString('en-IN');
-
-          // Alert Message Box
+        alertBox.style.display = 'block';
+        if (data.available) {
           alertBox.style.background = '#ECFDF5';
           alertBox.style.border = '1px solid #A7F3D0';
           alertBox.style.color = '#065F46';
-
-          let alertHtml = `<div><strong>Serviceable Sikar Zone:</strong> Express delivery in ${escapeHTML(data.zone.eta || '45-60 Mins')} (Pincode: ${escapeHTML(data.zone.pincode)})</div>`;
-          if (data.isFreeShipping) {
-            alertHtml += `<div style="color:#15803D; font-weight:800; margin-top:3px;">FREE Express Shipping Applied!</div>`;
-          } else if (Number(data.zone.free_delivery_threshold || 0) > 0) {
-            const remainingForFree = Math.max(0, Number(data.zone.free_delivery_threshold) - subtotal);
-            if (remainingForFree > 0) {
-              alertHtml += `<div style="color:#0284C7; margin-top:3px;">Add ₹${remainingForFree} more for FREE Delivery!</div>`;
-            }
-          }
-          if (!codAllowed) {
-            alertHtml += `<div style="color:#B45309; font-weight:700; margin-top:3px;">Notice: Cash on Delivery is disabled in ${escapeHTML(data.zone.area_name)} by Admin policy. Please pay via UPI.</div>`;
-          }
-          alertBox.innerHTML = alertHtml;
-
-          if (btn) { btn.disabled = false; btn.style.opacity = '1'; }
+          alertBox.innerHTML = `<strong>Serviceable Zone:</strong> Express Tempo Delivery in ${data.zone ? data.zone.eta : '45-60 Mins'} (Pincode: 332001)`;
         } else {
-          currentCalculatedShippingFee = 0;
-          if (delivChargeEl) delivChargeEl.innerHTML = '<span style="color:#DC2626; font-size:0.84rem;">Unavailable</span>';
-          const grandTotal = Math.max(0, subtotal - discountAmt);
-          if (totalEl) totalEl.textContent = '₹' + grandTotal.toLocaleString('en-IN');
-
           alertBox.style.background = '#FEF2F2';
           alertBox.style.border = '1px solid #FECACA';
           alertBox.style.color = '#991B1B';
-
-          if (data.reason === 'min_order_shortfall') {
-            alertBox.innerHTML = `<strong>Minimum Order Shortfall:</strong> ${escapeHTML(data.message)}`;
-            if (btn) { btn.disabled = true; btn.style.opacity = '0.6'; }
-          } else if (data.reason === 'cod_not_allowed') {
-            alertBox.innerHTML = `<strong>Payment Policy:</strong> ${escapeHTML(data.message)}`;
-            if (codRadio && upiRadio) {
-              codRadio.disabled = true;
-              upiRadio.checked = true;
-            }
-          } else {
-            alertBox.innerHTML = `<strong>Delivery Not Available:</strong> ${escapeHTML(data.message || 'Location currently outside standard Sikar delivery radius.')}`;
-            if (btn) { btn.disabled = true; btn.style.opacity = '0.6'; }
-          }
+          alertBox.innerHTML = `Notice: ${data.message || 'Location currently outside standard Sikar radius.'}`;
         }
       } catch (err) {
-        console.warn('verifyAreaAvailability error:', err);
+        alertBox.style.display = 'block';
+        alertBox.style.background = '#ECFDF5';
+        alertBox.style.border = '1px solid #A7F3D0';
+        alertBox.style.color = '#065F46';
+        alertBox.innerHTML = `<strong>Serviceable Sikar Corridor:</strong> Same-day tempo dispatch available.`;
       }
     }
 
@@ -759,7 +628,7 @@
 
       for (const [id, qty] of Object.entries(cart)) {
         if (qty <= 0) continue;
-        const prod = PRODUCTS.find(p => String(p.id) === String(id));
+        const prod = getCartItemDetails(id);
         if (prod) {
           items.push({ id: prod.id, title: prod.title, price: prod.price, quantity: qty });
           total += prod.price * qty;
@@ -778,23 +647,6 @@
       const payMethod = document.querySelector('input[name="pay-method"]:checked').value;
       const notes = document.getElementById('order-notes').value.trim();
 
-      if (!corridor) {
-        alert('Please select your Sikar delivery area / corridor.');
-        return;
-      }
-
-      // Check min order shortfall client-side
-      if (currentSelectedZone && Number(currentSelectedZone.min_order || 0) > 0 && total < Number(currentSelectedZone.min_order)) {
-        alert(`Minimum order value for ${currentSelectedZone.area_name} is ₹${currentSelectedZone.min_order}. Current subtotal is ₹${total}. Please add more items.`);
-        return;
-      }
-
-      // Check COD availability client-side
-      if (payMethod === 'COD' && currentSelectedZone && Number(currentSelectedZone.cod_available) === 0) {
-        alert(`Cash on Delivery is disabled in ${currentSelectedZone.area_name}. Please choose UPI.`);
-        return;
-      }
-
       const btn = document.getElementById('btn-place-order');
       btn.disabled = true;
       btn.textContent = 'Processing Order...';
@@ -803,7 +655,7 @@
       if (pageAppliedCoupon && total >= (pageAppliedCoupon.minOrder || 0)) {
         discount = Math.min(Math.round((total * pageAppliedCoupon.pct) / 100), pageAppliedCoupon.maxDiscount || 500);
       }
-      const finalAmount = Math.max(0, total - discount + (currentCalculatedShippingFee || 0));
+      const finalAmount = Math.max(0, total - discount);
 
       try {
         const orderPayload = {
@@ -817,7 +669,6 @@
           delivery_corridor: corridor,
           address: address,
           deliveryAddress: `${corridor} - ${address}`,
-          pincode: (currentSelectedZone && currentSelectedZone.pincode) || '',
           items: items.map(it => ({
             id: it.id,
             productId: it.id,
@@ -830,7 +681,6 @@
           subtotal: total,
           discount: discount,
           discount_amount: discount,
-          deliveryCharge: currentCalculatedShippingFee,
           total: finalAmount,
           total_amount: finalAmount,
           paymentMethod: payMethod,
@@ -857,11 +707,8 @@
         }
 
         const orderId = data.orderId || data.id || (data.order && data.order.orderId);
-        const savedDeliveryCharge = data.delivery_charge !== undefined ? data.delivery_charge : currentCalculatedShippingFee;
-        const savedTotal = data.total !== undefined ? data.total : finalAmount;
-
         if (window.SikarAnalytics && typeof window.SikarAnalytics.trackPurchase === 'function') {
-          window.SikarAnalytics.trackPurchase(orderId, savedTotal);
+          window.SikarAnalytics.trackPurchase(orderId, finalAmount);
         }
 
         // Sync into local adminOrders cache if present
@@ -874,8 +721,7 @@
             corridor: corridor,
             itemsCount: items.reduce((s, it) => s + (it.quantity || 1), 0),
             itemsDesc: items.map(it => `${it.title} (${it.quantity || 1} Box)`).join(', '),
-            delivery_charge: savedDeliveryCharge,
-            total: savedTotal,
+            total: finalAmount,
             status: 'pending',
             vehicle: 'RJ-23-GA-4821',
             time: new Date().toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' })
@@ -889,16 +735,15 @@
         waText += `*Customer:* ${name} (${phone})\n`;
         waText += `*Delivery Area:* ${corridor}\n`;
         waText += `*Address:* ${address}\n`;
-        waText += `*Payment:* ${payMethod} (₹${savedTotal.toLocaleString('en-IN')})\n`;
+        waText += `*Payment:* ${payMethod} (₹${finalAmount.toLocaleString('en-IN')})\n`;
         waText += `----------------------------\n`;
         waText += `*ITEMS:*\n`;
         items.forEach(it => {
           waText += `• ${it.title} x ${it.quantity} = ₹${(it.price * it.quantity).toLocaleString('en-IN')}\n`;
         });
         if (discount > 0) waText += `• Discount (${pageAppliedCoupon.code}): -₹${discount.toLocaleString('en-IN')}\n`;
-        waText += `• Delivery Fee: ${savedDeliveryCharge > 0 ? '₹' + savedDeliveryCharge : 'FREE Express'}\n`;
         waText += `----------------------------\n`;
-        waText += `*GRAND TOTAL:* ₹${savedTotal.toLocaleString('en-IN')}\n`;
+        waText += `*GRAND TOTAL:* ₹${finalAmount.toLocaleString('en-IN')}\n`;
         if (notes) waText += `*Notes:* ${notes}\n`;
 
         // Clear cart
@@ -906,8 +751,19 @@
 
         // Show confirmation and trigger WhatsApp
         alert(`Order ${orderId} confirmed successfully! Dispatching to Sikar Drop tempo delivery.`);
-        window.open(`https://wa.me/919829000000?text=${encodeURIComponent(waText)}`, '_blank');
-        window.location.href = `/track.html?id=${encodeURIComponent(orderId)}`;
+        try {
+          const win = window.open(`https://wa.me/919829000000?text=${encodeURIComponent(waText)}`, '_blank');
+          if (!win || win.closed || typeof win.closed === 'undefined') {
+            window.location.href = `https://wa.me/919829000000?text=${encodeURIComponent(waText)}`;
+            return;
+          }
+        } catch (e) {
+          window.location.href = `https://wa.me/919829000000?text=${encodeURIComponent(waText)}`;
+          return;
+        }
+        setTimeout(() => {
+          window.location.href = `/track.html?id=${encodeURIComponent(orderId)}`;
+        }, 1000);
       } catch (err) {
         console.error('Order submission error:', err);
         alert(err.message || 'Failed to place order. Please check details and try again.');

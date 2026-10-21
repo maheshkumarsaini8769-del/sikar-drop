@@ -3,9 +3,11 @@
 <head>
   <meta charset="UTF-8">
   <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <meta name="robots" content="index, follow, max-image-preview:large, max-snippet:-1, max-video-preview:-1">
+  <meta name="theme-color" content="#0284C7">
   
   <!-- STRONG SEO META TAGS -->
-  <title>Contact Depot &amp; Locations | Sikar Drop Water Supply Sikar</title>
+  <title>Contact Depot &amp; Locations | Sikar Water Bottle Supply</title>
   <meta name="description" content="Contact Sikar Drop primary wholesale depot for packaged mineral water and cold drink petis. Dual warehouses on Piprali Road and Nawalgarh Road. Phone, WhatsApp, and dispatch inquiry.">
   <meta name="keywords" content="contact sikar drop, water depot phone sikar, wholesale water piprali road address, bulk water supply contact rajasthan">
     <!-- FAVICONS -->
@@ -72,6 +74,13 @@
   <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
   <link href="https://fonts.googleapis.com/css2?family=Be+Vietnam+Pro:wght@400;500;600;700;800&family=Outfit:wght@500;600;700;800;900&display=swap" rel="stylesheet">
   <link rel="stylesheet" href="assets/site.css">
+
+  <meta name="twitter:card" content="summary_large_image">
+  <meta name="twitter:title" content="Contact Sikar Drop Wholesale Depot | Sikar, Rajasthan">
+  <meta name="twitter:description" content="Direct warehouse dispatch desk for bottled water and beverage petis across Sikar. 40-minute express delivery.">
+  <meta name="twitter:image" content="https://sikar-drop.vercel.app/assets/hero_bottles_blended.png">
+  <meta property="og:site_name" content="Sikar Water Bottle Supply">
+  <meta property="og:locale" content="en_IN">
 </head>
 <body>
 
@@ -80,10 +89,10 @@
     <div class="container nav-layout">
       <a href="/" class="brand-block">
         <div class="brand-icon-drop">
-          <svg viewBox="0 0 24 24" fill="currentColor"><path d="M12 2.69l5.66 5.66a8 8 0 1 1-11.31 0z"></path></svg>
+          <img src="/assets/sikar_drop_icon.webp" alt="Sikar Drop Logo" class="brand-logo-img" width="36" height="36">
         </div>
         <div class="brand-text-col">
-          <div class="brand-title">SIKAR <span class="accent-blue">DROP</span></div>
+          <div class="brand-title"><span class="brand-name-main">SIKAR</span> <span class="accent-blue brand-name-sub">WATER BOTTLE SUPPLY</span></div>
           <span class="brand-tagline">Pure Water. Healthy Life.</span>
         </div>
       </a>
@@ -406,10 +415,10 @@
 
       try {
         const payload = {
-          customer_name: name,
+          name: name,
           phone: phone,
-          type: type,
-          message: `Location: ${area} | Details: ${notes}`
+          subject: `${type || 'General Query'}${area ? ' — ' + area : ''}`,
+          message: `Location: ${area || 'Not specified'} | Details: ${notes}`
         };
 
         const res = await fetch('/api/enquiries', {
@@ -422,8 +431,8 @@
           showToast('Inquiry received! Depot supervisor will call you shortly.');
           e.target.reset();
         } else {
-          showToast('Inquiry recorded locally. We will call you.');
-          e.target.reset();
+          const data = await res.json().catch(() => ({}));
+          showToast(data.error || 'Could not submit inquiry. Please call the depot helpline.');
         }
       } catch (err) {
         showToast('Inquiry submitted. Our depot team will call you.');

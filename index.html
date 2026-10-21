@@ -3,10 +3,13 @@
 <head>
   <meta charset="UTF-8">
   <meta name="viewport" content="width=device-width, initial-scale=1.0">
-  <title>Sikar Drop — Pure Water &amp; Beverages Wholesale Delivery Sikar</title>
-  <meta name="description" content="Direct Sikar Mandi wholesale beverage depot. Buy factory-sealed Bisleri, Kinley, Aquafina water petis, soft drink crates &amp; juices. 40-minute express tempo delivery across Piprali &amp; Nawalgarh Road. Strict Zero 20L Camper policy.">
-  <meta name="keywords" content="sikar drop, wholesale water peti sikar, bisleri wholesale sikar, packaged water delivery piprali road, cold drink crates nawalgarh road, wedding water supply sikar, beverage depot rajasthan">
+  <title>Sikar Water Bottle Supply — Wholesale Water &amp; Beverages</title>
+  <meta name="description" content="Direct Sikar Mandi wholesale beverage depot. Factory-sealed Bisleri, Kinley, Aquafina water petis, cold drinks &amp; juices with 40-minute express delivery.">
+  <meta name="keywords" content="sikar water bottle supply, sikar drop, wholesale water peti sikar, bisleri wholesale sikar, packaged water delivery piprali road, cold drink crates nawalgarh road, wedding water supply sikar, beverage depot rajasthan">
+  <meta name="robots" content="index, follow, max-image-preview:large, max-snippet:-1, max-video-preview:-1">
+  <meta name="theme-color" content="#0284C7">
   <link rel="canonical" href="https://sikar-drop.vercel.app/">
+  <link rel="preload" as="image" href="assets/hero_bottles_blended.webp" imagesrcset="assets/hero_bottles_blended_600.webp 600w, assets/hero_bottles_blended_700.webp 700w, assets/hero_bottles_blended.webp 1200w" imagesizes="(max-width: 480px) 350px, (max-width: 768px) 420px, 560px" type="image/webp" fetchpriority="high">
 
   <!-- FAVICONS -->
   <link rel="icon" type="image/svg+xml" href="/favicon.svg">
@@ -15,7 +18,7 @@
 
   <!-- OPEN GRAPH / FACEBOOK / WHATSAPP PREVIEW -->
   <meta property="og:type" content="website">
-  <meta property="og:site_name" content="Sikar Drop Wholesale Depot">
+  <meta property="og:site_name" content="Sikar Water Bottle Supply">
   <meta property="og:title" content="Sikar Drop — Pure Packaged Water &amp; Beverages Wholesale Depot Sikar">
   <meta property="og:description" content="Direct Mandi wholesale beverage depot. 100% factory-sealed Bisleri, Kinley, Aquafina water petis, Coca-Cola &amp; juices. 40-min delivery across Piprali &amp; Nawalgarh Road.">
   <meta property="og:url" content="https://sikar-drop.vercel.app/">
@@ -330,6 +333,14 @@
       height: 34px;
     }
 
+    .brand-icon-drop img,
+    .brand-logo-img {
+      width: 100%;
+      height: 100%;
+      object-fit: contain;
+      display: block;
+    }
+
     .brand-text-col {
       display: flex;
       flex-direction: column;
@@ -337,11 +348,14 @@
 
     .brand-title {
       font-family: var(--font-heading);
-      font-size: 1.45rem;
+      font-size: 1.25rem;
       font-weight: 900;
       color: #0B192C;
       letter-spacing: -0.02em;
       line-height: 1.1;
+      display: flex;
+      align-items: center;
+      gap: 6px;
     }
 
     .brand-title span.accent-blue {
@@ -2916,8 +2930,20 @@
       .nav-search-bar { order: 3; width: 100% !important; margin-top: 4px; }
       .nav-links-menu { display: none !important; }
 
-      .brand-title { font-size: 1.22rem; }
-      .brand-icon-drop { width: 30px; height: 30px; }
+      .brand-title {
+        font-size: 0.88rem;
+        display: flex;
+        flex-direction: column;
+        align-items: flex-start;
+        gap: 0;
+        line-height: 1.15;
+      }
+      .brand-title .brand-name-sub {
+        font-size: 0.72rem;
+        font-weight: 800;
+        letter-spacing: -0.01em;
+      }
+      .brand-icon-drop { width: 32px; height: 32px; }
       .brand-icon-drop svg { width: 28px; height: 28px; }
       .brand-tagline { display: none !important; }
 
@@ -4264,6 +4290,7 @@
       .invoice-actions-bar, .modal-close-icon { display: none !important; }
     }
   </style>
+  <link rel="stylesheet" href="assets/site.css">
 </head>
 <body>
 
@@ -4275,12 +4302,10 @@
       <!-- 1. BRAND LOGO -->
       <a href="#home" class="brand-block" onclick="navigatePage('home')">
         <div class="brand-icon-drop">
-          <svg viewBox="0 0 24 24" fill="currentColor">
-            <path d="M12 2.69l5.66 5.66a8 8 0 1 1-11.31 0z"></path>
-          </svg>
+          <img src="/assets/sikar_drop_icon.webp" alt="Sikar Drop Logo" class="brand-logo-img" width="36" height="36">
         </div>
         <div class="brand-text-col">
-          <div class="brand-title">SIKAR <span class="accent-blue">DROP</span></div>
+          <div class="brand-title"><span class="brand-name-main">SIKAR</span> <span class="accent-blue brand-name-sub">WATER BOTTLE SUPPLY</span></div>
           <span class="brand-tagline" id="live-brand-tagline">Pure Water. Healthy Life.</span>
         </div>
       </a>
@@ -4299,16 +4324,16 @@
       </nav>
 
       <!-- 3. SEARCH BAR -->
-      <div class="nav-search-bar" id="header-nav-search-bar">
+      <div class="nav-search-bar" id="header-nav-search-bar" onclick="openGlobalSearchModal(document.getElementById('global-search-input')?.value)">
         <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.3">
           <circle cx="11" cy="11" r="8"></circle>
           <line x1="21" y1="21" x2="16.65" y2="16.65"></line>
         </svg>
-        <input type="text" id="global-search-input" class="nav-search-input" placeholder="Search water, pack, brand..." oninput="handleSearch(this.value)" onfocus="handleSearch(this.value)" onkeydown="handleSearchKeyDown(event)" autocomplete="off">
+        <input type="text" id="global-search-input" class="nav-search-input" placeholder="Search water, pack, brand..." onclick="openGlobalSearchModal(this.value)" onfocus="openGlobalSearchModal(this.value)" onkeydown="if(event.key==='Enter') openGlobalSearchModal(this.value)" autocomplete="off">
         <button type="button" id="search-clear-btn" class="search-clear-btn" style="display:none;" onclick="clearGlobalSearch(event)" title="Clear Search" aria-label="Clear Search">
           <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5"><line x1="18" y1="6" x2="6" y2="18"></line><line x1="6" y1="6" x2="18" y2="18"></line></svg>
         </button>
-        <div class="live-search-dropdown" id="live-search-dropdown"></div>
+        <div class="live-search-dropdown" id="live-search-dropdown" style="display:none;"></div>
       </div>
 
       <!-- 4. RIGHT ACTION ICONS -->
@@ -4429,7 +4454,7 @@
           <!-- RIGHT HERO VISUAL STAGE -->
           <div class="hero-visual-side">
             <div class="hero-product-stage">
-              <img src="assets/hero_bottles_blended.png" alt="Pure Mineral Water and Beverages Bottles Sikar" id="live-hero-bottles-img">
+              <img src="assets/hero_bottles_blended.webp" srcset="assets/hero_bottles_blended_600.webp 600w, assets/hero_bottles_blended_700.webp 700w, assets/hero_bottles_blended.webp 1200w" sizes="(max-width: 480px) 350px, (max-width: 768px) 420px, 560px" alt="Pure Mineral Water and Beverages Bottles Sikar" id="live-hero-bottles-img" width="1200" height="896" fetchpriority="high" decoding="async" onerror="this.onerror=null;this.src='assets/hero_bottles_blended.png'">
               <div class="floating-quality-tag">
                 <svg viewBox="0 0 24 24" fill="currentColor">
                   <path d="M12 2.69l5.66 5.66a8 8 0 1 1-11.31 0z"></path>
@@ -4469,7 +4494,7 @@
                 <div class="cat-top-name cat-label-text">Drinking Water Bottles</div>
               </div>
               <div class="cat-thumb-box">
-                <img src="assets/cat_water_bottles.jpg" alt="Drinking Water Bottles" loading="lazy">
+                <img src="assets/cat_water_bottles.webp" alt="Drinking Water Bottles" loading="lazy">
               </div>
               <div class="cat-card-bottom-bar">
                 <span>Sealed Bottles</span>
@@ -4486,7 +4511,7 @@
                 <div class="cat-top-name cat-label-text">Packaged Water (Cases)</div>
               </div>
               <div class="cat-thumb-box">
-                <img src="assets/cat_water_cases.jpg" alt="Packaged Water (Cases)" loading="lazy">
+                <img src="assets/cat_water_cases.webp" alt="Packaged Water (Cases)" loading="lazy">
               </div>
               <div class="cat-card-bottom-bar">
                 <span>Wholesale Cases</span>
@@ -4503,7 +4528,7 @@
                 <div class="cat-top-name cat-label-text">Soft Drinks &amp; Beverages</div>
               </div>
               <div class="cat-thumb-box">
-                <img src="assets/cat_soft_drinks.jpg" alt="Soft Drinks &amp; Beverages" loading="lazy">
+                <img src="assets/cat_soft_drinks.webp" alt="Soft Drinks &amp; Beverages" loading="lazy">
               </div>
               <div class="cat-card-bottom-bar">
                 <span>Cold Drink Crates</span>
@@ -4520,7 +4545,7 @@
                 <div class="cat-top-name cat-label-text">Fruit Juices &amp; Tetra</div>
               </div>
               <div class="cat-thumb-box">
-                <img src="assets/cat_fruit_juices.jpg" alt="Fruit Juices &amp; Tetra" loading="lazy">
+                <img src="assets/cat_fruit_juices.webp" alt="Fruit Juices &amp; Tetra" loading="lazy">
               </div>
               <div class="cat-card-bottom-bar">
                 <span>Juice Trays</span>
@@ -4537,7 +4562,7 @@
                 <div class="cat-top-name cat-label-text">Chilled Cans &amp; Soda</div>
               </div>
               <div class="cat-thumb-box">
-                <img src="assets/cat_chilled_cans.jpg" alt="Chilled Cans &amp; Soda" loading="lazy">
+                <img src="assets/cat_chilled_cans.webp" alt="Chilled Cans &amp; Soda" loading="lazy">
               </div>
               <div class="cat-card-bottom-bar">
                 <span>Energy &amp; Cans</span>
@@ -4554,7 +4579,7 @@
                 <div class="cat-top-name cat-label-text">Wedding &amp; Event Supply</div>
               </div>
               <div class="cat-thumb-box">
-                <img src="assets/cat_wedding_supply.jpg" alt="Wedding &amp; Event Supply" loading="lazy">
+                <img src="assets/cat_wedding_supply.webp" alt="Wedding &amp; Event Supply" loading="lazy">
               </div>
               <div class="cat-card-bottom-bar">
                 <span>Wedding Combos</span>
@@ -4588,7 +4613,7 @@
             </div>
 
             <div class="truck-visual-box">
-              <img src="assets/delivery_truck.jpg" alt="Sikar Logistics Delivery Truck">
+              <img src="assets/delivery_truck.webp" alt="Sikar Logistics Delivery Truck" loading="lazy" width="1200" height="669" decoding="async">
             </div>
           </div>
 
@@ -4673,16 +4698,16 @@
         <div class="container">
           <div class="section-headline-bar">
             <div>
-              <span class="bundle-header-tag">
+              <span class="bundle-header-tag" id="live-wholesale-bundles-tag">
                 <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" width="14" height="14"><path d="M12 2l3.09 6.26L22 9.27l-5 4.87 1.18 6.88L12 17.77l-6.18 3.25L7 14.14 2 9.27l6.91-1.01L12 2z"/></svg>
-                Mandi Direct Wholesale • 100% Factory Sealed
+                <span id="live-wholesale-bundles-tag-text">Mandi Direct Wholesale • 100% Factory Sealed</span>
               </span>
-              <h2>Wholesale Event Bundles &amp; Commercial Supply</h2>
-              <p>Special curated mandi-rate packages for Marriage Gardens, Coaching Hostels, Banquets &amp; Kirana Stores across Sikar. Fast tempo delivery with zero-camper purity.</p>
+              <h2 id="live-wholesale-bundles-title">Wholesale Event Bundles &amp; Commercial Supply</h2>
+              <p id="live-wholesale-bundles-desc">Special curated mandi-rate packages for Marriage Gardens, Coaching Hostels, Banquets &amp; Kirana Stores across Sikar. Fast tempo delivery with zero-camper purity.</p>
             </div>
             <div>
-              <a href="/bulk" style="font-size: 0.84rem; font-weight: 800; color: #0284C7; text-decoration: none; display: inline-flex; align-items: center; gap: 4px;">
-                <span>View Full Rate Slab</span>
+              <a href="/bulk" id="live-wholesale-bundles-link" style="font-size: 0.84rem; font-weight: 800; color: #0284C7; text-decoration: none; display: inline-flex; align-items: center; gap: 4px;">
+                <span id="live-wholesale-bundles-link-text">View Full Rate Slab</span>
                 <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" width="14" height="14"><polyline points="9 18 15 12 9 6"/></svg>
               </a>
             </div>
@@ -4715,7 +4740,7 @@
             <!-- CARD 1: WEDDING PACK -->
             <article class="bundle-card" data-category="wedding">
               <div class="bundle-card-visual">
-                <img src="assets/bundle_wedding_vip.jpg" alt="Shaadi & Banquet VIP Hydration Pack" class="bundle-card-img" loading="lazy">
+                <img src="assets/bundle_wedding_vip.webp" alt="Shaadi & Banquet VIP Hydration Pack" class="bundle-card-img" loading="lazy">
                 <span class="bundle-badge-floating popular">Wedding Favorite</span>
               </div>
               <div class="bundle-card-body">
@@ -4764,7 +4789,7 @@
             <!-- CARD 2: HOSTEL & PG PACK -->
             <article class="bundle-card" data-category="hostel">
               <div class="bundle-card-visual">
-                <img src="assets/bundle_hostel_hydration.jpg" alt="Coaching Hostel & PG Monthly Water Pack" class="bundle-card-img" loading="lazy">
+                <img src="assets/bundle_hostel_hydration.webp" alt="Coaching Hostel & PG Monthly Water Pack" class="bundle-card-img" loading="lazy">
                 <span class="bundle-badge-floating deal">Piprali / Nawalgarh Rd</span>
               </div>
               <div class="bundle-card-body">
@@ -4813,7 +4838,7 @@
             <!-- CARD 3: PARTY & COLD DRINKS PACK -->
             <article class="bundle-card" data-category="party">
               <div class="bundle-card-visual">
-                <img src="assets/bundle_summer_party.jpg" alt="Summer Party & Cold Drinks Mega Crate" class="bundle-card-img" loading="lazy">
+                <img src="assets/bundle_summer_party.webp" alt="Summer Party & Cold Drinks Mega Crate" class="bundle-card-img" loading="lazy">
                 <span class="bundle-badge-floating hot">Instant Dispatch</span>
               </div>
               <div class="bundle-card-body">
@@ -4862,7 +4887,7 @@
             <!-- CARD 4: KIRANA STORE PACK -->
             <article class="bundle-card" data-category="kirana">
               <div class="bundle-card-visual">
-                <img src="assets/bundle_kirana_starter.jpg" alt="Kirana Retailer High-Margin Starter Crate" class="bundle-card-img" loading="lazy">
+                <img src="assets/bundle_kirana_starter.webp" alt="Kirana Retailer High-Margin Starter Crate" class="bundle-card-img" loading="lazy">
                 <span class="bundle-badge-floating deal">Kirana Restock</span>
               </div>
               <div class="bundle-card-body">
@@ -6745,7 +6770,10 @@
       <div class="footer-cols-grid">
         <!-- COL 1: ABOUT & ZERO CAMPER NOTICE -->
         <div class="footer-col">
-          <div class="brand-title" style="color:#FFFFFF; margin-bottom: 12px;">SIKAR <span class="accent-blue">DROP</span></div>
+          <div class="brand-title" style="color:#FFFFFF; margin-bottom: 12px; display: flex; align-items: center; gap: 10px;">
+            <img src="/assets/sikar_drop_icon.webp" alt="Sikar Water Bottle Supply" style="width: 32px; height: 32px; object-fit: contain;">
+            <span>SIKAR <span class="accent-blue">WATER BOTTLE SUPPLY</span></span>
+          </div>
           <p id="live-footer-about-text">Sikar's premier wholesale beverage depot. Providing 100% factory-sealed mineral water bottle cases, chilled cold drink crates, fruit juices, and soda can trays directly to wedding gardens, kirana stores, coaching canteens, and residences.</p>
           
           <div id="live-footer-camper-notice" style="background: rgba(220, 38, 38, 0.2); border: 1px solid #DC2626; border-radius: var(--radius-xs); padding: 10px 14px; margin: 14px 0; font-size: 0.8rem; color: #FECACA;">
@@ -6809,7 +6837,7 @@
 
       <!-- LEGAL BAR -->
       <div class="footer-bottom-legal">
-        <span>© 2026 Sikar Drop Wholesale Hub. All rights reserved. Sikar, Rajasthan.</span>
+        <span>© 2026 Sikar Water Bottle Supply Wholesale Hub. All rights reserved. Sikar, Rajasthan.</span>
         <span>100% Factory-Sealed Inventory • Zero 20L Camper Policy</span>
         <span id="live-footer-helpline">Helpline: +91 98290 XXXXX</span>
       </div>
@@ -6865,49 +6893,83 @@
     </div>
   </aside>
 
-  <!-- LOGIN / AUTH MODAL (WHATSAPP OTP GATEWAY - DEFAULT: 9999) -->
+  <!-- LOGIN / AUTH MODAL (ENTER NUMBER + TRUECALLER VERIFICATION) -->
   <div class="modal-backdrop" id="login-modal" role="dialog" aria-modal="true" aria-labelledby="login-modal-title">
-    <div class="auth-modal-dialog">
+    <div class="auth-modal-dialog" style="max-width: 440px; text-align: center; padding: 26px 22px;">
       <button type="button" class="modal-close-icon" onclick="closeLoginModal()" aria-label="Close login dialog">
         <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" width="18" height="18"><line x1="18" y1="6" x2="6" y2="18"></line><line x1="6" y1="6" x2="18" y2="18"></line></svg>
       </button>
 
-      <div style="display: flex; align-items: center; gap: 10px; margin-bottom: 6px;">
-        <div style="width: 34px; height: 34px; border-radius: 50%; background: #DCFCE7; display: flex; align-items: center; justify-content: center; flex-shrink: 0;">
-          <svg viewBox="0 0 24 24" width="18" height="18" fill="#16A34A"><path d="M12.031 6.172c-3.181 0-5.767 2.586-5.768 5.766-.001 1.298.38 2.27 1.019 3.287l-.711 2.598 2.669-.699c.969.54 1.771.82 2.791.82 3.183 0 5.768-2.587 5.768-5.766.001-3.181-2.583-5.767-5.768-5.767z"/></svg>
-        </div>
-        <div>
-          <h3 id="login-modal-title" style="margin: 0; font-size: 1.2rem; font-family: var(--font-heading); font-weight: 800; color: #0B192C;">WhatsApp Sign In &amp; Verification</h3>
-        </div>
-      </div>
-      <p style="font-size: 0.84rem; color: var(--text-muted); margin-bottom: 14px;">Verify your mobile number to confirm dispatch. Default WhatsApp OTP is <strong>9999</strong>.</p>
-
-      <div class="form-group-field" id="field-phone-block">
-        <label for="login-phone-input">Mobile Number (+91 Sikar)</label>
-        <input type="tel" id="login-phone-input" placeholder="e.g. 98290 12345" maxlength="10" value="9829012345">
+      <!-- Truecaller Shield & Logo Icon -->
+      <div style="margin: 0 auto 12px; width: 58px; height: 58px; border-radius: 50%; background: linear-gradient(135deg, #EBF5FF 0%, #DBEAFE 100%); display: flex; align-items: center; justify-content: center; border: 2px solid #BFDBFE; box-shadow: 0 4px 14px rgba(0, 102, 245, 0.15);">
+        <svg viewBox="0 0 24 24" width="32" height="32" fill="#0066F5">
+          <path d="M12 2C6.48 2 2 6.48 2 12c0 1.85.5 3.58 1.38 5.07L2.1 21.9l4.98-1.28C8.51 21.49 10.2 22 12 22c5.52 0 10-4.48 10-10S17.52 2 12 2zm-1 14.5l-3.5-3.5 1.41-1.41L11 13.67l5.59-5.59L18 9.5l-7 7z"/>
+        </svg>
       </div>
 
-      <div class="form-group-field">
-        <label for="login-name-input">Your Name / Shop / Marriage Garden (Optional)</label>
-        <input type="text" id="login-name-input" placeholder="e.g. Mahesh Sharma" value="Mahesh Sharma">
-      </div>
+      <h3 id="login-modal-title" style="margin: 0 0 4px; font-size: 1.28rem; font-family: var(--font-heading); font-weight: 800; color: #0B192C;">
+        Truecaller Mobile Verification
+      </h3>
+      <p style="font-size: 0.84rem; color: #64748B; margin: 0 0 16px; line-height: 1.4;">
+        Enter your mobile number. Truecaller will verify if this number belongs to this phone.
+      </p>
 
-      <div id="otp-group-block" style="margin-top: 14px;">
-        <div class="form-group-field">
-          <div style="display: flex; justify-content: space-between; align-items: center; margin-bottom: 4px;">
-            <label for="login-otp-input" style="margin: 0;">WhatsApp OTP Code</label>
-            <button type="button" onclick="requestWhatsAppOtp()" style="background: none; border: none; color: #0284C7; font-size: 0.78rem; font-weight: 700; cursor: pointer; padding: 0;">Resend OTP</button>
-          </div>
-          <input type="text" id="login-otp-input" placeholder="9999" maxlength="4" value="9999" style="letter-spacing: 0.3em; font-size: 1.25rem; text-align: center; font-weight: 800;">
-          <div style="font-size: 0.76rem; color: #166534; background: #F0FDF4; border: 1px solid #BBF7D0; padding: 5px 8px; border-radius: 4px; margin-top: 6px; text-align: center;">
-            Default OTP: <strong>9999</strong> (WhatsApp OTP system active)
-          </div>
+      <!-- MOBILE NUMBER INPUT -->
+      <div class="form-group-field" style="margin: 0 0 10px; text-align: left;">
+        <label for="login-phone-input" style="font-weight: 700; color: #0F172A; font-size: 0.84rem; display: flex; justify-content: space-between; margin-bottom: 4px;">
+          <span>Mobile Number</span>
+          <span style="font-size: 0.72rem; color: #0066F5; font-weight: 700;">Zero OTP • 1-Tap SIM Check</span>
+        </label>
+        <div style="position: relative; display: flex; align-items: center;">
+          <span style="position: absolute; left: 14px; font-weight: 800; color: #64748B; font-size: 1rem;">+91</span>
+          <input type="tel" id="login-phone-input" placeholder="77427 35762" maxlength="10" value="" style="padding-left: 52px; font-weight: 800; letter-spacing: 0.05em; font-size: 1.05rem; width: 100%; border: 1.5px solid #CBD5E1; border-radius: 10px; height: 46px; background: #FFFFFF;">
         </div>
       </div>
 
-      <button type="button" class="btn-auth-submit" id="btn-login-action" onclick="submitLoginProcess()" style="margin-top: 14px;">
-        <span>VERIFY &amp; SIGN IN (OTP: 9999)</span>
+      <!-- CUSTOMER NAME (OPTIONAL) -->
+      <div class="form-group-field" style="margin: 0 0 14px; text-align: left;">
+        <label for="login-name-input" style="font-weight: 700; color: #0F172A; font-size: 0.84rem; margin-bottom: 4px; display: block;">Your Name (Optional)</label>
+        <input type="text" id="login-name-input" placeholder="e.g. Mahesh Saini" style="font-weight: 600; width: 100%; border: 1.5px solid #CBD5E1; border-radius: 10px; height: 42px; padding: 0 14px; background: #FFFFFF;">
+      </div>
+
+      <!-- TRUECALLER VERIFICATION ACTION BUTTON -->
+      <button type="button" class="btn-auth-submit" id="btn-truecaller-1tap" onclick="startTruecaller1TapFlow()" style="background: #0066F5; border-color: #0056D2; display: flex; align-items: center; justify-content: center; gap: 10px; padding: 13px 20px; border-radius: 12px; font-weight: 800; font-size: 0.98rem; color: #FFFFFF; cursor: pointer; transition: all 0.2s; width: 100%; box-shadow: 0 6px 18px rgba(0, 102, 245, 0.35);">
+        <svg viewBox="0 0 24 24" width="22" height="22" fill="#FFFFFF"><path d="M12 2C6.48 2 2 6.48 2 12c0 1.85.5 3.58 1.38 5.07L2.1 21.9l4.98-1.28C8.51 21.49 10.2 22 12 22c5.52 0 10-4.48 10-10S17.52 2 12 2zm-1 14.5l-3.5-3.5 1.41-1.41L11 13.67l5.59-5.59L18 9.5l-7 7z"/></svg>
+        <span id="btn-tc-label">VERIFY WITH TRUECALLER</span>
       </button>
+
+      <!-- ACTIVE POLLING / MISMATCH MESSAGE CARD -->
+      <div id="truecaller-polling-msg" style="display: none; flex-direction: column; align-items: center; gap: 8px; background: #EFF6FF; border: 1.5px solid #BFDBFE; padding: 12px 14px; border-radius: 12px; margin-top: 14px;">
+        <div style="display: flex; align-items: center; gap: 10px;">
+          <div class="tc-spinner" style="width: 18px; height: 18px; border: 2.5px solid #BFDBFE; border-top-color: #0066F5; border-radius: 50%; animation: spin 0.8s linear infinite;"></div>
+          <span style="font-size: 0.82rem; color: #1D4ED8; font-weight: 700;" id="tc-status-text">
+            Checking Truecaller on this mobile... Please tap Continue inside Truecaller.
+          </span>
+        </div>
+        <button type="button" onclick="startTruecaller1TapFlow()" style="background: none; border: none; color: #0066F5; font-size: 0.78rem; font-weight: 700; text-decoration: underline; cursor: pointer; padding: 2px;">
+          Reopen Truecaller App
+        </button>
+      </div>
+
+      <!-- SIKAR TRUST BADGES -->
+      <div style="margin-top: 18px; padding-top: 16px; border-top: 1px solid #E2E8F0; display: grid; grid-template-columns: 1fr 1fr; gap: 8px; text-align: left;">
+        <div style="display: flex; align-items: center; gap: 6px; font-size: 0.75rem; color: #475569; font-weight: 600;">
+          <svg viewBox="0 0 20 20" width="15" height="15" fill="#16A34A"><path fill-rule="evenodd" d="M10 18a8 8 0 100-16 8 8 0 000 16zm3.707-9.293a1 1 0 00-1.414-1.414L9 10.586 7.707 9.293a1 1 0 00-1.414 1.414l2 2a1 1 0 001.414 0l4-4z" clip-rule="evenodd"/></svg>
+          <span>100% Sealed Bottles</span>
+        </div>
+        <div style="display: flex; align-items: center; gap: 6px; font-size: 0.75rem; color: #475569; font-weight: 600;">
+          <svg viewBox="0 0 20 20" width="15" height="15" fill="#0066F5"><path fill-rule="evenodd" d="M10 18a8 8 0 100-16 8 8 0 000 16zm3.707-9.293a1 1 0 00-1.414-1.414L9 10.586 7.707 9.293a1 1 0 00-1.414 1.414l2 2a1 1 0 001.414 0l4-4z" clip-rule="evenodd"/></svg>
+          <span>SIM Identity Match</span>
+        </div>
+        <div style="display: flex; align-items: center; gap: 6px; font-size: 0.75rem; color: #475569; font-weight: 600;">
+          <svg viewBox="0 0 20 20" width="15" height="15" fill="#16A34A"><path fill-rule="evenodd" d="M10 18a8 8 0 100-16 8 8 0 000 16zm3.707-9.293a1 1 0 00-1.414-1.414L9 10.586 7.707 9.293a1 1 0 00-1.414 1.414l2 2a1 1 0 001.414 0l4-4z" clip-rule="evenodd"/></svg>
+          <span>Zero Camper Policy</span>
+        </div>
+        <div style="display: flex; align-items: center; gap: 6px; font-size: 0.75rem; color: #475569; font-weight: 600;">
+          <svg viewBox="0 0 20 20" width="15" height="15" fill="#0066F5"><path fill-rule="evenodd" d="M10 18a8 8 0 100-16 8 8 0 000 16zm3.707-9.293a1 1 0 00-1.414-1.414L9 10.586 7.707 9.293a1 1 0 00-1.414 1.414l2 2a1 1 0 001.414 0l4-4z" clip-rule="evenodd"/></svg>
+          <span>Direct Depot Rates</span>
+        </div>
+      </div>
     </div>
   </div>
 
@@ -6981,7 +7043,7 @@
       </button>
       <div class="qv-layout-grid">
         <div class="qv-photo-box">
-          <img id="qv-img" src="assets/prod_bisleri_1l.jpg" alt="Product Quick View">
+          <img id="qv-img" src="assets/prod_bisleri_1l.webp" alt="Product Quick View">
         </div>
         <div class="qv-info-box">
           <span class="qv-spec-pill" id="qv-spec-pill">Factory-Sealed Peti</span>
@@ -7088,15 +7150,15 @@
         <div class="form-group-field">
           <label for="admin-prod-image">Product Image Asset</label>
           <select id="admin-prod-image" class="admin-select">
-            <option value="assets/prod_bisleri_1l.jpg">Bisleri 1L Pack</option>
-            <option value="assets/prod_kinley_1l.jpg">Kinley 1L Pack</option>
-            <option value="assets/prod_water_case.jpg">Water 12pcs Case</option>
-            <option value="assets/prod_aquafina_500ml.jpg">Aquafina 500ml Peti</option>
-            <option value="assets/prod_coca_cola.jpg">Coca-Cola 750ml Crate</option>
-            <option value="assets/prod_fruit_juice.jpg">Real Fruit Juice Pack</option>
-            <option value="assets/prod_chilled_can.jpg">Chilled Cans Tray</option>
-            <option value="assets/cat_wedding_supply.jpg">Wedding Special Peti</option>
-            <option value="assets/cat_soft_drinks.jpg">Thums Up / Soft Drinks</option>
+            <option value="assets/prod_bisleri_1l.webp">Bisleri 1L Pack</option>
+            <option value="assets/prod_kinley_1l.webp">Kinley 1L Pack</option>
+            <option value="assets/prod_water_case.webp">Water 12pcs Case</option>
+            <option value="assets/prod_aquafina_500ml.webp">Aquafina 500ml Peti</option>
+            <option value="assets/prod_coca_cola.webp">Coca-Cola 750ml Crate</option>
+            <option value="assets/prod_fruit_juice.webp">Real Fruit Juice Pack</option>
+            <option value="assets/prod_chilled_can.webp">Chilled Cans Tray</option>
+            <option value="assets/cat_wedding_supply.webp">Wedding Special Peti</option>
+            <option value="assets/cat_soft_drinks.webp">Thums Up / Soft Drinks</option>
           </select>
         </div>
       </div>
@@ -7429,12 +7491,12 @@
       <div class="form-group-field">
         <label for="cat-image-select">Image Asset</label>
         <select id="cat-image-select" class="admin-select">
-          <option value="assets/cat_water_cases.jpg">Water Cases</option>
-          <option value="assets/cat_soft_drinks.jpg">Soft Drinks</option>
-          <option value="assets/cat_fruit_juices.jpg">Fruit Juices</option>
-          <option value="assets/cat_chilled_cans.jpg">Chilled Cans</option>
-          <option value="assets/cat_wedding_supply.jpg">Wedding Supply</option>
-          <option value="assets/cat_water_bottles.jpg">Water Bottles</option>
+          <option value="assets/cat_water_cases.webp">Water Cases</option>
+          <option value="assets/cat_soft_drinks.webp">Soft Drinks</option>
+          <option value="assets/cat_fruit_juices.webp">Fruit Juices</option>
+          <option value="assets/cat_chilled_cans.webp">Chilled Cans</option>
+          <option value="assets/cat_wedding_supply.webp">Wedding Supply</option>
+          <option value="assets/cat_water_bottles.webp">Water Bottles</option>
         </select>
       </div>
 
@@ -7578,7 +7640,7 @@
         costPrice: 15,
         stock: 85,
         spec: 'Single Bottle • 1000ml Pack',
-        image: 'assets/prod_bisleri_1l.jpg'
+        image: 'assets/prod_bisleri_1l.webp'
       },
       {
         id: 'p2',
@@ -7589,7 +7651,7 @@
         costPrice: 14,
         stock: 60,
         spec: 'Single Bottle • 1000ml Pack',
-        image: 'assets/prod_kinley_1l.jpg'
+        image: 'assets/prod_kinley_1l.webp'
       },
       {
         id: 'p3',
@@ -7600,7 +7662,7 @@
         costPrice: 145,
         stock: 45,
         spec: '12 Bottles Shrink Pack • ₹15/pc',
-        image: 'assets/prod_water_case.jpg'
+        image: 'assets/prod_water_case.webp'
       },
       {
         id: 'p4',
@@ -7611,7 +7673,7 @@
         costPrice: 195,
         stock: 32,
         spec: '24 Bottles Peti • ₹10/pc',
-        image: 'assets/prod_aquafina_500ml.jpg'
+        image: 'assets/prod_aquafina_500ml.webp'
       },
       {
         id: 'p5',
@@ -7622,7 +7684,7 @@
         costPrice: 750,
         stock: 24,
         spec: '24 Chilled Bottles Crate • ₹37/pc',
-        image: 'assets/prod_coca_cola.jpg'
+        image: 'assets/prod_coca_cola.webp'
       },
       {
         id: 'p6',
@@ -7633,7 +7695,7 @@
         costPrice: 980,
         stock: 18,
         spec: '12 Tetra Packs Carton • ₹98/L',
-        image: 'assets/prod_fruit_juice.jpg'
+        image: 'assets/prod_fruit_juice.webp'
       },
       {
         id: 'p7',
@@ -7644,7 +7706,7 @@
         costPrice: 235,
         stock: 50,
         spec: '48 Mini Sealed Bottles • ₹6/pc',
-        image: 'assets/cat_wedding_supply.jpg'
+        image: 'assets/cat_wedding_supply.webp'
       },
       {
         id: 'p8',
@@ -7655,7 +7717,7 @@
         costPrice: 310,
         stock: 28,
         spec: '24 Bottles Crate • ₹15.8/pc',
-        image: 'assets/cat_soft_drinks.jpg'
+        image: 'assets/cat_soft_drinks.webp'
       },
       {
         id: 'p9',
@@ -7666,7 +7728,7 @@
         costPrice: 225,
         stock: 22,
         spec: '30 Tetra Packs with Straw • ₹9.3/pc',
-        image: 'assets/prod_fruit_juice.jpg'
+        image: 'assets/prod_fruit_juice.webp'
       },
       {
         id: 'p10',
@@ -7677,7 +7739,7 @@
         costPrice: 2350,
         stock: 12,
         spec: '24 Aluminum Cans Tray • ₹114/can',
-        image: 'assets/prod_chilled_can.jpg'
+        image: 'assets/prod_chilled_can.webp'
       },
       {
         id: 'p11',
@@ -7688,7 +7750,7 @@
         costPrice: 640,
         stock: 19,
         spec: '24 Cans Tray Assorted • ₹32.9/can',
-        image: 'assets/cat_chilled_cans.jpg'
+        image: 'assets/cat_chilled_cans.webp'
       },
       {
         id: 'p12',
@@ -7699,22 +7761,22 @@
         costPrice: 4500,
         stock: 8,
         spec: '15 Total Cases Load • Free Sikar Delivery',
-        image: 'assets/cat_wedding_supply.jpg'
+        image: 'assets/cat_wedding_supply.webp'
       }
     ];
 
     const DEFAULT_CATEGORIES = [
-      { id: 'water', name: 'Packaged Water', tagline: '100% Factory Sealed Bottles', image: 'assets/cat_water_bottles.jpg' },
-      { id: 'cases', name: 'Wholesale Petis & Cases', tagline: 'Bulk Mandi Rates', image: 'assets/cat_water_cases.jpg' },
-      { id: 'cola', name: 'Soft Drinks & Crates', tagline: 'Chilled Crate Supplies', image: 'assets/cat_soft_drinks.jpg' },
-      { id: 'juice', name: 'Fruit Juices & Tetra', tagline: 'Real & Maaza Packs', image: 'assets/cat_fruit_juices.jpg' },
-      { id: 'can', name: 'Chilled Cans & Soda', tagline: 'Aluminum Cans Tray', image: 'assets/cat_chilled_cans.jpg' },
-      { id: 'wedding', name: 'Wedding & Event Supply', tagline: '200ml Mini Bottles & Combos', image: 'assets/cat_wedding_supply.jpg' }
+      { id: 'water', name: 'Packaged Water', tagline: '100% Factory Sealed Bottles', image: 'assets/cat_water_bottles.webp' },
+      { id: 'cases', name: 'Wholesale Petis & Cases', tagline: 'Bulk Mandi Rates', image: 'assets/cat_water_cases.webp' },
+      { id: 'cola', name: 'Soft Drinks & Crates', tagline: 'Chilled Crate Supplies', image: 'assets/cat_soft_drinks.webp' },
+      { id: 'juice', name: 'Fruit Juices & Tetra', tagline: 'Real & Maaza Packs', image: 'assets/cat_fruit_juices.webp' },
+      { id: 'can', name: 'Chilled Cans & Soda', tagline: 'Aluminum Cans Tray', image: 'assets/cat_chilled_cans.webp' },
+      { id: 'wedding', name: 'Wedding & Event Supply', tagline: '200ml Mini Bottles & Combos', image: 'assets/cat_wedding_supply.webp' }
     ];
 
     const DEFAULT_TEXTS = {
       // SLIDER SLIDE 1
-      slide1Image: 'assets/hero_bottles.jpg',
+      slide1Image: 'assets/hero_bottles.webp',
       slide1Tag: 'SIKAR MANDI WHOLESALE PETI DEPOT',
       slide1Title: '100% Factory-Sealed Mineral Water Petis',
       slide1Sub: 'Bisleri & Kinley Direct Factory Wholesale Rates • Free Tempo Delivery on 5+ Boxes • Zero Camper Policy',
@@ -7722,7 +7784,7 @@
       slide1BtnLink: 'products',
 
       // SLIDER SLIDE 2
-      slide2Image: 'assets/cat_wedding_supply.jpg',
+      slide2Image: 'assets/cat_wedding_supply.webp',
       slide2Tag: 'WEDDING & FUNCTION SPECIAL',
       slide2Title: 'Wedding & Bulk Function Drinks & Water Combo',
       slide2Sub: 'Save up to 20% on Marriage Bulk Orders • 200ml Mini Water Bottles + Chilled Cold Drink Crates',
@@ -7730,7 +7792,7 @@
       slide2BtnLink: 'bulk',
 
       // SLIDER SLIDE 3
-      slide3Image: 'assets/cat_soft_drinks.jpg',
+      slide3Image: 'assets/cat_soft_drinks.webp',
       slide3Tag: 'EXPRESS CHILLED LOGISTICS',
       slide3Title: 'Chilled Soft Drinks & Energy Soda Cans',
       slide3Sub: 'Coca-Cola, Thums Up, Sprite & Sting • 40-Min Express Unloading Across All Sikar Corridors',
@@ -7751,7 +7813,11 @@
       contactAddress: 'Plot 14-B, Near Krishi Upaj Mandi, Station Road Bypass, Sikar (Raj.) 332001',
       contactPhone: '+91 98290 XXXXX / +91 98290 84210',
       footerCamper: 'We do not supply 20L plastic water jars (campers) in Sikar. Only 100% factory-sealed branded bottles and crates are supplied.',
-      footerAbout: 'Sikar\'s premier wholesale beverage depot. Providing 100% factory-sealed mineral water bottle cases, chilled cold drink crates, fruit juices, and soda can trays directly to wedding gardens, kirana stores, coaching canteens, and residences.'
+      footerAbout: 'Sikar\'s premier wholesale beverage depot. Providing 100% factory-sealed mineral water bottle cases, chilled cold drink crates, fruit juices, and soda can trays directly to wedding gardens, kirana stores, coaching canteens, and residences.',
+      wholesaleBundlesTag: 'Mandi Direct Wholesale • 100% Factory Sealed',
+      wholesaleBundlesTitle: 'Wholesale Event Bundles & Commercial Supply',
+      wholesaleBundlesDesc: 'Special curated mandi-rate packages for Marriage Gardens, Coaching Hostels, Banquets & Kirana Stores across Sikar. Fast tempo delivery with zero-camper purity.',
+      wholesaleBundlesLinkText: 'View Full Rate Slab'
     };
 
     const DEFAULT_BULK_RATES = {
@@ -8070,7 +8136,7 @@
                 <div class="cat-top-name cat-label-text">${escapeHTML(c.name)}</div>
               </div>
               <div class="cat-thumb-box">
-                <img src="${c.image || 'assets/cat_water_bottles.jpg'}" alt="${escapeHTML(c.name)}" loading="lazy">
+                <img src="${c.image || 'assets/cat_water_bottles.webp'}" alt="${escapeHTML(c.name)}" loading="lazy">
               </div>
               <div class="cat-card-bottom-bar">
                 <span>${prodCount > 0 ? prodCount + ' Items' : escapeHTML(c.tagline || 'Wholesale')}</span>
@@ -8576,7 +8642,9 @@
       let html = '';
 
       for (const [id, qty] of Object.entries(cart)) {
-        const prod = PRODUCTS.find(p => p.id === id);
+        const prod = (typeof getCatalogOrBundleItem === 'function')
+          ? getCatalogOrBundleItem(id)
+          : (PRODUCTS.find(p => String(p.id) === String(id)) || (typeof WHOLESALE_BUNDLES !== 'undefined' ? WHOLESALE_BUNDLES.find(b => String(b.id) === String(id)) : null));
         if (prod && qty > 0) {
           count += qty;
           const lineTotal = prod.price * qty;
@@ -8757,180 +8825,225 @@
 
     // CHECKOUT FLOW WITH STRICT LOGIN GATE (DEFAULT OTP = 9999)
     function handleCheckoutClick() {
-      const count = Object.values(cart).reduce((a, b) => a + b, 0);
+      const activeCart = (typeof window.cart !== 'undefined' && Object.keys(window.cart).length > 0)
+        ? window.cart
+        : ((typeof cart !== 'undefined' && Object.keys(cart).length > 0) ? cart : JSON.parse(localStorage.getItem('sikar_cart') || '{}'));
+      const count = Object.values(activeCart).reduce((a, b) => a + b, 0);
       if (count === 0) {
         showToast('Cart is empty. Add items first.');
         return;
       }
 
-      if (!currentUser) {
+      const activeUser = currentUser || JSON.parse(localStorage.getItem('sikar_user') || 'null');
+      if (!activeUser) {
         openLoginModal('checkout');
-        showToast('Please login to place your order');
+        showToast('Please verify your mobile with Truecaller to place order');
       } else {
+        currentUser = activeUser;
         openOrderConfirmModal();
       }
     }
 
-    // AUTH MODAL & OTP CHANNEL SELECTION
+    // AUTH MODAL & TRUECALLER FLOW
     let loginPurpose = 'nav';
-    let otpSent = false;
-    let selectedOtpChannel = 'whatsapp';
-
-    function toggleOtpChannel() {
-      const waRadio = document.getElementById('channel-whatsapp');
-      selectedOtpChannel = (waRadio && waRadio.checked) ? 'whatsapp' : 'email';
-      const phoneBlock = document.getElementById('field-phone-block');
-      const emailBlock = document.getElementById('field-email-block');
-      if (selectedOtpChannel === 'whatsapp') {
-        if (phoneBlock) phoneBlock.style.display = 'block';
-        if (emailBlock) emailBlock.style.display = 'none';
-      } else {
-        if (phoneBlock) phoneBlock.style.display = 'none';
-        if (emailBlock) emailBlock.style.display = 'block';
-      }
-    }
+    let tcPollTimer = null;
 
     function openLoginModal(purpose = 'nav') {
       loginPurpose = purpose;
-      const otpGroup = document.getElementById('otp-group-block');
-      const actionBtn = document.getElementById('btn-login-action');
-      const otpInput = document.getElementById('login-otp-input');
-      if (otpInput) otpInput.value = '9999';
-      if (otpGroup) otpGroup.style.display = 'block';
-      if (actionBtn) {
-        actionBtn.disabled = false;
-        actionBtn.textContent = 'VERIFY & SIGN IN (OTP: 9999)';
-      }
       const modal = document.getElementById('login-modal');
+      const tcMsg = document.getElementById('truecaller-polling-msg');
+      const tcBtn = document.getElementById('btn-truecaller-1tap');
+      const tcLabel = document.getElementById('btn-tc-label');
+
+      if (tcMsg) tcMsg.style.display = 'none';
+      if (tcBtn) tcBtn.disabled = false;
+      if (tcLabel) tcLabel.textContent = 'VERIFY WITH TRUECALLER';
+      if (tcPollTimer) clearInterval(tcPollTimer);
+
       if (modal) modal.classList.add('active');
     }
 
     function closeLoginModal() {
       const modal = document.getElementById('login-modal');
+      if (tcPollTimer) clearInterval(tcPollTimer);
       if (modal) modal.classList.remove('active');
     }
 
-    async function requestWhatsAppOtp() {
+    async function startTruecaller1TapFlow() {
+      const tcBtn = document.getElementById('btn-truecaller-1tap');
+      const tcLabel = document.getElementById('btn-tc-label');
+      const tcMsg = document.getElementById('truecaller-polling-msg');
+      const tcText = document.getElementById('tc-status-text');
       const phoneInput = document.getElementById('login-phone-input');
-      const otpInput = document.getElementById('login-otp-input');
-      const phone = phoneInput ? phoneInput.value.trim() : '';
-      if (!phone || phone.replace(/[^0-9]/g, '').length < 10) {
-        showToast('Please enter a valid 10-digit mobile number');
-        if (phoneInput) phoneInput.focus();
+      const nameInput = document.getElementById('login-name-input');
+
+      const rawPhone = phoneInput ? phoneInput.value.trim() : '';
+      const cleanPhone = rawPhone.replace(/[^0-9]/g, '').slice(-10);
+
+      if (!cleanPhone || cleanPhone.length !== 10) {
+        if (phoneInput) {
+          phoneInput.style.borderColor = '#EF4444';
+          phoneInput.focus();
+        }
+        if (tcMsg) tcMsg.style.display = 'flex';
+        if (tcText) {
+          tcText.textContent = 'Please enter your 10-digit mobile number first.';
+          tcText.style.color = '#DC2626';
+        }
+        if (typeof showToast === 'function') {
+          showToast('Please enter your 10-digit mobile number first.');
+        }
         return;
       }
+
+      if (phoneInput) {
+        phoneInput.style.borderColor = '#CBD5E1';
+      }
+
+      const enteredName = nameInput ? nameInput.value.trim() : '';
+
       try {
-        const res = await fetch('/api/otp/send', {
+        if (tcBtn) tcBtn.disabled = true;
+        if (tcLabel) tcLabel.textContent = 'CONNECTING TRUECALLER...';
+        if (tcMsg) tcMsg.style.display = 'flex';
+        if (tcText) {
+          tcText.textContent = `Verifying if +91 ${cleanPhone} is active on this device...`;
+          tcText.style.color = '#1D4ED8';
+        }
+
+        const initRes = await fetch('/api/truecaller/init', {
           method: 'POST',
           headers: { 'Content-Type': 'application/json' },
-          body: JSON.stringify({ phone, channel: 'whatsapp', name: document.getElementById('login-name-input')?.value || '' })
+          body: JSON.stringify({ phone: cleanPhone, name: enteredName })
         });
-        const data = await res.json();
-        const code = data?.otp || '9999';
-        if (otpInput) otpInput.value = code;
-        showToast(`WhatsApp OTP: ${code} (Default system OTP)`);
-      } catch (e) {
-        if (otpInput) otpInput.value = '9999';
-        showToast('WhatsApp OTP: 9999 (Default system OTP)');
+        const initData = await initRes.json();
+
+        if (!initRes.ok || !initData.deepLinkUrl) {
+          throw new Error(initData.error || 'Failed to initialize Truecaller verification.');
+        }
+
+        const requestId = initData.requestId;
+        try { sessionStorage.setItem('tc_pending_req', requestId); } catch (e) {}
+
+        // Trigger Truecaller custom URI scheme deep link
+        window.location.href = initData.deepLinkUrl;
+
+        let attempts = 0;
+        const maxAttempts = 30; // ~45 seconds
+        if (tcPollTimer) clearInterval(tcPollTimer);
+
+        tcPollTimer = setInterval(async () => {
+          attempts++;
+          try {
+            const statusRes = await fetch(`/api/truecaller/status?requestId=${encodeURIComponent(requestId)}`);
+            const statusData = await statusRes.json();
+
+            // 1. Successful SIM Identity Verification
+            if (statusRes.ok && statusData.verified && statusData.user) {
+              clearInterval(tcPollTimer);
+              if (tcText) {
+                tcText.textContent = `SIM Verified (+91 ${cleanPhone})! Logging in...`;
+                tcText.style.color = '#16A34A';
+              }
+              handleAuthSuccess(statusData.user, 'Truecaller SIM Verified');
+              return;
+            }
+
+            // 2. SIM Identity Mismatch Detected
+            if (statusData && statusData.status === 'mismatch') {
+              clearInterval(tcPollTimer);
+              if (tcBtn) tcBtn.disabled = false;
+              if (tcLabel) tcLabel.textContent = 'MISMATCH - RETRY WITH DEVICE SIM';
+              if (phoneInput) phoneInput.style.borderColor = '#EF4444';
+              if (tcText) {
+                tcText.textContent = statusData.error || `SIM Mismatch: Entered number (+91 ${cleanPhone}) does not match the active SIM in this device's Truecaller.`;
+                tcText.style.color = '#DC2626';
+              }
+              if (typeof showToast === 'function') {
+                showToast(`Mismatch: The number +91 ${cleanPhone} does not match this phone's SIM.`);
+              }
+              return;
+            }
+
+            // 3. User Rejected on Device
+            if (statusData && statusData.status === 'rejected') {
+              clearInterval(tcPollTimer);
+              if (tcBtn) tcBtn.disabled = false;
+              if (tcLabel) tcLabel.textContent = 'VERIFY WITH TRUECALLER';
+              if (tcText) {
+                tcText.textContent = 'Truecaller prompt was dismissed. Please tap Verify again.';
+                tcText.style.color = '#DC2626';
+              }
+              return;
+            }
+          } catch (e) {
+            console.warn('Truecaller polling check:', e.message);
+          }
+
+          if (attempts >= maxAttempts) {
+            clearInterval(tcPollTimer);
+            if (tcBtn) tcBtn.disabled = false;
+            if (tcLabel) tcLabel.textContent = 'RETRY TRUECALLER VERIFICATION';
+            if (tcText) {
+              tcText.textContent = 'Truecaller did not confirm yet. Tap Retry or open Truecaller notification.';
+              tcText.style.color = '#B91C1C';
+            }
+          }
+        }, 1500);
+      } catch (err) {
+        if (tcBtn) tcBtn.disabled = false;
+        if (tcLabel) tcLabel.textContent = 'VERIFY WITH TRUECALLER';
+        if (tcText) {
+          tcText.textContent = err.message || 'Truecaller integration error. Please retry.';
+          tcText.style.color = '#B91C1C';
+        }
+        if (typeof showToast === 'function') {
+          showToast(err.message || 'Truecaller verification failed to launch. Please retry.');
+        }
       }
     }
 
-    async function submitLoginProcess() {
-      const phoneInput = document.getElementById('login-phone-input');
-      const nameInput = document.getElementById('login-name-input');
-      const otpInput = document.getElementById('login-otp-input');
-      const btn = document.getElementById('btn-login-action');
+    function handleAuthSuccess(userData, method = 'Verified') {
+      currentUser = {
+        id: userData.id || ('CUST-' + Math.floor(1000 + Math.random() * 9000)),
+        name: userData.name || 'Valued Customer',
+        phone: String(userData.phone).replace(/[^0-9]/g, '').slice(-10),
+        email: userData.email || 'client@sikardrop.in',
+        channel: method,
+        verified: true,
+        verifiedBy: method,
+        truecallerBadge: method.includes('Truecaller')
+      };
+      localStorage.setItem('sikar_user', JSON.stringify(currentUser));
 
-      const phone = phoneInput ? phoneInput.value.trim() : '';
-      const name = (nameInput && nameInput.value.trim()) ? nameInput.value.trim() : 'Mahesh Sharma';
-
-      if (!phone || phone.replace(/[^0-9]/g, '').length < 10) {
-        showToast('Please enter a valid 10-digit mobile number');
-        if (phoneInput) phoneInput.focus();
-        return;
-      }
-
-      let otpVal = otpInput ? otpInput.value.trim() : '';
-      if (!otpVal) {
-        otpVal = '9999';
-        if (otpInput) otpInput.value = '9999';
-      }
-
-      try {
-        if (btn) {
-          btn.disabled = true;
-          btn.textContent = 'VERIFYING...';
-        }
-        const res = await fetch('/api/otp/verify', {
-          method: 'POST',
-          headers: { 'Content-Type': 'application/json' },
-          body: JSON.stringify({ phone, otp: otpVal, name })
+      const existingIdx = adminUsers.findIndex(u => (u.phone && u.phone === currentUser.phone));
+      if (existingIdx === -1) {
+        adminUsers.unshift({
+          name: currentUser.name,
+          phone: currentUser.phone,
+          email: currentUser.email,
+          channel: method,
+          loginTime: new Date().toLocaleDateString('en-IN') + ' ' + new Date().toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' }),
+          orders: 0
         });
-        const data = await res.json();
-
-        if (res.ok && data.verified) {
-          currentUser = {
-            id: data.user?.id || ('CUST-' + Math.floor(1000 + Math.random() * 9000)),
-            name: data.user?.name || name,
-            phone: phone,
-            email: data.user?.email || 'client@sikardrop.in',
-            channel: 'whatsapp',
-            verified: true
-          };
-          localStorage.setItem('sikar_user', JSON.stringify(currentUser));
-
-          const existingIdx = adminUsers.findIndex(u => (u.phone && u.phone === currentUser.phone));
-          if (existingIdx === -1) {
-            adminUsers.unshift({
-              name: currentUser.name,
-              phone: currentUser.phone,
-              email: currentUser.email,
-              channel: 'whatsapp',
-              loginTime: new Date().toLocaleDateString('en-IN') + ' ' + new Date().toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' }),
-              orders: 0
-            });
-            localStorage.setItem('sikar_admin_users', JSON.stringify(adminUsers));
-          }
-
-          updateAuthNav();
-          closeLoginModal();
-          showToast(`Welcome ${currentUser.name}! Signed in via WhatsApp OTP.`);
-
-          if (loginPurpose === 'checkout') {
-            openOrderConfirmModal();
-          }
-        } else {
-          if (btn) {
-            btn.disabled = false;
-            btn.textContent = 'VERIFY & SIGN IN (OTP: 9999)';
-          }
-          showToast(data.error || 'Invalid OTP. Default WhatsApp OTP is 9999.');
-        }
-      } catch (e) {
-        console.warn('Network verify OTP fallback:', e);
-        if (otpVal === '9999' || otpVal === '1234') {
-          currentUser = {
-            name,
-            phone: phone,
-            email: 'client@sikardrop.in',
-            channel: 'whatsapp',
-            verified: true
-          };
-          localStorage.setItem('sikar_user', JSON.stringify(currentUser));
-          updateAuthNav();
-          closeLoginModal();
-          showToast(`Welcome ${name}! Signed in via WhatsApp OTP.`);
-          if (loginPurpose === 'checkout') {
-            openOrderConfirmModal();
-          }
-        } else {
-          if (btn) {
-            btn.disabled = false;
-            btn.textContent = 'VERIFY & SIGN IN (OTP: 9999)';
-          }
-          showToast('Invalid OTP. Use default OTP: 9999');
-        }
+        localStorage.setItem('sikar_admin_users', JSON.stringify(adminUsers));
       }
+
+      updateAuthNav();
+      closeLoginModal();
+      showToast(`Login Verified (${method})! Welcome ${currentUser.name}.`);
+
+      if (loginPurpose === 'checkout') {
+        openOrderConfirmModal();
+      }
+    }
+
+    function submitTruecallerVerification() {
+      return startTruecaller1TapFlow();
+    }
+
+    function submitLoginProcess() {
+      return handleAuthAction();
     }
 
     function updateAuthNav() {
@@ -8979,61 +9092,33 @@
         return { available: false, reason: 'empty', zone: null, activeZones };
       }
 
-      const pincodeMatch = q.match(/\b([1-9][0-9]{5})\b/);
-      const queryPincode = pincodeMatch ? pincodeMatch[1] : null;
+      let matchedActive = null;
+      let matchedPaused = null;
 
-      const scoredCandidates = [];
       for (const z of allZones) {
-        const zPin = String(z.pincode || '').trim();
-        const isExactPincodeMatch = Boolean(queryPincode && (zPin === queryPincode));
-        const areaLower = String(z.area_name || '').toLowerCase();
-        const corridorLower = String(z.corridor || '').toLowerCase();
-        const kwTokens = String(z.keywords || '').toLowerCase().split(',').map(k => k.trim()).filter(Boolean);
+        const tokens = [
+          String(z.area_name || '').toLowerCase(),
+          String(z.corridor || '').toLowerCase(),
+          String(z.pincode || '').toLowerCase(),
+          ...String(z.keywords || '').toLowerCase().split(',').map(k => k.trim()).filter(Boolean)
+        ].filter(t => t.length >= 3);
 
-        let isMatch = false;
-        let specificity = 0;
-
-        if (isExactPincodeMatch) {
-          isMatch = true;
-          specificity += 120;
-        }
-
-        if (q.includes(areaLower) || (areaLower.length >= 4 && areaLower.includes(q))) {
-          isMatch = true;
-          specificity += 150 + areaLower.length;
-        } else if (q.includes(corridorLower) || (corridorLower.length >= 4 && corridorLower.includes(q))) {
-          isMatch = true;
-          specificity += 100 + corridorLower.length;
-        }
-
-        for (const kw of kwTokens) {
-          if (kw.length >= 3 && (q.includes(kw) || (q.length >= 3 && kw.includes(q)))) {
-            isMatch = true;
-            specificity = Math.max(specificity, 80 + kw.length * 2);
+        const isMatch = tokens.some(tok => q.includes(tok) || (q.length >= 3 && tok.includes(q)));
+        if (isMatch) {
+          if (Number(z.serviceable) === 1 && !matchedActive) {
+            matchedActive = z;
+          } else if (Number(z.serviceable) !== 1 && !matchedPaused) {
+            matchedPaused = z;
           }
         }
-
-        if (isMatch) {
-          const priorityScore = (Number(z.priority || 10) * 1000) + specificity;
-          scoredCandidates.push({ zone: z, score: priorityScore });
-        }
       }
 
-      scoredCandidates.sort((a, b) => b.score - a.score);
-
-      if (scoredCandidates.length > 0) {
-        const best = scoredCandidates[0].zone;
-        if (Number(best.serviceable) === 1) {
-          return { available: true, reason: 'matched_active', zone: best, activeZones };
-        } else {
-          return { available: false, reason: 'paused_by_admin', zone: best, activeZones };
-        }
+      if (matchedActive) {
+        return { available: true, reason: 'matched_active', zone: matchedActive, activeZones };
       }
-
-      if (queryPincode) {
-        return { available: false, reason: 'unsupported_pincode', zone: null, activeZones };
+      if (matchedPaused) {
+        return { available: false, reason: 'paused_by_admin', zone: matchedPaused, activeZones };
       }
-
       return { available: false, reason: 'not_in_admin_zones', zone: null, activeZones };
     }
 
@@ -9163,10 +9248,10 @@
       const submitBtn = document.getElementById('btn-confirm-dispatch-order');
       if (!statusBox) return true;
 
-      const selectedArea = sel ? sel.value : '';
+      const selectedArea = sel ? sel.value.trim() : '';
       const typedAddress = noteInput ? noteInput.value.trim() : '';
 
-      // If user typed an address, verify that the address matches one of Admin's active serviceable locations!
+      // 1. If user typed an address that contains keywords of an active zone, sync the dropdown
       if (typedAddress.length > 0) {
         const addrCheck = evaluateFrontendDeliveryMatch(typedAddress);
         if (addrCheck.available && addrCheck.zone) {
@@ -9176,36 +9261,53 @@
           statusBox.style.background = '#F0FDF4';
           statusBox.style.border = '1px solid #86EFAC';
           statusBox.style.color = '#166534';
-          statusBox.innerHTML = `Verified Admin Location: <strong>${escapeHTML(addrCheck.zone.area_name)}</strong> (${escapeHTML(addrCheck.zone.pincode || '332001')}) — Delivery Available (${escapeHTML(addrCheck.zone.eta || '45-60 Mins')})`;
-          if (submitBtn) submitBtn.style.opacity = '1';
+          statusBox.innerHTML = `Verified Sikar Location: <strong>${escapeHTML(addrCheck.zone.area_name)}</strong> (${escapeHTML(addrCheck.zone.pincode || '332001')}) — Delivery Available (${escapeHTML(addrCheck.zone.eta || '45-60 Mins')})`;
+          if (submitBtn) {
+            submitBtn.disabled = false;
+            submitBtn.style.opacity = '1';
+          }
           return true;
-        } else {
-          statusBox.style.background = '#FEF2F2';
-          statusBox.style.border = '1px solid #FECACA';
-          statusBox.style.color = '#991B1B';
-          const activeNames = (addrCheck.activeZones || []).map(z => z.corridor || z.area_name).join(', ');
-          statusBox.innerHTML = `Delivery Not Available: Your address <strong>"${escapeHTML(typedAddress)}"</strong> does not match any active serviceable location! Please include a valid Sikar area in your address (${escapeHTML(activeNames)}).`;
-          if (submitBtn) submitBtn.style.opacity = '0.65';
-          return false;
         }
       }
 
-      // If address input is empty, check the dropdown selection
+      // 2. Validate selected corridor from dropdown
       const selCheck = evaluateFrontendDeliveryMatch(selectedArea);
       if (selCheck.available && selCheck.zone) {
-        statusBox.style.background = '#F0F9FF';
-        statusBox.style.border = '1px solid #BAE6FD';
-        statusBox.style.color = '#0369A1';
-        statusBox.innerHTML = `Selected Area: <strong>${escapeHTML(selCheck.zone.area_name)}</strong> — Please enter your complete address and area above (e.g., Near Prince School, ${escapeHTML(selCheck.zone.corridor || 'Piprali Road')}).`;
-        if (submitBtn) submitBtn.style.opacity = '1';
+        statusBox.style.background = '#F0FDF4';
+        statusBox.style.border = '1px solid #86EFAC';
+        statusBox.style.color = '#166534';
+        const displayAddr = typedAddress ? escapeHTML(typedAddress) + ', ' : '';
+        statusBox.innerHTML = `Serviceable Delivery Location: <strong>${displayAddr}${escapeHTML(selCheck.zone.area_name)}</strong> — Express Tempo Ready (${escapeHTML(selCheck.zone.eta || '45-60 Mins')})`;
+        if (submitBtn) {
+          submitBtn.disabled = false;
+          submitBtn.style.opacity = '1';
+        }
         return true;
       }
 
-      statusBox.style.background = '#FEF2F2';
-      statusBox.style.border = '1px solid #FECACA';
-      statusBox.style.color = '#991B1B';
-      statusBox.innerHTML = `Delivery Not Available in this area. Please choose an Admin-approved Sikar location.`;
-      return false;
+      // 3. If selected zone was paused by admin
+      if (selCheck && selCheck.reason === 'paused_by_admin') {
+        statusBox.style.background = '#FEF2F2';
+        statusBox.style.border = '1px solid #FECACA';
+        statusBox.style.color = '#991B1B';
+        statusBox.innerHTML = `Delivery is temporarily paused in <strong>${escapeHTML(selectedArea)}</strong> by Admin. Please select another active Sikar area.`;
+        if (submitBtn) {
+          submitBtn.disabled = true;
+          submitBtn.style.opacity = '0.65';
+        }
+        return false;
+      }
+
+      // Default fallback: allow delivery to Sikar corridor
+      statusBox.style.background = '#F0FDF4';
+      statusBox.style.border = '1px solid #86EFAC';
+      statusBox.style.color = '#166534';
+      statusBox.innerHTML = `Delivery Location: <strong>${escapeHTML(selectedArea || 'Sikar Central Depot')}</strong> — Express Tempo Ready.`;
+      if (submitBtn) {
+        submitBtn.disabled = false;
+        submitBtn.style.opacity = '1';
+      }
+      return true;
     }
 
     // ORDER DISPATCH CONFIRMATION & WHATSAPP GENERATOR
@@ -9251,38 +9353,42 @@
     }
 
     function dispatchFinalWhatsAppOrder() {
-      const area = document.getElementById('delivery-corridor-select').value;
-      const rawNote = document.getElementById('delivery-note-input').value.trim();
+      const area = document.getElementById('delivery-corridor-select')?.value || 'Piprali Road';
+      const rawNote = document.getElementById('delivery-note-input')?.value.trim() || '';
 
-      // Validate that if an address is entered, it matches an Admin serviceable location
-      if (rawNote.length > 0 && !validateCheckoutAddressLocation()) {
-        showToast('Delivery Not Available: This address is not within our serviceable Sikar delivery areas!');
-        return;
-      }
-      const areaCheck = evaluateFrontendDeliveryMatch(rawNote || area);
-      if (!areaCheck.available) {
-        showToast('Delivery Not Available: The selected area is not in our serviceable delivery locations!');
+      const isLocValid = validateCheckoutAddressLocation();
+      if (!isLocValid) {
+        showToast('Please choose an active Sikar delivery corridor.');
         return;
       }
 
       const note = rawNote || `${area} (Urgent Delivery)`;
-      const loginPhoneVal = (currentUser && currentUser.phone) ? String(currentUser.phone).trim() : '9829011223';
+      const activeUser = currentUser || JSON.parse(localStorage.getItem('sikar_user') || 'null');
+      const loginPhoneVal = (activeUser && activeUser.phone) ? String(activeUser.phone).trim() : '9829011223';
       const delivPhoneInput = document.getElementById('delivery-phone-input');
       const deliveryPhoneVal = (delivPhoneInput && delivPhoneInput.value.trim()) ? delivPhoneInput.value.trim() : loginPhoneVal;
+
+      const activeCart = (typeof window.cart !== 'undefined' && Object.keys(window.cart).length > 0)
+        ? window.cart
+        : ((typeof cart !== 'undefined' && Object.keys(cart).length > 0) ? cart : JSON.parse(localStorage.getItem('sikar_cart') || '{}'));
 
       let itemsSummary = '';
       let totalPetis = 0;
       let totalAmount = 0;
 
-      for (const [id, qty] of Object.entries(cart)) {
-        const prod = PRODUCTS.find(p => p.id === id);
+      for (const [id, qty] of Object.entries(activeCart)) {
+        const prod = typeof getCatalogOrBundleItem === 'function' ? getCatalogOrBundleItem(id) : (PRODUCTS.find(p => p.id === id) || { id, title: 'Wholesale Case (' + id + ')', price: 180 });
         if (prod && qty > 0) {
           totalPetis += qty;
           const lineTotal = prod.price * qty;
           totalAmount += lineTotal;
-          itemsSummary += `• ${prod.title}: ${qty} Pcs/Cases (₹${lineTotal})
-`;
+          itemsSummary += `• ${prod.title}: ${qty} Pcs/Cases (₹${lineTotal})\n`;
         }
+      }
+
+      if (totalPetis === 0) {
+        showToast('Cart is empty. Please add items to cart.');
+        return;
       }
 
       let discountAmt = 0;
@@ -9408,8 +9514,14 @@
       renderProducts();
       closeOrderConfirmModal();
 
-      trackSocialClick('whatsapp');
-      window.open(waUrl, '_blank');
+      try {
+        const win = window.open(waUrl, '_blank');
+        if (!win || win.closed || typeof win.closed === 'undefined') {
+          setTimeout(() => { window.location.href = waUrl; }, 600);
+        }
+      } catch (err) {
+        window.location.href = waUrl;
+      }
       showToast(`Order #${orderId} logged & sent to WhatsApp!`);
 
       document.getElementById('track-order-id-input').value = orderId;
@@ -9543,7 +9655,7 @@
         savePct: 20,
         badge: 'Wedding Favorite',
         badgeClass: 'popular',
-        image: 'assets/bundle_wedding_vip.jpg',
+        image: 'assets/bundle_wedding_vip.webp',
         specs: [
           '10x Shaadi Mini Water Petis (48x 250ml Sealed)',
           '5x Bailey / Kinley 1L Packaged Cases (60 Bottles)',
@@ -9567,7 +9679,7 @@
         savePct: 18,
         badge: 'Piprali / Nawalgarh Rd',
         badgeClass: 'deal',
-        image: 'assets/bundle_hostel_hydration.jpg',
+        image: 'assets/bundle_hostel_hydration.webp',
         specs: [
           '15x Bailey 1L Packaged Cases (180 Bottles)',
           '4x Aquafina 500ml Compact Petis (96 Bottles)',
@@ -9590,7 +9702,7 @@
         savePct: 17,
         badge: 'Instant Dispatch',
         badgeClass: 'hot',
-        image: 'assets/bundle_summer_party.jpg',
+        image: 'assets/bundle_summer_party.webp',
         specs: [
           '2x Coca-Cola 750ml Party Crates (48 Bottles)',
           '2x Thums Up 250ml PET Crates (48 Bottles)',
@@ -9614,7 +9726,7 @@
         savePct: 17,
         badge: 'Kirana Restock',
         badgeClass: 'deal',
-        image: 'assets/bundle_kirana_starter.jpg',
+        image: 'assets/bundle_kirana_starter.webp',
         specs: [
           '40x Bisleri 1L Mineral Water Bottles',
           '2x Frooti & Maaza Mango Juice Trays (60 Packs)',
@@ -9629,25 +9741,28 @@
       }
     ];
 
+    let currentSelectedHomeBundleCategory = 'all';
+
     async function loadStorefrontBundles() {
+      try {
+        const cached = JSON.parse(localStorage.getItem('sikar_admin_bundles') || 'null');
+        if (cached && Array.isArray(cached) && cached.length > 0) {
+          WHOLESALE_BUNDLES = cached.filter(b => b.active === 1 || b.active === '1' || b.active === true || b.active === undefined);
+          renderStorefrontBundles();
+        }
+      } catch (cErr) {}
+
       try {
         const res = await fetch('/api/bundles?_t=' + Date.now(), { cache: 'no-store' });
         if (res.ok) {
           const data = await res.json();
-          if (Array.isArray(data) && data.length > 0) {
-            const cached = JSON.parse(localStorage.getItem('sikar_admin_bundles') || '[]');
-            const serverIds = new Set(data.map(b => b.id));
-            const localOnly = cached.filter(b => !serverIds.has(b.id) && b.active);
-            WHOLESALE_BUNDLES = [...localOnly, ...data];
-            localStorage.setItem('sikar_admin_bundles', JSON.stringify(WHOLESALE_BUNDLES));
+          if (Array.isArray(data)) {
+            WHOLESALE_BUNDLES = data.filter(b => b.active === 1 || b.active === '1' || b.active === true || b.active === undefined);
+            localStorage.setItem('sikar_admin_bundles', JSON.stringify(data));
           }
         }
       } catch (err) {
         console.warn('Backend bundles fallback:', err);
-        const cached = JSON.parse(localStorage.getItem('sikar_admin_bundles') || 'null');
-        if (cached && Array.isArray(cached) && cached.length > 0) {
-          WHOLESALE_BUNDLES = cached.filter(b => b.active);
-        }
       }
 
       const allDealsBtn = document.getElementById('btn-home-all-deals');
@@ -9661,16 +9776,33 @@
       const grid = document.getElementById('bundles-grid');
       if (!grid) return;
 
-      grid.innerHTML = WHOLESALE_BUNDLES.map(b => {
+      const filtered = currentSelectedHomeBundleCategory === 'all'
+        ? WHOLESALE_BUNDLES
+        : WHOLESALE_BUNDLES.filter(b => (b.category || 'wedding').toLowerCase().trim() === currentSelectedHomeBundleCategory);
+
+      if (filtered.length === 0) {
+        grid.innerHTML = `
+          <div style="grid-column: 1 / -1; text-align: center; padding: 44px 20px; background: #F8FAFC; border: 1.5px dashed var(--border-subtle); border-radius: var(--radius-sm); color: var(--text-muted);">
+            <svg width="40" height="40" viewBox="0 0 24 24" fill="none" stroke="#94A3B8" stroke-width="2" style="margin-bottom: 10px;"><polygon points="12 2 15.09 8.26 22 9.27 17 14.14 18.18 21.02 12 17.77 5.82 21.02 7 14.14 2 9.27 8.91 8.26 12 2"></polygon></svg>
+            <h4 style="font-size: 1.05rem; font-weight: 800; color: #0B192C; margin: 0 0 6px 0;">No Packages In This Category Yet</h4>
+            <p style="font-size: 0.85rem; margin: 0 0 16px 0;">Looking for custom marriage garden or hostel rates? Contact depot desk directly.</p>
+            <button type="button" class="btn-portal-secondary" onclick="filterBundles('all', document.getElementById('btn-home-all-deals'))">View All Featured Deals (${WHOLESALE_BUNDLES.length})</button>
+          </div>
+        `;
+        return;
+      }
+
+      grid.innerHTML = filtered.map(b => {
         const specsList = Array.isArray(b.specs) ? b.specs : [];
         const saveAmt = b.save_amt || b.saveAmt || Math.max(0, (b.mrp || b.price) - b.price);
         const savePct = b.save_pct || b.savePct || (b.mrp > 0 ? Math.round((saveAmt / b.mrp) * 100) : 0);
         const badgeClass = b.badge_class || b.badgeClass || 'popular';
+        const cat = (b.category || 'wedding').toLowerCase().trim();
 
         return `
-          <article class="bundle-card" data-category="${escapeHTML(b.category || 'wedding')}">
+          <article class="bundle-card" data-category="${escapeHTML(cat)}" style="display: flex;">
             <div class="bundle-card-visual">
-              <img src="${escapeHTML(b.image || 'assets/cat_wedding_supply.jpg')}" alt="${escapeHTML(b.title)}" class="bundle-card-img" loading="lazy" onerror="this.src='assets/cat_wedding_supply.jpg'">
+              <img src="${escapeHTML(b.image || 'assets/cat_wedding_supply.webp')}" alt="${escapeHTML(b.title)}" class="bundle-card-img" loading="lazy" onerror="this.src='assets/cat_wedding_supply.webp'">
               ${b.badge ? `<span class="bundle-badge-floating ${escapeHTML(badgeClass)}">${escapeHTML(b.badge)}</span>` : ''}
             </div>
             <div class="bundle-card-body">
@@ -9710,15 +9842,10 @@
     }
 
     function filterBundles(category, btnEl) {
+      currentSelectedHomeBundleCategory = (category || 'all').toLowerCase().trim();
       document.querySelectorAll('#bundle-tabs-nav .bundle-tab-btn').forEach(b => b.classList.remove('active'));
       if (btnEl) btnEl.classList.add('active');
-      document.querySelectorAll('#bundles-grid .bundle-card').forEach(card => {
-        if (category === 'all' || card.dataset.category === category) {
-          card.style.display = 'flex';
-        } else {
-          card.style.display = 'none';
-        }
-      });
+      renderStorefrontBundles();
     }
 
     function addBundleToCart(bundleId) {
@@ -9735,6 +9862,7 @@
         cart[bundle.id] = (cart[bundle.id] || 0) + 1;
         totalAdded = 1;
       }
+      saveCart();
       updateCartUI();
       if (typeof renderProducts === 'function') renderProducts();
       toggleCartDrawer(true);
@@ -9821,6 +9949,12 @@
     }
 
     // LIVE SITE TEXTS
+    function resolveHeroImageSource(src) {
+      const value = String(src || '');
+      if (/hero_bottles_blended\.png$/i.test(value)) return value.replace(/\.png$/i, '.webp');
+      return value;
+    }
+
     function applyLiveSiteTexts() {
       const t = adminTexts || DEFAULT_TEXTS;
       if (!t) return;
@@ -9835,7 +9969,9 @@
       const elHeroDesc = document.getElementById('live-hero-desc-lead');
       if (elHeroDesc && (t.heroDesc || t.hero_desc)) elHeroDesc.textContent = t.heroDesc || t.hero_desc;
       const elHeroImg = document.getElementById('live-hero-bottles-img');
-      if (elHeroImg && (t.heroImg || t.hero_img)) elHeroImg.src = t.heroImg || t.hero_img;
+      if (elHeroImg && (t.heroImg || t.hero_img)) {
+        elHeroImg.src = resolveHeroImageSource(t.heroImg || t.hero_img);
+      }
 
       // 1. Slider Slides
       const s1Img = document.getElementById('live-slide-1-img');
@@ -9905,9 +10041,18 @@
       if (elContactAddress && (t.contactAddress || t.contact_address)) elContactAddress.textContent = t.contactAddress || t.contact_address;
       if (elContactPhone && (t.contactPhone || t.contact_phone)) elContactPhone.textContent = t.contactPhone || t.contact_phone;
       if (elAboutStory && (t.aboutStory || t.about_story)) elAboutStory.innerHTML = escapeHTML(t.aboutStory || t.about_story).split('\n').join('<br>');
-      if (elFooterAddress && (t.contactAddress || t.contact_address)) elFooterAddress.textContent = t.contactAddress || t.contact_address;
-      if (elFooterPhone && (t.contactPhone || t.contact_phone)) elFooterPhone.textContent = t.contactPhone || t.contact_phone;
       if (elFooterHelpline && (t.helpline || t.contactPhone)) elFooterHelpline.textContent = `Helpline: ${t.helpline || t.contactPhone}`;
+
+      // 3. Wholesale Event Bundles & Commercial Supply Section Texts
+      const elWbTag = document.getElementById('live-wholesale-bundles-tag-text');
+      const elWbTitle = document.getElementById('live-wholesale-bundles-title');
+      const elWbDesc = document.getElementById('live-wholesale-bundles-desc');
+      const elWbLink = document.getElementById('live-wholesale-bundles-link-text');
+
+      if (elWbTag && t.wholesaleBundlesTag) elWbTag.textContent = t.wholesaleBundlesTag;
+      if (elWbTitle && t.wholesaleBundlesTitle) elWbTitle.textContent = t.wholesaleBundlesTitle;
+      if (elWbDesc && t.wholesaleBundlesDesc) elWbDesc.textContent = t.wholesaleBundlesDesc;
+      if (elWbLink && t.wholesaleBundlesLinkText) elWbLink.textContent = t.wholesaleBundlesLinkText;
     }
 
     // =========================================================
@@ -11239,14 +11384,14 @@
         slugInput.value = cat.id;
         slugInput.disabled = true;
         tagInput.value = cat.tagline || '';
-        imgSelect.value = cat.image || 'assets/cat_water_cases.jpg';
+        imgSelect.value = cat.image || 'assets/cat_water_cases.webp';
       } else {
         formId.value = '';
         nameInput.value = '';
         slugInput.value = '';
         slugInput.disabled = false;
         tagInput.value = '';
-        imgSelect.value = 'assets/cat_water_cases.jpg';
+        imgSelect.value = 'assets/cat_water_cases.webp';
       }
       modal.classList.add('active');
     }
@@ -11793,21 +11938,21 @@
       setVal('adm-txt-hero-img', t.heroImg || 'assets/hero_bottles_blended.png');
 
       // Slide 1
-      setVal('adm-slide1-img', t.slide1Image || 'assets/hero_bottles.jpg');
+      setVal('adm-slide1-img', t.slide1Image || 'assets/hero_bottles.webp');
       setVal('adm-slide1-tag', t.slide1Tag || 'SIKAR MANDI WHOLESALE PETI DEPOT');
       setVal('adm-slide1-title', t.slide1Title || '100% Factory-Sealed Mineral Water Petis');
       setVal('adm-slide1-sub', t.slide1Sub || 'Bisleri & Kinley Direct Factory Wholesale Rates • Free Tempo Delivery on 5+ Boxes • Zero Camper Policy');
       setVal('adm-slide1-btn', t.slide1BtnText || 'Order Sealed Water');
 
       // Slide 2
-      setVal('adm-slide2-img', t.slide2Image || 'assets/cat_wedding_supply.jpg');
+      setVal('adm-slide2-img', t.slide2Image || 'assets/cat_wedding_supply.webp');
       setVal('adm-slide2-tag', t.slide2Tag || 'WEDDING & FUNCTION SPECIAL');
       setVal('adm-slide2-title', t.slide2Title || 'Wedding & Bulk Function Drinks & Water Combo');
       setVal('adm-slide2-sub', t.slide2Sub || 'Save up to 20% on Marriage Bulk Orders • 200ml Mini Water Bottles + Chilled Cold Drink Crates');
       setVal('adm-slide2-btn', t.slide2BtnText || 'Book Marriage Bulk');
 
       // Slide 3
-      setVal('adm-slide3-img', t.slide3Image || 'assets/cat_soft_drinks.jpg');
+      setVal('adm-slide3-img', t.slide3Image || 'assets/cat_soft_drinks.webp');
       setVal('adm-slide3-tag', t.slide3Tag || 'EXPRESS CHILLED LOGISTICS');
       setVal('adm-slide3-title', t.slide3Title || 'Chilled Soft Drinks & Energy Soda Cans');
       setVal('adm-slide3-sub', t.slide3Sub || 'Coca-Cola, Thums Up, Sprite & Sting • 40-Min Express Unloading Across All Sikar Corridors');
@@ -11836,7 +11981,7 @@
 
       adminTexts = {
         // Slide 1
-        slide1Image: getVal('adm-slide1-img', adminTexts.slide1Image || 'assets/hero_bottles.jpg'),
+        slide1Image: getVal('adm-slide1-img', adminTexts.slide1Image || 'assets/hero_bottles.webp'),
         slide1Tag: getVal('adm-slide1-tag', adminTexts.slide1Tag || 'SIKAR MANDI WHOLESALE PETI DEPOT'),
         slide1Title: getVal('adm-slide1-title', adminTexts.slide1Title || '100% Factory-Sealed Mineral Water Petis'),
         slide1Sub: getVal('adm-slide1-sub', adminTexts.slide1Sub || 'Bisleri & Kinley Direct Factory Wholesale Rates • Free Tempo Delivery on 5+ Boxes • Zero Camper Policy'),
@@ -11844,7 +11989,7 @@
         slide1BtnLink: adminTexts.slide1BtnLink || 'products',
 
         // Slide 2
-        slide2Image: getVal('adm-slide2-img', adminTexts.slide2Image || 'assets/cat_wedding_supply.jpg'),
+        slide2Image: getVal('adm-slide2-img', adminTexts.slide2Image || 'assets/cat_wedding_supply.webp'),
         slide2Tag: getVal('adm-slide2-tag', adminTexts.slide2Tag || 'WEDDING & FUNCTION SPECIAL'),
         slide2Title: getVal('adm-slide2-title', adminTexts.slide2Title || 'Wedding & Bulk Function Drinks & Water Combo'),
         slide2Sub: getVal('adm-slide2-sub', adminTexts.slide2Sub || 'Save up to 20% on Marriage Bulk Orders • 200ml Mini Water Bottles + Chilled Cold Drink Crates'),
@@ -11852,7 +11997,7 @@
         slide2BtnLink: adminTexts.slide2BtnLink || 'bulk',
 
         // Slide 3
-        slide3Image: getVal('adm-slide3-img', adminTexts.slide3Image || 'assets/cat_soft_drinks.jpg'),
+        slide3Image: getVal('adm-slide3-img', adminTexts.slide3Image || 'assets/cat_soft_drinks.webp'),
         slide3Tag: getVal('adm-slide3-tag', adminTexts.slide3Tag || 'EXPRESS CHILLED LOGISTICS'),
         slide3Title: getVal('adm-slide3-title', adminTexts.slide3Title || 'Chilled Soft Drinks & Energy Soda Cans'),
         slide3Sub: getVal('adm-slide3-sub', adminTexts.slide3Sub || 'Coca-Cola, Thums Up, Sprite & Sting • 40-Min Express Unloading Across All Sikar Corridors'),
@@ -11928,7 +12073,7 @@
         `).join('');
       }
 
-      document.getElementById('admin-prod-image').value = 'assets/prod_bisleri_1l.jpg';
+      document.getElementById('admin-prod-image').value = 'assets/prod_bisleri_1l.webp';
       document.getElementById('admin-prod-price').value = '250';
       document.getElementById('admin-prod-mrp').value = '300';
       document.getElementById('admin-prod-spec').value = '24 Bottles Peti • ₹10/pc';
@@ -12181,7 +12326,7 @@
             <tr>
               <td>
                 <div style="display: flex; align-items: center; gap: 10px;">
-                  <img src="${escapeHTML(b.image || 'assets/cat_wedding_supply.jpg')}" alt="${escapeHTML(b.title || 'Wholesale Bundle')}" style="width: 38px; height: 38px; border-radius: 6px; object-fit: cover;" onerror="this.src='assets/cat_wedding_supply.jpg'">
+                  <img src="${escapeHTML(b.image || 'assets/cat_wedding_supply.webp')}" alt="${escapeHTML(b.title || 'Wholesale Bundle')}" style="width: 38px; height: 38px; border-radius: 6px; object-fit: cover;" onerror="this.src='assets/cat_wedding_supply.webp'">
                   <div>
                     <strong style="color: #0F172A; display: block;">${escapeHTML(b.title)}</strong>
                     <span style="font-size: 0.76rem; color: #64748B;">ID: ${escapeHTML(b.id)}</span>
@@ -12310,7 +12455,10 @@
       invoiceSheet.innerHTML = `
         <div class="invoice-top-strip">
           <div class="invoice-depot-brand">
-            <h2>SIKAR DROP WHOLESALE DEPOT</h2>
+            <div style="margin-bottom: 8px;">
+              <img src="/assets/sikar_drop_logo.webp" alt="Sikar Drop" style="height: 48px; object-fit: contain; display: block;">
+            </div>
+            <h2>SIKAR WATER BOTTLE SUPPLY WHOLESALE DEPOT</h2>
             <p style="margin: 2px 0; font-size: 0.82rem; color: #475569;">
               Plot 14-B, Near Krishi Upaj Mandi, Station Road Bypass, Sikar, Rajasthan 332001<br>
               Depot GSTIN: <strong>08AAECS9821M1ZX</strong> • FSSAI Lic: <strong>12224026000142</strong><br>
@@ -12331,7 +12479,7 @@
         <div class="invoice-parties-grid">
           <div class="invoice-party-box">
             <h4>Consignor (Supplier Depot)</h4>
-            <strong>Sikar Drop Central Distribution Hub</strong><br>
+            <strong>Sikar Water Bottle Supply Central Distribution Hub</strong><br>
             Station Road Krishi Mandi Bypass, Sikar (Raj.)<br>
             State: Rajasthan (Code: 08)<br>
             Dispatch Mode: Dedicated Tempo Fleet
@@ -12414,7 +12562,7 @@
             <strong>${escapeHTML(order.vehicle || 'RJ-23-GA-4821')}</strong>
           </div>
           <div style="text-align: right;">
-            For SIKAR DROP WHOLESALE DEPOT<br>
+            For SIKAR WATER BOTTLE SUPPLY WHOLESALE DEPOT<br>
             <strong>Authorized Signatory / Dispatch In-charge</strong>
           </div>
         </div>
@@ -13290,8 +13438,26 @@
         console.warn('Initial theme load fallback', e);
       }
 
-      // Cross-tab real-time sync for festival themes & settings
+      // Cross-tab real-time sync for bundles, site texts, festival themes & settings
+      if (typeof BroadcastChannel !== 'undefined') {
+        const sikarSyncChannel = new BroadcastChannel('sikar_sync');
+        sikarSyncChannel.onmessage = (ev) => {
+          if (!ev.data) return;
+          if (ev.data.type === 'BUNDLES_UPDATED') {
+            loadStorefrontBundles();
+          } else if (ev.data.type === 'CMS_UPDATED') {
+            syncStorefrontFromBackend();
+          }
+        };
+      }
+
       window.addEventListener('storage', (e) => {
+        if (!e.key || e.key === 'sikar_admin_bundles') {
+          loadStorefrontBundles();
+        }
+        if (!e.key || e.key === 'sikar_admin_texts') {
+          applyLiveSiteTexts();
+        }
         if (!e.key || e.key === 'sikar_theme' || e.key === 'sikar_settings') {
           try {
             const freshSettings = JSON.parse(localStorage.getItem('sikar_settings') || 'null');

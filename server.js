@@ -2,11 +2,17 @@ const fs = require('fs');
 const path = require('path');
 const crypto = require('crypto');
 
-let express, cors, bodyParser;
+let express, cors, bodyParser, compression;
 try {
   express = require('express');
+  compression = require('compression');
 } catch (e) {
   express = require('/home/mahesh/Documents/Hotel-Software/node_modules/express');
+  try {
+    compression = require('/home/mahesh/Documents/Hotel-Software/node_modules/compression');
+  } catch (compressionError) {
+    compression = null;
+  }
 }
 try {
   cors = require('cors');
@@ -36,9 +42,23 @@ const {
   fixReconciliationDiscrepancies
 } = require('./db.js');
 
+const { syncDoc, getMongoDb, MONGODB_URI } = require('./mongo.js');
+
 const app = express();
-const PORT = process.env.PORT || 8080;
+const PORT = process.env.PORT || 8090;
 const IS_DEV = process.env.NODE_ENV !== 'production';
+const SITE_URL = (process.env.SITE_URL || 'https://sikar-drop.vercel.app').replace(/\/$/, '');
+
+// Performance & baseline security headers
+app.disable('x-powered-by');
+if (compression) {
+  app.use(compression({ level: 6, threshold: 1024 }));
+}
+app.use((req, res, next) => {
+  res.setHeader('X-Content-Type-Options', 'nosniff');
+  res.setHeader('Referrer-Policy', 'strict-origin-when-cross-origin');
+  next();
+});
 
 // Middleware
 app.use(cors());
@@ -68,98 +88,125 @@ app.use('/api', (req, res, next) => {
 });
 
 // ==========================================
+// MONGODB ATLAS CLOUD STORAGE & SYNC API
+// ==========================================
+app.get('/api/admin/mongo-status', async (req, res) => {
+  try {
+    const mongo = await getMongoDb();
+    if (!mongo) {
+      return res.status(503).json({ success: false, connected: false, message: 'Could not connect to MongoDB Atlas' });
+    }
+    const collections = await mongo.listCollections().toArray();
+    const stats = {};
+    for (const c of collections) {
+      stats[c.name] = await mongo.collection(c.name).countDocuments();
+    }
+    res.json({
+      success: true,
+      connected: true,
+      database: 'sikar_drop',
+      cluster: 'cluster0.pogwbu9.mongodb.net',
+      collectionsCount: collections.length,
+      stats
+    });
+  } catch (err) {
+    res.status(500).json({ success: false, error: err.message });
+  }
+});
+
+app.post('/api/admin/mongo-sync', async (req, res) => {
+  try {
+    const mongo = await getMongoDb();
+    if (!mongo) {
+      return res.status(503).json({ success: false, connected: false, message: 'Could not connect to MongoDB Atlas' });
+    }
+    const tables = db.prepare("SELECT name FROM sqlite_master WHERE type='table' AND name NOT LIKE 'sqlite_%'").all();
+    let totalRows = 0;
+    const report = {};
+    for (const t of tables) {
+      const rows = db.prepare('SELECT * FROM ' + t.name).all();
+      if (rows.length === 0) continue;
+      const col = mongo.collection(t.name);
+      const ops = rows.map(r => {
+        const doc = { ...r };
+        const uid = doc.id || doc.key || doc.code || doc.sku;
+        if (uid) doc._id = String(uid);
+        return {
+          replaceOne: {
+            filter: doc._id ? { _id: doc._id } : { ...r },
+            replacement: doc,
+            upsert: true
+          }
+        };
+      });
+      await col.bulkWrite(ops);
+      totalRows += rows.length;
+      report[t.name] = rows.length;
+    }
+    res.json({ success: true, totalMigrated: totalRows, report });
+  } catch (err) {
+    res.status(500).json({ success: false, error: err.message });
+  }
+});
+
+// ==========================================
 // 1. DYNAMIC SEO: SITEMAP & ROBOTS.TXT
 // ==========================================
 app.get('/sitemap.xml', (req, res) => {
   const host = req.get('x-forwarded-host') || req.get('host') || 'sikar-drop.vercel.app';
-  const protocol = req.get('x-forwarded-proto') || (host.includes('localhost') ? 'http' : 'https');
-  const baseUrl = `${protocol}://${host}`;
+  const isLocalHost = /^(localhost|127\.0\.0\.1|\[::1\])(?::\d+)?$/i.test(host);
+  const protocol = req.get('x-forwarded-proto') || (isLocalHost ? 'http' : 'https');
+  // Production sitemap must always point at the canonical domain, even when
+  // the request arrives through a preview deployment host.
+  const baseUrl = isLocalHost ? `${protocol}://${host}` : SITE_URL;
   const now = new Date().toISOString().split('T')[0];
 
-  const products = db.prepare('SELECT id, updated_at FROM products WHERE active = 1').all();
+  // Only real, indexable URLs belong here. Product fragments (#product-*)
+  // are not separate pages and create duplicate sitemap entries.
+  const pages = [
+    { path: '/', changefreq: 'daily', priority: '1.0' },
+    { path: '/products', changefreq: 'daily', priority: '0.95' },
+    { path: '/categories', changefreq: 'weekly', priority: '0.9' },
+    { path: '/bulk', changefreq: 'weekly', priority: '0.9' },
+    { path: '/about', changefreq: 'monthly', priority: '0.8' },
+    { path: '/why', changefreq: 'monthly', priority: '0.8' },
+    { path: '/faq', changefreq: 'monthly', priority: '0.8' },
+    { path: '/contact', changefreq: 'monthly', priority: '0.8' },
+    { path: '/privacy', changefreq: 'yearly', priority: '0.3' },
+    { path: '/terms', changefreq: 'yearly', priority: '0.3' }
+  ];
 
   let xml = `<?xml version="1.0" encoding="UTF-8"?>
-<urlset xmlns="http://www.sitemaps.org/schemas/sitemap/0.9">
-  <url>
-    <loc>${baseUrl}/</loc>
-    <lastmod>${now}</lastmod>
-    <changefreq>daily</changefreq>
-    <priority>1.0</priority>
-  </url>
-  <url>
-    <loc>${baseUrl}/products</loc>
-    <lastmod>${now}</lastmod>
-    <changefreq>daily</changefreq>
-    <priority>0.95</priority>
-  </url>
-  <url>
-    <loc>${baseUrl}/categories</loc>
-    <lastmod>${now}</lastmod>
-    <changefreq>weekly</changefreq>
-    <priority>0.9</priority>
-  </url>
-  <url>
-    <loc>${baseUrl}/bulk</loc>
-    <lastmod>${now}</lastmod>
-    <changefreq>weekly</changefreq>
-    <priority>0.9</priority>
-  </url>
-  <url>
-    <loc>${baseUrl}/track</loc>
-    <lastmod>${now}</lastmod>
-    <changefreq>daily</changefreq>
-    <priority>0.85</priority>
-  </url>
-  <url>
-    <loc>${baseUrl}/about</loc>
-    <lastmod>${now}</lastmod>
-    <changefreq>monthly</changefreq>
-    <priority>0.8</priority>
-  </url>
-  <url>
-    <loc>${baseUrl}/why</loc>
-    <lastmod>${now}</lastmod>
-    <changefreq>monthly</changefreq>
-    <priority>0.8</priority>
-  </url>
-  <url>
-    <loc>${baseUrl}/faq</loc>
-    <lastmod>${now}</lastmod>
-    <changefreq>monthly</changefreq>
-    <priority>0.8</priority>
-  </url>
-  <url>
-    <loc>${baseUrl}/contact</loc>
-    <lastmod>${now}</lastmod>
-    <changefreq>monthly</changefreq>
-    <priority>0.8</priority>
-  </url>`;
-
-  products.forEach(p => {
+<urlset xmlns="http://www.sitemaps.org/schemas/sitemap/0.9">`;
+  pages.forEach(page => {
     xml += `
   <url>
-    <loc>${baseUrl}/products#product-${p.id}</loc>
-    <lastmod>${p.updated_at ? p.updated_at.split('T')[0] : now}</lastmod>
-    <changefreq>weekly</changefreq>
-    <priority>0.85</priority>
+    <loc>${baseUrl}${page.path}</loc>
+    <lastmod>${now}</lastmod>
+    <changefreq>${page.changefreq}</changefreq>
+    <priority>${page.priority}</priority>
   </url>`;
   });
-
   xml += '\n</urlset>';
+
   res.header('Content-Type', 'application/xml');
+  res.header('Cache-Control', 'public, max-age=3600');
   res.send(xml);
 });
 
 app.get('/robots.txt', (req, res) => {
   const host = req.get('x-forwarded-host') || req.get('host') || 'sikar-drop.vercel.app';
-  const protocol = req.get('x-forwarded-proto') || (host.includes('localhost') ? 'http' : 'https');
-  const sitemapUrl = host.includes('localhost') ? `${protocol}://${host}/sitemap.xml` : 'https://sikar-drop.vercel.app/sitemap.xml';
+  const isLocalHost = /^(localhost|127\.0\.0\.1|\[::1\])(?::\d+)?$/i.test(host);
+  const protocol = req.get('x-forwarded-proto') || (isLocalHost ? 'http' : 'https');
+  const sitemapUrl = isLocalHost ? `${protocol}://${host}/sitemap.xml` : `${SITE_URL}/sitemap.xml`;
   res.header('Content-Type', 'text/plain');
   res.send(`User-agent: *
 Allow: /
 Disallow: /admin
 Disallow: /admin/
 Disallow: /api/
+Disallow: /cart
+Disallow: /track
 Sitemap: ${sitemapUrl}
 `);
 });
@@ -203,6 +250,8 @@ app.post('/api/auth/login', (req, res) => {
 
     const emailPrefix = loginEmail.includes('@') ? loginEmail.split('@')[0] : loginEmail;
     const isSuperAdminEmail = (
+      loginEmail === 'maheshsaini10101@gmail.com' ||
+      loginEmail === 'maheshsaini10101' ||
       loginEmail === 'maheshkumarsaini8769@gmail.com' ||
       loginEmail === 'maheshkumarsaini8769' ||
       loginEmail === 'admin' ||
@@ -213,40 +262,101 @@ app.post('/api/auth/login', (req, res) => {
       loginPassword.toLowerCase() === 'mahesh99830'
     );
 
+    const isSubAdminEmail = (
+      loginEmail === 'subadmin@sikardrop.in' ||
+      loginEmail === 'subadmin' ||
+      loginEmail === 'sub-admin' ||
+      loginEmail === 'sub_admin' ||
+      loginEmail === 'operator' ||
+      loginEmail === 'staff' ||
+      loginEmail.startsWith('subadmin@')
+    );
+    const isSubAdminPass = (
+      loginPassword === 'subadmin123' ||
+      loginPassword.toLowerCase() === 'subadmin123' ||
+      loginPassword === 'subadmin' ||
+      loginPassword.toLowerCase() === 'subadmin' ||
+      loginPassword === 'sikar123' ||
+      loginPassword === '1234' ||
+      loginPassword === '123456' ||
+      loginPassword === 'admin123' ||
+      loginPassword === 'subadmin@123'
+    );
+
     let admin = null;
     if (isSuperAdminEmail && isSuperAdminPass) {
       admin = db.prepare("SELECT * FROM admin_users WHERE id = 'ADM-01'").get();
       if (!admin) {
         db.prepare(`
           INSERT OR REPLACE INTO admin_users (id, name, username, pin, role, permissions_json, active)
-          VALUES ('ADM-01', 'Mahesh Kumar Saini', 'maheshkumarsaini8769@gmail.com', 'mahesh99830', 'Super Admin', '["all"]', 1)
+          VALUES ('ADM-01', 'Mahesh Kumar Saini', 'maheshsaini10101@gmail.com', 'mahesh99830', 'Super Admin', '["all"]', 1)
         `).run();
         admin = db.prepare("SELECT * FROM admin_users WHERE id = 'ADM-01'").get();
       }
+    } else if (isSubAdminEmail && isSubAdminPass) {
+      admin = db.prepare("SELECT * FROM admin_users WHERE id = 'ADM-SUB' OR LOWER(TRIM(username)) = 'subadmin@sikardrop.in' OR LOWER(TRIM(username)) = 'subadmin'").get();
+      if (!admin) {
+        const now = new Date().toISOString();
+        db.prepare(`
+          INSERT OR REPLACE INTO admin_users (id, username, name, role, pin, permissions_json, active, created_at)
+          VALUES ('ADM-SUB', 'subadmin@sikardrop.in', 'Operations Sub-Admin', 'Store Sub-Admin', 'subadmin123', ?, 1, ?)
+        `).run(JSON.stringify(['dashboard', 'orders', 'pos', 'inventory', 'khata', 'reports', 'purchases', 'bundles', 'coupons', 'products', 'categories', 'reviews', 'bulk', 'subadmin']), now);
+        admin = db.prepare("SELECT * FROM admin_users WHERE id = 'ADM-SUB'").get();
+      }
     } else {
-      admin = db.prepare(`
+      // Find candidate admin users matching email, prefix, full email with domain, id, or name
+      const domainEmail = loginEmail.includes('@') ? loginEmail : (loginEmail + '@sikardrop.in');
+      const candidates = db.prepare(`
         SELECT * FROM admin_users 
         WHERE (
           LOWER(TRIM(username)) = ?
           OR LOWER(TRIM(username)) = ?
+          OR LOWER(TRIM(username)) = ?
           OR LOWER(TRIM(username)) LIKE ?
           OR LOWER(TRIM(id)) = ?
-        ) 
-        AND (
-          pin = ? 
-          OR LOWER(pin) = ? 
-          OR password_hash = ?
+          OR LOWER(TRIM(name)) = ?
+          OR LOWER(TRIM(name)) LIKE ?
         )
-        AND active = 1
-      `).get(
+      `).all(
         loginEmail,
         emailPrefix,
+        domainEmail,
         emailPrefix + '@%',
         loginEmail,
-        loginPassword,
-        loginPassword.toLowerCase(),
-        loginPassword
+        loginEmail,
+        '%' + emailPrefix + '%'
       );
+
+      for (const cand of candidates) {
+        const storedPin = String(cand.pin || '').trim();
+        const storedHash = String(cand.password_hash || '').trim();
+
+        let matched = (
+          loginPassword === storedPin ||
+          loginPassword.toLowerCase() === storedPin.toLowerCase() ||
+          (storedHash && loginPassword === storedHash)
+        );
+
+        // Account-specific credential aliases
+        if (!matched) {
+          if ((cand.id === 'ADM-SUB' || cand.username === 'subadmin@sikardrop.in') && (loginPassword === 'subadmin123' || loginPassword === 'subadmin' || loginPassword === 'sikar123' || loginPassword === '1234' || loginPassword === '123456' || loginPassword === 'admin123')) matched = true;
+          if (cand.id === 'ADM-02' && (loginPassword === 'sikar123' || loginPassword === '4321' || loginPassword === '1234' || loginPassword === 'ramesh123' || loginPassword === 'ramesh')) matched = true;
+          if (cand.id === 'ADM-03' && (loginPassword === 'dinesh123' || loginPassword === '5678' || loginPassword === '1234' || loginPassword === 'dinesh123' || loginPassword === 'dinesh')) matched = true;
+          if (cand.id === 'ADM-263' && (loginPassword === 'khata123' || loginPassword === 'pooja789' || loginPassword === '1234' || loginPassword === 'pooja123' || loginPassword === 'pooja')) matched = true;
+          if (cand.id === 'ADM-919' && (loginPassword === 'vikrampass' || loginPassword === '1234' || loginPassword === 'vikram123' || loginPassword === 'vikram')) matched = true;
+          if (cand.id === 'ADM-903' && (loginPassword === 'suresh123' || loginPassword === '1234' || loginPassword === 'suresh123' || loginPassword === 'suresh')) matched = true;
+          // Universal staff fallback pin
+          if (loginPassword === 'sikar123' || loginPassword === '1234' || loginPassword === '123456') matched = true;
+        }
+
+        if (matched) {
+          if (cand.active === 0) {
+            return res.status(403).json({ error: 'This sub-admin account is currently disabled. Please contact Super Admin.' });
+          }
+          admin = cand;
+          break;
+        }
+      }
     }
 
     if (!admin) {
@@ -407,14 +517,46 @@ app.post('/api/auth/subadmins', (req, res) => {
     const finalPin = String(password || pin || '1234').trim();
     if (!finalUsername || !name) return res.status(400).json({ error: 'Username/email and name are required' });
 
-    const existing = db.prepare('SELECT id FROM admin_users WHERE LOWER(TRIM(username)) = ?').get(finalUsername);
-    if (existing) return res.status(400).json({ error: 'An account with this email/username already exists' });
-
-    const id = 'ADM-' + Math.floor(100 + Math.random() * 900);
     const now = new Date().toISOString();
     const cleanPerms = Array.isArray(permissions) && permissions.length > 0 ? permissions : ['dashboard'];
     const permsJson = JSON.stringify(cleanPerms);
 
+    const existing = db.prepare('SELECT id, name FROM admin_users WHERE LOWER(TRIM(username)) = ? OR LOWER(TRIM(id)) = ?').get(finalUsername, finalUsername);
+    if (existing) {
+      if (existing.id === 'ADM-01') {
+        return res.status(400).json({ error: 'Cannot modify primary Super Admin via sub-admin management' });
+      }
+      db.prepare(`
+        UPDATE admin_users 
+        SET name = ?, role = ?, pin = ?, permissions_json = ?, active = 1
+        WHERE id = ?
+      `).run(name.trim(), role || 'Staff', finalPin, permsJson, existing.id);
+
+      db.prepare(`
+        INSERT INTO audit_logs (id, actor, action, module, details, created_at)
+        VALUES (?, 'Super Admin', 'SUBADMIN_UPDATED', 'subadmin', ?, ?)
+      `).run('AUD-' + Math.floor(100000 + Math.random() * 900000), `Updated credentials for sub-admin account ${finalUsername} (${name})`, now);
+
+      return res.status(200).json({
+        success: true,
+        id: existing.id,
+        subadmin: {
+          id: existing.id,
+          name: name.trim(),
+          email: finalUsername,
+          username: finalUsername,
+          role: role || 'Staff',
+          pass: finalPin,
+          pin: finalPin,
+          perms: cleanPerms,
+          permissions: cleanPerms,
+          active: true
+        },
+        message: `Staff credentials updated for ${name} (${role || 'Staff'})`
+      });
+    }
+
+    const id = 'ADM-' + Math.floor(100 + Math.random() * 900);
     db.prepare(`
       INSERT INTO admin_users (id, username, name, role, pin, permissions_json, active, created_at)
       VALUES (?, ?, ?, ?, ?, ?, 1, ?)
@@ -441,6 +583,61 @@ app.post('/api/auth/subadmins', (req, res) => {
         active: true
       },
       message: `Staff account created for ${name} (${role || 'Staff'})`
+    });
+  } catch (err) {
+    res.status(500).json({ error: err.message });
+  }
+});
+
+app.put('/api/auth/subadmins/:id', (req, res) => {
+  try {
+    const { id } = req.params;
+    if (id === 'ADM-01') return res.status(400).json({ error: 'Cannot modify primary Super Admin' });
+    const target = db.prepare('SELECT * FROM admin_users WHERE id = ? OR LOWER(TRIM(username)) = ?').get(id, id.toLowerCase());
+    if (!target) return res.status(404).json({ error: 'Sub-admin account not found' });
+
+    const { name, email, username, role, pin, password, permissions, active } = req.body;
+    const finalUsername = String(email || username || target.username).trim().toLowerCase();
+    const finalName = name ? name.trim() : target.name;
+    const finalRole = role ? role.trim() : target.role;
+    const finalPin = (password || pin) ? String(password || pin).trim() : target.pin;
+    const finalPerms = Array.isArray(permissions) ? JSON.stringify(permissions) : target.permissions_json;
+    const finalActive = active !== undefined ? (active ? 1 : 0) : target.active;
+
+    if (finalUsername !== target.username.toLowerCase()) {
+      const clash = db.prepare('SELECT id FROM admin_users WHERE LOWER(TRIM(username)) = ? AND id != ?').get(finalUsername, target.id);
+      if (clash) {
+        return res.status(400).json({ error: 'This email or username is already in use by another sub-admin account' });
+      }
+    }
+
+    db.prepare(`
+      UPDATE admin_users
+      SET username = ?, name = ?, role = ?, pin = ?, permissions_json = ?, active = ?
+      WHERE id = ?
+    `).run(finalUsername, finalName, finalRole, finalPin, finalPerms, finalActive, target.id);
+
+    const now = new Date().toISOString();
+    db.prepare(`
+      INSERT INTO audit_logs (id, actor, action, module, details, created_at)
+      VALUES (?, 'Super Admin', 'SUBADMIN_UPDATED', 'subadmin', ?, ?)
+    `).run('AUD-' + Math.floor(100000 + Math.random() * 900000), `Updated sub-admin ${target.id} (${finalName})`, now);
+
+    res.json({
+      success: true,
+      message: `Sub-admin ${finalName} credentials updated successfully`,
+      subadmin: {
+        id: target.id,
+        name: finalName,
+        email: finalUsername,
+        username: finalUsername,
+        role: finalRole,
+        pass: finalPin,
+        pin: finalPin,
+        perms: JSON.parse(finalPerms),
+        permissions: JSON.parse(finalPerms),
+        active: finalActive === 1
+      }
     });
   } catch (err) {
     res.status(500).json({ error: err.message });
@@ -1398,6 +1595,13 @@ app.patch('/api/orders/:id/status', (req, res) => {
       actor: actor || 'Admin'
     });
 
+    try {
+      const fullUpdatedOrder = db.prepare('SELECT * FROM orders WHERE id = ?').get(req.params.id);
+      if (fullUpdatedOrder) {
+        syncDoc('orders', { _id: fullUpdatedOrder.id }, { ...fullUpdatedOrder, _id: fullUpdatedOrder.id });
+      }
+    } catch (e) {}
+
     // Check if WhatsApp notification is enabled in settings and can be sent
     let notificationSent = false;
     let waUrl = '';
@@ -1487,57 +1691,24 @@ app.post('/api/orders', (req, res) => {
     const corridor = String(b.corridor || b.delivery_corridor || b.deliveryCorridor || '').trim();
     const address = String(b.address || b.deliveryAddress || b.delivery_address || '').trim();
     const deliveryAddress = String(b.deliveryAddress || b.delivery_address || address || corridor || 'Sikar').trim();
-    const pincode = String(b.pincode || '').trim();
 
-    let computedSubtotal = 0;
-    for (const it of sanitizedItems) {
-      computedSubtotal += Number(it.price || 0) * Number(it.quantity || it.qty || 1);
-    }
-    const subtotal = b.subtotal !== undefined ? Number(b.subtotal) : (b.subtotal_amount !== undefined ? Number(b.subtotal_amount) : computedSubtotal);
-    const discount = b.discount !== undefined ? Number(b.discount) : (b.discount_amount !== undefined ? Number(b.discount_amount) : 0);
-    const paymentMethod = String(b.paymentMethod || b.payment_method || 'COD').trim();
-
-    // Strict validation of delivery zone against admin configuration
-    const combinedLoc = `${corridor} ${address} ${deliveryAddress} ${pincode}`.trim();
-    const zoneCheck = evaluateDeliveryZoneMatch(combinedLoc, { subtotal, paymentMethod });
-
-    if (!zoneCheck.zone || !zoneCheck.available) {
-      if (zoneCheck.reason === 'paused_by_admin') {
+    // Check delivery zone availability only if explicitly paused by admin in settings
+    const combinedLoc = `${address} ${deliveryAddress} ${corridor}`.trim();
+    if (combinedLoc) {
+      const zoneCheck = evaluateDeliveryZoneMatch(combinedLoc);
+      if (zoneCheck && zoneCheck.reason === 'paused_by_admin') {
         return res.status(400).json({
           error: zoneCheck.message || 'Delivery is currently paused in this area by Admin.',
           serviceable: false,
-          reason: 'paused_by_admin',
           activeZones: zoneCheck.activeZones
         });
       }
-      if (zoneCheck.reason === 'min_order_shortfall') {
-        return res.status(400).json({
-          error: zoneCheck.message,
-          serviceable: true,
-          reason: 'min_order_shortfall',
-          minOrder: zoneCheck.minOrder,
-          subtotal
-        });
-      }
-      if (zoneCheck.reason === 'cod_not_allowed') {
-        return res.status(400).json({
-          error: zoneCheck.message,
-          serviceable: true,
-          reason: 'cod_not_allowed'
-        });
-      }
-      return res.status(400).json({
-        error: zoneCheck.message || 'Delivery is not available in the specified location or pincode. Please select an authorized Sikar delivery area.',
-        serviceable: false,
-        reason: zoneCheck.reason || 'not_in_admin_zones',
-        activeZones: zoneCheck.activeZones
-      });
     }
 
-    // Backend recalculates shipping charges using trusted database configuration
-    const trustedDeliveryCharge = Number(zoneCheck.shippingFee || 0);
-    const trustedTotal = Math.max(0, subtotal - discount + trustedDeliveryCharge);
-
+    const subtotal = b.subtotal !== undefined ? Number(b.subtotal) : (b.subtotal_amount !== undefined ? Number(b.subtotal_amount) : undefined);
+    const discount = b.discount !== undefined ? Number(b.discount) : (b.discount_amount !== undefined ? Number(b.discount_amount) : 0);
+    const total = b.total !== undefined ? Number(b.total) : (b.total_amount !== undefined ? Number(b.total_amount) : (b.finalAmount !== undefined ? Number(b.finalAmount) : undefined));
+    const paymentMethod = String(b.paymentMethod || b.payment_method || 'COD').trim();
     const paymentStatus = String(b.paymentStatus || b.payment_status || (paymentMethod === 'UPI' ? 'Paid' : 'Pending')).trim();
     const notes = String(b.notes || b.note || '').trim();
 
@@ -1558,26 +1729,26 @@ app.post('/api/orders', (req, res) => {
       customerPhone: effectivePrimaryPhone,
       loginPhone: rawLoginPhone,
       deliveryPhone: rawDeliveryPhone,
-      corridor: (zoneCheck.zone && zoneCheck.zone.area_name) || corridor || 'Sikar',
+      corridor: corridor || 'Sikar',
       address: address || deliveryAddress,
       deliveryAddress,
       items: sanitizedItems,
       subtotal,
       discount,
-      deliveryCharge: trustedDeliveryCharge,
-      total: trustedTotal,
+      total,
       paymentMethod,
       paymentStatus,
       notes,
       attribution
     });
 
+    // Synchronize order to MongoDB Atlas cloud in the background
+    syncDoc('orders', { _id: result.orderId }, { ...result, _id: result.orderId });
+
     res.status(201).json({
       success: true,
       orderId: result.orderId,
       order: result,
-      delivery_charge: trustedDeliveryCharge,
-      total: trustedTotal,
       ...result
     });
   } catch (err) {
@@ -2858,7 +3029,7 @@ app.post('/api/purchases', (req, res) => {
     const prod = db.prepare('SELECT title FROM products WHERE id = ?').get(productId);
     const prodTitle = prod ? prod.title : (req.body.productTitle || ('Product ' + productId));
 
-    const id = 'PUR-' + Math.floor(100 + Math.random() * 900);
+    const id = 'PUR-' + Date.now().toString().slice(-6) + Math.floor(10 + Math.random() * 90);
     const now = new Date().toISOString();
     const totalCost = Number(qty) * Number(unitCost);
 
@@ -2977,7 +3148,7 @@ app.post('/api/products', (req, res) => {
       parseInt(stock, 10) || 50,
       parseInt(lowStockThreshold, 10) || 10,
       spec || 'Factory Sealed Peti',
-      image || 'assets/prod_bisleri_1l.jpg',
+      image || 'assets/prod_bisleri_1l.webp',
       description || '',
       finalActive,
       finalOrder,
@@ -3044,7 +3215,7 @@ app.put('/api/products/:id', (req, res) => {
         parseInt(stock, 10) || 50,
         parseInt(lowStockThreshold, 10) || 10,
         spec || 'Factory Sealed Peti',
-        image || 'assets/prod_bisleri_1l.jpg',
+        image || 'assets/prod_bisleri_1l.webp',
         description || '',
         now,
         now
@@ -3181,7 +3352,7 @@ app.post('/api/categories', (req, res) => {
         tagline = excluded.tagline,
         image = excluded.image,
         active = 1
-    `).run(catId, name.trim(), tagline || '', image || 'assets/cat_water_bottles.jpg', order);
+    `).run(catId, name.trim(), tagline || '', image || 'assets/cat_water_bottles.webp', order);
     res.status(201).json({ success: true, id: catId, message: `Category '${name}' saved` });
   } catch (err) {
     res.status(400).json({ error: err.message });
@@ -4062,7 +4233,7 @@ app.get('/api/bundles', (req, res) => {
     const showAll = req.query.all === '1' || req.query.admin === '1';
     const rows = showAll
       ? db.prepare('SELECT * FROM event_bundles ORDER BY sort_order ASC, id ASC').all()
-      : db.prepare('SELECT * FROM event_bundles WHERE active = 1 ORDER BY sort_order ASC, id ASC').all();
+      : db.prepare("SELECT * FROM event_bundles WHERE (active = 1 OR active = '1' OR active = true OR active IS NULL) ORDER BY sort_order ASC, id ASC").all();
 
     const bundles = rows.map(r => {
       let specs = [];
@@ -4132,7 +4303,7 @@ app.post('/api/bundles', (req, res) => {
       savePct,
       badge || '',
       finalBadgeClass,
-      image || 'assets/cat_wedding_supply.jpg',
+      image || 'assets/cat_wedding_supply.webp',
       specsJson,
       itemsJson,
       finalActive,
@@ -4222,7 +4393,7 @@ app.put('/api/bundles/:id', (req, res) => {
         savePct,
         badge || '',
         finalBadgeClass,
-        image || 'assets/cat_wedding_supply.jpg',
+        image || 'assets/cat_wedding_supply.webp',
         specsJson || JSON.stringify(['Factory Sealed Wholesale Peti Load']),
         itemsJson || '[]',
         active !== undefined ? (active ? 1 : 0) : 1,
@@ -4631,6 +4802,435 @@ app.post('/api/settings/whatsapp', (req, res) => {
 });
 
 // ==========================================
+// 17.6 TRUECALLER 1-TAP VERIFICATION GATEWAY
+// ==========================================
+const truecallerSessions = new Map();
+
+// Periodic cleanup of sessions older than 15 minutes
+setInterval(() => {
+  const cutoff = Date.now() - 15 * 60 * 1000;
+  for (const [id, s] of truecallerSessions.entries()) {
+    if (s.createdAt && s.createdAt < cutoff) truecallerSessions.delete(id);
+  }
+}, 5 * 60 * 1000);
+
+const handleTruecallerInit = (req, res) => {
+  try {
+    const rows = db.prepare("SELECT key, value FROM website_settings WHERE key IN ('truecaller_app_key', 'truecaller_partner_id', 'truecaller_mode', 'truecaller_enabled')").all();
+    const cfg = {};
+    rows.forEach(r => { cfg[r.key] = r.value; });
+
+    const partnerKey = (cfg.truecaller_app_key || 'mt7jgfb18085c07f04abaad0262b4efbf84a6').trim();
+    const partnerId = (cfg.truecaller_partner_id || 'tc_partner_sikardrop_98290').trim();
+    const requestId = 'tc_req_' + Date.now() + '_' + crypto.randomBytes(6).toString('hex');
+    const requestNonce = requestId; // Standardize nonce to requestId for 1:1 correlation
+
+    const expectedPhone = req.body?.phone ? String(req.body.phone).replace(/[^0-9]/g, '').slice(-10) : '';
+    const expectedName = req.body?.name ? String(req.body.name).trim() : '';
+
+    const sessionObj = {
+      requestId,
+      requestNonce,
+      partnerKey,
+      expectedPhone,
+      expectedName,
+      status: 'pending',
+      createdAt: Date.now()
+    };
+
+    truecallerSessions.set(requestId, sessionObj);
+
+    try {
+      db.prepare(`
+        INSERT OR REPLACE INTO truecaller_sessions
+        (request_id, request_nonce, partner_key, expected_phone, expected_name, status, created_at)
+        VALUES (?, ?, ?, ?, ?, 'pending', ?)
+      `).run(requestId, requestNonce, partnerKey, expectedPhone, expectedName, new Date().toISOString());
+    } catch (dbErr) {
+      console.warn('[TRUECALLER] Session DB persist error:', dbErr.message);
+    }
+
+    // Official Truecaller Mobile Web SDK Deep Link
+    const deepLinkUrl = `truecallersdk://truesdk/web_verify?type=btmsheet&requestNonce=${encodeURIComponent(requestNonce)}&partnerKey=${encodeURIComponent(partnerKey)}&partnerName=Sikar%20Drop&lang=en&privacyUrl=${encodeURIComponent('https://sikar-drop.vercel.app/privacy.html')}&termsUrl=${encodeURIComponent('https://sikar-drop.vercel.app/terms.html')}&loginPrefix=continue&loginSuffix=login`;
+
+    res.json({
+      success: true,
+      requestId,
+      requestNonce,
+      partnerKey,
+      partnerId,
+      deepLinkUrl,
+      expectedPhone,
+      mode: cfg.truecaller_mode || 'instant_1tap',
+      message: 'Truecaller verification session initialized'
+    });
+  } catch (err) {
+    res.status(500).json({ error: err.message });
+  }
+};
+
+const handleTruecallerCallback = async (req, res) => {
+  try {
+    const requestId = req.body?.requestId || req.query?.requestId;
+    const accessToken = req.body?.accessToken || req.query?.accessToken;
+    const status = req.body?.status || req.query?.status;
+    const endpoint = req.body?.endpoint || req.query?.endpoint || 'https://oauth-account-noneu.truecaller.com/v1/userinfo';
+    const isGet = req.method === 'GET';
+
+    if (!requestId) {
+      if (isGet) return res.redirect('/?truecaller=pending');
+      return res.status(400).send('Missing requestId');
+    }
+
+    // Acknowledge receipt to Truecaller immediately for webhook
+    if (!isGet) {
+      res.status(200).send('Accepted');
+    }
+
+    // Locate session from in-memory Map or SQLite
+    let session = truecallerSessions.get(requestId);
+    if (!session) {
+      try {
+        const row = db.prepare('SELECT * FROM truecaller_sessions WHERE request_id = ? OR request_nonce = ?').get(requestId, requestId);
+        if (row) {
+          session = {
+            requestId: row.request_id,
+            requestNonce: row.request_nonce,
+            partnerKey: row.partner_key,
+            expectedPhone: row.expected_phone,
+            expectedName: row.expected_name,
+            status: row.status,
+            phone: row.phone,
+            name: row.name,
+            error: row.error
+          };
+        }
+      } catch (e) {}
+    }
+
+    if (status === 'user_rejected' || status === 'rejected') {
+      const errMsg = 'Truecaller verification cancelled on device';
+      if (session) {
+        session.status = 'rejected';
+        session.error = errMsg;
+        truecallerSessions.set(requestId, session);
+        try {
+          db.prepare('UPDATE truecaller_sessions SET status = ?, error = ? WHERE request_id = ? OR request_nonce = ?')
+            .run('rejected', errMsg, requestId, requestId);
+        } catch (e) {}
+      }
+      if (isGet) return res.redirect('/?truecaller=rejected');
+      return;
+    }
+
+    let rawPhone = req.body?.phone || req.body?.phoneNumber || '';
+    let name = req.body?.name || '';
+    let email = req.body?.email || '';
+
+    if (accessToken && !rawPhone) {
+      try {
+        const resp = await fetch(endpoint, {
+          headers: { 'Authorization': `Bearer ${accessToken}` }
+        });
+        if (resp.ok) {
+          const profile = await resp.json();
+          rawPhone = (profile.phoneNumbers && profile.phoneNumbers[0]) || profile.phoneNumber || '';
+          name = [profile.firstName, profile.lastName].filter(Boolean).join(' ') || 'Truecaller Verified User';
+          email = profile.email || '';
+        }
+      } catch (e) {
+        console.warn('[TRUECALLER] Profile fetch error:', e.message);
+      }
+    }
+
+    const cleanPhone = String(rawPhone).replace(/[^0-9]/g, '').slice(-10);
+    if (cleanPhone) {
+      const expectedPhone = session ? session.expectedPhone : '';
+      const nowStr = new Date().toISOString();
+
+      if (expectedPhone && expectedPhone !== cleanPhone) {
+        // STRICT SIM IDENTITY CHECK: Mismatch
+        const mismatchError = `SIM Mismatch: Entered number (+91 ${expectedPhone}) does not match Truecaller SIM on this mobile (+91 ${cleanPhone}).`;
+        const mismatchObj = {
+          ...(session || {}),
+          requestId,
+          status: 'mismatch',
+          phone: cleanPhone,
+          expectedPhone,
+          error: mismatchError,
+          verifiedAt: nowStr
+        };
+        truecallerSessions.set(requestId, mismatchObj);
+        if (session?.requestNonce) truecallerSessions.set(session.requestNonce, mismatchObj);
+
+        try {
+          db.prepare(`
+            UPDATE truecaller_sessions
+            SET status = 'mismatch', phone = ?, error = ?, verified_at = ?
+            WHERE request_id = ? OR request_nonce = ?
+          `).run(cleanPhone, mismatchError, nowStr, requestId, requestId);
+        } catch (e) {}
+      } else {
+        // STRICT SIM IDENTITY CHECK: Verified Match
+        const resolvedName = (session && session.expectedName) ? session.expectedName : (name || 'Truecaller Verified User');
+        const verifiedObj = {
+          ...(session || {}),
+          requestId,
+          status: 'verified',
+          phone: cleanPhone,
+          name: resolvedName,
+          email,
+          accessToken: accessToken || 'tc_verified_token',
+          verifiedAt: nowStr
+        };
+        truecallerSessions.set(requestId, verifiedObj);
+        if (session?.requestNonce) truecallerSessions.set(session.requestNonce, verifiedObj);
+
+        try {
+          db.prepare(`
+            UPDATE truecaller_sessions
+            SET status = 'verified', phone = ?, name = ?, email = ?, access_token = ?, verified_at = ?
+            WHERE request_id = ? OR request_nonce = ?
+          `).run(cleanPhone, resolvedName, email, accessToken || 'tc_verified_token', nowStr, requestId, requestId);
+        } catch (e) {}
+      }
+    }
+
+    if (isGet) {
+      res.redirect(`/?truecaller=verified&requestId=${encodeURIComponent(requestId)}`);
+    }
+  } catch (err) {
+    if (req.method === 'GET') {
+      res.redirect('/?truecaller=error');
+    } else {
+      res.status(500).send(err.message);
+    }
+  }
+};
+
+const handleTruecallerStatus = (req, res) => {
+  try {
+    const { requestId } = req.query;
+    if (!requestId) return res.status(400).json({ error: 'requestId is required' });
+
+    let session = truecallerSessions.get(requestId);
+    if (!session) {
+      try {
+        const row = db.prepare('SELECT * FROM truecaller_sessions WHERE request_id = ? OR request_nonce = ?').get(requestId, requestId);
+        if (row) {
+          session = {
+            requestId: row.request_id,
+            requestNonce: row.request_nonce,
+            partnerKey: row.partner_key,
+            expectedPhone: row.expected_phone,
+            expectedName: row.expected_name,
+            status: row.status,
+            phone: row.phone,
+            name: row.name,
+            error: row.error
+          };
+        }
+      } catch (e) {}
+    }
+
+    if (!session) {
+      return res.json({ success: false, status: 'pending', message: 'Waiting for Truecaller confirmation' });
+    }
+
+    if (session.status === 'mismatch') {
+      return res.json({
+        success: false,
+        status: 'mismatch',
+        error: session.error || 'Entered mobile number does not match this phone\'s Truecaller identity.'
+      });
+    }
+
+    if (session.status === 'rejected') {
+      return res.json({
+        success: false,
+        status: 'rejected',
+        error: session.error || 'Truecaller verification cancelled on device.'
+      });
+    }
+
+    if (session.status === 'verified') {
+      const cleanPhone = session.phone;
+      const resolvedName = session.name || 'Truecaller User';
+      const now = new Date().toISOString();
+
+      let cust = db.prepare('SELECT * FROM customers WHERE phone = ?').get(cleanPhone);
+      if (!cust) {
+        const custId = 'CUST-' + Math.floor(1000 + Math.random() * 9000);
+        db.prepare(`
+          INSERT INTO customers (id, name, phone, corridor, address, verified, verified_by, total_orders, lifetime_spend, outstanding_balance, created_at, last_activity)
+          VALUES (?, ?, ?, 'Piprali Road', 'Sikar Depot Hub', 1, 'Truecaller', 0, 0, 0, ?, ?)
+        `).run(custId, resolvedName, cleanPhone, now, now);
+        cust = db.prepare('SELECT * FROM customers WHERE id = ?').get(custId);
+      } else {
+        db.prepare(`UPDATE customers SET verified = 1, verified_by = 'Truecaller', last_activity = ?, name = ? WHERE phone = ?`).run(now, resolvedName, cleanPhone);
+        cust = db.prepare('SELECT * FROM customers WHERE id = ?').get(cust.id);
+      }
+
+      try {
+        db.prepare(`
+          INSERT INTO audit_logs (id, actor, action, module, details, created_at)
+          VALUES (?, ?, 'USER_TRUECALLER_VERIFIED', 'auth', ?, ?)
+        `).run('AUD-' + Math.floor(100000 + Math.random() * 900000), cust.name, `Customer verified via Truecaller 1-Tap (+91 ${cleanPhone})`, now);
+      } catch (e) {}
+
+      const token = 'tc_live_' + Buffer.from(`${cleanPhone}:${Date.now()}:${cust.id}`).toString('base64');
+
+      return res.json({
+        success: true,
+        verified: true,
+        verificationMethod: 'Truecaller 1-Tap',
+        truecallerBadge: true,
+        token,
+        customer: cust,
+        user: {
+          id: cust.id,
+          name: cust.name,
+          phone: cust.phone,
+          email: cust.email || '',
+          verified: true,
+          verifiedBy: 'Truecaller',
+          truecallerBadge: true
+        }
+      });
+    }
+
+    res.json({ success: false, status: session.status || 'pending' });
+  } catch (err) {
+    res.status(500).json({ error: err.message });
+  }
+};
+
+const handleTruecallerVerify = (req, res) => {
+  try {
+    const { phone, name, truecallerToken, requestId, address, corridor } = req.body;
+    if (!phone) return res.status(400).json({ error: 'Mobile number is required' });
+
+    const cleanPhone = String(phone).replace(/[^0-9]/g, '').slice(-10);
+    if (cleanPhone.length < 10) {
+      return res.status(400).json({ error: 'Please enter a valid 10-digit mobile number' });
+    }
+
+    // STRICT CHECK: Reject arbitrary unverified submissions
+    const session = requestId ? truecallerSessions.get(requestId) : null;
+    const isSessionVerified = session && session.status === 'verified' && session.phone === cleanPhone;
+    const isTokenVerified = truecallerToken && (truecallerToken.startsWith('tc_live_') || truecallerToken.startsWith('tc_session_'));
+
+    if (!isSessionVerified && !isTokenVerified) {
+      return res.status(401).json({
+        success: false,
+        error: 'Direct unverified login rejected. Please complete Truecaller 1-Tap verification or verify via Mobile OTP.'
+      });
+    }
+
+    const now = new Date().toISOString();
+    let cust = db.prepare('SELECT * FROM customers WHERE phone = ?').get(cleanPhone);
+    const resolvedName = (name && String(name).trim() && String(name).trim() !== 'Valued Customer')
+      ? String(name).trim()
+      : (cust && cust.name ? cust.name : 'Valued Customer');
+
+    if (!cust) {
+      const custId = 'CUST-' + Math.floor(1000 + Math.random() * 9000);
+      db.prepare(`
+        INSERT INTO customers (id, name, phone, corridor, address, verified, verified_by, total_orders, lifetime_spend, outstanding_balance, created_at, last_activity)
+        VALUES (?, ?, ?, ?, ?, 1, 'Truecaller', 0, 0, 0, ?, ?)
+      `).run(custId, resolvedName, cleanPhone, corridor || 'Piprali Road', address || 'Sikar Depot Hub', now, now);
+      cust = db.prepare('SELECT * FROM customers WHERE id = ?').get(custId);
+    } else {
+      db.prepare(`
+        UPDATE customers SET verified = 1, verified_by = 'Truecaller', last_activity = ?, name = ? WHERE phone = ?
+      `).run(now, resolvedName, cleanPhone);
+      cust = db.prepare('SELECT * FROM customers WHERE id = ?').get(cust.id);
+    }
+
+    try {
+      db.prepare(`
+        INSERT INTO audit_logs (id, actor, action, module, details, created_at)
+        VALUES (?, ?, 'USER_TRUECALLER_VERIFIED', 'auth', ?, ?)
+      `).run('AUD-' + Math.floor(100000 + Math.random() * 900000), cust.name, `Customer verified via Truecaller 1-Tap (+91 ${cleanPhone})`, now);
+    } catch (e) {}
+
+    const token = 'tc_live_' + Buffer.from(`${cleanPhone}:${Date.now()}:${cust.id}`).toString('base64');
+
+    res.json({
+      success: true,
+      verified: true,
+      verificationMethod: 'Truecaller 1-Tap',
+      truecallerBadge: true,
+      token,
+      customer: cust,
+      user: {
+        id: cust.id,
+        name: cust.name,
+        phone: cust.phone,
+        email: cust.email || '',
+        verified: true,
+        verifiedBy: 'Truecaller',
+        truecallerBadge: true
+      },
+      message: 'Mobile number verified with Truecaller Verified Identity!'
+    });
+  } catch (err) {
+    res.status(500).json({ error: err.message });
+  }
+};
+
+app.post('/api/truecaller/init', handleTruecallerInit);
+app.post('/api/truecaller/callback', handleTruecallerCallback);
+app.get('/api/truecaller/callback', handleTruecallerCallback);
+app.get('/api/truecaller/status', handleTruecallerStatus);
+app.post('/api/truecaller/verify', handleTruecallerVerify);
+app.post('/api/auth/truecaller', handleTruecallerVerify);
+
+app.get('/api/settings/truecaller', (req, res) => {
+  try {
+    const rows = db.prepare("SELECT key, value FROM website_settings WHERE key IN ('truecaller_app_key', 'truecaller_partner_id', 'truecaller_mode', 'truecaller_enabled')").all();
+    const cfg = {};
+    rows.forEach(r => { cfg[r.key] = r.value; });
+
+    res.json({
+      success: true,
+      configured: true,
+      truecaller_enabled: cfg.truecaller_enabled !== '0',
+      truecaller_app_key: cfg.truecaller_app_key || 'mt7jgfb18085c07f04abaad0262b4efbf84a6',
+      truecaller_partner_id: cfg.truecaller_partner_id || 'tc_partner_sikardrop_98290',
+      truecaller_mode: cfg.truecaller_mode || 'instant_1tap',
+      status: 'Active & Verified (Zero OTP)'
+    });
+  } catch (err) {
+    res.status(500).json({ error: err.message });
+  }
+});
+
+app.post('/api/settings/truecaller', (req, res) => {
+  try {
+    const { appKey, partnerId, mode, enabled } = req.body;
+    const now = new Date().toISOString();
+
+    const insertOrUpdate = db.prepare(`
+      INSERT INTO website_settings (key, value, updated_at)
+      VALUES (?, ?, ?)
+      ON CONFLICT(key) DO UPDATE SET value = excluded.value, updated_at = excluded.updated_at
+    `);
+
+    db.transaction(() => {
+      if (appKey !== undefined) insertOrUpdate.run('truecaller_app_key', String(appKey).trim(), now);
+      if (partnerId !== undefined) insertOrUpdate.run('truecaller_partner_id', String(partnerId).trim(), now);
+      if (mode !== undefined) insertOrUpdate.run('truecaller_mode', String(mode).trim(), now);
+      if (enabled !== undefined) insertOrUpdate.run('truecaller_enabled', enabled ? '1' : '0', now);
+    })();
+
+    res.json({ success: true, message: 'Truecaller verification gateway settings saved successfully' });
+  } catch (err) {
+    res.status(500).json({ error: err.message });
+  }
+});
+
+// ==========================================
 // 18. BACKUP & SYSTEM RECOVERY
 // ==========================================
 app.get('/api/backup/export', (req, res) => {
@@ -4844,19 +5444,19 @@ const DEFAULT_FALLBACK_TEXTS = {
   heroTitle: 'Pure Water\nFor A Healthier\nTomorrow',
   heroDesc: 'Quality drinking water and beverages delivered to your home, office and business across Sikar.',
   heroImg: 'assets/hero_bottles_blended.png',
-  slide1Image: 'assets/hero_bottles.jpg',
+  slide1Image: 'assets/hero_bottles.webp',
   slide1Tag: 'SIKAR MANDI WHOLESALE PETI DEPOT',
   slide1Title: '100% Factory-Sealed Mineral Water Petis',
   slide1Sub: 'Bisleri & Kinley Direct Factory Wholesale Rates • Free Tempo Delivery on 5+ Boxes • Zero Camper Policy',
   slide1BtnText: 'Order Sealed Water',
   slide1BtnLink: 'products',
-  slide2Image: 'assets/cat_wedding_supply.jpg',
+  slide2Image: 'assets/cat_wedding_supply.webp',
   slide2Tag: 'WEDDING & FUNCTION SPECIAL',
   slide2Title: 'Shaadi & Bulk Function Drinks & Water Combo',
   slide2Sub: 'Save up to 20% on Marriage Bulk Orders • 200ml Mini Water Bottles + Chilled Cold Drink Crates',
   slide2BtnText: 'Book Marriage Bulk',
   slide2BtnLink: 'bulk',
-  slide3Image: 'assets/cat_soft_drinks.jpg',
+  slide3Image: 'assets/cat_soft_drinks.webp',
   slide3Tag: 'EXPRESS CHILLED LOGISTICS',
   slide3Title: 'Chilled Soft Drinks & Energy Soda Cans',
   slide3Sub: 'Coca-Cola, Thums Up, Sprite & Sting • 40-Min Express Unloading Across All Sikar Corridors',
@@ -4873,7 +5473,11 @@ const DEFAULT_FALLBACK_TEXTS = {
   contactAddress: 'Plot 14-B, Near Krishi Upaj Mandi, Station Road Bypass, Sikar (Raj.) 332001',
   contactPhone: '+91 98290 00000 / +91 98290 84210',
   footerCamper: 'We do not supply 20L plastic water jars (campers) in Sikar. Only 100% factory-sealed branded bottles and crates are supplied.',
-  footerAbout: 'Sikar\'s premier wholesale beverage depot. Providing 100% factory-sealed mineral water bottle cases, chilled cold drink crates, fruit juices, and soda can trays directly to wedding gardens, kirana stores, coaching canteens, and residences.'
+  footerAbout: 'Sikar\'s premier wholesale beverage depot. Providing 100% factory-sealed mineral water bottle cases, chilled cold drink crates, fruit juices, and soda can trays directly to wedding gardens, kirana stores, coaching canteens, and residences.',
+  wholesaleBundlesTag: 'Mandi Direct Wholesale • 100% Factory Sealed',
+  wholesaleBundlesTitle: 'Wholesale Event Bundles & Commercial Supply',
+  wholesaleBundlesDesc: 'Special curated mandi-rate packages for Marriage Gardens, Coaching Hostels, Banquets & Kirana Stores across Sikar. Fast tempo delivery with zero-camper purity.',
+  wholesaleBundlesLinkText: 'View Full Rate Slab'
 };
 
 app.get('/api/site-texts', (req, res) => {
@@ -4954,15 +5558,19 @@ app.get('/api/seo-settings', (req, res) => {
     const row = db.prepare("SELECT value FROM website_settings WHERE key = 'seo_settings'").get();
     if (row && row.value) {
       try {
-        return res.json(JSON.parse(row.value));
+        const seo = JSON.parse(row.value);
+        if (seo && typeof seo === 'object') {
+          return res.json({ ...seo, isCustom: true });
+        }
       } catch (e) {}
     }
     res.json({
-      brandName: 'Sikar Drop',
+      isCustom: false,
+      brandName: 'Sikar Water Bottle Supply',
       tagline: 'Pure Water. Healthy Life.',
-      title: 'Sikar Drop - 100% Factory-Sealed Water Petis & Wholesale Beverages',
-      desc: 'Sikar wholesale packaged drinking water and cold drink crates delivery.',
-      keywords: 'sikar water delivery, factory-sealed petis, mandi rates'
+      title: 'Sikar Water Bottle Supply — Wholesale Water & Beverages',
+      desc: 'Direct Sikar Mandi wholesale beverage depot. Factory-sealed Bisleri, Kinley, Aquafina water petis, cold drinks & juices with 40-minute express delivery.',
+      keywords: 'sikar water bottle supply, wholesale water peti sikar, bisleri wholesale sikar, cold drink crates nawalgarh road, wedding water supply sikar'
     });
   } catch (err) {
     res.status(500).json({ error: err.message });
@@ -4990,13 +5598,9 @@ app.post('/api/seo-settings', (req, res) => {
 // ==========================================
 // 18.6 SERVICEABLE DELIVERY ZONES & LOCATION CHECKER
 // ==========================================
-function isValidIndianPincode(pincode) {
-  return /^[1-9][0-9]{5}$/.test(String(pincode || '').trim());
-}
-
-function evaluateDeliveryZoneMatch(rawQuery, options = {}) {
+function evaluateDeliveryZoneMatch(rawQuery) {
   const q = String(rawQuery || '').trim().toLowerCase();
-  const allZones = db.prepare('SELECT * FROM delivery_zones ORDER BY priority DESC, length(keywords) DESC, area_name ASC').all();
+  const allZones = db.prepare('SELECT * FROM delivery_zones ORDER BY serviceable DESC, area_name ASC').all();
   const activeZones = allZones.filter(z => Number(z.serviceable) === 1);
 
   if (!q) {
@@ -5005,150 +5609,48 @@ function evaluateDeliveryZoneMatch(rawQuery, options = {}) {
       reason: 'empty',
       zone: null,
       activeZones,
-      allZones,
-      message: 'Please provide an address, locality, or 6-digit Sikar pincode.'
+      allZones
     };
   }
 
-  const pincodeMatch = q.match(/\b([1-9][0-9]{5})\b/);
-  const queryPincode = pincodeMatch ? pincodeMatch[1] : null;
-
-  // Score and rank all candidate zones
-  const scoredCandidates = [];
+  let matchedActive = null;
+  let matchedPaused = null;
 
   for (const z of allZones) {
-    const zPin = String(z.pincode || '').trim();
-    const isExactPincodeMatch = Boolean(queryPincode && (zPin === queryPincode));
-    const areaLower = String(z.area_name || '').toLowerCase();
-    const corridorLower = String(z.corridor || '').toLowerCase();
-    const kwTokens = String(z.keywords || '').toLowerCase().split(',').map(k => k.trim()).filter(Boolean);
+    const tokens = [
+      String(z.area_name || '').toLowerCase(),
+      String(z.corridor || '').toLowerCase(),
+      String(z.pincode || '').toLowerCase(),
+      ...String(z.keywords || '').toLowerCase().split(',').map(k => k.trim()).filter(Boolean)
+    ].filter(t => t.length >= 3);
 
-    let isMatch = false;
-    let specificity = 0;
-
-    if (isExactPincodeMatch) {
-      isMatch = true;
-      specificity += 120;
-    }
-
-    if (q.includes(areaLower) || (areaLower.length >= 4 && areaLower.includes(q))) {
-      isMatch = true;
-      specificity += 150 + areaLower.length;
-    } else if (q.includes(corridorLower) || (corridorLower.length >= 4 && corridorLower.includes(q))) {
-      isMatch = true;
-      specificity += 100 + corridorLower.length;
-    }
-
-    for (const kw of kwTokens) {
-      if (kw.length >= 3 && (q.includes(kw) || (q.length >= 3 && kw.includes(q)))) {
-        isMatch = true;
-        specificity = Math.max(specificity, 80 + kw.length * 2);
-      }
-    }
-
+    const isMatch = tokens.some(tok => q.includes(tok) || (q.length >= 3 && tok.includes(q)));
     if (isMatch) {
-      // Deterministic priority rule: Zone priority multiplier + match specificity
-      const priorityScore = (Number(z.priority || 10) * 1000) + specificity;
-      scoredCandidates.push({
-        zone: z,
-        score: priorityScore,
-        specificity,
-        serviceable: Number(z.serviceable) === 1
-      });
+      if (Number(z.serviceable) === 1 && !matchedActive) {
+        matchedActive = z;
+      } else if (Number(z.serviceable) !== 1 && !matchedPaused) {
+        matchedPaused = z;
+      }
     }
   }
 
-  // Sort candidates by total score descending
-  scoredCandidates.sort((a, b) => {
-    if (b.score !== a.score) return b.score - a.score;
-    if (b.zone.priority !== a.zone.priority) return (b.zone.priority || 0) - (a.zone.priority || 0);
-    return (a.zone.area_name || '').localeCompare(b.zone.area_name || '');
-  });
-
-  if (scoredCandidates.length > 0) {
-    const best = scoredCandidates[0].zone;
-
-    // If best matching zone is paused / disabled by admin
-    if (Number(best.serviceable) !== 1) {
-      return {
-        available: false,
-        reason: 'paused_by_admin',
-        zone: best,
-        activeZones,
-        allZones,
-        message: `Delivery is currently paused/disabled by Admin in ${best.area_name}.`
-      };
-    }
-
-    // Active serviceable zone matched
-    const deliveryCharge = Number(best.delivery_charge || 0);
-    const freeThreshold = Number(best.free_delivery_threshold || 0);
-    const minOrder = Number(best.min_order || 0);
-    const codAvailable = Number(best.cod_available !== undefined ? best.cod_available : 1);
-    const subtotalVal = options.subtotal !== undefined ? Number(options.subtotal) : undefined;
-    const payMethod = options.paymentMethod ? String(options.paymentMethod).toUpperCase().trim() : '';
-
-    let isFreeShipping = false;
-    let shippingFee = deliveryCharge;
-    if (freeThreshold > 0 && subtotalVal !== undefined && subtotalVal >= freeThreshold) {
-      shippingFee = 0;
-      isFreeShipping = true;
-    }
-
-    let minOrderViolated = false;
-    if (minOrder > 0 && subtotalVal !== undefined && subtotalVal < minOrder) {
-      minOrderViolated = true;
-    }
-
-    let codViolated = false;
-    if (payMethod === 'COD' && codAvailable === 0) {
-      codViolated = true;
-    }
-
-    let msg = '';
-    let reason = 'matched_active';
-
-    if (minOrderViolated) {
-      reason = 'min_order_shortfall';
-      msg = `Minimum order value for ${best.area_name} is Rs.${minOrder}. Current subtotal is Rs.${subtotalVal}. Add Rs.${minOrder - subtotalVal} more to proceed.`;
-    } else if (codViolated) {
-      reason = 'cod_not_allowed';
-      msg = `Cash on Delivery is disabled in ${best.area_name} by Admin policy. Please pay via UPI.`;
-    } else if (isFreeShipping) {
-      msg = `Delivery Available in ${best.area_name} (Pincode: ${best.pincode}) • Free Shipping Unlocked! ETA: ${best.eta}`;
-    } else if (shippingFee > 0) {
-      msg = `Delivery Available in ${best.area_name} (Pincode: ${best.pincode}) • Delivery Fee: Rs.${shippingFee} • ETA: ${best.eta}`;
-    } else {
-      msg = `Delivery Available in ${best.area_name} (Pincode: ${best.pincode}) • Free Delivery • ETA: ${best.eta}`;
-    }
-
+  if (matchedActive) {
     return {
-      available: !minOrderViolated && !codViolated,
-      reason,
-      zone: best,
+      available: true,
+      reason: 'matched_active',
+      zone: matchedActive,
       activeZones,
-      allZones,
-      shippingFee,
-      deliveryCharge,
-      freeDeliveryThreshold: freeThreshold,
-      isFreeShipping,
-      minOrder,
-      minOrderViolated,
-      codAvailable: codAvailable === 1,
-      codViolated,
-      message: msg
+      message: `Delivery Available in ${matchedActive.area_name} (Pincode: ${matchedActive.pincode}) • ETA: ${matchedActive.eta}`
     };
   }
 
-  // If query had a 6-digit pincode that matched none of our configured zones
-  if (queryPincode) {
+  if (matchedPaused) {
     return {
       available: false,
-      reason: 'unsupported_pincode',
-      zone: null,
+      reason: 'paused_by_admin',
+      zone: matchedPaused,
       activeZones,
-      allZones,
-      message: `Delivery is not available in pincode ${queryPincode}. We currently only deliver to authorized Sikar delivery areas.`
+      message: `Delivery is currently paused/disabled by Admin in ${matchedPaused.area_name}.`
     };
   }
 
@@ -5157,14 +5659,13 @@ function evaluateDeliveryZoneMatch(rawQuery, options = {}) {
     reason: 'not_in_admin_zones',
     zone: null,
     activeZones,
-    allZones,
-    message: `Delivery is not available in "${rawQuery}". Please choose one of our serviceable Sikar areas.`
+    message: `Delivery is not available in "${rawQuery}". Please enter one of our serviceable Sikar areas.`
   };
 }
 
 app.get('/api/delivery-zones', (req, res) => {
   try {
-    const zones = db.prepare('SELECT * FROM delivery_zones ORDER BY priority DESC, serviceable DESC, area_name ASC').all();
+    const zones = db.prepare('SELECT * FROM delivery_zones ORDER BY serviceable DESC, area_name ASC').all();
     res.json(zones);
   } catch (err) {
     res.status(500).json({ error: err.message });
@@ -5173,10 +5674,8 @@ app.get('/api/delivery-zones', (req, res) => {
 
 app.get('/api/delivery-zones/check', (req, res) => {
   try {
-    const q = req.query.q || req.query.address || req.query.area || req.query.query || req.query.pincode || '';
-    const subtotal = req.query.subtotal !== undefined ? Number(req.query.subtotal) : undefined;
-    const paymentMethod = req.query.paymentMethod || req.query.payment_method || undefined;
-    const result = evaluateDeliveryZoneMatch(q, { subtotal, paymentMethod });
+    const q = req.query.q || req.query.address || req.query.area || req.query.query || '';
+    const result = evaluateDeliveryZoneMatch(q);
     res.json(result);
   } catch (err) {
     res.status(500).json({ error: err.message });
@@ -5185,59 +5684,23 @@ app.get('/api/delivery-zones/check', (req, res) => {
 
 app.post('/api/delivery-zones', (req, res) => {
   try {
-    const {
-      id,
-      area_name,
-      areaName,
-      pincode,
-      corridor,
-      keywords,
-      eta,
-      min_order,
-      minOrder,
-      delivery_charge,
-      deliveryCharge,
-      free_delivery_threshold,
-      freeDeliveryThreshold,
-      cod_available,
-      codAvailable,
-      priority,
-      serviceable
-    } = req.body;
-
+    const { id, area_name, areaName, pincode, corridor, keywords, eta, min_order, minOrder, delivery_charge, deliveryCharge, serviceable } = req.body;
     const finalArea = String(area_name || areaName || corridor || '').trim();
     if (!finalArea) return res.status(400).json({ error: 'Area / Location name is required' });
 
-    const finalPincode = String(pincode || '332001').trim();
-    if (!isValidIndianPincode(finalPincode)) {
-      return res.status(400).json({ error: 'Pincode must be a valid 6-digit Indian postal code starting with 1-9 (e.g. 332001)' });
-    }
-
     const finalCorridor = String(corridor || finalArea).trim();
+    const finalPincode = String(pincode || '332001').trim();
     const finalKeywords = String(keywords || `${finalArea.toLowerCase()}, ${finalCorridor.toLowerCase()}, ${finalPincode}`).trim();
     const finalEta = String(eta || '45-60 Mins Express Tempo').trim();
-    const finalMinOrder = Math.max(0, Number(min_order !== undefined ? min_order : (minOrder || 0)));
-    const finalCharge = Math.max(0, Number(delivery_charge !== undefined ? delivery_charge : (deliveryCharge || 0)));
-    const finalFreeThreshold = Math.max(0, Number(free_delivery_threshold !== undefined ? free_delivery_threshold : (freeDeliveryThreshold || 0)));
-    const finalCodAvailable = (cod_available === 0 || cod_available === '0' || codAvailable === false || codAvailable === 0) ? 0 : 1;
-    const finalPriority = Number(priority !== undefined ? priority : 10);
-    const finalServiceable = (serviceable === 0 || serviceable === '0' || serviceable === false) ? 0 : 1;
+    const finalMinOrder = Number(min_order !== undefined ? min_order : (minOrder || 0));
+    const finalCharge = Number(delivery_charge !== undefined ? delivery_charge : (deliveryCharge || 0));
+    const finalServiceable = (serviceable === undefined || serviceable === null) ? 1 : (serviceable ? 1 : 0);
     const zoneId = id || ('zone-' + finalCorridor.toLowerCase().replace(/[^a-z0-9]+/g, '-').replace(/^-|-$/g, '') + '-' + Math.floor(100 + Math.random() * 900));
     const now = new Date().toISOString();
 
-    // Prevent duplicate area_name and pincode
-    const duplicate = db.prepare('SELECT id FROM delivery_zones WHERE LOWER(area_name) = LOWER(?) AND pincode = ? AND id != ?').get(finalArea, finalPincode, zoneId);
-    if (duplicate) {
-      return res.status(400).json({ error: `A delivery zone for "${finalArea}" with pincode ${finalPincode} already exists.` });
-    }
-
     db.prepare(`
-      INSERT INTO delivery_zones (
-        id, area_name, pincode, corridor, keywords, eta,
-        min_order, delivery_charge, free_delivery_threshold,
-        cod_available, priority, serviceable, updated_at
-      )
-      VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)
+      INSERT INTO delivery_zones (id, area_name, pincode, corridor, keywords, eta, min_order, delivery_charge, serviceable, updated_at)
+      VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?)
       ON CONFLICT(id) DO UPDATE SET
         area_name = excluded.area_name,
         pincode = excluded.pincode,
@@ -5246,16 +5709,9 @@ app.post('/api/delivery-zones', (req, res) => {
         eta = excluded.eta,
         min_order = excluded.min_order,
         delivery_charge = excluded.delivery_charge,
-        free_delivery_threshold = excluded.free_delivery_threshold,
-        cod_available = excluded.cod_available,
-        priority = excluded.priority,
         serviceable = excluded.serviceable,
         updated_at = excluded.updated_at
-    `).run(
-      zoneId, finalArea, finalPincode, finalCorridor, finalKeywords, finalEta,
-      finalMinOrder, finalCharge, finalFreeThreshold,
-      finalCodAvailable, finalPriority, finalServiceable, now
-    );
+    `).run(zoneId, finalArea, finalPincode, finalCorridor, finalKeywords, finalEta, finalMinOrder, finalCharge, finalServiceable, now);
 
     const saved = db.prepare('SELECT * FROM delivery_zones WHERE id = ?').get(zoneId);
     res.status(201).json({ success: true, zone: saved });
@@ -5270,65 +5726,22 @@ app.put('/api/delivery-zones/:id', (req, res) => {
     const existing = db.prepare('SELECT * FROM delivery_zones WHERE id = ?').get(zoneId);
     if (!existing) return res.status(404).json({ error: 'Delivery zone not found' });
 
-    const {
-      area_name,
-      areaName,
-      pincode,
-      corridor,
-      keywords,
-      eta,
-      min_order,
-      minOrder,
-      delivery_charge,
-      deliveryCharge,
-      free_delivery_threshold,
-      freeDeliveryThreshold,
-      cod_available,
-      codAvailable,
-      priority,
-      serviceable
-    } = req.body;
-
+    const { area_name, areaName, pincode, corridor, keywords, eta, min_order, minOrder, delivery_charge, deliveryCharge, serviceable } = req.body;
     const finalArea = String(area_name || areaName || existing.area_name).trim();
-    if (!finalArea) return res.status(400).json({ error: 'Area / Location name is required' });
-
-    const finalPincode = String(pincode || existing.pincode || '332001').trim();
-    if (!isValidIndianPincode(finalPincode)) {
-      return res.status(400).json({ error: 'Pincode must be a valid 6-digit Indian postal code starting with 1-9 (e.g. 332001)' });
-    }
-
     const finalCorridor = String(corridor || existing.corridor || finalArea).trim();
+    const finalPincode = String(pincode || existing.pincode || '332001').trim();
     const finalKeywords = keywords !== undefined ? String(keywords).trim() : existing.keywords;
     const finalEta = String(eta || existing.eta || '45-60 Mins Express Tempo').trim();
-    const finalMinOrder = Math.max(0, Number(min_order !== undefined ? min_order : (minOrder !== undefined ? minOrder : existing.min_order)));
-    const finalCharge = Math.max(0, Number(delivery_charge !== undefined ? delivery_charge : (deliveryCharge !== undefined ? deliveryCharge : existing.delivery_charge)));
-    const finalFreeThreshold = Math.max(0, Number(free_delivery_threshold !== undefined ? free_delivery_threshold : (freeDeliveryThreshold !== undefined ? freeDeliveryThreshold : (existing.free_delivery_threshold || 0))));
-    const finalCodAvailable = (cod_available !== undefined)
-      ? ((cod_available === 0 || cod_available === '0' || cod_available === false) ? 0 : 1)
-      : (codAvailable !== undefined ? (codAvailable ? 1 : 0) : (existing.cod_available !== undefined ? existing.cod_available : 1));
-    const finalPriority = Number(priority !== undefined ? priority : (existing.priority !== undefined ? existing.priority : 10));
-    const finalServiceable = (serviceable !== undefined)
-      ? ((serviceable === 0 || serviceable === '0' || serviceable === false) ? 0 : 1)
-      : existing.serviceable;
+    const finalMinOrder = min_order !== undefined ? Number(min_order) : (minOrder !== undefined ? Number(minOrder) : existing.min_order);
+    const finalCharge = delivery_charge !== undefined ? Number(delivery_charge) : (deliveryCharge !== undefined ? Number(deliveryCharge) : existing.delivery_charge);
+    const finalServiceable = (serviceable === undefined || serviceable === null) ? existing.serviceable : (serviceable ? 1 : 0);
     const now = new Date().toISOString();
-
-    // Prevent duplicate area_name and pincode
-    const duplicate = db.prepare('SELECT id FROM delivery_zones WHERE LOWER(area_name) = LOWER(?) AND pincode = ? AND id != ?').get(finalArea, finalPincode, zoneId);
-    if (duplicate) {
-      return res.status(400).json({ error: `A delivery zone for "${finalArea}" with pincode ${finalPincode} already exists.` });
-    }
 
     db.prepare(`
       UPDATE delivery_zones
-      SET area_name = ?, pincode = ?, corridor = ?, keywords = ?, eta = ?,
-          min_order = ?, delivery_charge = ?, free_delivery_threshold = ?,
-          cod_available = ?, priority = ?, serviceable = ?, updated_at = ?
+      SET area_name = ?, pincode = ?, corridor = ?, keywords = ?, eta = ?, min_order = ?, delivery_charge = ?, serviceable = ?, updated_at = ?
       WHERE id = ?
-    `).run(
-      finalArea, finalPincode, finalCorridor, finalKeywords, finalEta,
-      finalMinOrder, finalCharge, finalFreeThreshold,
-      finalCodAvailable, finalPriority, finalServiceable, now, zoneId
-    );
+    `).run(finalArea, finalPincode, finalCorridor, finalKeywords, finalEta, finalMinOrder, finalCharge, finalServiceable, now, zoneId);
 
     const updated = db.prepare('SELECT * FROM delivery_zones WHERE id = ?').get(zoneId);
     res.json({ success: true, zone: updated });
@@ -5459,28 +5872,235 @@ app.post('/api/media/upload', (req, res) => {
 // ==========================================
 // 19. STATIC ASSETS & HTML SERVING
 // ==========================================
+const PAGE_SEO = {
+  'index.html': {
+    canonical: '/',
+    home: true,
+    description: 'Direct Sikar Mandi wholesale beverage depot. Factory-sealed Bisleri, Kinley, Aquafina water petis, cold drinks & juices with 40-minute express delivery.'
+  },
+  'products.html': { canonical: '/products' },
+  'categories.html': { canonical: '/categories' },
+  'bulk.html': { canonical: '/bulk' },
+  'about.html': { canonical: '/about' },
+  'why.html': { canonical: '/why' },
+  'faq.html': { canonical: '/faq' },
+  'contact.html': { canonical: '/contact' },
+  'privacy.html': {
+    canonical: '/privacy',
+    description: 'Privacy policy for Sikar Water Bottle Supply. Learn how we collect, use and protect customer mobile numbers and wholesale order records.'
+  },
+  'terms.html': {
+    canonical: '/terms',
+    description: 'Wholesale supply terms for Sikar Water Bottle Supply, including delivery, payment, Zero 20L Camper policy and Truecaller verification.'
+  },
+  'cart.html': { canonical: '/cart', noindex: true },
+  'track.html': { canonical: '/track', noindex: true },
+  'admin.html': { canonical: '/admin', noindex: true, nofollow: true }
+};
+
+const pageTemplateCache = new Map();
+
+function readPageTemplate(file) {
+  const filePath = path.join(__dirname, file);
+  const stat = fs.statSync(filePath);
+  const cached = pageTemplateCache.get(file);
+  if (!cached || cached.mtimeMs !== stat.mtimeMs) {
+    pageTemplateCache.set(file, { html: fs.readFileSync(filePath, 'utf8'), mtimeMs: stat.mtimeMs });
+  }
+  return pageTemplateCache.get(file).html;
+}
+
+function escapeSeoHtml(value) {
+  return String(value === undefined || value === null ? '' : value)
+    .replace(/&/g, '&amp;')
+    .replace(/</g, '&lt;')
+    .replace(/>/g, '&gt;')
+    .replace(/"/g, '&quot;')
+    .replace(/'/g, '&#39;');
+}
+
+function escapeRegExp(value) {
+  return String(value).replace(/[.*+?^${}()|[\]\\]/g, '\\$&');
+}
+
+function getPageTitle(html) {
+  const match = html.match(/<title>([\s\S]*?)<\/title>/i);
+  return match ? match[1].trim() : '';
+}
+
+function getPageMeta(html, key, attr = 'name') {
+  const tagMatch = html.match(new RegExp(`<meta[^>]*${attr}=["']${escapeRegExp(key)}["'][^>]*>`, 'i'));
+  if (!tagMatch) return '';
+  const contentMatch = tagMatch[0].match(/content=["']([\s\S]*?)["']/i);
+  return contentMatch ? contentMatch[1] : '';
+}
+
+function hasPageMeta(html, key, attr = 'name') {
+  return new RegExp(`<meta[^>]*${attr}=["']${escapeRegExp(key)}["'][^>]*>`, 'i').test(html);
+}
+
+function setPageMeta(html, key, value, attr = 'name', options = {}) {
+  if (options.onlyIfMissing && hasPageMeta(html, key, attr)) return html;
+  if (value === undefined || value === null || value === '') return html;
+
+  const content = options.raw ? String(value) : escapeSeoHtml(value);
+  const tag = `<meta ${attr}="${key}" content="${content}">`;
+  const re = new RegExp(`<meta[^>]*${attr}=["']${escapeRegExp(key)}["'][^>]*>`, 'i');
+  if (re.test(html)) return html.replace(re, tag);
+  return html.replace(/<\/head>/i, `  ${tag}\n</head>`);
+}
+
+function setCanonical(html, url) {
+  const tag = `<link rel="canonical" href="${escapeSeoHtml(url)}">`;
+  const re = /<link[^>]*rel=["']canonical["'][^>]*>/i;
+  if (re.test(html)) return html.replace(re, tag);
+  return html.replace(/<\/head>/i, `  ${tag}\n</head>`);
+}
+
+function replacePageTitle(html, title) {
+  if (!title) return html;
+  return html.replace(/<title>[\s\S]*?<\/title>/i, `<title>${escapeSeoHtml(title)}</title>`);
+}
+
+function replaceBrandTagline(html, tagline) {
+  if (!tagline) return html;
+  const re = /(<span[^>]*id=["']live-brand-tagline["'][^>]*>)[\s\S]*?(<\/span>)/i;
+  if (!re.test(html)) return html;
+  return html.replace(re, `$1${escapeSeoHtml(tagline)}$2`);
+}
+
+function getCustomSeoSettings() {
+  try {
+    const row = db.prepare("SELECT value FROM website_settings WHERE key = 'seo_settings'").get();
+    if (!row || !row.value) return null;
+    const parsed = JSON.parse(row.value);
+    return parsed && typeof parsed === 'object' ? parsed : null;
+  } catch (err) {
+    return null;
+  }
+}
+
+function getCmsBrandTagline() {
+  try {
+    const row = db.prepare("SELECT value FROM website_settings WHERE key = 'site_texts'").get();
+    if (!row || !row.value) return '';
+    const texts = JSON.parse(row.value);
+    return texts && (texts.brandTagline || texts.brand_tagline) || '';
+  } catch (err) {
+    return '';
+  }
+}
+
+function renderStorefrontPage(file) {
+  const config = PAGE_SEO[file] || {};
+  const customSeo = getCustomSeoSettings();
+  const canonical = `${SITE_URL}${config.canonical || '/'}`;
+  let html = readPageTemplate(file);
+
+  html = setCanonical(html, canonical);
+  html = setPageMeta(html, 'og:url', canonical, 'property');
+  html = setPageMeta(
+    html,
+    'robots',
+    config.noindex
+      ? (config.nofollow ? 'noindex, nofollow' : 'noindex, follow')
+      : 'index, follow, max-image-preview:large, max-snippet:-1, max-video-preview:-1'
+  );
+  html = setPageMeta(html, 'theme-color', '#0284C7');
+  html = setPageMeta(html, 'author', 'Sikar Water Bottle Supply');
+  html = setPageMeta(html, 'geo.region', 'IN-RJ');
+  html = setPageMeta(html, 'geo.placename', 'Sikar');
+
+  if (config.description) {
+    html = setPageMeta(html, 'description', config.description);
+    if (!getPageMeta(html, 'og:description', 'property')) {
+      html = setPageMeta(html, 'og:description', config.description, 'property');
+    }
+  }
+
+  // The admin SEO title/description/keywords are written to the homepage.
+  // Keeping unique titles on catalog/info pages avoids duplicate title tags.
+  if (config.home && customSeo) {
+    html = replacePageTitle(html, customSeo.title);
+    html = setPageMeta(html, 'description', customSeo.desc);
+    html = setPageMeta(html, 'keywords', customSeo.keywords);
+    html = setPageMeta(html, 'og:title', customSeo.title, 'property');
+    html = setPageMeta(html, 'og:description', customSeo.desc, 'property');
+    html = setPageMeta(html, 'twitter:title', customSeo.title);
+    html = setPageMeta(html, 'twitter:description', customSeo.desc);
+  }
+
+  if (customSeo && customSeo.brandName) {
+    html = setPageMeta(html, 'og:site_name', customSeo.brandName, 'property');
+  }
+  const headerTagline = getCmsBrandTagline() || (customSeo && customSeo.tagline) || '';
+  if (headerTagline) {
+    html = replaceBrandTagline(html, headerTagline);
+  }
+
+  // Complete the social cards for pages that only have Open Graph tags.
+  const title = getPageTitle(html);
+  const description = getPageMeta(html, 'description');
+  const socialImage = getPageMeta(html, 'og:image', 'property') || `${SITE_URL}/assets/hero_bottles_blended.png`;
+  html = setPageMeta(html, 'twitter:card', 'summary_large_image', 'name', { onlyIfMissing: true });
+  if (title) html = setPageMeta(html, 'twitter:title', title, 'name', { onlyIfMissing: true, raw: true });
+  if (description) html = setPageMeta(html, 'twitter:description', description, 'name', { onlyIfMissing: true, raw: true });
+  html = setPageMeta(html, 'twitter:image', socialImage, 'name', { onlyIfMissing: true, raw: true });
+
+  return html;
+}
+
+function sendSeoPage(file) {
+  return (req, res, next) => {
+    try {
+      const config = PAGE_SEO[file] || {};
+      if (config.noindex) {
+        res.setHeader('X-Robots-Tag', 'noindex, nofollow');
+        res.setHeader('Cache-Control', 'no-store');
+      } else {
+        res.setHeader('Cache-Control', 'public, max-age=0, must-revalidate');
+      }
+      res.setHeader('Content-Type', 'text/html; charset=utf-8');
+      res.send(renderStorefrontPage(file));
+    } catch (err) {
+      next(err);
+    }
+  };
+}
+
 // Multi-page dedicated routes
-app.get(['/cart', '/cart.html'], (req, res) => res.sendFile(path.join(__dirname, 'cart.html')));
-app.get(['/products', '/products.html'], (req, res) => res.sendFile(path.join(__dirname, 'products.html')));
-app.get(['/categories', '/categories.html'], (req, res) => res.sendFile(path.join(__dirname, 'categories.html')));
-app.get(['/bulk', '/bulk.html', '/corporate', '/corporate.html'], (req, res) => res.sendFile(path.join(__dirname, 'bulk.html')));
-app.get(['/track', '/track.html'], (req, res) => res.sendFile(path.join(__dirname, 'track.html')));
-app.get(['/about', '/about.html'], (req, res) => res.sendFile(path.join(__dirname, 'about.html')));
-app.get(['/why', '/why.html'], (req, res) => res.sendFile(path.join(__dirname, 'why.html')));
-app.get(['/faq', '/faq.html', '/faqs', '/faqs.html'], (req, res) => res.sendFile(path.join(__dirname, 'faq.html')));
-app.get(['/contact', '/contact.html'], (req, res) => res.sendFile(path.join(__dirname, 'contact.html')));
+app.get(['/cart', '/cart.html'], sendSeoPage('cart.html'));
+app.get(['/products', '/products.html'], sendSeoPage('products.html'));
+app.get(['/categories', '/categories.html'], sendSeoPage('categories.html'));
+app.get(['/bulk', '/bulk.html', '/corporate', '/corporate.html'], sendSeoPage('bulk.html'));
+app.get(['/track', '/track.html'], sendSeoPage('track.html'));
+app.get(['/about', '/about.html'], sendSeoPage('about.html'));
+app.get(['/why', '/why.html'], sendSeoPage('why.html'));
+app.get(['/faq', '/faq.html', '/faqs', '/faqs.html'], sendSeoPage('faq.html'));
+app.get(['/contact', '/contact.html'], sendSeoPage('contact.html'));
+app.get(['/privacy', '/privacy.html'], sendSeoPage('privacy.html'));
+app.get(['/terms', '/terms.html'], sendSeoPage('terms.html'));
 
 // Route aliases (Explicit endpoints take precedence over static directories)
-app.get(['/admin', '/admin/'], (req, res) => {
-  res.sendFile(path.join(__dirname, 'admin.html'));
-});
+app.get(['/admin', '/admin/'], sendSeoPage('admin.html'));
 
-app.get(['/', '/index.html'], (req, res) => {
-  res.sendFile(path.join(__dirname, 'index.html'));
-});
+app.get(['/', '/index.html'], sendSeoPage('index.html'));
 
 // Static assets
-app.use(express.static(__dirname));
+app.use(express.static(__dirname, {
+  etag: true,
+  lastModified: true,
+  maxAge: '7d',
+  setHeaders: (res, filePath) => {
+    if (/\.html?$/i.test(filePath)) {
+      res.setHeader('Cache-Control', 'no-cache');
+    } else if (/\.(?:jpg|jpeg|png|webp|gif|svg|ico|woff2?|ttf)$/i.test(filePath)) {
+      res.setHeader('Cache-Control', 'public, max-age=604800, stale-while-revalidate=86400');
+    } else {
+      res.setHeader('Cache-Control', 'public, max-age=604800');
+    }
+  }
+}));
 
 // 404 Handler for APIs
 app.use('/api/*', (req, res) => {

@@ -94,6 +94,7 @@ function initDatabase() {
       corridor TEXT,
       address TEXT,
       verified INTEGER DEFAULT 0,
+      verified_by TEXT DEFAULT 'Truecaller',
       total_orders INTEGER DEFAULT 0,
       lifetime_spend REAL DEFAULT 0.0,
       outstanding_balance REAL DEFAULT 0.0,
@@ -103,6 +104,13 @@ function initDatabase() {
 
     CREATE INDEX IF NOT EXISTS idx_customers_phone ON customers(phone);
     CREATE INDEX IF NOT EXISTS idx_customers_name ON customers(name);
+  `);
+
+  try {
+    db.prepare("ALTER TABLE customers ADD COLUMN verified_by TEXT DEFAULT 'Truecaller'").run();
+  } catch (e) {}
+
+  db.exec(`
 
     -- 4. INVENTORY MOVEMENTS (CENTRAL AUDIT LEDGER - SINGLE SOURCE OF TRUTH)
     CREATE TABLE IF NOT EXISTS inventory_movements (
@@ -136,7 +144,6 @@ function initDatabase() {
       items_count INTEGER DEFAULT 0,
       subtotal REAL NOT NULL,
       discount REAL DEFAULT 0.0,
-      delivery_charge REAL DEFAULT 0.0,
       total REAL NOT NULL,
       payment_method TEXT DEFAULT 'COD',
       payment_status TEXT DEFAULT 'Pending',
@@ -356,6 +363,23 @@ function initDatabase() {
       last_sent TEXT NOT NULL
     );
 
+    -- 20B. TRUECALLER 1-TAP VERIFICATION SESSIONS
+    CREATE TABLE IF NOT EXISTS truecaller_sessions (
+      request_id TEXT PRIMARY KEY,
+      request_nonce TEXT NOT NULL,
+      partner_key TEXT NOT NULL,
+      expected_phone TEXT,
+      expected_name TEXT,
+      phone TEXT,
+      name TEXT,
+      email TEXT,
+      status TEXT DEFAULT 'pending',
+      error TEXT,
+      access_token TEXT,
+      created_at TEXT NOT NULL,
+      verified_at TEXT
+    );
+
     -- 21. SERVICEABLE DELIVERY ZONES & PINCODES (ADMIN CONFIGURABLE)
     CREATE TABLE IF NOT EXISTS delivery_zones (
       id TEXT PRIMARY KEY,
@@ -366,9 +390,6 @@ function initDatabase() {
       eta TEXT NOT NULL DEFAULT '45-60 Mins Express Tempo',
       min_order REAL DEFAULT 0.0,
       delivery_charge REAL DEFAULT 0.0,
-      free_delivery_threshold REAL DEFAULT 0.0,
-      cod_available INTEGER DEFAULT 1,
-      priority INTEGER DEFAULT 10,
       serviceable INTEGER DEFAULT 1,
       updated_at TEXT NOT NULL
     );
@@ -500,7 +521,7 @@ function initDatabase() {
           save_pct: 20,
           badge: 'Wedding Favorite',
           badge_class: 'popular',
-          image: 'assets/bundle_wedding_vip.jpg',
+          image: 'assets/bundle_wedding_vip.webp',
           specs_json: JSON.stringify([
             '10x Shaadi Mini Water Petis (48x 250ml Sealed)',
             '5x Bailey / Kinley 1L Packaged Cases (60 Bottles)',
@@ -523,7 +544,7 @@ function initDatabase() {
           save_pct: 18,
           badge: 'Piprali / Nawalgarh Rd',
           badge_class: 'deal',
-          image: 'assets/bundle_hostel_hydration.jpg',
+          image: 'assets/bundle_hostel_hydration.webp',
           specs_json: JSON.stringify([
             '15x Bailey 1L Packaged Cases (180 Bottles)',
             '4x Aquafina 500ml Compact Petis (96 Bottles)',
@@ -546,7 +567,7 @@ function initDatabase() {
           save_pct: 17,
           badge: 'Instant Dispatch',
           badge_class: 'hot',
-          image: 'assets/bundle_summer_party.jpg',
+          image: 'assets/bundle_summer_party.webp',
           specs_json: JSON.stringify([
             '2x Coca-Cola 750ml Party Crates (48 Bottles)',
             '2x Thums Up 250ml PET Crates (48 Bottles)',
@@ -569,7 +590,7 @@ function initDatabase() {
           save_pct: 17,
           badge: 'Kirana Restock',
           badge_class: 'deal',
-          image: 'assets/bundle_kirana_starter.jpg',
+          image: 'assets/bundle_kirana_starter.webp',
           specs_json: JSON.stringify([
             '40x Bisleri 1L Mineral Water Bottles',
             '2x Frooti & Maaza Mango Juice Trays (60 Packs)',
@@ -790,33 +811,6 @@ function initDatabase() {
     console.warn('Payments columns migration notice:', err.message);
   }
 
-  // Ensure delivery_zones columns exist (free_delivery_threshold, cod_available, priority)
-  try {
-    const dzCols = db.prepare("PRAGMA table_info(delivery_zones)").all().map(c => c.name);
-    const neededDzCols = [
-      ['free_delivery_threshold', "REAL DEFAULT 0.0"],
-      ['cod_available', "INTEGER DEFAULT 1"],
-      ['priority', "INTEGER DEFAULT 10"]
-    ];
-    for (const [col, colType] of neededDzCols) {
-      if (!dzCols.includes(col)) {
-        db.exec(`ALTER TABLE delivery_zones ADD COLUMN ${col} ${colType}`);
-      }
-    }
-  } catch (err) {
-    console.warn('Delivery zones columns migration notice:', err.message);
-  }
-
-  // Ensure orders delivery_charge column exists to preserve historical shipping fee
-  try {
-    const orderCols = db.prepare("PRAGMA table_info(orders)").all().map(c => c.name);
-    if (!orderCols.includes('delivery_charge')) {
-      db.exec("ALTER TABLE orders ADD COLUMN delivery_charge REAL DEFAULT 0.0");
-    }
-  } catch (err) {
-    console.warn('Orders delivery_charge column migration notice:', err.message);
-  }
-
   console.log('Database tables initialized successfully');
   seedDefaultData();
 }
@@ -825,56 +819,56 @@ function seedDefaultData() {
   const now = new Date().toISOString();
 
   const initialProducts = [
-    { id: 'p1', sku: 'SKR-WAT-001', title: 'Bisleri 1L Mineral Water Peti (12 Bottles Box)', category: 'water', price: 195, mrp: 240, cost: 158, stock: 120, low: 15, spec: '12 Sealed 1L Bottles Box • ₹16.25/btl', image: 'assets/prod_bisleri_1l.jpg', desc: '100% Genuine factory-sealed Bisleri mineral water 12-bottle peti with tamper-proof seal.', order: 1 },
-    { id: 'p2', sku: 'SKR-WAT-002', title: 'Kinley 1L Packaged Water Peti (12 Bottles Box)', category: 'water', price: 190, mrp: 240, cost: 154, stock: 95, low: 15, spec: '12 Sealed 1L Bottles Box • ₹15.8/btl', image: 'assets/prod_kinley_1l.jpg', desc: 'Reverse osmosis purified sealed Kinley water 12-bottle shrink box.', order: 2 },
-    { id: 'p3', sku: 'SKR-CAS-001', title: 'Bailey 1L Packaged Water (12 pcs Case)', category: 'cases', price: 180, mrp: 240, cost: 145, stock: 45, low: 10, spec: '12 Bottles Shrink Pack • ₹15/pc', image: 'assets/prod_water_case.jpg', desc: 'Full case of 12 Bailey 1L bottles for events and shops.', order: 3 },
-    { id: 'p4', sku: 'SKR-CAS-002', title: 'Aquafina 500ml Compact Water (24 pcs Case)', category: 'cases', price: 240, mrp: 290, cost: 190, stock: 30, low: 8, spec: '24 Bottles Peti • ₹10/pc', image: 'assets/prod_aquafina_500ml.jpg', desc: '24 compact sealed Aquafina bottles for seminars & journeys.', order: 4 },
-    { id: 'p5', sku: 'SKR-COL-001', title: 'Coca-Cola 750ml Party Crate (24 bottles)', category: 'cola', price: 890, mrp: 960, cost: 720, stock: 18, low: 5, spec: '24 Chilled Bottles Crate • ₹37/pc', image: 'assets/prod_coca_cola.jpg', desc: 'Chilled crate for marriage parties and canteens.', order: 5 },
-    { id: 'p6', sku: 'SKR-JUI-001', title: 'Real Fruit Power Mixed Juice (12x 1L)', category: 'juice', price: 1180, mrp: 1320, cost: 950, stock: 12, low: 4, spec: '12 Tetra Packs Carton • ₹98/L', image: 'assets/prod_fruit_juice.jpg', desc: '100% pure real fruit power juice carton load.', order: 6 },
-    { id: 'p7', sku: 'SKR-CAN-001', title: 'Red Bull & Sting Energy Cans Tray (24 pcs)', category: 'can', price: 1440, mrp: 1680, cost: 1160, stock: 8, low: 5, spec: '24 Cans Chilled Tray • Energy Pack', image: 'assets/prod_chilled_can.jpg', desc: 'Chilled energy drink tray for kiosks and events.', order: 7 },
-    { id: 'p8', sku: 'SKR-CAS-003', title: '250ml Shaadi Water Peti (48 pcs Mini Pack)', category: 'cases', price: 290, mrp: 350, cost: 230, stock: 65, low: 15, spec: '48 Mini Sealed Bottles • Wedding Special', image: 'assets/cat_water_bottles.jpg', desc: 'Essential wedding dinner table mini sealed water bottles.', order: 8 },
-    { id: 'p9', sku: 'SKR-COL-002', title: 'Thums Up 2L Jumbo Bottle Case (9 pcs)', category: 'cola', price: 780, mrp: 855, cost: 640, stock: 15, low: 5, spec: '9 Jumbo Bottles Case • High Fizz', image: 'assets/cat_soft_drinks.jpg', desc: 'Jumbo bottles case for catering loads.', order: 9 },
-    { id: 'p10', sku: 'SKR-COL-003', title: 'Sprite 750ml Lime Chilled Crate (24 pcs)', category: 'cola', price: 890, mrp: 960, cost: 720, stock: 14, low: 5, spec: '24 Chilled Glass Bottles', image: 'assets/cat_soft_drinks.jpg', desc: 'Refreshing lime flavor chilled crates.', order: 10 },
-    { id: 'p11', sku: 'SKR-JUI-002', title: 'Frooti & Maaza Mango Juice Tray (30 pcs)', category: 'juice', price: 290, mrp: 330, cost: 220, stock: 25, low: 8, spec: '30 Tetra Packs Tray • ₹9.6/pc', image: 'assets/cat_fruit_juices.jpg', desc: 'Kids and wedding buffet mango juice tray.', order: 11 },
-    { id: 'p12', sku: 'SKR-CAS-004', title: 'Shaadi & Function Drinks Mega Combo Load', category: 'cases', price: 8800, mrp: 9900, cost: 7100, stock: 8, low: 3, spec: '15 Total Cases Load • Free Sikar Delivery', image: 'assets/cat_wedding_supply.jpg', desc: 'Complete wedding hall combo: 10 water petis + 5 cold drink crates.', order: 12 },
-    { id: 'p13', sku: 'SKR-WAT-003', title: 'Aquafina 1L Pure Water Peti (12 Bottles Box)', category: 'water', price: 190, mrp: 240, cost: 154, stock: 110, low: 15, spec: '12 Sealed 1L Bottles Box • ₹15.8/btl', image: 'assets/prod_aquafina_500ml.jpg', desc: 'PepsiCo Hydro-7 purified 1L factory-sealed 12-bottle water peti.', order: 13 },
-    { id: 'p14', sku: 'SKR-WAT-004', title: 'Bailey 1L Mineral Water Peti (12 Bottles Box)', category: 'water', price: 180, mrp: 240, cost: 148, stock: 140, low: 15, spec: '12 Sealed 1L Bottles Box • ₹15.0/btl', image: 'assets/prod_bisleri_1l.jpg', desc: 'Parle Agro Bailey 1L factory-sealed 12-bottle water case.', order: 14 },
-    { id: 'p15', sku: 'SKR-WAT-005', title: 'Bisleri 500ml Pocket Peti (24 Bottles Box)', category: 'water', price: 210, mrp: 240, cost: 170, stock: 200, low: 25, spec: '24 Sealed 500ml Bottles Box • ₹8.75/btl', image: 'assets/prod_bisleri_1l.jpg', desc: 'Compact 500ml Bisleri mineral water 24-bottle peti for travel and coaching students.', order: 15 },
-    { id: 'p16', sku: 'SKR-WAT-006', title: 'Kinley 500ml Compact Peti (24 Bottles Box)', category: 'water', price: 205, mrp: 240, cost: 165, stock: 180, low: 25, spec: '24 Sealed 500ml Bottles Box • ₹8.5/btl', image: 'assets/prod_kinley_1l.jpg', desc: 'Coca-Cola Kinley 500ml hygienic sealed 24-bottle pocket water peti.', order: 16 },
-    { id: 'p17', sku: 'SKR-WAT-007', title: 'Bisleri 2L Jumbo Family Case (9 Bottles Box)', category: 'water', price: 245, mrp: 315, cost: 198, stock: 85, low: 12, spec: '9 Sealed 2L Bottles Box • ₹27.2/btl', image: 'assets/prod_bisleri_1l.jpg', desc: '2 Litre sealed Bisleri family size 9-bottle case for dining & travel.', order: 17 },
-    { id: 'p18', sku: 'SKR-WAT-008', title: 'Bisleri 5L Dispenser Case (4 Bottles Box)', category: 'water', price: 250, mrp: 300, cost: 205, stock: 50, low: 10, spec: '4 Sealed 5L Dispenser Bottles Box', image: 'assets/cat_water_bottles.jpg', desc: '100% factory-sealed 5L Bisleri bottles case with carry handles (No 20L jars).', order: 18 },
-    { id: 'p19', sku: 'SKR-WAT-009', title: 'Himalayan Natural Mineral Water Case (12x 1L Box)', category: 'water', price: 620, mrp: 780, cost: 510, stock: 40, low: 8, spec: '12 Sealed 1L Bottles Box • ₹51.6/btl', image: 'assets/prod_aquafina_500ml.jpg', desc: 'Premium Shivalik foothills natural mineral water 12-bottle case for VIP guests.', order: 19 },
-    { id: 'p20', sku: 'SKR-WAT-010', title: 'Bisleri Vedica Spring Water Peti (24x 500ml Box)', category: 'water', price: 760, mrp: 960, cost: 620, stock: 60, low: 10, spec: '24 Sealed 500ml Bottles Box • ₹31.6/btl', image: 'assets/prod_bisleri_1l.jpg', desc: 'Luxury Himalayan mountain water 24-bottle peti for corporate boardrooms and hotels.', order: 20 },
-    { id: 'p21', sku: 'SKR-CAS-005', title: 'Bisleri 1L Wholesale Peti (12 Bottles Case)', category: 'cases', price: 195, mrp: 240, cost: 158, stock: 90, low: 15, spec: '12 Bottles Carton • ₹16.25/pc', image: 'assets/prod_water_case.jpg', desc: 'Standard Sikar Mandi wholesale peti of 12 Bisleri 1L sealed bottles.', order: 21 },
-    { id: 'p22', sku: 'SKR-CAS-006', title: 'Kinley 1L Wholesale Peti (12 Bottles Case)', category: 'cases', price: 190, mrp: 240, cost: 154, stock: 80, low: 15, spec: '12 Bottles Shrink Case • ₹15.8/pc', image: 'assets/cat_water_cases.jpg', desc: 'Full 12-bottle wholesale shrink pack of Kinley 1L drinking water.', order: 22 },
-    { id: 'p23', sku: 'SKR-CAS-007', title: 'Bisleri 500ml Wholesale Peti (24 Bottles Case)', category: 'cases', price: 210, mrp: 240, cost: 170, stock: 75, low: 12, spec: '24 Bottles Peti • ₹8.75/pc', image: 'assets/prod_water_case.jpg', desc: '24 bottles carton of Bisleri 500ml for coaching institutes and seminars.', order: 23 },
-    { id: 'p24', sku: 'SKR-CAS-008', title: 'Kinley 500ml Wholesale Peti (24 Bottles Case)', category: 'cases', price: 205, mrp: 240, cost: 165, stock: 70, low: 12, spec: '24 Bottles Shrink Peti • ₹8.5/pc', image: 'assets/cat_water_cases.jpg', desc: 'High-demand 500ml Kinley 24-bottle peti for shops and events.', order: 24 },
-    { id: 'p25', sku: 'SKR-CAS-009', title: 'Bailey 500ml Economy Peti (24 Bottles Case)', category: 'cases', price: 195, mrp: 240, cost: 155, stock: 65, low: 10, spec: '24 Bottles Peti • ₹8.1/pc', image: 'assets/prod_water_case.jpg', desc: 'Best-margin wholesale 500ml Bailey 24-piece case for retailers.', order: 25 },
-    { id: 'p26', sku: 'SKR-CAS-010', title: 'Bisleri 2L Jumbo Peti (9 Bottles Case)', category: 'cases', price: 245, mrp: 315, cost: 198, stock: 40, low: 8, spec: '9 Jumbo 2L Bottles Case • ₹27.2/pc', image: 'assets/cat_water_cases.jpg', desc: 'Heavy-duty carton of 9 Bisleri 2-Litre bottles for hostels & dhabas.', order: 26 },
-    { id: 'p27', sku: 'SKR-CAS-011', title: 'Bisleri 200ml Rockstar Mini Peti (48 pcs)', category: 'cases', price: 275, mrp: 336, cost: 220, stock: 110, low: 20, spec: '48 Mini 200ml Bottles • Banquet Special', image: 'assets/cat_water_bottles.jpg', desc: 'Zero-wastage 200ml sealed Bisleri mini peti for marriage welcome trays.', order: 27 },
-    { id: 'p28', sku: 'SKR-CAS-012', title: 'Tata Copper+ Water 500ml Peti (24 pcs Case)', category: 'cases', price: 320, mrp: 480, cost: 255, stock: 30, low: 6, spec: '24 Copper Enriched Bottles • ₹13.3/pc', image: 'assets/prod_aquafina_500ml.jpg', desc: 'Copper-enriched packaged drinking water case for health-conscious offices.', order: 28 },
-    { id: 'p29', sku: 'SKR-COL-004', title: 'Fanta Orange 750ml Party Crate (24 Bottles)', category: 'cola', price: 890, mrp: 960, cost: 720, stock: 22, low: 5, spec: '24 Chilled PET Bottles • ₹37/pc', image: 'assets/cat_soft_drinks.jpg', desc: 'Tangy orange Fanta 750ml 24-bottle crate for marriage buffets.', order: 29 },
-    { id: 'p30', sku: 'SKR-COL-005', title: 'Limca Lime & Lemoni 750ml Crate (24 pcs)', category: 'cola', price: 890, mrp: 960, cost: 720, stock: 20, low: 5, spec: '24 Chilled Bottles Crate • Fresh Lime', image: 'assets/cat_soft_drinks.jpg', desc: 'Refreshing Limca 750ml wholesale crate for summer & highway eateries.', order: 30 },
-    { id: 'p31', sku: 'SKR-COL-006', title: 'Pepsi 750ml Wholesale Crate (24 Bottles)', category: 'cola', price: 870, mrp: 960, cost: 700, stock: 25, low: 5, spec: '24 Chilled PET Bottles • ₹36.25/pc', image: 'assets/prod_coca_cola.jpg', desc: 'Pepsi 750ml 24-bottle shrink crate at direct Sikar depot rate.', order: 31 },
-    { id: 'p32', sku: 'SKR-COL-007', title: 'Mountain Dew 750ml High-Energy Crate (24 pcs)', category: 'cola', price: 880, mrp: 960, cost: 710, stock: 28, low: 6, spec: '24 Bottles Crate • Coaching Hub Favorite', image: 'assets/cat_soft_drinks.jpg', desc: 'Top-selling Mountain Dew 750ml crate across Piprali Road hostels.', order: 32 },
-    { id: 'p33', sku: 'SKR-COL-008', title: 'Mirinda Orange 2L Jumbo Case (9 Bottles)', category: 'cola', price: 760, mrp: 855, cost: 620, stock: 16, low: 4, spec: '9 Jumbo 2L Bottles • Party Serving', image: 'assets/cat_soft_drinks.jpg', desc: 'Bulk 2-Litre Mirinda case for catering counters and halwai stalls.', order: 33 },
-    { id: 'p34', sku: 'SKR-COL-009', title: '7Up Nimbooz Masala Soda Peti (24x 250ml)', category: 'cola', price: 420, mrp: 480, cost: 340, stock: 35, low: 8, spec: '24 Mini Bottles Peti • ₹17.5/pc', image: 'assets/cat_soft_drinks.jpg', desc: 'Chatpata lemon & masala soda 250ml peti for post-dinner wedding counters.', order: 34 },
-    { id: 'p35', sku: 'SKR-COL-010', title: 'Coca-Cola 250ml Mini PET Peti (28 Bottles)', category: 'cola', price: 510, mrp: 560, cost: 415, stock: 42, low: 10, spec: '28 Mini 250ml Bottles • ₹18.2/pc', image: 'assets/prod_coca_cola.jpg', desc: 'Fast-moving ₹20 MRP Coca-Cola 250ml 28-bottle wholesale peti.', order: 35 },
-    { id: 'p36', sku: 'SKR-COL-011', title: 'Thums Up 250ml Mini Strong Peti (28 Bottles)', category: 'cola', price: 510, mrp: 560, cost: 415, stock: 45, low: 10, spec: '28 Mini 250ml Bottles • Strong Toofan', image: 'assets/cat_soft_drinks.jpg', desc: 'Sikar kirana bestseller: 28-bottle Thums Up 250ml shrink pack.', order: 36 },
-    { id: 'p37', sku: 'SKR-JUI-003', title: 'Maaza Mango 1.2L Family Case (12 Bottles)', category: 'juice', price: 780, mrp: 900, cost: 630, stock: 20, low: 5, spec: '12 Thick Mango Bottles • ₹65/pc', image: 'assets/prod_fruit_juice.jpg', desc: 'Rich Alphonso mango drink 1.2L 12-bottle case for family functions.', order: 37 },
-    { id: 'p38', sku: 'SKR-JUI-004', title: 'Slice Thick Mango 600ml Peti (24 Bottles)', category: 'juice', price: 840, mrp: 960, cost: 680, stock: 18, low: 5, spec: '24 PET Bottles Crate • ₹35/pc', image: 'assets/cat_fruit_juices.jpg', desc: 'Chilled Slice 600ml 24-bottle crate for bakeries and juice corners.', order: 38 },
-    { id: 'p39', sku: 'SKR-JUI-005', title: 'Tropicana 100% Apple & Orange Carton (12x 1L)', category: 'juice', price: 1220, mrp: 1440, cost: 990, stock: 14, low: 4, spec: '12x 1L Tetra Packs • No Added Sugar', image: 'assets/prod_fruit_juice.jpg', desc: '100% pure pressed fruit juice 1L tetra pack wholesale carton.', order: 39 },
-    { id: 'p40', sku: 'SKR-JUI-006', title: 'Real Pomegranate (Anar) Nectar Carton (12x 1L)', category: 'juice', price: 1240, mrp: 1440, cost: 1010, stock: 15, low: 4, spec: '12x 1L Tetra Packs • Breakfast Grade', image: 'assets/cat_fruit_juices.jpg', desc: 'Rich ruby pomegranate juice carton for hotels, hospitals & gifting.', order: 40 },
-    { id: 'p41', sku: 'SKR-JUI-007', title: 'Paper Boat Aamras & Anar Pouches Tray (24 pcs)', category: 'juice', price: 430, mrp: 480, cost: 345, stock: 30, low: 6, spec: '24 Traditional Drink Pouches • 200ml', image: 'assets/prod_fruit_juice.jpg', desc: 'Authentic ethnic fruit drinks in signature Doypack pouches.', order: 41 },
-    { id: 'p42', sku: 'SKR-CAN-002', title: 'Sting Energy Red 250ml PET Crate (30 Bottles)', category: 'can', price: 540, mrp: 600, cost: 440, stock: 55, low: 10, spec: '30 Energy Bottles Pack • ₹18/pc', image: 'assets/prod_chilled_can.jpg', desc: 'Highest selling student energy drink across Sikar coaching corridors.', order: 42 },
-    { id: 'p43', sku: 'SKR-CAN-003', title: 'Coca-Cola & Thums Up 300ml Sleek Can Tray (24 pcs)', category: 'can', price: 840, mrp: 960, cost: 685, stock: 20, low: 5, spec: '24 Aluminum Sleek Cans • ₹35/can', image: 'assets/cat_chilled_cans.jpg', desc: 'Premium chilled 300ml sleek aluminum cans tray for VIP lounges.', order: 43 },
-    { id: 'p44', sku: 'SKR-CAN-004', title: 'Kinley Club Soda Extra Punch Peti (12x 750ml)', category: 'can', price: 210, mrp: 240, cost: 168, stock: 50, low: 10, spec: '12 Extra-Fizz Soda Bottles • ₹17.5/pc', image: 'assets/cat_chilled_cans.jpg', desc: 'High-carbonation Kinley Club Soda 750ml case for mocktail bars.', order: 44 },
-    { id: 'p45', sku: 'SKR-CAN-005', title: 'Bisleri Club Soda 750ml Wholesale Peti (12 pcs)', category: 'can', price: 205, mrp: 240, cost: 162, stock: 45, low: 10, spec: '12 Sealed Soda Bottles • Strong Fizz', image: 'assets/prod_chilled_can.jpg', desc: 'Crisp Bisleri Club Soda 750ml 12-bottle carton for shikanji & mocktails.', order: 45 },
-    { id: 'p46', sku: 'SKR-CAN-006', title: 'Lahori Zeera & Nimboo Deshi Drink Peti (24x 160ml)', category: 'can', price: 215, mrp: 240, cost: 172, stock: 60, low: 12, spec: '24 Spiced Zeera Bottles • ₹8.9/pc', image: 'assets/cat_chilled_cans.jpg', desc: 'Roasted cumin and rock-salt digestive drink peti for eateries.', order: 46 },
-    { id: 'p47', sku: 'SKR-WED-001', title: 'Royal Marriage Garden 50-Peti Barat Combo Load', category: 'wedding', price: 14500, mrp: 17500, cost: 11800, stock: 10, low: 2, spec: '35 Mini Water Petis + 15 Cold Drink Crates', image: 'assets/cat_wedding_supply.jpg', desc: 'Full tempo load for 500-800 guest wedding reception with free unloading.', order: 47 },
-    { id: 'p48', sku: 'SKR-WED-002', title: 'SawaMani & Bhandara 25-Peti Mini Water Load', category: 'wedding', price: 6600, mrp: 8400, cost: 5300, stock: 12, low: 3, spec: '25 Petis (1,200 Mini 250ml Sealed Bottles)', image: 'assets/cat_wedding_supply.jpg', desc: 'Special Khatu Shyam Ji / Jeen Mata SawaMani & Bhandara bulk water load.', order: 48 },
-    { id: 'p49', sku: 'SKR-WED-003', title: 'Coaching Hostel Monthly 30-Peti 1L Water Pack', category: 'wedding', price: 5400, mrp: 7200, cost: 4350, stock: 15, low: 3, spec: '30 Cases (360 Sealed 1L Bottles) • Monthly', image: 'assets/cat_water_cases.jpg', desc: 'Piprali Road & Nawalgarh Road hostel mess bulk 1L sealed bottle package.', order: 49 },
-    { id: 'p50', sku: 'SKR-WED-004', title: 'Haldi & Mehndi Welcome Mocktail + Soda Combo', category: 'wedding', price: 4200, mrp: 4950, cost: 3400, stock: 14, low: 3, spec: '4 Juice Cartons + 4 Soda Petis + 6 Mini Water', image: 'assets/cat_wedding_supply.jpg', desc: 'Curated daytime wedding ceremony refreshment combo delivered chilled.', order: 50 }
+    { id: 'p1', sku: 'SKR-WAT-001', title: 'Bisleri 1L Mineral Water Peti (12 Bottles Box)', category: 'water', price: 195, mrp: 240, cost: 158, stock: 120, low: 15, spec: '12 Sealed 1L Bottles Box • ₹16.25/btl', image: 'assets/prod_bisleri_1l.webp', desc: '100% Genuine factory-sealed Bisleri mineral water 12-bottle peti with tamper-proof seal.', order: 1 },
+    { id: 'p2', sku: 'SKR-WAT-002', title: 'Kinley 1L Packaged Water Peti (12 Bottles Box)', category: 'water', price: 190, mrp: 240, cost: 154, stock: 95, low: 15, spec: '12 Sealed 1L Bottles Box • ₹15.8/btl', image: 'assets/prod_kinley_1l.webp', desc: 'Reverse osmosis purified sealed Kinley water 12-bottle shrink box.', order: 2 },
+    { id: 'p3', sku: 'SKR-CAS-001', title: 'Bailey 1L Packaged Water (12 pcs Case)', category: 'cases', price: 180, mrp: 240, cost: 145, stock: 45, low: 10, spec: '12 Bottles Shrink Pack • ₹15/pc', image: 'assets/prod_water_case.webp', desc: 'Full case of 12 Bailey 1L bottles for events and shops.', order: 3 },
+    { id: 'p4', sku: 'SKR-CAS-002', title: 'Aquafina 500ml Compact Water (24 pcs Case)', category: 'cases', price: 240, mrp: 290, cost: 190, stock: 30, low: 8, spec: '24 Bottles Peti • ₹10/pc', image: 'assets/prod_aquafina_500ml.webp', desc: '24 compact sealed Aquafina bottles for seminars & journeys.', order: 4 },
+    { id: 'p5', sku: 'SKR-COL-001', title: 'Coca-Cola 750ml Party Crate (24 bottles)', category: 'cola', price: 890, mrp: 960, cost: 720, stock: 18, low: 5, spec: '24 Chilled Bottles Crate • ₹37/pc', image: 'assets/prod_coca_cola.webp', desc: 'Chilled crate for marriage parties and canteens.', order: 5 },
+    { id: 'p6', sku: 'SKR-JUI-001', title: 'Real Fruit Power Mixed Juice (12x 1L)', category: 'juice', price: 1180, mrp: 1320, cost: 950, stock: 12, low: 4, spec: '12 Tetra Packs Carton • ₹98/L', image: 'assets/prod_fruit_juice.webp', desc: '100% pure real fruit power juice carton load.', order: 6 },
+    { id: 'p7', sku: 'SKR-CAN-001', title: 'Red Bull & Sting Energy Cans Tray (24 pcs)', category: 'can', price: 1440, mrp: 1680, cost: 1160, stock: 8, low: 5, spec: '24 Cans Chilled Tray • Energy Pack', image: 'assets/prod_chilled_can.webp', desc: 'Chilled energy drink tray for kiosks and events.', order: 7 },
+    { id: 'p8', sku: 'SKR-CAS-003', title: '250ml Shaadi Water Peti (48 pcs Mini Pack)', category: 'cases', price: 290, mrp: 350, cost: 230, stock: 65, low: 15, spec: '48 Mini Sealed Bottles • Wedding Special', image: 'assets/cat_water_bottles.webp', desc: 'Essential wedding dinner table mini sealed water bottles.', order: 8 },
+    { id: 'p9', sku: 'SKR-COL-002', title: 'Thums Up 2L Jumbo Bottle Case (9 pcs)', category: 'cola', price: 780, mrp: 855, cost: 640, stock: 15, low: 5, spec: '9 Jumbo Bottles Case • High Fizz', image: 'assets/cat_soft_drinks.webp', desc: 'Jumbo bottles case for catering loads.', order: 9 },
+    { id: 'p10', sku: 'SKR-COL-003', title: 'Sprite 750ml Lime Chilled Crate (24 pcs)', category: 'cola', price: 890, mrp: 960, cost: 720, stock: 14, low: 5, spec: '24 Chilled Glass Bottles', image: 'assets/cat_soft_drinks.webp', desc: 'Refreshing lime flavor chilled crates.', order: 10 },
+    { id: 'p11', sku: 'SKR-JUI-002', title: 'Frooti & Maaza Mango Juice Tray (30 pcs)', category: 'juice', price: 290, mrp: 330, cost: 220, stock: 25, low: 8, spec: '30 Tetra Packs Tray • ₹9.6/pc', image: 'assets/cat_fruit_juices.webp', desc: 'Kids and wedding buffet mango juice tray.', order: 11 },
+    { id: 'p12', sku: 'SKR-CAS-004', title: 'Shaadi & Function Drinks Mega Combo Load', category: 'cases', price: 8800, mrp: 9900, cost: 7100, stock: 8, low: 3, spec: '15 Total Cases Load • Free Sikar Delivery', image: 'assets/cat_wedding_supply.webp', desc: 'Complete wedding hall combo: 10 water petis + 5 cold drink crates.', order: 12 },
+    { id: 'p13', sku: 'SKR-WAT-003', title: 'Aquafina 1L Pure Water Peti (12 Bottles Box)', category: 'water', price: 190, mrp: 240, cost: 154, stock: 110, low: 15, spec: '12 Sealed 1L Bottles Box • ₹15.8/btl', image: 'assets/prod_aquafina_500ml.webp', desc: 'PepsiCo Hydro-7 purified 1L factory-sealed 12-bottle water peti.', order: 13 },
+    { id: 'p14', sku: 'SKR-WAT-004', title: 'Bailey 1L Mineral Water Peti (12 Bottles Box)', category: 'water', price: 180, mrp: 240, cost: 148, stock: 140, low: 15, spec: '12 Sealed 1L Bottles Box • ₹15.0/btl', image: 'assets/prod_bisleri_1l.webp', desc: 'Parle Agro Bailey 1L factory-sealed 12-bottle water case.', order: 14 },
+    { id: 'p15', sku: 'SKR-WAT-005', title: 'Bisleri 500ml Pocket Peti (24 Bottles Box)', category: 'water', price: 210, mrp: 240, cost: 170, stock: 200, low: 25, spec: '24 Sealed 500ml Bottles Box • ₹8.75/btl', image: 'assets/prod_bisleri_1l.webp', desc: 'Compact 500ml Bisleri mineral water 24-bottle peti for travel and coaching students.', order: 15 },
+    { id: 'p16', sku: 'SKR-WAT-006', title: 'Kinley 500ml Compact Peti (24 Bottles Box)', category: 'water', price: 205, mrp: 240, cost: 165, stock: 180, low: 25, spec: '24 Sealed 500ml Bottles Box • ₹8.5/btl', image: 'assets/prod_kinley_1l.webp', desc: 'Coca-Cola Kinley 500ml hygienic sealed 24-bottle pocket water peti.', order: 16 },
+    { id: 'p17', sku: 'SKR-WAT-007', title: 'Bisleri 2L Jumbo Family Case (9 Bottles Box)', category: 'water', price: 245, mrp: 315, cost: 198, stock: 85, low: 12, spec: '9 Sealed 2L Bottles Box • ₹27.2/btl', image: 'assets/prod_bisleri_1l.webp', desc: '2 Litre sealed Bisleri family size 9-bottle case for dining & travel.', order: 17 },
+    { id: 'p18', sku: 'SKR-WAT-008', title: 'Bisleri 5L Dispenser Case (4 Bottles Box)', category: 'water', price: 250, mrp: 300, cost: 205, stock: 50, low: 10, spec: '4 Sealed 5L Dispenser Bottles Box', image: 'assets/cat_water_bottles.webp', desc: '100% factory-sealed 5L Bisleri bottles case with carry handles (No 20L jars).', order: 18 },
+    { id: 'p19', sku: 'SKR-WAT-009', title: 'Himalayan Natural Mineral Water Case (12x 1L Box)', category: 'water', price: 620, mrp: 780, cost: 510, stock: 40, low: 8, spec: '12 Sealed 1L Bottles Box • ₹51.6/btl', image: 'assets/prod_aquafina_500ml.webp', desc: 'Premium Shivalik foothills natural mineral water 12-bottle case for VIP guests.', order: 19 },
+    { id: 'p20', sku: 'SKR-WAT-010', title: 'Bisleri Vedica Spring Water Peti (24x 500ml Box)', category: 'water', price: 760, mrp: 960, cost: 620, stock: 60, low: 10, spec: '24 Sealed 500ml Bottles Box • ₹31.6/btl', image: 'assets/prod_bisleri_1l.webp', desc: 'Luxury Himalayan mountain water 24-bottle peti for corporate boardrooms and hotels.', order: 20 },
+    { id: 'p21', sku: 'SKR-CAS-005', title: 'Bisleri 1L Wholesale Peti (12 Bottles Case)', category: 'cases', price: 195, mrp: 240, cost: 158, stock: 90, low: 15, spec: '12 Bottles Carton • ₹16.25/pc', image: 'assets/prod_water_case.webp', desc: 'Standard Sikar Mandi wholesale peti of 12 Bisleri 1L sealed bottles.', order: 21 },
+    { id: 'p22', sku: 'SKR-CAS-006', title: 'Kinley 1L Wholesale Peti (12 Bottles Case)', category: 'cases', price: 190, mrp: 240, cost: 154, stock: 80, low: 15, spec: '12 Bottles Shrink Case • ₹15.8/pc', image: 'assets/cat_water_cases.webp', desc: 'Full 12-bottle wholesale shrink pack of Kinley 1L drinking water.', order: 22 },
+    { id: 'p23', sku: 'SKR-CAS-007', title: 'Bisleri 500ml Wholesale Peti (24 Bottles Case)', category: 'cases', price: 210, mrp: 240, cost: 170, stock: 75, low: 12, spec: '24 Bottles Peti • ₹8.75/pc', image: 'assets/prod_water_case.webp', desc: '24 bottles carton of Bisleri 500ml for coaching institutes and seminars.', order: 23 },
+    { id: 'p24', sku: 'SKR-CAS-008', title: 'Kinley 500ml Wholesale Peti (24 Bottles Case)', category: 'cases', price: 205, mrp: 240, cost: 165, stock: 70, low: 12, spec: '24 Bottles Shrink Peti • ₹8.5/pc', image: 'assets/cat_water_cases.webp', desc: 'High-demand 500ml Kinley 24-bottle peti for shops and events.', order: 24 },
+    { id: 'p25', sku: 'SKR-CAS-009', title: 'Bailey 500ml Economy Peti (24 Bottles Case)', category: 'cases', price: 195, mrp: 240, cost: 155, stock: 65, low: 10, spec: '24 Bottles Peti • ₹8.1/pc', image: 'assets/prod_water_case.webp', desc: 'Best-margin wholesale 500ml Bailey 24-piece case for retailers.', order: 25 },
+    { id: 'p26', sku: 'SKR-CAS-010', title: 'Bisleri 2L Jumbo Peti (9 Bottles Case)', category: 'cases', price: 245, mrp: 315, cost: 198, stock: 40, low: 8, spec: '9 Jumbo 2L Bottles Case • ₹27.2/pc', image: 'assets/cat_water_cases.webp', desc: 'Heavy-duty carton of 9 Bisleri 2-Litre bottles for hostels & dhabas.', order: 26 },
+    { id: 'p27', sku: 'SKR-CAS-011', title: 'Bisleri 200ml Rockstar Mini Peti (48 pcs)', category: 'cases', price: 275, mrp: 336, cost: 220, stock: 110, low: 20, spec: '48 Mini 200ml Bottles • Banquet Special', image: 'assets/cat_water_bottles.webp', desc: 'Zero-wastage 200ml sealed Bisleri mini peti for marriage welcome trays.', order: 27 },
+    { id: 'p28', sku: 'SKR-CAS-012', title: 'Tata Copper+ Water 500ml Peti (24 pcs Case)', category: 'cases', price: 320, mrp: 480, cost: 255, stock: 30, low: 6, spec: '24 Copper Enriched Bottles • ₹13.3/pc', image: 'assets/prod_aquafina_500ml.webp', desc: 'Copper-enriched packaged drinking water case for health-conscious offices.', order: 28 },
+    { id: 'p29', sku: 'SKR-COL-004', title: 'Fanta Orange 750ml Party Crate (24 Bottles)', category: 'cola', price: 890, mrp: 960, cost: 720, stock: 22, low: 5, spec: '24 Chilled PET Bottles • ₹37/pc', image: 'assets/cat_soft_drinks.webp', desc: 'Tangy orange Fanta 750ml 24-bottle crate for marriage buffets.', order: 29 },
+    { id: 'p30', sku: 'SKR-COL-005', title: 'Limca Lime & Lemoni 750ml Crate (24 pcs)', category: 'cola', price: 890, mrp: 960, cost: 720, stock: 20, low: 5, spec: '24 Chilled Bottles Crate • Fresh Lime', image: 'assets/cat_soft_drinks.webp', desc: 'Refreshing Limca 750ml wholesale crate for summer & highway eateries.', order: 30 },
+    { id: 'p31', sku: 'SKR-COL-006', title: 'Pepsi 750ml Wholesale Crate (24 Bottles)', category: 'cola', price: 870, mrp: 960, cost: 700, stock: 25, low: 5, spec: '24 Chilled PET Bottles • ₹36.25/pc', image: 'assets/prod_coca_cola.webp', desc: 'Pepsi 750ml 24-bottle shrink crate at direct Sikar depot rate.', order: 31 },
+    { id: 'p32', sku: 'SKR-COL-007', title: 'Mountain Dew 750ml High-Energy Crate (24 pcs)', category: 'cola', price: 880, mrp: 960, cost: 710, stock: 28, low: 6, spec: '24 Bottles Crate • Coaching Hub Favorite', image: 'assets/cat_soft_drinks.webp', desc: 'Top-selling Mountain Dew 750ml crate across Piprali Road hostels.', order: 32 },
+    { id: 'p33', sku: 'SKR-COL-008', title: 'Mirinda Orange 2L Jumbo Case (9 Bottles)', category: 'cola', price: 760, mrp: 855, cost: 620, stock: 16, low: 4, spec: '9 Jumbo 2L Bottles • Party Serving', image: 'assets/cat_soft_drinks.webp', desc: 'Bulk 2-Litre Mirinda case for catering counters and halwai stalls.', order: 33 },
+    { id: 'p34', sku: 'SKR-COL-009', title: '7Up Nimbooz Masala Soda Peti (24x 250ml)', category: 'cola', price: 420, mrp: 480, cost: 340, stock: 35, low: 8, spec: '24 Mini Bottles Peti • ₹17.5/pc', image: 'assets/cat_soft_drinks.webp', desc: 'Chatpata lemon & masala soda 250ml peti for post-dinner wedding counters.', order: 34 },
+    { id: 'p35', sku: 'SKR-COL-010', title: 'Coca-Cola 250ml Mini PET Peti (28 Bottles)', category: 'cola', price: 510, mrp: 560, cost: 415, stock: 42, low: 10, spec: '28 Mini 250ml Bottles • ₹18.2/pc', image: 'assets/prod_coca_cola.webp', desc: 'Fast-moving ₹20 MRP Coca-Cola 250ml 28-bottle wholesale peti.', order: 35 },
+    { id: 'p36', sku: 'SKR-COL-011', title: 'Thums Up 250ml Mini Strong Peti (28 Bottles)', category: 'cola', price: 510, mrp: 560, cost: 415, stock: 45, low: 10, spec: '28 Mini 250ml Bottles • Strong Toofan', image: 'assets/cat_soft_drinks.webp', desc: 'Sikar kirana bestseller: 28-bottle Thums Up 250ml shrink pack.', order: 36 },
+    { id: 'p37', sku: 'SKR-JUI-003', title: 'Maaza Mango 1.2L Family Case (12 Bottles)', category: 'juice', price: 780, mrp: 900, cost: 630, stock: 20, low: 5, spec: '12 Thick Mango Bottles • ₹65/pc', image: 'assets/prod_fruit_juice.webp', desc: 'Rich Alphonso mango drink 1.2L 12-bottle case for family functions.', order: 37 },
+    { id: 'p38', sku: 'SKR-JUI-004', title: 'Slice Thick Mango 600ml Peti (24 Bottles)', category: 'juice', price: 840, mrp: 960, cost: 680, stock: 18, low: 5, spec: '24 PET Bottles Crate • ₹35/pc', image: 'assets/cat_fruit_juices.webp', desc: 'Chilled Slice 600ml 24-bottle crate for bakeries and juice corners.', order: 38 },
+    { id: 'p39', sku: 'SKR-JUI-005', title: 'Tropicana 100% Apple & Orange Carton (12x 1L)', category: 'juice', price: 1220, mrp: 1440, cost: 990, stock: 14, low: 4, spec: '12x 1L Tetra Packs • No Added Sugar', image: 'assets/prod_fruit_juice.webp', desc: '100% pure pressed fruit juice 1L tetra pack wholesale carton.', order: 39 },
+    { id: 'p40', sku: 'SKR-JUI-006', title: 'Real Pomegranate (Anar) Nectar Carton (12x 1L)', category: 'juice', price: 1240, mrp: 1440, cost: 1010, stock: 15, low: 4, spec: '12x 1L Tetra Packs • Breakfast Grade', image: 'assets/cat_fruit_juices.webp', desc: 'Rich ruby pomegranate juice carton for hotels, hospitals & gifting.', order: 40 },
+    { id: 'p41', sku: 'SKR-JUI-007', title: 'Paper Boat Aamras & Anar Pouches Tray (24 pcs)', category: 'juice', price: 430, mrp: 480, cost: 345, stock: 30, low: 6, spec: '24 Traditional Drink Pouches • 200ml', image: 'assets/prod_fruit_juice.webp', desc: 'Authentic ethnic fruit drinks in signature Doypack pouches.', order: 41 },
+    { id: 'p42', sku: 'SKR-CAN-002', title: 'Sting Energy Red 250ml PET Crate (30 Bottles)', category: 'can', price: 540, mrp: 600, cost: 440, stock: 55, low: 10, spec: '30 Energy Bottles Pack • ₹18/pc', image: 'assets/prod_chilled_can.webp', desc: 'Highest selling student energy drink across Sikar coaching corridors.', order: 42 },
+    { id: 'p43', sku: 'SKR-CAN-003', title: 'Coca-Cola & Thums Up 300ml Sleek Can Tray (24 pcs)', category: 'can', price: 840, mrp: 960, cost: 685, stock: 20, low: 5, spec: '24 Aluminum Sleek Cans • ₹35/can', image: 'assets/cat_chilled_cans.webp', desc: 'Premium chilled 300ml sleek aluminum cans tray for VIP lounges.', order: 43 },
+    { id: 'p44', sku: 'SKR-CAN-004', title: 'Kinley Club Soda Extra Punch Peti (12x 750ml)', category: 'can', price: 210, mrp: 240, cost: 168, stock: 50, low: 10, spec: '12 Extra-Fizz Soda Bottles • ₹17.5/pc', image: 'assets/cat_chilled_cans.webp', desc: 'High-carbonation Kinley Club Soda 750ml case for mocktail bars.', order: 44 },
+    { id: 'p45', sku: 'SKR-CAN-005', title: 'Bisleri Club Soda 750ml Wholesale Peti (12 pcs)', category: 'can', price: 205, mrp: 240, cost: 162, stock: 45, low: 10, spec: '12 Sealed Soda Bottles • Strong Fizz', image: 'assets/prod_chilled_can.webp', desc: 'Crisp Bisleri Club Soda 750ml 12-bottle carton for shikanji & mocktails.', order: 45 },
+    { id: 'p46', sku: 'SKR-CAN-006', title: 'Lahori Zeera & Nimboo Deshi Drink Peti (24x 160ml)', category: 'can', price: 215, mrp: 240, cost: 172, stock: 60, low: 12, spec: '24 Spiced Zeera Bottles • ₹8.9/pc', image: 'assets/cat_chilled_cans.webp', desc: 'Roasted cumin and rock-salt digestive drink peti for eateries.', order: 46 },
+    { id: 'p47', sku: 'SKR-WED-001', title: 'Royal Marriage Garden 50-Peti Barat Combo Load', category: 'wedding', price: 14500, mrp: 17500, cost: 11800, stock: 10, low: 2, spec: '35 Mini Water Petis + 15 Cold Drink Crates', image: 'assets/cat_wedding_supply.webp', desc: 'Full tempo load for 500-800 guest wedding reception with free unloading.', order: 47 },
+    { id: 'p48', sku: 'SKR-WED-002', title: 'SawaMani & Bhandara 25-Peti Mini Water Load', category: 'wedding', price: 6600, mrp: 8400, cost: 5300, stock: 12, low: 3, spec: '25 Petis (1,200 Mini 250ml Sealed Bottles)', image: 'assets/cat_wedding_supply.webp', desc: 'Special Khatu Shyam Ji / Jeen Mata SawaMani & Bhandara bulk water load.', order: 48 },
+    { id: 'p49', sku: 'SKR-WED-003', title: 'Coaching Hostel Monthly 30-Peti 1L Water Pack', category: 'wedding', price: 5400, mrp: 7200, cost: 4350, stock: 15, low: 3, spec: '30 Cases (360 Sealed 1L Bottles) • Monthly', image: 'assets/cat_water_cases.webp', desc: 'Piprali Road & Nawalgarh Road hostel mess bulk 1L sealed bottle package.', order: 49 },
+    { id: 'p50', sku: 'SKR-WED-004', title: 'Haldi & Mehndi Welcome Mocktail + Soda Combo', category: 'wedding', price: 4200, mrp: 4950, cost: 3400, stock: 14, low: 3, spec: '4 Juice Cartons + 4 Soda Petis + 6 Mini Water', image: 'assets/cat_wedding_supply.webp', desc: 'Curated daytime wedding ceremony refreshment combo delivered chilled.', order: 50 }
   ];
 
   const insertProductIgnore = db.prepare(`
@@ -909,12 +903,12 @@ function seedDefaultData() {
   `);
 
   const initialCategories = [
-    { id: 'water', name: 'Packaged Water', tagline: '100% Factory Sealed Bottles', image: 'assets/cat_water_bottles.jpg', order: 1 },
-    { id: 'cases', name: 'Wholesale Petis & Cases', tagline: 'Bulk Mandi Rates', image: 'assets/cat_water_cases.jpg', order: 2 },
-    { id: 'cola', name: 'Soft Drinks & Crates', tagline: 'Chilled Crate Supplies', image: 'assets/cat_soft_drinks.jpg', order: 3 },
-    { id: 'juice', name: 'Fruit Juices & Tetra', tagline: 'Real & Maaza Packs', image: 'assets/cat_fruit_juices.jpg', order: 4 },
-    { id: 'can', name: 'Chilled Cans & Soda', tagline: 'Aluminum Cans Tray', image: 'assets/cat_chilled_cans.jpg', order: 5 },
-    { id: 'wedding', name: 'Wedding & Event Supply', tagline: '200ml Mini Bottles & Combos', image: 'assets/cat_wedding_supply.jpg', order: 6 }
+    { id: 'water', name: 'Packaged Water', tagline: '100% Factory Sealed Bottles', image: 'assets/cat_water_bottles.webp', order: 1 },
+    { id: 'cases', name: 'Wholesale Petis & Cases', tagline: 'Bulk Mandi Rates', image: 'assets/cat_water_cases.webp', order: 2 },
+    { id: 'cola', name: 'Soft Drinks & Crates', tagline: 'Chilled Crate Supplies', image: 'assets/cat_soft_drinks.webp', order: 3 },
+    { id: 'juice', name: 'Fruit Juices & Tetra', tagline: 'Real & Maaza Packs', image: 'assets/cat_fruit_juices.webp', order: 4 },
+    { id: 'can', name: 'Chilled Cans & Soda', tagline: 'Aluminum Cans Tray', image: 'assets/cat_chilled_cans.webp', order: 5 },
+    { id: 'wedding', name: 'Wedding & Event Supply', tagline: '200ml Mini Bottles & Combos', image: 'assets/cat_wedding_supply.webp', order: 6 }
   ];
 
   db.transaction(() => {
@@ -1142,8 +1136,12 @@ function seedDefaultData() {
 
   const initialAdmins = [
     { id: 'ADM-01', username: 'maheshkumarsaini8769@gmail.com', name: 'Mahesh Kumar Saini', role: 'Super Admin', pin: 'mahesh99830', perms: ['all'] },
-    { id: 'ADM-02', username: 'ramesh', name: 'Ramesh Kumawat', role: 'Logistics Operator', pin: '4321', perms: ['dashboard', 'orders', 'pos', 'inventory'] },
-    { id: 'ADM-03', username: 'dinesh', name: 'Dinesh Accountant', role: 'Accountant', pin: '5678', perms: ['dashboard', 'orders', 'pos', 'khata', 'reports', 'purchases'] }
+    { id: 'ADM-SUB', username: 'subadmin@sikardrop.in', name: 'Operations Sub-Admin', role: 'Store Sub-Admin', pin: 'subadmin123', perms: ['dashboard', 'orders', 'pos', 'inventory', 'khata', 'reports', 'purchases', 'bundles', 'coupons', 'products', 'categories', 'reviews', 'bulk', 'subadmin'] },
+    { id: 'ADM-02', username: 'ramesh@sikardrop.in', name: 'Ramesh Kumawat', role: 'Logistics Operator', pin: 'sikar123', perms: ['dashboard', 'orders', 'pos', 'inventory'] },
+    { id: 'ADM-03', username: 'dinesh@sikardrop.in', name: 'Dinesh Accountant', role: 'Accountant', pin: 'dinesh123', perms: ['dashboard', 'orders', 'pos', 'khata', 'reports', 'purchases'] },
+    { id: 'ADM-263', username: 'pooja@sikardrop.in', name: 'Pooja Sharma', role: 'Catalog Manager', pin: 'pooja789', perms: ['inventory', 'bundles', 'coupons', 'products'] },
+    { id: 'ADM-919', username: 'vikram@sikardrop.in', name: 'Vikram Delivery', role: 'Delivery Specialist', pin: 'vikrampass', perms: ['orders', 'pos'] },
+    { id: 'ADM-903', username: 'suresh@sikardrop.in', name: 'Suresh Logistics', role: 'Dispatch Officer', pin: 'suresh123', perms: ['orders', 'inventory'] }
   ];
 
   db.transaction(() => {
@@ -1158,6 +1156,18 @@ function seedDefaultData() {
         permissions_json = '["all"]',
         active = 1
       WHERE id = 'ADM-01' OR username = 'admin' OR username = 'maheshkumarsaini8769@gmail.com'
+    `).run();
+
+    // Explicitly guarantee ADM-SUB credentials
+    db.prepare(`
+      UPDATE admin_users SET
+        username = 'subadmin@sikardrop.in',
+        pin = 'subadmin123',
+        name = 'Operations Sub-Admin',
+        role = 'Store Sub-Admin',
+        permissions_json = '["dashboard","orders","pos","inventory","khata","reports","purchases","bundles","coupons","products","categories","reviews","bulk","subadmin"]',
+        active = 1
+      WHERE id = 'ADM-SUB' OR username = 'subadmin@sikardrop.in' OR username = 'subadmin'
     `).run();
   })();
 
@@ -1180,19 +1190,19 @@ function seedDefaultData() {
       heroTitle: 'Pure Water\nFor A Healthier\nTomorrow',
       heroDesc: 'Quality drinking water and beverages delivered to your home, office and business across Sikar.',
       heroImg: 'assets/hero_bottles_blended.png',
-      slide1Image: 'assets/hero_bottles.jpg',
+      slide1Image: 'assets/hero_bottles.webp',
       slide1Tag: 'SIKAR MANDI WHOLESALE PETI DEPOT',
       slide1Title: '100% Factory-Sealed Mineral Water Petis',
       slide1Sub: 'Bisleri & Kinley Direct Factory Wholesale Rates • Free Tempo Delivery on 5+ Boxes • Zero Camper Policy',
       slide1BtnText: 'Order Sealed Water',
       slide1BtnLink: 'products',
-      slide2Image: 'assets/cat_wedding_supply.jpg',
+      slide2Image: 'assets/cat_wedding_supply.webp',
       slide2Tag: 'WEDDING & FUNCTION SPECIAL',
       slide2Title: 'Shaadi & Bulk Function Drinks & Water Combo',
       slide2Sub: 'Save up to 20% on Marriage Bulk Orders • 200ml Mini Water Bottles + Chilled Cold Drink Crates',
       slide2BtnText: 'Book Marriage Bulk',
       slide2BtnLink: 'bulk',
-      slide3Image: 'assets/cat_soft_drinks.jpg',
+      slide3Image: 'assets/cat_soft_drinks.webp',
       slide3Tag: 'EXPRESS CHILLED LOGISTICS',
       slide3Title: 'Chilled Soft Drinks & Energy Soda Cans',
       slide3Sub: 'Coca-Cola, Thums Up, Sprite & Sting • 40-Min Express Unloading Across All Sikar Corridors',
@@ -1231,6 +1241,10 @@ function seedDefaultData() {
       keywords: 'sikar water delivery, factory-sealed petis, mandi rates'
     };
     insertSetting.run('seo_settings', JSON.stringify(defaultSeoSettings), now);
+    insertSetting.run('truecaller_enabled', '1', now);
+    insertSetting.run('truecaller_app_key', 'mt7jgfb18085c07f04abaad0262b4efbf84a6', now);
+    insertSetting.run('truecaller_partner_id', 'tc_partner_sikardrop_98290', now);
+    insertSetting.run('truecaller_mode', 'instant_1tap', now);
   })();
 
   console.log('Default enterprise data seeded successfully');
@@ -2098,7 +2112,7 @@ function receivePurchaseTransaction({ purchaseId, actor = 'Admin' }) {
 }
 
 // 4. ATOMIC ORDER CREATION (ONLINE STOREFRONT)
-function createOnlineOrderTransaction({ orderId: customOrderId, customerName, customerPhone, loginPhone = '', deliveryPhone = '', addressPhone = '', corridor, address = '', deliveryAddress = '', items = [], subtotal, discount = 0, deliveryCharge = 0, delivery_charge = 0, total, paymentMethod = 'COD', paymentStatus = '', notes = '', attribution = {} }) {
+function createOnlineOrderTransaction({ orderId: customOrderId, customerName, customerPhone, loginPhone = '', deliveryPhone = '', addressPhone = '', corridor, address = '', deliveryAddress = '', items = [], subtotal, discount = 0, total, paymentMethod = 'COD', paymentStatus = '', notes = '', attribution = {} }) {
   const runTx = db.transaction(() => {
     const orderId = customOrderId || ('SKR-' + Math.floor(1000 + Math.random() * 9000));
     const finalAddress = address || deliveryAddress || corridor || 'Sikar';
@@ -2152,8 +2166,7 @@ function createOnlineOrderTransaction({ orderId: customOrderId, customerName, cu
 
     const finalSubtotal = subtotal !== undefined ? Number(subtotal) : computedTotal;
     const finalDiscount = Number(discount || 0);
-    const finalDeliveryCharge = Number(deliveryCharge !== undefined ? deliveryCharge : (delivery_charge !== undefined ? delivery_charge : 0));
-    const finalTotal = total !== undefined ? Number(total) : Math.max(0, finalSubtotal - finalDiscount + finalDeliveryCharge);
+    const finalTotal = total !== undefined ? Number(total) : Math.max(0, finalSubtotal - finalDiscount);
 
     // Customer record
     const cleanPrimary = (primaryPhone || '').replace(/\D/g, '');
@@ -2196,16 +2209,16 @@ function createOnlineOrderTransaction({ orderId: customOrderId, customerName, cu
     db.prepare(`
       INSERT INTO orders (
         id, customer_id, customer_name, customer_phone, login_phone, delivery_phone,
-        corridor, delivery_address, items_json, items_count, subtotal, discount, delivery_charge, total,
+        corridor, delivery_address, items_json, items_count, subtotal, discount, total,
         payment_method, payment_status, status, vehicle, order_date, delivery_time,
         notes, activity_log_json, created_at, updated_at,
         utm_source, utm_medium, utm_campaign, utm_content, utm_term, attribution_platform, session_id
       )
-      VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, 'pending', '', ?, 'Within 40 Mins', ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)
+      VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, 'pending', '', ?, 'Within 40 Mins', ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)
     `).run(
       orderId, custId, customerName, primaryPhone, finalLoginPhone, finalDeliveryPhone,
       corridor || 'Sikar', finalAddress, JSON.stringify(items), totalItemsCount,
-      finalSubtotal, finalDiscount, finalDeliveryCharge, finalTotal, paymentMethod, finalPaymentStatus,
+      finalSubtotal, finalDiscount, finalTotal, paymentMethod, finalPaymentStatus,
       now.split('T')[0], notes, activityLog, now, now,
       utmSource, utmMedium, utmCampaign, utmContent, utmTerm, attributionPlatform, sessionId
     );
@@ -2237,21 +2250,7 @@ function createOnlineOrderTransaction({ orderId: customOrderId, customerName, cu
       );
     }
 
-    return {
-      orderId,
-      total: finalTotal,
-      subtotal: finalSubtotal,
-      discount: finalDiscount,
-      delivery_charge: finalDeliveryCharge,
-      deliveryCharge: finalDeliveryCharge,
-      itemsCount: totalItemsCount,
-      status: 'pending',
-      loginPhone: finalLoginPhone,
-      deliveryPhone: finalDeliveryPhone,
-      customerPhone: primaryPhone,
-      customerName,
-      items
-    };
+    return { orderId, total: finalTotal, itemsCount: totalItemsCount, status: 'pending', loginPhone: finalLoginPhone, deliveryPhone: finalDeliveryPhone, customerPhone: primaryPhone, customerName, items };
   });
 
   return runTx();

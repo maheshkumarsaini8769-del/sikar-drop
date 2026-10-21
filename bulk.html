@@ -3,10 +3,12 @@
 <head>
   <meta charset="UTF-8">
   <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <meta name="robots" content="index, follow, max-image-preview:large, max-snippet:-1, max-video-preview:-1">
+  <meta name="theme-color" content="#0284C7">
   
   <!-- STRONG SEO META TAGS -->
-  <title>Wedding &amp; Corporate Bulk Water Supply in Sikar | Sikar Drop Mandi Depot</title>
-  <meta name="description" content="Book wholesale water bottles and cold drinks for marriage gardens, coaching institutes, hostels, and banquets in Sikar. Interactive wedding calculator with 40-minute fast unloading across Piprali & Nawalgarh Road.">
+  <title>Wedding &amp; Corporate Bulk Water Supply | Sikar Water Bottle Supply</title>
+  <meta name="description" content="Book wholesale water bottles and cold drinks for marriage gardens, coaching institutes, hostels and banquets in Sikar with 40-minute express unloading.">
   <meta name="keywords" content="marriage garden water supply sikar, wedding water bottles wholesale piprali road, bulk water supply sikar, hotel water delivery sikar, coaching institute beverage supplier">
     <!-- FAVICONS -->
   <link rel="icon" type="image/svg+xml" href="/favicon.svg">
@@ -50,6 +52,13 @@
   <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
   <link href="https://fonts.googleapis.com/css2?family=Be+Vietnam+Pro:wght@400;500;600;700;800&family=Outfit:wght@500;600;700;800;900&display=swap" rel="stylesheet">
   <link rel="stylesheet" href="assets/site.css">
+
+  <meta name="twitter:card" content="summary_large_image">
+  <meta name="twitter:title" content="Wedding &amp; Corporate Bulk Water Supply in Sikar | Sikar Drop">
+  <meta name="twitter:description" content="Calculate and order bulk beverage petis for marriage functions and institutes in Sikar. Save up to 20% on wholesale rates.">
+  <meta name="twitter:image" content="https://sikar-drop.vercel.app/assets/bundle_wedding_vip.jpg">
+  <meta property="og:site_name" content="Sikar Water Bottle Supply">
+  <meta property="og:locale" content="en_IN">
 </head>
 <body>
 
@@ -58,10 +67,10 @@
     <div class="container nav-layout">
       <a href="/" class="brand-block">
         <div class="brand-icon-drop">
-          <svg viewBox="0 0 24 24" fill="currentColor"><path d="M12 2.69l5.66 5.66a8 8 0 1 1-11.31 0z"></path></svg>
+          <img src="/assets/sikar_drop_icon.webp" alt="Sikar Drop Logo" class="brand-logo-img" width="36" height="36">
         </div>
         <div class="brand-text-col">
-          <div class="brand-title">SIKAR <span class="accent-blue">DROP</span></div>
+          <div class="brand-title"><span class="brand-name-main">SIKAR</span> <span class="accent-blue brand-name-sub">WATER BOTTLE SUPPLY</span></div>
           <span class="brand-tagline">Pure Water. Healthy Life.</span>
         </div>
       </a>
@@ -78,12 +87,12 @@
         <a href="/contact" class="nav-item-link">Contact</a>
       </nav>
 
-      <div class="nav-search-bar">
+      <div class="nav-search-bar" onclick="if(window.openGlobalSearchModal) window.openGlobalSearchModal(this.querySelector('input')?.value)">
         <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.3">
           <circle cx="11" cy="11" r="8"></circle>
           <line x1="21" y1="21" x2="16.65" y2="16.65"></line>
         </svg>
-        <input type="text" class="nav-search-input" placeholder="Search water, pack, brand..." onkeyup="if(event.key==='Enter') window.location.href='/products?q=' + encodeURIComponent(this.value)">
+        <input type="text" class="nav-search-input" placeholder="Search water, pack, brand..." onclick="if(window.openGlobalSearchModal) { event.stopPropagation(); window.openGlobalSearchModal(this.value); }" onfocus="if(window.openGlobalSearchModal) window.openGlobalSearchModal(this.value)" autocomplete="off">
       </div>
 
       <div class="nav-right-actions">
@@ -170,6 +179,17 @@
           <span style="background: #DCFCE7; color: #15803D; font-size: 0.76rem; font-weight: 800; padding: 2px 8px; border-radius: 9999px;">DIRECT DEPOT TIERS</span>
           <h2 style="font-family: var(--font-heading); font-size: 1.4rem; color: #0B192C; margin: 6px 0 16px;">Sikar Mandi Wholesale Slab Rates</h2>
           
+          <!-- LIVE MANDI BASE RATES CHIPS -->
+          <div style="background: #F8FAFC; border: 1px solid var(--border-subtle); border-radius: var(--radius-sm); padding: 12px 14px; margin-bottom: 16px;">
+            <div style="font-size: 0.72rem; font-weight: 800; text-transform: uppercase; color: #0284C7; letter-spacing: 0.5px; margin-bottom: 8px;">Official Mandi Wholesale Base Rates (Per Peti / Case)</div>
+            <div style="display: grid; grid-template-columns: 1fr 1fr; gap: 8px; font-size: 0.82rem;">
+              <div>250ml Shaadi Peti (48x): <strong id="rate-display-w250" style="color:#0F172A;">₹290</strong></div>
+              <div>1L Mineral Case (12x): <strong id="rate-display-w1000" style="color:#0F172A;">₹180</strong></div>
+              <div>Cold Drink Crate (24x): <strong id="rate-display-cold" style="color:#0F172A;">₹890</strong></div>
+              <div>Real Fruit Carton (12x): <strong id="rate-display-juice" style="color:#0F172A;">₹1,180</strong></div>
+            </div>
+          </div>
+
           <div class="portal-table-wrapper" style="margin-bottom: 20px;">
             <table class="portal-table" style="font-size: 0.84rem;">
               <thead>
@@ -181,18 +201,18 @@
               </thead>
               <tbody>
                 <tr>
-                  <td><strong>5 - 15 Petis</strong></td>
-                  <td>Direct Mandi Wholesale Rates</td>
+                  <td><strong>5 - 9 Petis</strong></td>
+                  <td>Direct Mandi Base Wholesale Rates</td>
                   <td>Standard 40-Min Logistics</td>
                 </tr>
                 <tr>
-                  <td><strong>16 - 50 Petis</strong></td>
-                  <td>5% Extra Volume Discount</td>
+                  <td><strong>10 - 19 Petis</strong></td>
+                  <td id="bulk-slab-disc10"><strong>5% Extra Volume Discount</strong></td>
                   <td>Dedicated Tempo Unloading</td>
                 </tr>
                 <tr>
-                  <td><strong>51+ Petis</strong></td>
-                  <td>10% Extra Marriage Garden Slab</td>
+                  <td><strong>20+ Petis</strong></td>
+                  <td id="bulk-slab-disc20"><strong>10% Extra Marriage Garden Slab</strong></td>
                   <td>Priority Venue Unloading + Cold Stash</td>
                 </tr>
               </tbody>
@@ -215,10 +235,10 @@
         <div style="margin-bottom: 24px;">
           <div class="bundle-header-tag">
             <svg viewBox="0 0 24 24" fill="currentColor" width="14" height="14"><polygon points="12 2 15.09 8.26 22 9.27 17 14.14 18.18 21.02 12 17.77 5.82 21.02 7 14.14 2 9.27 8.91 8.26 12 2"></polygon></svg>
-            <span>Mandi Direct Wholesale &bull; 100% Factory Sealed</span>
+            <span id="live-bulk-wholesale-tag">Mandi Direct Wholesale &bull; 100% Factory Sealed</span>
           </div>
-          <h2 style="font-family: var(--font-heading); font-size: 1.8rem; font-weight: 800; color: #0B192C; margin-bottom: 6px;">Wholesale Event Bundles &amp; Commercial Supply</h2>
-          <p style="color: var(--text-muted); font-size: 0.95rem; max-width: 780px;">Special curated mandi-rate packages for Marriage Gardens, Coaching Hostels, Banquets &amp; Kirana Stores across Sikar. Fast tempo delivery with zero-camper purity.</p>
+          <h2 id="live-bulk-wholesale-title" style="font-family: var(--font-heading); font-size: 1.8rem; font-weight: 800; color: #0B192C; margin-bottom: 6px;">Wholesale Event Bundles &amp; Commercial Supply</h2>
+          <p id="live-bulk-wholesale-desc" style="color: var(--text-muted); font-size: 0.95rem; max-width: 780px;">Special curated mandi-rate packages for Marriage Gardens, Coaching Hostels, Banquets &amp; Kirana Stores across Sikar. Fast tempo delivery with zero-camper purity.</p>
         </div>
 
         <!-- CATEGORY TABS -->
@@ -237,7 +257,7 @@
           <div class="bundle-card" data-category="wedding">
             <div class="bundle-card-visual">
               <span class="bundle-badge-floating popular">Wedding Favorite</span>
-              <img src="assets/bundle_wedding_vip.jpg" alt="Shaadi & Banquet VIP Hydration Pack" class="bundle-card-img" loading="lazy">
+              <img src="assets/bundle_wedding_vip.webp" alt="Shaadi & Banquet VIP Hydration Pack" class="bundle-card-img" loading="lazy">
             </div>
             <div class="bundle-card-body">
               <h3 class="bundle-card-title">Shaadi &amp; Banquet VIP Hydration Pack</h3>
@@ -287,7 +307,7 @@
           <div class="bundle-card" data-category="hostel">
             <div class="bundle-card-visual">
               <span class="bundle-badge-floating deal">Piprali / Nawalgarh Rd</span>
-              <img src="assets/bundle_hostel_hydration.jpg" alt="Coaching Hostel & PG Hydration Deal" class="bundle-card-img" loading="lazy">
+              <img src="assets/bundle_hostel_hydration.webp" alt="Coaching Hostel & PG Hydration Deal" class="bundle-card-img" loading="lazy">
             </div>
             <div class="bundle-card-body">
               <h3 class="bundle-card-title">Coaching Hostel &amp; PG Hydration Deal</h3>
@@ -337,7 +357,7 @@
           <div class="bundle-card" data-category="party">
             <div class="bundle-card-visual">
               <span class="bundle-badge-floating hot">Instant Dispatch</span>
-              <img src="assets/bundle_summer_party.jpg" alt="Summer Party & Soft Drinks Mega Crate" class="bundle-card-img" loading="lazy">
+              <img src="assets/bundle_summer_party.webp" alt="Summer Party & Soft Drinks Mega Crate" class="bundle-card-img" loading="lazy">
             </div>
             <div class="bundle-card-body">
               <h3 class="bundle-card-title">Summer Party &amp; Soft Drinks Mega Crate</h3>
@@ -387,7 +407,7 @@
           <div class="bundle-card" data-category="kirana">
             <div class="bundle-card-visual">
               <span class="bundle-badge-floating deal">Kirana Restock</span>
-              <img src="assets/bundle_kirana_starter.jpg" alt="Kirana Retailer High-Margin Starter Pack" class="bundle-card-img" loading="lazy">
+              <img src="assets/bundle_kirana_starter.webp" alt="Kirana Retailer High-Margin Starter Pack" class="bundle-card-img" loading="lazy">
             </div>
             <div class="bundle-card-body">
               <h3 class="bundle-card-title">Kirana Retailer High-Margin Starter Pack</h3>
@@ -548,7 +568,10 @@
     <div class="container">
       <div class="footer-cols-grid">
         <div class="footer-col">
-          <div class="brand-title" style="color:#FFFFFF; margin-bottom: 12px;">SIKAR <span class="accent-blue">DROP</span></div>
+          <div class="brand-title" style="color:#FFFFFF; margin-bottom: 12px; display: flex; align-items: center; gap: 10px;">
+            <img src="/assets/sikar_drop_icon.webp" alt="Sikar Water Bottle Supply" style="width: 32px; height: 32px; object-fit: contain;">
+            <span>SIKAR <span class="accent-blue">WATER BOTTLE SUPPLY</span></span>
+          </div>
           <p style="font-size: 0.86rem; color: #94A3B8; line-height: 1.6; margin-bottom: 16px;">
             Sikar's premier wholesale beverage depot. Direct tempo dispatch for marriage banquets, hostels and stores.
           </p>
@@ -613,12 +636,50 @@
 
   <script src="assets/site.js"></script>
   <script>
+    const sikarSyncChannel = typeof BroadcastChannel !== 'undefined' ? new BroadcastChannel('sikar_sync') : null;
+    if (sikarSyncChannel) {
+      sikarSyncChannel.onmessage = (ev) => {
+        if (!ev.data) return;
+        if (ev.data.type === 'BUNDLES_UPDATED') {
+          loadStorefrontBundles();
+        } else if (ev.data.type === 'RATES_UPDATED') {
+          loadBulkRates();
+        } else if (ev.data.type === 'CMS_UPDATED') {
+          syncBulkTextsFromBackend();
+        }
+      };
+    }
+
+    window.addEventListener('storage', (e) => {
+      if (!e.key || e.key === 'sikar_admin_bundles') {
+        loadStorefrontBundles();
+      }
+      if (!e.key || e.key === 'sikar_admin_rates') {
+        loadBulkRates();
+      }
+      if (!e.key || e.key === 'sikar_admin_texts') {
+        syncBulkTextsFromBackend();
+      }
+      if (!e.key || e.key === 'sikar_theme' || e.key === 'sikar_settings') {
+        initStorefrontTheme();
+      }
+    });
+
     window.addEventListener('DOMContentLoaded', async () => {
-      await initStorefrontTheme();
-      await loadCatalogFromBackend();
+      // 1. Instant synchronous render from cache
+      renderBulkMandiRatesTable();
+      renderStorefrontBundles();
       updateCartUI();
       runBulkCalculator();
-      await loadStorefrontBundles();
+
+      // 2. Concurrently sync live updates from backend
+      Promise.all([
+        initStorefrontTheme(),
+        loadCatalogFromBackend(),
+        loadStorefrontBundles(),
+        loadBulkRates(),
+        syncBulkTextsFromBackend()
+      ]).catch(e => console.warn('Bulk page sync error:', e));
     });
 
     // WHOLESALE BUNDLES & EVENT PACKAGES
@@ -634,7 +695,7 @@
         savePct: 20,
         badge: 'Wedding Favorite',
         badgeClass: 'popular',
-        image: 'assets/bundle_wedding_vip.jpg',
+        image: 'assets/bundle_wedding_vip.webp',
         specs: [
           '10x Shaadi Mini Water Petis (48x 250ml Sealed)',
           '5x Bailey / Kinley 1L Packaged Cases (60 Bottles)',
@@ -658,7 +719,7 @@
         savePct: 18,
         badge: 'Piprali / Nawalgarh Rd',
         badgeClass: 'deal',
-        image: 'assets/bundle_hostel_hydration.jpg',
+        image: 'assets/bundle_hostel_hydration.webp',
         specs: [
           '15x Bailey 1L Packaged Cases (180 Bottles)',
           '4x Aquafina 500ml Compact Petis (96 Bottles)',
@@ -681,7 +742,7 @@
         savePct: 17,
         badge: 'Instant Dispatch',
         badgeClass: 'hot',
-        image: 'assets/bundle_summer_party.jpg',
+        image: 'assets/bundle_summer_party.webp',
         specs: [
           '2x Coca-Cola 750ml Party Crates (48 Bottles)',
           '2x Thums Up 250ml PET Crates (48 Bottles)',
@@ -705,7 +766,7 @@
         savePct: 17,
         badge: 'Kirana Restock',
         badgeClass: 'deal',
-        image: 'assets/bundle_kirana_starter.jpg',
+        image: 'assets/bundle_kirana_starter.webp',
         specs: [
           '40x Bisleri 1L Mineral Water Bottles',
           '2x Frooti & Maaza Mango Juice Trays (60 Packs)',
@@ -720,25 +781,28 @@
       }
     ];
 
+    let currentSelectedBundleCategory = 'all';
+
     async function loadStorefrontBundles() {
+      try {
+        const cached = JSON.parse(localStorage.getItem('sikar_admin_bundles') || 'null');
+        if (cached && Array.isArray(cached) && cached.length > 0) {
+          WHOLESALE_BUNDLES = cached.filter(b => b.active === 1 || b.active === '1' || b.active === true || b.active === undefined);
+          renderStorefrontBundles();
+        }
+      } catch (cErr) {}
+
       try {
         const res = await fetch('/api/bundles?_t=' + Date.now(), { cache: 'no-store' });
         if (res.ok) {
           const data = await res.json();
-          if (Array.isArray(data) && data.length > 0) {
-            const cached = JSON.parse(localStorage.getItem('sikar_admin_bundles') || '[]');
-            const serverIds = new Set(data.map(b => b.id));
-            const localOnly = cached.filter(b => !serverIds.has(b.id) && b.active);
-            WHOLESALE_BUNDLES = [...localOnly, ...data];
-            localStorage.setItem('sikar_admin_bundles', JSON.stringify(WHOLESALE_BUNDLES));
+          if (Array.isArray(data)) {
+            WHOLESALE_BUNDLES = data.filter(b => b.active === 1 || b.active === '1' || b.active === true || b.active === undefined);
+            localStorage.setItem('sikar_admin_bundles', JSON.stringify(data));
           }
         }
       } catch (err) {
         console.warn('Backend bundles fallback', err);
-        const cached = JSON.parse(localStorage.getItem('sikar_admin_bundles') || 'null');
-        if (cached && Array.isArray(cached) && cached.length > 0) {
-          WHOLESALE_BUNDLES = cached.filter(b => b.active);
-        }
       }
 
       const allDealsBtn = document.getElementById('btn-all-deals');
@@ -748,21 +812,62 @@
       renderStorefrontBundles();
     }
 
+    async function syncBulkTextsFromBackend() {
+      try {
+        const applyT = (t) => {
+          if (!t) return;
+          const tagEl = document.getElementById('live-bulk-wholesale-tag');
+          const titleEl = document.getElementById('live-bulk-wholesale-title');
+          const descEl = document.getElementById('live-bulk-wholesale-desc');
+          if (tagEl && t.wholesaleBundlesTag) tagEl.textContent = t.wholesaleBundlesTag;
+          if (titleEl && t.wholesaleBundlesTitle) titleEl.textContent = t.wholesaleBundlesTitle;
+          if (descEl && t.wholesaleBundlesDesc) descEl.textContent = t.wholesaleBundlesDesc;
+        };
+        const cached = JSON.parse(localStorage.getItem('sikar_admin_texts') || '{}');
+        applyT(cached);
+        const res = await fetch('/api/site-texts?_t=' + Date.now(), { cache: 'no-store' });
+        if (res.ok) {
+          const live = await res.json();
+          if (live) {
+            localStorage.setItem('sikar_admin_texts', JSON.stringify(live));
+            applyT(live);
+          }
+        }
+      } catch (e) {}
+    }
+
     function renderStorefrontBundles() {
       const grid = document.getElementById('bundles-grid');
       if (!grid) return;
 
-      grid.innerHTML = WHOLESALE_BUNDLES.map(b => {
+      const filtered = currentSelectedBundleCategory === 'all'
+        ? WHOLESALE_BUNDLES
+        : WHOLESALE_BUNDLES.filter(b => (b.category || 'wedding').toLowerCase().trim() === currentSelectedBundleCategory);
+
+      if (filtered.length === 0) {
+        grid.innerHTML = `
+          <div style="grid-column: 1 / -1; text-align: center; padding: 44px 20px; background: #F8FAFC; border: 1.5px dashed var(--border-subtle); border-radius: var(--radius-sm); color: var(--text-muted);">
+            <svg width="40" height="40" viewBox="0 0 24 24" fill="none" stroke="#94A3B8" stroke-width="2" style="margin-bottom: 10px;"><polygon points="12 2 15.09 8.26 22 9.27 17 14.14 18.18 21.02 12 17.77 5.82 21.02 7 14.14 2 9.27 8.91 8.26 12 2"></polygon></svg>
+            <h4 style="font-size: 1.05rem; font-weight: 800; color: #0B192C; margin: 0 0 6px 0;">No Packages In This Category Yet</h4>
+            <p style="font-size: 0.85rem; margin: 0 0 16px 0;">Looking for custom marriage garden or hostel rates? Contact depot desk directly.</p>
+            <button type="button" class="btn-portal-secondary" onclick="filterBundles('all', document.getElementById('btn-all-deals'))">View All Featured Deals (${WHOLESALE_BUNDLES.length})</button>
+          </div>
+        `;
+        return;
+      }
+
+      grid.innerHTML = filtered.map(b => {
         const specsList = Array.isArray(b.specs) ? b.specs : [];
         const saveAmt = b.save_amt || b.saveAmt || Math.max(0, (b.mrp || b.price) - b.price);
         const savePct = b.save_pct || b.savePct || (b.mrp > 0 ? Math.round((saveAmt / b.mrp) * 100) : 0);
         const badgeClass = b.badge_class || b.badgeClass || 'popular';
+        const cat = (b.category || 'wedding').toLowerCase().trim();
 
         return `
-          <div class="bundle-card" data-category="${escapeHTML(b.category || 'wedding')}">
+          <div class="bundle-card" data-category="${escapeHTML(cat)}" style="display: flex;">
             <div class="bundle-card-visual">
               ${b.badge ? `<span class="bundle-badge-floating ${escapeHTML(badgeClass)}">${escapeHTML(b.badge)}</span>` : ''}
-              <img src="${escapeHTML(b.image || 'assets/cat_wedding_supply.jpg')}" alt="${escapeHTML(b.title)}" class="bundle-card-img" loading="lazy" onerror="this.src='assets/cat_wedding_supply.jpg'">
+              <img src="${escapeHTML(b.image || 'assets/cat_wedding_supply.webp')}" alt="${escapeHTML(b.title)}" class="bundle-card-img" loading="lazy" onerror="this.src='assets/cat_wedding_supply.webp'">
             </div>
             <div class="bundle-card-body">
               <h3 class="bundle-card-title">${escapeHTML(b.title)}</h3>
@@ -802,15 +907,10 @@
     }
 
     function filterBundles(category, btnEl) {
+      currentSelectedBundleCategory = (category || 'all').toLowerCase().trim();
       document.querySelectorAll('#bundle-tabs-nav .bundle-tab-btn').forEach(b => b.classList.remove('active'));
       if (btnEl) btnEl.classList.add('active');
-      document.querySelectorAll('.bundle-card').forEach(card => {
-        if (category === 'all' || card.dataset.category === category) {
-          card.style.display = 'flex';
-        } else {
-          card.style.display = 'none';
-        }
-      });
+      renderStorefrontBundles();
     }
 
     function addBundleToCart(bundleId) {
@@ -858,15 +958,30 @@
     function addBulkCalcItemsToCart() {}
     function dispatchBulkCalcWhatsApp() {}
 
-    let BULK_RATES = JSON.parse(localStorage.getItem('sikar_admin_rates') || 'null') || { w250: 280, w1000: 180, cold: 400, juice: 1180 };
+    let BULK_RATES = JSON.parse(localStorage.getItem('sikar_admin_rates') || 'null') || { w250: 290, w1000: 180, cold: 890, juice: 1180, disc10: 5, disc20: 10 };
+
+    function renderBulkMandiRatesTable() {
+      const r = BULK_RATES;
+      const setTxt = (id, val) => { const el = document.getElementById(id); if (el) el.textContent = val; };
+      setTxt('rate-display-w250', `₹${Number(r.w250 || 290).toLocaleString('en-IN')}`);
+      setTxt('rate-display-w1000', `₹${Number(r.w1000 || 180).toLocaleString('en-IN')}`);
+      setTxt('rate-display-cold', `₹${Number(r.cold || 890).toLocaleString('en-IN')}`);
+      setTxt('rate-display-juice', `₹${Number(r.juice || 1180).toLocaleString('en-IN')}`);
+      const d10El = document.getElementById('bulk-slab-disc10');
+      if (d10El) d10El.innerHTML = `<strong>${r.disc10 || 5}% Extra Volume Discount</strong>`;
+      const d20El = document.getElementById('bulk-slab-disc20');
+      if (d20El) d20El.innerHTML = `<strong>${r.disc20 || 10}% Extra Marriage Garden Slab</strong>`;
+    }
+
     async function loadBulkRates() {
       try {
-        const res = await fetch('/api/bulk-rates');
+        const res = await fetch('/api/bulk-rates?_t=' + Date.now(), { cache: 'no-store' });
         if (res.ok) {
           const r = await res.json();
           if (r && typeof r === 'object') {
             BULK_RATES = { ...BULK_RATES, ...r };
             localStorage.setItem('sikar_admin_rates', JSON.stringify(BULK_RATES));
+            renderBulkMandiRatesTable();
             runBulkCalculator();
           }
         }

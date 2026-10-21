@@ -47,8 +47,8 @@ Sikar Drop is a production-grade wholesale beverage distribution and retail stor
    ```
 
 4. Access the platform:
-   - **Storefront:** [http://localhost:8080](http://localhost:8080)
-   - **Admin Hub:** [http://localhost:8080/admin.html](http://localhost:8080/admin.html)
+   - **Storefront:** [http://localhost:8090](http://localhost:8090)
+   - **Admin Hub:** [http://localhost:8090/admin.html](http://localhost:8090/admin.html)
 
 ---
 

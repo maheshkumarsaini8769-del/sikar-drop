@@ -3,10 +3,12 @@
 <head>
   <meta charset="UTF-8">
   <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <meta name="robots" content="index, follow, max-image-preview:large, max-snippet:-1, max-video-preview:-1">
+  <meta name="theme-color" content="#0284C7">
   
   <!-- STRONG SEO META TAGS -->
-  <title>Wholesale Water Petis & Cold Drinks Catalog in Sikar | Sikar Drop Depot</title>
-  <meta name="description" content="Browse Sikar wholesale beverage catalog. Buy genuine factory-sealed Bisleri, Kinley, Aquafina water petis, Coca-Cola, Sprite, and juices at wholesale mandi rates. Same-day delivery across Piprali and Nawalgarh Road.">
+  <title>Wholesale Water Petis &amp; Cold Drinks Catalog | Sikar Water Bottle Supply</title>
+  <meta name="description" content="Shop factory-sealed Bisleri, Kinley, Aquafina water petis, cold drink crates and juices at Sikar mandi rates. Same-day express delivery across Sikar.">
   <meta name="keywords" content="wholesale water peti sikar, bisleri wholesale sikar, kinley water bottle peti, cold drink crate wholesale, marriage water bottles piprali road, sikar beverage depot">
     <!-- FAVICONS -->
   <link rel="icon" type="image/svg+xml" href="/favicon.svg">
@@ -108,6 +110,12 @@
       }
     }
   </style>
+
+  <meta name="twitter:card" content="summary_large_image">
+  <meta name="twitter:title" content="Wholesale Water Petis & Cold Drinks Catalog in Sikar | Sikar Drop">
+  <meta name="twitter:description" content="Factory-sealed water bottle petis and chilled beverage crates delivered in 40 minutes across Sikar. No 20L campers.">
+  <meta name="twitter:image" content="https://sikar-drop.vercel.app/assets/hero_bottles_blended.png">
+  <meta property="og:locale" content="en_IN">
 </head>
 <body>
 
@@ -117,12 +125,10 @@
       <!-- 1. BRAND LOGO -->
       <a href="/" class="brand-block">
         <div class="brand-icon-drop">
-          <svg viewBox="0 0 24 24" fill="currentColor">
-            <path d="M12 2.69l5.66 5.66a8 8 0 1 1-11.31 0z"></path>
-          </svg>
+          <img src="/assets/sikar_drop_icon.webp" alt="Sikar Drop Logo" class="brand-logo-img" width="36" height="36">
         </div>
         <div class="brand-text-col">
-          <div class="brand-title">SIKAR <span class="accent-blue">DROP</span></div>
+          <div class="brand-title"><span class="brand-name-main">SIKAR</span> <span class="accent-blue brand-name-sub">WATER BOTTLE SUPPLY</span></div>
           <span class="brand-tagline">Pure Water. Healthy Life.</span>
         </div>
       </a>
@@ -201,7 +207,7 @@
           </p>
         </div>
         <div id="catalog-cat-thumb-wrap" style="display: none; width: 88px; height: 88px; border-radius: 12px; background: #F8FAFC; border: 1.5px solid #E2E8F0; padding: 8px; align-items: center; justify-content: center; flex-shrink: 0;">
-          <img id="catalog-cat-thumb-img" src="assets/cat_water_bottles.jpg" alt="Category" style="max-width: 100%; max-height: 100%; object-fit: contain;">
+          <img id="catalog-cat-thumb-img" src="assets/cat_water_bottles.webp" alt="Category" style="max-width: 100%; max-height: 100%; object-fit: contain;">
         </div>
       </div>
 
@@ -282,45 +288,83 @@
   </aside>
 
   <!-- LOGIN OTP MODAL (WHATSAPP OTP GATEWAY - DEFAULT: 9999) -->
-  <div class="modal-backdrop" id="login-modal" role="dialog" aria-modal="true">
-    <div class="auth-modal-dialog">
+  <!-- LOGIN / AUTH MODAL (ENTER NUMBER + TRUECALLER VERIFICATION) -->
+  <div class="modal-backdrop" id="login-modal" role="dialog" aria-modal="true" aria-labelledby="login-modal-title">
+    <div class="auth-modal-dialog" style="max-width: 440px; text-align: center; padding: 26px 22px;">
       <button type="button" class="modal-close-icon" onclick="closeLoginModal()" aria-label="Close dialog">
         <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" width="18" height="18"><line x1="18" y1="6" x2="6" y2="18"></line><line x1="6" y1="6" x2="18" y2="18"></line></svg>
       </button>
 
-      <div style="display: flex; align-items: center; gap: 10px; margin-bottom: 6px;">
-        <div style="width: 34px; height: 34px; border-radius: 50%; background: #DCFCE7; display: flex; align-items: center; justify-content: center; flex-shrink: 0;">
-          <svg viewBox="0 0 24 24" width="18" height="18" fill="#16A34A"><path d="M12.031 6.172c-3.181 0-5.767 2.586-5.768 5.766-.001 1.298.38 2.27 1.019 3.287l-.711 2.598 2.669-.699c.969.54 1.771.82 2.791.82 3.183 0 5.768-2.587 5.768-5.766.001-3.181-2.583-5.767-5.768-5.767z"/></svg>
-        </div>
-        <div>
-          <h3 id="login-modal-title" style="margin: 0; font-size: 1.2rem; font-family: var(--font-heading); font-weight: 800; color: #0B192C;">WhatsApp Sign In &amp; Verification</h3>
-        </div>
+      <!-- Truecaller Shield & Logo Icon -->
+      <div style="margin: 0 auto 12px; width: 58px; height: 58px; border-radius: 50%; background: linear-gradient(135deg, #EBF5FF 0%, #DBEAFE 100%); display: flex; align-items: center; justify-content: center; border: 2px solid #BFDBFE; box-shadow: 0 4px 14px rgba(0, 102, 245, 0.15);">
+        <svg viewBox="0 0 24 24" width="32" height="32" fill="#0066F5">
+          <path d="M12 2C6.48 2 2 6.48 2 12c0 1.85.5 3.58 1.38 5.07L2.1 21.9l4.98-1.28C8.51 21.49 10.2 22 12 22c5.52 0 10-4.48 10-10S17.52 2 12 2zm-1 14.5l-3.5-3.5 1.41-1.41L11 13.67l5.59-5.59L18 9.5l-7 7z"/>
+        </svg>
       </div>
-      <p style="font-size: 0.84rem; color: var(--text-muted); margin-bottom: 14px;">Verify your mobile number to confirm dispatch. Default WhatsApp OTP is <strong>9999</strong>.</p>
-      
-      <div class="form-group-field">
-        <label for="login-phone-input">Mobile Number (+91 Sikar)</label>
-        <input type="tel" id="login-phone-input" placeholder="e.g. 98290 12345" maxlength="10" value="9829012345">
-      </div>
-      <div class="form-group-field">
-        <label for="login-name-input">Your Name / Shop Name (Optional)</label>
-        <input type="text" id="login-name-input" placeholder="e.g. Mahesh Sharma" value="Mahesh Sharma">
-      </div>
-      <div id="otp-group-block" style="margin-top: 14px;">
-        <div class="form-group-field">
-          <div style="display: flex; justify-content: space-between; align-items: center; margin-bottom: 4px;">
-            <label for="login-otp-input" style="margin: 0;">WhatsApp OTP Code</label>
-            <button type="button" onclick="requestWhatsAppOtp()" style="background: none; border: none; color: #0284C7; font-size: 0.78rem; font-weight: 700; cursor: pointer; padding: 0;">Resend OTP</button>
-          </div>
-          <input type="text" id="login-otp-input" placeholder="9999" maxlength="4" value="9999" style="text-align: center; font-size: 1.25rem; font-weight: 800; letter-spacing: 0.3em;">
-          <div style="font-size: 0.76rem; color: #166534; background: #F0FDF4; border: 1px solid #BBF7D0; padding: 5px 8px; border-radius: 4px; margin-top: 6px; text-align: center;">
-            Default OTP: <strong>9999</strong> (WhatsApp OTP system active)
-          </div>
+
+      <h3 id="login-modal-title" style="margin: 0 0 4px; font-size: 1.28rem; font-family: var(--font-heading); font-weight: 800; color: #0B192C;">
+        Truecaller Mobile Verification
+      </h3>
+      <p style="font-size: 0.84rem; color: #64748B; margin: 0 0 16px; line-height: 1.4;">
+        Enter your mobile number. Truecaller will verify if this number belongs to this phone.
+      </p>
+
+      <!-- MOBILE NUMBER INPUT -->
+      <div class="form-group-field" style="margin: 0 0 10px; text-align: left;">
+        <label for="login-phone-input" style="font-weight: 700; color: #0F172A; font-size: 0.84rem; display: flex; justify-content: space-between; margin-bottom: 4px;">
+          <span>Mobile Number</span>
+          <span style="font-size: 0.72rem; color: #0066F5; font-weight: 700;">Zero OTP • 1-Tap SIM Check</span>
+        </label>
+        <div style="position: relative; display: flex; align-items: center;">
+          <span style="position: absolute; left: 14px; font-weight: 800; color: #64748B; font-size: 1rem;">+91</span>
+          <input type="tel" id="login-phone-input" placeholder="77427 35762" maxlength="10" value="" style="padding-left: 52px; font-weight: 800; letter-spacing: 0.05em; font-size: 1.05rem; width: 100%; border: 1.5px solid #CBD5E1; border-radius: 10px; height: 46px; background: #FFFFFF;">
         </div>
       </div>
-      <button type="button" class="btn-auth-submit" id="btn-login-action" onclick="submitLoginProcess()" style="margin-top: 14px;">
-        <span>VERIFY &amp; SIGN IN (OTP: 9999)</span>
+
+      <!-- CUSTOMER NAME (OPTIONAL) -->
+      <div class="form-group-field" style="margin: 0 0 14px; text-align: left;">
+        <label for="login-name-input" style="font-weight: 700; color: #0F172A; font-size: 0.84rem; margin-bottom: 4px; display: block;">Your Name (Optional)</label>
+        <input type="text" id="login-name-input" placeholder="e.g. Mahesh Saini" style="font-weight: 600; width: 100%; border: 1.5px solid #CBD5E1; border-radius: 10px; height: 42px; padding: 0 14px; background: #FFFFFF;">
+      </div>
+
+      <!-- TRUECALLER VERIFICATION ACTION BUTTON -->
+      <button type="button" class="btn-auth-submit" id="btn-truecaller-1tap" onclick="startTruecaller1TapFlow()" style="background: #0066F5; border-color: #0056D2; display: flex; align-items: center; justify-content: center; gap: 10px; padding: 13px 20px; border-radius: 12px; font-weight: 800; font-size: 0.98rem; color: #FFFFFF; cursor: pointer; transition: all 0.2s; width: 100%; box-shadow: 0 6px 18px rgba(0, 102, 245, 0.35);">
+        <svg viewBox="0 0 24 24" width="22" height="22" fill="#FFFFFF"><path d="M12 2C6.48 2 2 6.48 2 12c0 1.85.5 3.58 1.38 5.07L2.1 21.9l4.98-1.28C8.51 21.49 10.2 22 12 22c5.52 0 10-4.48 10-10S17.52 2 12 2zm-1 14.5l-3.5-3.5 1.41-1.41L11 13.67l5.59-5.59L18 9.5l-7 7z"/></svg>
+        <span id="btn-tc-label">VERIFY WITH TRUECALLER</span>
       </button>
+
+      <!-- ACTIVE POLLING / MISMATCH MESSAGE CARD -->
+      <div id="truecaller-polling-msg" style="display: none; flex-direction: column; align-items: center; gap: 8px; background: #EFF6FF; border: 1.5px solid #BFDBFE; padding: 12px 14px; border-radius: 12px; margin-top: 14px;">
+        <div style="display: flex; align-items: center; gap: 10px;">
+          <div class="tc-spinner" style="width: 18px; height: 18px; border: 2.5px solid #BFDBFE; border-top-color: #0066F5; border-radius: 50%; animation: spin 0.8s linear infinite;"></div>
+          <span style="font-size: 0.82rem; color: #1D4ED8; font-weight: 700;" id="tc-status-text">
+            Checking Truecaller on this mobile... Please tap Continue inside Truecaller.
+          </span>
+        </div>
+        <button type="button" onclick="startTruecaller1TapFlow()" style="background: none; border: none; color: #0066F5; font-size: 0.78rem; font-weight: 700; text-decoration: underline; cursor: pointer; padding: 2px;">
+          Reopen Truecaller App
+        </button>
+      </div>
+
+      <!-- SIKAR TRUST BADGES -->
+      <div style="margin-top: 18px; padding-top: 16px; border-top: 1px solid #E2E8F0; display: grid; grid-template-columns: 1fr 1fr; gap: 8px; text-align: left;">
+        <div style="display: flex; align-items: center; gap: 6px; font-size: 0.75rem; color: #475569; font-weight: 600;">
+          <svg viewBox="0 0 20 20" width="15" height="15" fill="#16A34A"><path fill-rule="evenodd" d="M10 18a8 8 0 100-16 8 8 0 000 16zm3.707-9.293a1 1 0 00-1.414-1.414L9 10.586 7.707 9.293a1 1 0 00-1.414 1.414l2 2a1 1 0 001.414 0l4-4z" clip-rule="evenodd"/></svg>
+          <span>100% Sealed Bottles</span>
+        </div>
+        <div style="display: flex; align-items: center; gap: 6px; font-size: 0.75rem; color: #475569; font-weight: 600;">
+          <svg viewBox="0 0 20 20" width="15" height="15" fill="#0066F5"><path fill-rule="evenodd" d="M10 18a8 8 0 100-16 8 8 0 000 16zm3.707-9.293a1 1 0 00-1.414-1.414L9 10.586 7.707 9.293a1 1 0 00-1.414 1.414l2 2a1 1 0 001.414 0l4-4z" clip-rule="evenodd"/></svg>
+          <span>SIM Identity Match</span>
+        </div>
+        <div style="display: flex; align-items: center; gap: 6px; font-size: 0.75rem; color: #475569; font-weight: 600;">
+          <svg viewBox="0 0 20 20" width="15" height="15" fill="#16A34A"><path fill-rule="evenodd" d="M10 18a8 8 0 100-16 8 8 0 000 16zm3.707-9.293a1 1 0 00-1.414-1.414L9 10.586 7.707 9.293a1 1 0 00-1.414 1.414l2 2a1 1 0 001.414 0l4-4z" clip-rule="evenodd"/></svg>
+          <span>Zero Camper Policy</span>
+        </div>
+        <div style="display: flex; align-items: center; gap: 6px; font-size: 0.75rem; color: #475569; font-weight: 600;">
+          <svg viewBox="0 0 20 20" width="15" height="15" fill="#0066F5"><path fill-rule="evenodd" d="M10 18a8 8 0 100-16 8 8 0 000 16zm3.707-9.293a1 1 0 00-1.414-1.414L9 10.586 7.707 9.293a1 1 0 00-1.414 1.414l2 2a1 1 0 001.414 0l4-4z" clip-rule="evenodd"/></svg>
+          <span>Direct Depot Rates</span>
+        </div>
+      </div>
     </div>
   </div>
 
@@ -379,7 +423,10 @@
     <div class="container">
       <div class="footer-cols-grid">
         <div class="footer-col">
-          <div class="brand-title" style="color:#FFFFFF; margin-bottom: 12px;">SIKAR <span class="accent-blue">DROP</span></div>
+          <div class="brand-title" style="color:#FFFFFF; margin-bottom: 12px; display: flex; align-items: center; gap: 10px;">
+            <img src="/assets/sikar_drop_icon.webp" alt="Sikar Water Bottle Supply" style="width: 32px; height: 32px; object-fit: contain;">
+            <span>SIKAR <span class="accent-blue">WATER BOTTLE SUPPLY</span></span>
+          </div>
           <p style="font-size: 0.86rem; color: #94A3B8; line-height: 1.6; margin-bottom: 16px;">
             Sikar's premier wholesale beverage &amp; mineral water depot. Dedicated express tempos supplying factory-sealed petis directly to stores, hostels and marriage gardens.
           </p>
