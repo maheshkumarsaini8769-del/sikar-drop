@@ -3598,7 +3598,7 @@ app.delete('/api/products/:id', requireAdmin, async (req, res) => {
     db.prepare('DELETE FROM products WHERE id = ?').run(id);
 
     try {
-      await deleteDoc('products', { id });
+      await deleteDoc('products', { id, _id: id });
     } catch (e) {}
 
     db.prepare(`

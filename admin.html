@@ -1276,8 +1276,8 @@
       background: rgba(11, 25, 44, 0.72);
       backdrop-filter: blur(6px);
       -webkit-backdrop-filter: blur(6px);
-      z-index: 3000;
-      display: flex;
+      z-index: 25000 !important;
+      display: none;
       align-items: center;
       justify-content: center;
       padding: 20px;
@@ -1290,8 +1290,9 @@
     }
 
     .portal-modal-overlay.active {
-      opacity: 1;
-      visibility: visible;
+      display: flex !important;
+      opacity: 1 !important;
+      visibility: visible !important;
     }
 
     .portal-modal-card {
@@ -4664,6 +4665,7 @@
                 <label for="cms-bulk-sub">Right Bulk Banner Subtitle</label>
                 <input type="text" id="cms-bulk-sub" class="portal-input">
               </div>
+            </div>
           </div>
 
           <!-- WHOLESALE EVENT BUNDLES & COMMERCIAL SUPPLY SECTION CMS -->
@@ -5311,6 +5313,7 @@
             <span id="modal-cust-id" style="font-size: 0.76rem; font-weight: 800; background: #E0F2FE; color: #0284C7; padding: 3px 8px; border-radius: 4px;">CUST-1002</span>
             <span id="modal-cust-badge" style="font-size: 0.74rem; font-weight: 800; padding: 3px 8px; border-radius: 999px;">Truecaller Verified</span>
             <span id="modal-cust-repeat-pill" style="font-size: 0.74rem; font-weight: 800; background: #EFF6FF; color: #1D4ED8; padding: 3px 8px; border-radius: 999px; border: 1px solid #BFDBFE;">Repeat Buyer</span>
+          </div>
           <div style="display: flex; align-items: center; gap: 10px; font-size: 0.84rem; color: var(--text-muted); flex-wrap: wrap;" id="modal-cust-contact-row">
             <span id="modal-cust-phone">Mobile: +91 98290 12345</span>
             <span>&bull;</span>
@@ -12843,10 +12846,14 @@
         try {
           await sikarApi.delete(`/api/products/${encodeURIComponent(id)}`);
           await syncFromBackend();
+          adminProducts = adminProducts.filter(p => p.id !== id);
+          localStorage.setItem('sikar_admin_products', JSON.stringify(adminProducts));
           renderProductsTable();
           notifyStorefrontSync('CATALOG_UPDATED');
+          showToast('Product permanently removed.');
         } catch (err) {
           console.warn('Backend product delete note:', err);
+          showToast('Product deleted locally.');
         }
       }
     }

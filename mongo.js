@@ -75,15 +75,24 @@ async function syncDoc(collectionName, filter, doc) {
 async function deleteDoc(collectionName, filter) {
   try {
     const database = await getMongoDb();
-    if (!database) return;
+    if (!database) return null;
     let query = filter;
     if (filter && (filter._id || filter.id || filter.key)) {
       const targetVal = String(filter._id || filter.id || filter.key);
-      query = { $or: [{ _id: targetVal }, { id: targetVal }, { key: targetVal }] };
+      const orConditions = [{ _id: targetVal }, { id: targetVal }, { key: targetVal }];
+      if (targetVal.length === 24 && /^[0-9a-fA-F]{24}$/.test(targetVal)) {
+        try {
+          const { ObjectId } = require('mongodb');
+          orConditions.push({ _id: new ObjectId(targetVal) });
+        } catch (e) {}
+      }
+      query = { $or: orConditions };
     }
-    await database.collection(collectionName).deleteMany(query);
+    const res = await database.collection(collectionName).deleteMany(query);
+    return res;
   } catch (err) {
     console.warn(`[MongoDB] deleteDoc error on ${collectionName}:`, err.message);
+    return null;
   }
 }
 

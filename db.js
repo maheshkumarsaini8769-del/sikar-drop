@@ -883,6 +883,10 @@ function seedDefaultData() {
 
   const existingCount = db.prepare('SELECT COUNT(*) AS count FROM products').get().count;
 
+  if (existingCount > 0) {
+    return; // Products and catalog tables already seeded; preserve admin deletions
+  }
+
   db.transaction(() => {
     initialProducts.forEach(p => {
       const info = insertProductIgnore.run(p.id, p.sku, p.title, p.category, p.price, p.mrp, p.cost, p.stock, p.low, p.spec, p.image, p.desc, p.order, now, now);
@@ -891,10 +895,6 @@ function seedDefaultData() {
       }
     });
   })();
-
-  if (existingCount > 0) {
-    return; // Other default tables already seeded
-  }
 
   // 2. SEED DEFAULT CATEGORIES
   const insertCategory = db.prepare(`
