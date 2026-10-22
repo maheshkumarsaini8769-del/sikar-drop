@@ -1829,9 +1829,30 @@ app.get('/api/admin/reports/pnl/export.csv', (req, res) => {
 // ==========================================
 // 4. ORDERS MANAGEMENT (ONLINE ORDERS)
 // ==========================================
-// 4. ORDERS MANAGEMENT (ONLINE ORDERS)
-// ==========================================
-app.get('/api/orders', (req, res) => {
+async function ensureOrdersByPhoneHydrated(phone) {
+  if (!phone) return;
+  const clean = String(phone).replace(/\D/g, '').slice(-10);
+  if (clean.length < 10) return;
+  try {
+    const mongo = await getMongoDb();
+    if (!mongo) return;
+    const docs = await mongo.collection('orders').find({
+      $or: [
+        { customer_phone: { $regex: clean } },
+        { customerPhone: { $regex: clean } },
+        { login_phone: { $regex: clean } },
+        { loginPhone: { $regex: clean } },
+        { delivery_phone: { $regex: clean } },
+        { deliveryPhone: { $regex: clean } }
+      ]
+    }).toArray();
+    for (const doc of docs) {
+      await ensureOrderHydrated(doc.id || doc.orderId || doc._id);
+    }
+  } catch (e) {}
+}
+
+app.get('/api/orders', async (req, res) => {
   try {
     const {
       status,
@@ -1877,6 +1898,7 @@ app.get('/api/orders', (req, res) => {
     // Filter by phone
     const rawPhone = (phone || '').trim();
     if (rawPhone) {
+      await ensureOrdersByPhoneHydrated(rawPhone);
       const cleanDigits = rawPhone.replace(/\D/g, '').slice(-10);
       const searchTarget = cleanDigits.length >= 7 ? cleanDigits : rawPhone;
       whereClauses.push("(customer_phone LIKE ? OR login_phone LIKE ? OR delivery_phone LIKE ?)");
@@ -1908,6 +1930,12 @@ app.get('/api/orders', (req, res) => {
     // Search query (Order ID, Customer Name, Phones, Address, Items JSON)
     const searchQuery = (search || q || '').trim();
     if (searchQuery) {
+      if (searchQuery.toUpperCase().startsWith('SKR-')) {
+        await ensureOrderHydrated(searchQuery.toUpperCase());
+      }
+      if (searchQuery.replace(/\D/g, '').length >= 10) {
+        await ensureOrdersByPhoneHydrated(searchQuery);
+      }
       whereClauses.push(`(
         id LIKE ? OR
         customer_name LIKE ? OR
@@ -2018,49 +2046,67 @@ app.get('/api/orders', (req, res) => {
 
 async function ensureOrderHydrated(orderId) {
   if (!orderId) return false;
-  const existing = db.prepare('SELECT id FROM orders WHERE id = ?').get(orderId);
-  if (existing) return true;
   try {
     const mongo = await getMongoDb();
-    if (!mongo) return false;
+    if (!mongo) return !!db.prepare('SELECT id FROM orders WHERE id = ?').get(orderId);
     const doc = (await mongo.collection('orders').findOne({ _id: orderId })) ||
-                (await mongo.collection('orders').findOne({ id: orderId }));
-    if (!doc) return false;
+                (await mongo.collection('orders').findOne({ id: orderId })) ||
+                (await mongo.collection('orders').findOne({ orderId: orderId }));
+    if (!doc) {
+      return !!db.prepare('SELECT id FROM orders WHERE id = ?').get(orderId);
+    }
     const now = new Date().toISOString();
+    const oid = doc.id || doc.orderId || doc._id;
+    const items = typeof doc.items_json === 'string' ? doc.items_json : JSON.stringify(doc.items || []);
+    let itemsCount = Number(doc.items_count || doc.itemsCount || 0);
+    if (!itemsCount) {
+      try { itemsCount = JSON.parse(items).length; } catch (e) { itemsCount = 1; }
+    }
+    const actLog = typeof doc.activity_log_json === 'string' ? doc.activity_log_json : JSON.stringify(doc.activityLog || []);
+
     db.prepare(`
-      INSERT INTO orders (id, customer_name, customer_phone, login_phone, delivery_phone, address, corridor, items_json, subtotal, discount, total, coupon_code, payment_method, payment_status, status, vehicle, notes, activity_log_json, created_at, updated_at)
-      VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)
+      INSERT INTO orders (
+        id, customer_id, customer_name, customer_phone, login_phone, delivery_phone,
+        corridor, delivery_address, items_json, items_count, subtotal, discount, total,
+        payment_method, payment_status, status, vehicle, order_date, delivery_time,
+        notes, activity_log_json, created_at, updated_at
+      )
+      VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)
       ON CONFLICT(id) DO UPDATE SET
         status = excluded.status,
         payment_status = excluded.payment_status,
         vehicle = excluded.vehicle,
+        activity_log_json = excluded.activity_log_json,
         updated_at = excluded.updated_at
     `).run(
-      doc.id || doc._id,
-      doc.customer_name || doc.customerName || '',
+      oid,
+      doc.customer_id || doc.customerId || ('CUST-' + oid),
+      doc.customer_name || doc.customerName || 'Customer',
       doc.customer_phone || doc.customerPhone || '',
       doc.login_phone || doc.loginPhone || '',
       doc.delivery_phone || doc.deliveryPhone || '',
-      doc.address || '',
       doc.corridor || 'Sikar',
-      typeof doc.items_json === 'string' ? doc.items_json : JSON.stringify(doc.items || []),
+      doc.delivery_address || doc.deliveryAddress || doc.address || 'Sikar',
+      items,
+      itemsCount,
       Number(doc.subtotal || 0),
       Number(doc.discount || 0),
       Number(doc.total || 0),
-      doc.coupon_code || doc.couponCode || '',
       doc.payment_method || doc.paymentMethod || 'COD',
       doc.payment_status || doc.paymentStatus || 'Pending',
       doc.status || 'pending',
       doc.vehicle || '',
+      doc.order_date || doc.orderDate || now.split('T')[0],
+      doc.delivery_time || doc.deliveryTime || 'Within 40 Mins',
       doc.notes || '',
-      typeof doc.activity_log_json === 'string' ? doc.activity_log_json : JSON.stringify(doc.activityLog || []),
-      doc.created_at || now,
-      doc.updated_at || now
+      actLog,
+      doc.created_at || doc.createdAt || now,
+      doc.updated_at || doc.updatedAt || now
     );
     return true;
   } catch (err) {
     console.warn('[MongoDB] ensureOrderHydrated error:', err.message);
-    return false;
+    return !!db.prepare('SELECT id FROM orders WHERE id = ?').get(orderId);
   }
 }
 
