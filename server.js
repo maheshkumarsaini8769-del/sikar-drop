@@ -593,34 +593,40 @@ app.post('/api/auth/login', (req, res) => {
     const isSubAdminPass = !!SUBADMIN_PASS && loginPassword === SUBADMIN_PASS;
 
     let admin = null;
-    if (isSuperAdminEmail && isSuperAdminPass) {
+    if (isSuperAdminEmail) {
       admin = db.prepare("SELECT * FROM admin_users WHERE id = 'ADM-01'").get();
       if (!admin) {
         db.prepare(`
           INSERT OR REPLACE INTO admin_users (id, name, username, pin, role, permissions_json, active)
           VALUES ('ADM-01', 'Mahesh Kumar Saini', 'maheshsaini10101@gmail.com', ?, 'Super Admin', '["all"]', 1)
-        `).run(SUPER_ADMIN_PASS);
+        `).run(SUPER_ADMIN_PASS || 'DISABLED_ENV_AUTH_REQUIRED');
         admin = db.prepare("SELECT * FROM admin_users WHERE id = 'ADM-01'").get();
       }
-      // SECURITY: if env password is set, keep DB pin in sync.
-      // This prevents the old DB pin from acting as a second valid password.
-      if (admin && process.env.SUPER_ADMIN_PASSWORD && admin.pin !== process.env.SUPER_ADMIN_PASSWORD) {
-        db.prepare('UPDATE admin_users SET pin = ? WHERE id = ?').run(process.env.SUPER_ADMIN_PASSWORD, admin.id);
-        admin.pin = process.env.SUPER_ADMIN_PASSWORD;
+      const activeSuperPass = (admin && admin.pin && admin.pin !== 'DISABLED_ENV_AUTH_REQUIRED')
+        ? admin.pin
+        : SUPER_ADMIN_PASS;
+      if (activeSuperPass && loginPassword === activeSuperPass) {
+        // Valid super admin login
+      } else {
+        admin = null;
       }
-    } else if (isSubAdminEmail && isSubAdminPass) {
+    } else if (isSubAdminEmail) {
       admin = db.prepare("SELECT * FROM admin_users WHERE id = 'ADM-SUB' OR LOWER(TRIM(username)) = 'subadmin@sikardrop.in' OR LOWER(TRIM(username)) = 'subadmin'").get();
       if (!admin) {
         const now = new Date().toISOString();
         db.prepare(`
           INSERT OR REPLACE INTO admin_users (id, username, name, role, pin, permissions_json, active, created_at)
           VALUES ('ADM-SUB', 'subadmin@sikardrop.in', 'Operations Sub-Admin', 'Store Sub-Admin', ?, ?, 1, ?)
-        `).run(SUBADMIN_PASS, JSON.stringify(['dashboard', 'orders', 'pos', 'inventory', 'khata', 'reports', 'purchases', 'bundles', 'coupons', 'products', 'categories', 'reviews', 'bulk', 'subadmin']), now);
+        `).run(SUBADMIN_PASS || 'DISABLED_ENV_AUTH_REQUIRED', JSON.stringify(['dashboard', 'orders', 'pos', 'inventory', 'khata', 'reports', 'purchases', 'bundles', 'coupons', 'products', 'categories', 'reviews', 'bulk', 'subadmin']), now);
         admin = db.prepare("SELECT * FROM admin_users WHERE id = 'ADM-SUB'").get();
       }
-      if (admin && process.env.SUBADMIN_PASSWORD && admin.pin !== process.env.SUBADMIN_PASSWORD) {
-        db.prepare('UPDATE admin_users SET pin = ? WHERE id = ?').run(process.env.SUBADMIN_PASSWORD, admin.id);
-        admin.pin = process.env.SUBADMIN_PASSWORD;
+      const activeSubPass = (admin && admin.pin && admin.pin !== 'DISABLED_ENV_AUTH_REQUIRED')
+        ? admin.pin
+        : SUBADMIN_PASS;
+      if (activeSubPass && loginPassword === activeSubPass) {
+        // Valid sub admin login
+      } else {
+        admin = null;
       }
     } else {
       // Find candidate admin users matching email, prefix, full email with domain, id, or name
@@ -722,6 +728,24 @@ app.get('/api/auth/profile', (req, res) => {
   }
 });
 
+function updateEnvPassword(varName, newPassword) {
+  try {
+    const envLocalPath = path.join(__dirname, '.env.local');
+    if (fs.existsSync(envLocalPath)) {
+      let content = fs.readFileSync(envLocalPath, 'utf8');
+      const regex = new RegExp(`^${varName}=.*$`, 'm');
+      if (regex.test(content)) {
+        content = content.replace(regex, `${varName}=${newPassword}`);
+      } else {
+        content += `\n${varName}=${newPassword}\n`;
+      }
+      fs.writeFileSync(envLocalPath, content, 'utf8');
+    }
+  } catch (err) {
+    console.error('Failed to update env file:', err);
+  }
+}
+
 const handleCredentialsUpdate = (req, res) => {
   try {
     const { currentPassword, newEmail, newPassword, adminId = 'ADM-01' } = req.body;
@@ -767,6 +791,16 @@ const handleCredentialsUpdate = (req, res) => {
     const now = new Date().toISOString();
 
     db.prepare('UPDATE admin_users SET username = ?, pin = ? WHERE id = ?').run(updatedEmail, updatedPass, adminId);
+
+    if (cleanNewPass) {
+      if (adminId === 'ADM-01') {
+        process.env.SUPER_ADMIN_PASSWORD = updatedPass;
+        updateEnvPassword('SUPER_ADMIN_PASSWORD', updatedPass);
+      } else if (adminId === 'ADM-SUB') {
+        process.env.SUBADMIN_PASSWORD = updatedPass;
+        updateEnvPassword('SUBADMIN_PASSWORD', updatedPass);
+      }
+    }
 
     db.prepare(`
       INSERT INTO audit_logs (id, actor, action, module, details, created_at)
