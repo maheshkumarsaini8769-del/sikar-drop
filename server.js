@@ -6097,9 +6097,11 @@ app.post('/api/site-texts', requireAdmin, async (req, res) => {
     // Also sync individual quick keys for compatibility
     if (merged.contactPhone) {
       db.prepare(`INSERT INTO website_settings (key, value, updated_at) VALUES ('phone', ?, ?) ON CONFLICT(key) DO UPDATE SET value = excluded.value, updated_at = excluded.updated_at`).run(String(merged.contactPhone), now);
+      db.prepare(`INSERT INTO website_settings (key, value, updated_at) VALUES ('contactPhone', ?, ?) ON CONFLICT(key) DO UPDATE SET value = excluded.value, updated_at = excluded.updated_at`).run(String(merged.contactPhone), now);
     }
     if (merged.whatsappNumber) {
       db.prepare(`INSERT INTO website_settings (key, value, updated_at) VALUES ('whatsapp', ?, ?) ON CONFLICT(key) DO UPDATE SET value = excluded.value, updated_at = excluded.updated_at`).run(String(merged.whatsappNumber), now);
+      db.prepare(`INSERT INTO website_settings (key, value, updated_at) VALUES ('whatsappNumber', ?, ?) ON CONFLICT(key) DO UPDATE SET value = excluded.value, updated_at = excluded.updated_at`).run(String(merged.whatsappNumber), now);
     }
     if (merged.helpline) {
       db.prepare(`INSERT INTO website_settings (key, value, updated_at) VALUES ('helpline', ?, ?) ON CONFLICT(key) DO UPDATE SET value = excluded.value, updated_at = excluded.updated_at`).run(String(merged.helpline), now);
@@ -6114,14 +6116,27 @@ app.post('/api/site-texts', requireAdmin, async (req, res) => {
     }
 
     try {
-      syncDoc('website_settings', { key: 'site_texts' }, { key: 'site_texts', value: JSON.stringify(merged), updated_at: now });
+      const syncPromises = [
+        syncDoc('website_settings', { key: 'site_texts' }, { key: 'site_texts', value: JSON.stringify(merged), updated_at: now })
+      ];
       if (merged.whatsappNumber) {
-        syncDoc('website_settings', { key: 'whatsapp' }, { key: 'whatsapp', value: String(merged.whatsappNumber), updated_at: now });
+        syncPromises.push(syncDoc('website_settings', { key: 'whatsapp' }, { key: 'whatsapp', value: String(merged.whatsappNumber), updated_at: now }));
+        syncPromises.push(syncDoc('website_settings', { key: 'whatsappNumber' }, { key: 'whatsappNumber', value: String(merged.whatsappNumber), updated_at: now }));
       }
       if (merged.contactPhone) {
-        syncDoc('website_settings', { key: 'phone' }, { key: 'phone', value: String(merged.contactPhone), updated_at: now });
+        syncPromises.push(syncDoc('website_settings', { key: 'phone' }, { key: 'phone', value: String(merged.contactPhone), updated_at: now }));
+        syncPromises.push(syncDoc('website_settings', { key: 'contactPhone' }, { key: 'contactPhone', value: String(merged.contactPhone), updated_at: now }));
       }
-    } catch (e) {}
+      if (merged.helpline) {
+        syncPromises.push(syncDoc('website_settings', { key: 'helpline' }, { key: 'helpline', value: String(merged.helpline), updated_at: now }));
+      }
+      if (merged.contactAddress) {
+        syncPromises.push(syncDoc('website_settings', { key: 'address' }, { key: 'address', value: String(merged.contactAddress), updated_at: now }));
+      }
+      await Promise.all(syncPromises);
+    } catch (e) {
+      console.warn('[CMS texts] Mongo sync error:', e.message);
+    }
 
     try {
       db.prepare(`

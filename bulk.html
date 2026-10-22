@@ -635,7 +635,7 @@
     </button>
   </nav>
 
-  <script src="assets/site.js?v=20261022e"></script>
+  <script src="assets/site.js?v=20261022f"></script>
   <script>
     const sikarSyncChannel = typeof BroadcastChannel !== 'undefined' ? new BroadcastChannel('sikar_sync') : null;
     if (sikarSyncChannel) {
@@ -945,7 +945,7 @@
         `*Items Included:*\n${bundle.specs.map(s => '• ' + s).join('\n')}\n` +
         `------------------------------------\n` +
         `Please confirm delivery time and dispatch tempo from Mandi Depot!`;
-      const waNum = (window.getLiveWhatsAppNumber ? window.getLiveWhatsAppNumber() : '919829000000');
+      const waNum = (window.getLiveWhatsAppNumber ? window.getLiveWhatsAppNumber() : '919829011223');
       window.open(`https://wa.me/${waNum}?text=${encodeURIComponent(msg)}`, '_blank');
       showToast(`WhatsApp message opened for ${bundle.title}!`);
     }
@@ -1024,7 +1024,7 @@
     function bookCalculatedComboOnWhatsApp() {
       const { guests, petis, crates, totalCost } = currentCalculatedSummary;
       const msg = `*MARRIAGE & EVENT BULK COMBO INQUIRY*\nDepot Location: Sikar\nExpected Guests: ${guests}\nRecommended Supply:\n• 250ml Mini Water: ${petis} Petis\n• Chilled Soft Drinks: ${crates} Crates\nEstimated Mandi Quote: Rs.${totalCost}\n\nPlease confirm availability and delivery tempo timing.`;
-      const waNum = (window.getLiveWhatsAppNumber ? window.getLiveWhatsAppNumber() : '919829000000');
+      const waNum = (window.getLiveWhatsAppNumber ? window.getLiveWhatsAppNumber() : '919829011223');
       window.open(`https://wa.me/${waNum}?text=${encodeURIComponent(msg)}`, '_blank');
     }
 
@@ -1054,7 +1054,7 @@
         if (res.ok) {
           showToast('Requirement submitted! Opening WhatsApp chat for instant confirmation...');
           const waMsg = `*NEW BULK SUPPLY INQUIRY*\nName: ${name}\nPhone: ${phone}\nLocation: ${corridor}\nDetails: ${details}`;
-          const waNum = (window.getLiveWhatsAppNumber ? window.getLiveWhatsAppNumber() : '919829000000');
+          const waNum = (window.getLiveWhatsAppNumber ? window.getLiveWhatsAppNumber() : '919829011223');
           setTimeout(() => {
             window.open(`https://wa.me/${waNum}?text=${encodeURIComponent(waMsg)}`, '_blank');
           }, 800);

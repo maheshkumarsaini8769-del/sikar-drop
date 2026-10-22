@@ -4700,7 +4700,7 @@
               </div>
               <div class="portal-field-group">
                 <label for="cms-whatsapp-number">Live WhatsApp Number (Order Dispatch &amp; Chat)</label>
-                <input type="text" id="cms-whatsapp-number" class="portal-input" placeholder="9829000000 or 919829000000">
+                <input type="text" id="cms-whatsapp-number" class="portal-input" placeholder="9829011223 or 919829011223">
               </div>
             </div>
           </div>
@@ -5262,7 +5262,7 @@
 
               <div class="portal-field-group">
                 <label for="cfg-whatsapp-phone">WhatsApp Order Dispatch Number</label>
-                <input type="text" id="cfg-whatsapp-phone" class="portal-input" placeholder="9829000000 or 919829000000" required>
+                <input type="text" id="cfg-whatsapp-phone" class="portal-input" placeholder="9829011223 or 919829011223" required>
                 <small style="color: var(--text-muted); font-size: 0.76rem; display: block; margin-top: 4px;">Orders placed on website are sent directly to this WhatsApp.</small>
               </div>
             </div>
@@ -15066,12 +15066,12 @@
       setV('cms-about-story', t.aboutStory || '');
       setV('cms-contact-address', t.contactAddress || '');
       setV('cms-contact-phone', t.contactPhone || t.helpline || '+91 98290 11223');
-      setV('cms-whatsapp-number', t.whatsappNumber || '919829000000');
+      setV('cms-whatsapp-number', t.whatsappNumber || '919829011223');
       setV('cms-footer-camper', t.footerCamper);
       setV('cms-footer-about', t.footerAbout);
 
       setV('cfg-contact-phone', t.contactPhone || t.helpline || '+91 98290 11223');
-      setV('cfg-whatsapp-phone', t.whatsappNumber || '919829000000');
+      setV('cfg-whatsapp-phone', t.whatsappNumber || '919829011223');
       setV('cfg-contact-address', t.contactAddress || '');
     }
     window.populateCmsForm = renderCmsForm;
@@ -15086,9 +15086,10 @@
       const rawWa = (document.getElementById('cms-whatsapp-number')?.value.trim()) ||
                     (document.getElementById('cfg-whatsapp-phone')?.value.trim()) ||
                     adminTexts.whatsappNumber ||
-                    '919829000000';
-      const cleanWa = String(rawWa).replace(/\D/g, '');
-      const finalWa = cleanWa.length === 10 ? ('91' + cleanWa) : (cleanWa || '919829000000');
+                    '919829011223';
+      let cleanWa = String(rawWa).replace(/\D/g, '');
+      if (cleanWa === '919829011223' || cleanWa === '919829012345' || !cleanWa) cleanWa = '919829011223';
+      const finalWa = cleanWa.length === 10 ? ('91' + cleanWa) : cleanWa;
 
       const elCmsWa = document.getElementById('cms-whatsapp-number');
       if (elCmsWa) elCmsWa.value = finalWa;
@@ -15148,8 +15149,10 @@
         await sikarApi.post('/api/site-texts', adminTexts);
         await sikarApi.post('/api/settings', {
           phone: adminTexts.contactPhone,
-          helpline: adminTexts.helpline,
+          contactPhone: adminTexts.contactPhone,
+          helpline: adminTexts.helpline || adminTexts.contactPhone,
           whatsapp: adminTexts.whatsappNumber,
+          whatsappNumber: adminTexts.whatsappNumber,
           address: adminTexts.contactAddress
         });
         showToast('All Homepage slides, about, contact phone & WhatsApp numbers saved live!');
@@ -15162,11 +15165,12 @@
     async function saveContactSettingsFromPortal(e) {
       if (e) e.preventDefault();
       const phone = document.getElementById('cfg-contact-phone')?.value.trim() || '+91 98290 11223';
-      const rawWa = document.getElementById('cfg-whatsapp-phone')?.value.trim() || '919829000000';
+      const rawWa = document.getElementById('cfg-whatsapp-phone')?.value.trim() || '919829011223';
       const address = document.getElementById('cfg-contact-address')?.value.trim() || '';
 
-      const cleanWaDigits = rawWa.replace(/\D/g, '');
-      const finalWa = cleanWaDigits.length === 10 ? ('91' + cleanWaDigits) : (cleanWaDigits || '919829000000');
+      let cleanWaDigits = rawWa.replace(/\D/g, '');
+      if (cleanWaDigits === '919829011223' || cleanWaDigits === '919829012345' || !cleanWaDigits) cleanWaDigits = '919829011223';
+      const finalWa = cleanWaDigits.length === 10 ? ('91' + cleanWaDigits) : cleanWaDigits;
 
       const cmsPh = document.getElementById('cms-contact-phone');
       if (cmsPh) cmsPh.value = phone;

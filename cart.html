@@ -418,7 +418,7 @@
   </nav>
 
   <!-- CART SCRIPTS -->
-  <script src="assets/site.js?v=20261022e"></script>
+  <script src="assets/site.js?v=20261022f"></script>
   <script>
     let pageAppliedCoupon = null;
 
@@ -811,7 +811,7 @@
 
         const rawDepotWa = (SITE_TEXTS && (SITE_TEXTS.whatsappNumber || SITE_TEXTS.whatsapp)) || (JSON.parse(localStorage.getItem('sikar_admin_texts') || '{}').whatsappNumber) || '919829011223';
         let cleanDepotDigits = String(rawDepotWa).replace(/\D/g, '');
-        if (cleanDepotDigits === '919829000000' || cleanDepotDigits === '919829012345' || !cleanDepotDigits) {
+        if (cleanDepotDigits === '919829011223' || cleanDepotDigits === '919829012345' || !cleanDepotDigits) {
           cleanDepotDigits = '919829011223';
         }
         const depotPhone = (window.getLiveWhatsAppNumber ? window.getLiveWhatsAppNumber() : (cleanDepotDigits.length === 10 ? ('91' + cleanDepotDigits) : cleanDepotDigits));
