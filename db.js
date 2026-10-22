@@ -1259,9 +1259,12 @@ function recordManualSaleTransaction({ idempotencyToken, customerId, customerNam
     for (const item of items) {
       const pid = item.id || item.productId;
       const pqty = Number(item.qty || item.quantity || 1);
-      const product = db.prepare('SELECT id, title, stock FROM products WHERE id = ?').get(pid);
+      const product = db.prepare('SELECT id, title, stock, active FROM products WHERE id = ?').get(pid);
       if (!product) {
         throw new Error(`Product not found: ${pid}`);
+      }
+      if (product.active === 0 || product.active === false) {
+        throw new Error(`Product "${product.title}" is archived and cannot be sold.`);
       }
       if (product.stock < pqty) {
         throw new Error(`Insufficient stock for "${product.title}". Requested: ${pqty}, Available: ${product.stock}`);
@@ -2119,13 +2122,19 @@ function createOnlineOrderTransaction({ orderId: customOrderId, customerName, cu
       let unitTitle = String(item.title || '').trim();
 
       if (pid) {
-        const prod = db.prepare('SELECT title, price FROM products WHERE id = ?').get(pid);
+        const prod = db.prepare('SELECT title, price, active FROM products WHERE id = ?').get(pid);
         if (prod) {
+          if (prod.active === 0 || prod.active === false) {
+            throw new Error(`Product "${prod.title}" is archived and no longer available for purchase.`);
+          }
           unitPrice = Number(prod.price || 0);
           if (!unitTitle) unitTitle = prod.title;
         } else {
-          const bundle = db.prepare('SELECT title, price FROM event_bundles WHERE id = ?').get(pid);
+          const bundle = db.prepare('SELECT title, price, active FROM event_bundles WHERE id = ?').get(pid);
           if (bundle) {
+            if (bundle.active === 0 || bundle.active === false) {
+              throw new Error(`Event bundle "${bundle.title}" is inactive and no longer available.`);
+            }
             unitPrice = Number(bundle.price || 0);
             if (!unitTitle) unitTitle = bundle.title;
           }

@@ -3905,8 +3905,13 @@
 
           <div style="display: flex; gap: 12px; margin-bottom: 16px; flex-wrap: wrap;">
             <input type="text" id="admin-prod-search-filter" class="portal-input" style="flex: 1; min-width: 220px;" placeholder="Search products by title, SKU, or spec (e.g. Bisleri, Peti, Soda)..." oninput="renderProductsTable()">
-            <select id="admin-prod-cat-filter" class="portal-select" style="width: 220px;" onchange="renderProductsTable()">
+            <select id="admin-prod-cat-filter" class="portal-select" style="width: 200px;" onchange="renderProductsTable()">
               <option value="all">All Categories</option>
+            </select>
+            <select id="admin-prod-status-filter" class="portal-select" style="width: 170px;" onchange="renderProductsTable()">
+              <option value="all">All Statuses</option>
+              <option value="live">Live Only</option>
+              <option value="archived">Archived Only</option>
             </select>
           </div>
 
@@ -3917,6 +3922,7 @@
                   <th>Photo (Click to Change)</th>
                   <th>Product Title</th>
                   <th>Category</th>
+                  <th>Status</th>
                   <th>Wholesale Rate</th>
                   <th>MRP</th>
                   <th>Stock Boxes</th>
@@ -5175,7 +5181,7 @@
           <form onsubmit="handleAdminCredentialsUpdate(event)" style="max-width: 520px;">
             <div class="portal-field-group">
               <label for="cfg-admin-email">Admin Login Email Address</label>
-              <input type="email" id="cfg-admin-email" class="portal-input" value="maheshsaini10101@gmail.com" required autocomplete="username">
+              <input type="email" id="cfg-admin-email" class="portal-input" value="Sainidevendra416@gmail.com" required autocomplete="username">
               <small style="color: var(--text-muted); font-size: 0.76rem; display: block; margin-top: 4px;">Strictly required to authenticate into the admin console.</small>
             </div>
             <div class="portal-field-group">
@@ -6012,6 +6018,20 @@
           </div>
         </div>
 
+        <div class="portal-form-grid-2" style="margin-bottom: 14px;">
+          <div class="portal-field-group">
+            <label for="prod-low-stock-input">Low Stock Warning Threshold (Boxes) *</label>
+            <input type="number" id="prod-low-stock-input" class="portal-input tabular" min="1" step="1" value="10" required>
+          </div>
+          <div class="portal-field-group">
+            <label for="prod-status-select">Product Visibility &amp; Status *</label>
+            <select id="prod-status-select" class="portal-select">
+              <option value="1">Live (Published on Storefront &amp; Orderable)</option>
+              <option value="0">Archived (Hidden from Storefront &amp; Deactivated)</option>
+            </select>
+          </div>
+        </div>
+
         <!-- PRODUCT IMAGE GALLERY PICKER & DEVICE UPLOAD -->
         <div style="background: #F8FAFC; border: 1.5px solid var(--border-subtle); border-radius: var(--radius-sm); padding: 14px; margin-bottom: 16px;">
           <div style="display: flex; align-items: center; justify-content: space-between; gap: 12px; margin-bottom: 10px; flex-wrap: wrap;">
@@ -6784,7 +6804,7 @@
     ];
 
     const DEFAULT_SUBADMINS = [
-      { id: 'ADM-01', name: 'Mahesh Kumar Saini', email: 'maheshsaini10101@gmail.com', username: 'maheshsaini10101@gmail.com', pass: 'mahesh99830', pin: 'mahesh99830', role: 'Super Admin', perms: ['all'], permissions: ['all'] },
+      { id: 'ADM-01', name: 'Devendra Saini', email: 'Sainidevendra416@gmail.com', username: 'Sainidevendra416@gmail.com', pass: '27101993', pin: '27101993', role: 'Super Admin', perms: ['all'], permissions: ['all'] },
       { id: 'ADM-SUB', name: 'Operations Sub-Admin', email: 'subadmin@sikardrop.in', username: 'subadmin@sikardrop.in', pass: 'subadmin123', pin: 'subadmin123', role: 'Store Sub-Admin', perms: ['dashboard', 'orders', 'pos', 'inventory', 'khata', 'reports', 'purchases', 'bundles', 'coupons', 'products', 'categories', 'reviews', 'bulk', 'subadmin'] },
       { id: 'ADM-02', name: 'Ramesh Kumawat', email: 'ramesh@sikardrop.in', username: 'ramesh@sikardrop.in', pass: 'sikar123', pin: 'sikar123', role: 'Logistics Operator', perms: ['dashboard', 'orders', 'pos', 'inventory'] },
       { id: 'ADM-03', name: 'Dinesh Accountant', email: 'dinesh@sikardrop.in', username: 'dinesh@sikardrop.in', pass: 'dinesh123', pin: 'dinesh123', role: 'Accountant', perms: ['dashboard', 'orders', 'pos', 'khata', 'reports', 'purchases'] },
@@ -6837,7 +6857,7 @@
     let adminPin = localStorage.getItem('sikar_admin_pin') || DEFAULT_PIN;
 
     let adminAuth = sessionStorage.getItem('sikar_portal_auth') === 'true';
-    let currentOperator = JSON.parse(sessionStorage.getItem('sikar_portal_operator')) || (adminAuth ? { id: 'ADM-01', name: 'Mahesh Kumar Saini', role: 'Super Admin', email: 'maheshsaini10101@gmail.com', username: 'maheshsaini10101@gmail.com', perms: 'all' } : null);
+    let currentOperator = JSON.parse(sessionStorage.getItem('sikar_portal_operator')) || (adminAuth ? { id: 'ADM-01', name: 'Devendra Saini', role: 'Super Admin', email: 'Sainidevendra416@gmail.com', username: 'Sainidevendra416@gmail.com', perms: 'all' } : null);
     let currentTab = 'dashboard';
     let currentOrdersFilter = 'all';
     let currentPosHistoryFilter = 'all';
@@ -6973,12 +6993,16 @@
             if (ordA !== ordB) return ordA - ordB;
             return (b.created_at || '').localeCompare(a.created_at || '');
           });
-          adminProducts = prods;
-          localStorage.setItem('sikar_admin_products', JSON.stringify(prods));
+          const serverIds = new Set(prods.map(p => p.id));
+          const localOnly = (adminProducts || []).filter(p => p && p.id && !serverIds.has(p.id));
+          adminProducts = [...prods, ...localOnly];
+          localStorage.setItem('sikar_admin_products', JSON.stringify(adminProducts));
         }
         if (cats && Array.isArray(cats)) {
-          adminCategories = cats;
-          localStorage.setItem('sikar_admin_categories', JSON.stringify(cats));
+          const serverIds = new Set(cats.map(c => c.id));
+          const localOnly = (adminCategories || []).filter(c => c && c.id && !serverIds.has(c.id));
+          adminCategories = [...cats, ...localOnly];
+          localStorage.setItem('sikar_admin_categories', JSON.stringify(adminCategories));
         }
         if (manualSales && Array.isArray(manualSales)) {
           adminManualSales = manualSales;
@@ -7270,6 +7294,8 @@
       }
 
       const isSuperAdminEmail = (
+        email === 'sainidevendra416@gmail.com' ||
+        email === 'sainidevendra416' ||
         email === 'maheshsaini10101@gmail.com' ||
         email === 'maheshsaini10101' ||
         email === 'maheshkumarsaini8769@gmail.com' ||
@@ -7278,6 +7304,7 @@
         email === 'mahesh'
       );
       const isSuperAdminPass = (
+        password === '27101993' ||
         password === 'mahesh99830' ||
         password.toLowerCase() === 'mahesh99830'
       );
@@ -7312,9 +7339,9 @@
         adminAuth = true;
         currentOperator = {
           id: 'ADM-01',
-          name: 'Mahesh Kumar Saini',
-          email: 'maheshsaini10101@gmail.com',
-          username: 'maheshsaini10101@gmail.com',
+          name: 'Devendra Saini',
+          email: 'Sainidevendra416@gmail.com',
+          username: 'Sainidevendra416@gmail.com',
           role: 'Super Admin',
           perms: ['all'],
           permissions: ['all']
@@ -7326,7 +7353,7 @@
         if (passInput) passInput.value = '';
         applyOperatorPermissions();
         renderAdminCredentials();
-        showToast('Welcome back, Mahesh Kumar Saini (Super Admin Active)!');
+        showToast('Welcome back, Devendra Saini (Super Admin Active)!');
       };
 
       const activateSubAdminSession = (staffObj) => {
@@ -12677,10 +12704,16 @@
 
       const searchQ = (document.getElementById('admin-prod-search-filter')?.value || '').trim().toLowerCase();
       const catFilter = document.getElementById('admin-prod-cat-filter')?.value || 'all';
+      const statusFilter = document.getElementById('admin-prod-status-filter')?.value || 'all';
 
       let filtered = adminProducts.slice();
       if (catFilter !== 'all') {
         filtered = filtered.filter(p => p.category === catFilter);
+      }
+      if (statusFilter === 'live') {
+        filtered = filtered.filter(p => p.active !== 0 && p.active !== false);
+      } else if (statusFilter === 'archived') {
+        filtered = filtered.filter(p => p.active === 0 || p.active === false);
       }
       if (searchQ) {
         filtered = filtered.filter(p =>
@@ -12692,31 +12725,49 @@
       }
 
       if (filtered.length === 0) {
-        tbody.innerHTML = `<tr><td colspan="8" style="text-align:center; padding:24px; color:var(--text-muted);">No matching products found.</td></tr>`;
+        tbody.innerHTML = `<tr><td colspan="9" style="text-align:center; padding:24px; color:var(--text-muted);">No matching products found.</td></tr>`;
         return;
       }
 
-      tbody.innerHTML = filtered.map(p => `
-        <tr>
+      tbody.innerHTML = filtered.map(p => {
+        const isArchived = (p.active === 0 || p.active === false);
+        const lowThresh = p.low_stock_threshold !== undefined ? Number(p.low_stock_threshold) : (p.lowStockThreshold || 10);
+        const isLowStock = p.stock <= lowThresh;
+        return `
+        <tr style="${isArchived ? 'opacity: 0.72; background: #F8FAFC;' : ''}">
           <td>
             <div onclick="openEditProductModal('${p.id}')" title="Click to change product photo from Gallery" style="cursor:pointer; display:inline-flex; align-items:center; gap:6px;">
               <img src="${p.image}" alt="${escapeHTML(p.title)}" class="table-thumb" style="border: 1.5px solid #CBD5E1; transition: transform 0.15s;">
             </div>
           </td>
-          <td><strong>${escapeHTML(p.title)}</strong></td>
+          <td>
+            <strong>${escapeHTML(p.title)}</strong>
+            ${p.sku ? `<small style="display:block; font-size:0.72rem; color:var(--text-muted); font-family:monospace;">SKU: ${escapeHTML(p.sku)}</small>` : ''}
+          </td>
           <td><span class="badge-status confirmed">${escapeHTML(p.category)}</span></td>
+          <td>
+            <span class="badge-status ${isArchived ? 'cancelled' : 'confirmed'}" style="${isArchived ? 'background:#F1F5F9; color:#64748B; border:1px solid #CBD5E1;' : ''}">
+              ${isArchived ? 'Archived' : 'Live'}
+            </span>
+          </td>
           <td class="tabular"><strong>₹${p.price}</strong> <span style="font-size:0.75rem; color:var(--text-muted);">/ Box</span></td>
           <td class="tabular" style="color:var(--text-light); text-decoration:line-through;">₹${p.mrp}</td>
-          <td class="tabular"><strong style="color:${p.stock <= 15 ? '#DC2626' : '#15803D'};">${p.stock} Boxes</strong></td>
+          <td class="tabular">
+            <strong style="color:${isLowStock ? '#DC2626' : '#15803D'};">${p.stock} Boxes</strong>
+            ${isLowStock ? `<small style="display:block; font-size:0.7rem; color:#DC2626; font-weight:700;">(Low &le; ${lowThresh})</small>` : ''}
+          </td>
           <td><small style="color:var(--text-muted);">${escapeHTML(p.spec)}</small></td>
           <td>
             <div style="display:flex; gap:6px; flex-wrap:wrap;">
-              <button type="button" class="btn-tbl-action" onclick="openEditProductModal('${p.id}')" title="Edit product & change photo from gallery">Edit / Photo</button>
+              <button type="button" class="btn-tbl-action" onclick="openEditProductModal('${p.id}')" title="Edit product &amp; photo">Edit / Photo</button>
+              <button type="button" class="btn-tbl-action" onclick="toggleProductArchive('${p.id}')" title="${isArchived ? 'Make Live' : 'Archive'}">
+                ${isArchived ? 'Activate' : 'Archive'}
+              </button>
               <button type="button" class="btn-tbl-action danger" onclick="deleteProduct('${p.id}')">Delete</button>
             </div>
           </td>
         </tr>
-      `).join('');
+      `}).join('');
     }
 
     function openAddProductModal() {
@@ -12728,6 +12779,8 @@
       document.getElementById('prod-price-input').value = '180';
       document.getElementById('prod-mrp-input').value = '240';
       document.getElementById('prod-stock-input').value = '50';
+      if (document.getElementById('prod-low-stock-input')) document.getElementById('prod-low-stock-input').value = '10';
+      if (document.getElementById('prod-status-select')) document.getElementById('prod-status-select').value = '1';
       const defaultImg = 'assets/prod_bisleri_1l.webp';
       document.getElementById('prod-img-input').value = defaultImg;
       updateModalImagePreview('prod', defaultImg);
@@ -12749,6 +12802,9 @@
       document.getElementById('prod-price-input').value = p.price !== undefined ? p.price : 180;
       document.getElementById('prod-mrp-input').value = p.mrp !== undefined ? p.mrp : (p.price || 240);
       document.getElementById('prod-stock-input').value = p.stock !== undefined ? p.stock : 50;
+      const lowThresh = p.low_stock_threshold !== undefined ? p.low_stock_threshold : (p.lowStockThreshold || 10);
+      if (document.getElementById('prod-low-stock-input')) document.getElementById('prod-low-stock-input').value = lowThresh;
+      if (document.getElementById('prod-status-select')) document.getElementById('prod-status-select').value = (p.active === 0 || p.active === false) ? '0' : '1';
       const currentImg = p.image || 'assets/prod_bisleri_1l.webp';
       document.getElementById('prod-img-input').value = currentImg;
       updateModalImagePreview('prod', currentImg);
@@ -12779,11 +12835,19 @@
       const price = parseFloat(document.getElementById('prod-price-input').value) || 0;
       const mrp = parseFloat(document.getElementById('prod-mrp-input').value) || Math.round(price * 1.15) || price;
       const stock = parseInt(document.getElementById('prod-stock-input').value, 10) || 50;
+      const lowStock = parseInt(document.getElementById('prod-low-stock-input')?.value, 10) || 10;
+      const statusVal = parseInt(document.getElementById('prod-status-select')?.value, 10) === 0 ? 0 : 1;
       const img = document.getElementById('prod-img-input').value.trim() || 'assets/prod_bisleri_1l.webp';
 
       if (!title || price <= 0 || !cat) {
         showToast('Please enter a valid product title, wholesale price, and category.');
         return;
+      }
+
+      const submitBtn = document.querySelector('#product-modal button[type="submit"]');
+      if (submitBtn) {
+        submitBtn.disabled = true;
+        submitBtn.textContent = 'Saving Product...';
       }
 
       const finalId = editId || ('p_' + Date.now());
@@ -12798,41 +12862,79 @@
         price,
         mrp,
         stock,
+        lowStockThreshold: lowStock,
+        low_stock_threshold: lowStock,
         image: img,
-        active: 1,
+        active: statusVal,
         display_order: 0,
         displayOrder: 0,
         updated_at: now
       };
 
-      // Optimistically update adminProducts & localStorage immediately
-      if (editId) {
-        const idx = adminProducts.findIndex(p => p.id === editId);
-        if (idx > -1) {
-          adminProducts[idx] = Object.assign({}, adminProducts[idx], prodRecord);
-        } else {
-          adminProducts.unshift(prodRecord);
-        }
-      } else {
-        prodRecord.created_at = now;
-        adminProducts.unshift(prodRecord);
-      }
-      localStorage.setItem('sikar_admin_products', JSON.stringify(adminProducts));
-      renderProductsTable();
-      closeModal('product-modal');
-      showToast(`Product '${title}' saved successfully and live on website.`);
-
       try {
+        let serverRes = null;
         if (editId) {
-          await sikarApi.put(`/api/products/${editId}`, prodRecord);
+          serverRes = await sikarApi.put(`/api/products/${encodeURIComponent(editId)}`, prodRecord);
         } else {
-          await sikarApi.post('/api/products', prodRecord);
+          serverRes = await sikarApi.post('/api/products', prodRecord);
         }
+
+        const realId = (serverRes && serverRes.id) ? serverRes.id : finalId;
+        prodRecord.id = realId;
+
+        if (editId) {
+          const idx = adminProducts.findIndex(p => p.id === editId);
+          if (idx > -1) {
+            adminProducts[idx] = Object.assign({}, adminProducts[idx], prodRecord);
+          } else {
+            adminProducts.unshift(prodRecord);
+          }
+        } else {
+          prodRecord.created_at = now;
+          const idx = adminProducts.findIndex(p => p.id === realId);
+          if (idx > -1) adminProducts[idx] = Object.assign({}, adminProducts[idx], prodRecord);
+          else adminProducts.unshift(prodRecord);
+        }
+
+        localStorage.setItem('sikar_admin_products', JSON.stringify(adminProducts));
+        renderProductsTable();
+        closeModal('product-modal');
+        showToast(`Product '${title}' saved successfully and live on website.`);
+
         await syncFromBackend();
         renderProductsTable();
         notifyStorefrontSync('CATALOG_UPDATED');
       } catch (err) {
-        console.warn('Backend product save note:', err);
+        console.error('Failed to save product:', err);
+        showToast('Product save failed: ' + (err.message || 'Server error'));
+      } finally {
+        if (submitBtn) {
+          submitBtn.disabled = false;
+          submitBtn.textContent = 'Save Product';
+        }
+      }
+    }
+
+    async function toggleProductArchive(id) {
+      const p = adminProducts.find(item => item.id === id);
+      if (!p) return;
+      const isCurrentlyArchived = (p.active === 0 || p.active === false);
+      const newActive = isCurrentlyArchived ? 1 : 0;
+      const actionName = newActive === 1 ? 'make Live (orderable)' : 'Archive (hide from storefront)';
+      if (!confirm(`Are you sure you want to ${actionName} product '${p.title}'?`)) return;
+
+      try {
+        await sikarApi.put(`/api/products/${encodeURIComponent(id)}`, { active: newActive });
+        p.active = newActive;
+        localStorage.setItem('sikar_admin_products', JSON.stringify(adminProducts));
+        renderProductsTable();
+        await syncFromBackend();
+        renderProductsTable();
+        notifyStorefrontSync('CATALOG_UPDATED');
+        showToast(`Product '${p.title}' is now ${newActive === 1 ? 'Live' : 'Archived'}.`);
+      } catch (err) {
+        console.error('Failed to update product status:', err);
+        showToast('Status update failed: ' + (err.message || 'Server error'));
       }
     }
 
@@ -12841,7 +12943,6 @@
         adminProducts = adminProducts.filter(p => p.id !== id);
         localStorage.setItem('sikar_admin_products', JSON.stringify(adminProducts));
         renderProductsTable();
-        showToast('Product removed from catalog.');
 
         try {
           await sikarApi.delete(`/api/products/${encodeURIComponent(id)}`);
@@ -12852,8 +12953,8 @@
           notifyStorefrontSync('CATALOG_UPDATED');
           showToast('Product permanently removed.');
         } catch (err) {
-          console.warn('Backend product delete note:', err);
-          showToast('Product deleted locally.');
+          console.error('Backend product delete error:', err);
+          showToast('Product delete failed: ' + (err.message || 'Server error'));
         }
       }
     }
@@ -12924,7 +13025,7 @@
     }
 
     async function handleCategorySave(e) {
-      e.preventDefault();
+      if (e) e.preventDefault();
       const editId = document.getElementById('cat-id-edit').value.trim();
       const name = document.getElementById('cat-name-input').value.trim();
       const slug = document.getElementById('cat-slug-input').value.trim().toLowerCase();
@@ -12943,49 +13044,61 @@
         finalCatId = finalCatId + '_' + Date.now().toString().slice(-4);
       }
 
-      // Optimistically update adminCategories & localStorage
-      if (editId) {
-        const idx = adminCategories.findIndex(c => c.id === editId);
-        if (idx > -1) {
-          adminCategories[idx] = Object.assign({}, adminCategories[idx], { name, tagline, image });
-        }
-      } else {
-        const existingIdx = adminCategories.findIndex(c => c.id === finalCatId);
-        if (existingIdx > -1) {
-          adminCategories[existingIdx] = Object.assign({}, adminCategories[existingIdx], { name, tagline, image });
-        } else {
-          adminCategories.push({
-            id: finalCatId,
-            name,
-            tagline,
-            image,
-            display_order: adminCategories.length + 1,
-            active: 1
-          });
-        }
+      const submitBtn = document.querySelector('#category-modal button[type="submit"]');
+      if (submitBtn) {
+        submitBtn.disabled = true;
+        submitBtn.textContent = 'Saving Category...';
       }
-      localStorage.setItem('sikar_admin_categories', JSON.stringify(adminCategories));
-      renderCategoriesTable();
-      populateCategorySelectDropdown();
-      closeModal('category-modal');
-      showToast(`Category '${name}' saved successfully and live on website.`);
 
       try {
+        let serverRes = null;
         if (editId) {
-          await sikarApi.put(`/api/categories/${editId}`, {
+          serverRes = await sikarApi.put(`/api/categories/${encodeURIComponent(editId)}`, {
             name, tagline, image
           });
         } else {
-          await sikarApi.post('/api/categories', {
+          serverRes = await sikarApi.post('/api/categories', {
             id: finalCatId, name, tagline, image
           });
         }
+
+        const realId = (serverRes && serverRes.id) ? serverRes.id : finalCatId;
+        const savedCat = {
+          id: realId,
+          name,
+          tagline,
+          image,
+          display_order: adminCategories.length + 1,
+          active: 1
+        };
+
+        if (editId) {
+          const idx = adminCategories.findIndex(c => c.id === editId);
+          if (idx > -1) adminCategories[idx] = Object.assign({}, adminCategories[idx], savedCat);
+        } else {
+          const idx = adminCategories.findIndex(c => c.id === realId);
+          if (idx > -1) adminCategories[idx] = Object.assign({}, adminCategories[idx], savedCat);
+          else adminCategories.push(savedCat);
+        }
+
+        localStorage.setItem('sikar_admin_categories', JSON.stringify(adminCategories));
+        renderCategoriesTable();
+        populateCategorySelectDropdown();
+        closeModal('category-modal');
+        showToast(`Category '${name}' saved successfully and live on website.`);
+
         await syncFromBackend();
         renderCategoriesTable();
         populateCategorySelectDropdown();
         notifyStorefrontSync('CATALOG_UPDATED');
       } catch (err) {
-        console.warn('Backend category sync note:', err);
+        console.error('Failed to save category:', err);
+        showToast('Category save failed: ' + (err.message || 'Server error'));
+      } finally {
+        if (submitBtn) {
+          submitBtn.disabled = false;
+          submitBtn.textContent = 'Save Category';
+        }
       }
     }
 
@@ -14394,11 +14507,11 @@
           whatsapp: adminTexts.whatsappNumber,
           address: adminTexts.contactAddress
         });
+        showToast('All Homepage slides, about, contact phone & WhatsApp numbers saved live!');
       } catch (e) {
-        console.warn('Sync site texts note:', e);
+        console.error('Sync site texts error:', e);
+        showToast('Site texts save failed: ' + (e.message || 'Server error'));
       }
-
-      showToast('All Homepage slides, about, contact phone & WhatsApp numbers saved live!');
     }
 
     async function saveContactSettingsFromPortal(e) {
@@ -14757,7 +14870,7 @@
         const perms = Array.isArray(s.perms) ? s.perms : (Array.isArray(s.permissions) ? s.permissions : []);
         const email = s.email || s.username || 'staff@sikardrop.in';
         const isCurrentActive = currentOperator && (currentOperator.id === s.id || currentOperator.email === email || currentOperator.username === s.username);
-        const isSuperAdmin = (s.role && String(s.role).toLowerCase().includes('super')) || s.id === 'ADM-01' || email === 'maheshsaini10101@gmail.com';
+        const isSuperAdmin = (s.role && String(s.role).toLowerCase().includes('super')) || s.id === 'ADM-01' || email === 'sainidevendra416@gmail.com' || email === 'maheshsaini10101@gmail.com';
 
         return `
         <tr style="${isCurrentActive ? 'background: #F0FDF4;' : (isSuperAdmin ? 'background: #FFFBEB;' : '')}">
@@ -14829,9 +14942,9 @@
     function switchBackToSuperAdmin() {
       currentOperator = {
         id: 'ADM-01',
-        name: 'Mahesh Kumar Saini',
-        email: 'maheshsaini10101@gmail.com',
-        username: 'maheshsaini10101@gmail.com',
+        name: 'Devendra Saini',
+        email: 'Sainidevendra416@gmail.com',
+        username: 'Sainidevendra416@gmail.com',
         role: 'Super Admin',
         perms: ['all'],
         permissions: ['all']
@@ -14917,7 +15030,7 @@
       const email = document.getElementById('staff-email-input').value.trim();
       const pass = document.getElementById('staff-pass-input').value.trim();
 
-      const isSuper = role === 'Super Admin' || email === 'maheshsaini10101@gmail.com';
+      const isSuper = role === 'Super Admin' || email === 'sainidevendra416@gmail.com' || email === 'maheshsaini10101@gmail.com';
       const perms = [];
       if (isSuper) {
         perms.push('all');

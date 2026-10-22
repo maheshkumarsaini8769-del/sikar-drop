@@ -8708,9 +8708,10 @@
 
       let list = [];
       let isRelaxedGrid = false;
+      const activeProducts = (PRODUCTS || []).filter(p => p && p.active !== 0);
       if (searchQuery) {
         // 1. Strict match first
-        list = PRODUCTS
+        list = activeProducts
           .map(p => ({ product: p, score: matchAndScoreProduct(p, searchQuery, true) }))
           .filter(x => x.score > 0)
           .sort((a, b) => b.score - a.score)
@@ -8718,7 +8719,7 @@
 
         // 2. Relaxed match fallback if strict match returns 0
         if (list.length === 0) {
-          list = PRODUCTS
+          list = activeProducts
             .map(p => ({ product: p, score: matchAndScoreProduct(p, searchQuery, false) }))
             .filter(x => x.score > 0)
             .sort((a, b) => b.score - a.score)
@@ -8726,7 +8727,7 @@
           if (list.length > 0) isRelaxedGrid = true;
         }
       } else {
-        list = PRODUCTS.filter(p => currentFilter === 'all' || p.category === currentFilter);
+        list = activeProducts.filter(p => currentFilter === 'all' || p.category === currentFilter);
         list.sort((a, b) => {
           const ordA = a.display_order !== undefined ? a.display_order : 50;
           const ordB = b.display_order !== undefined ? b.display_order : 50;
@@ -12124,57 +12125,78 @@
         finalId = finalId + '_' + Date.now().toString().slice(-4);
       }
 
-      if (editId) {
-        const idx = CATEGORIES.findIndex(c => c.id === editId);
-        if (idx > -1) {
-          CATEGORIES[idx] = { id: editId, name, tagline, image };
-        }
-      } else {
-        CATEGORIES.push({ id: finalId, name, tagline, image });
-      }
-
-      adminCategories = CATEGORIES;
-      localStorage.setItem('sikar_admin_categories', JSON.stringify(adminCategories));
-      renderCategoriesManager();
-      renderStorefrontCategories();
-      renderSoftCategories();
-      closeCategoryModal();
-      showToast(`Category "${name}" add ho gayi aur website par live hai!`);
-
-      // Persist to SQLite backend API
       try {
+        let res;
         if (editId) {
-          await fetch('/api/categories/' + editId, {
+          res = await fetch('/api/categories/' + encodeURIComponent(editId), {
             method: 'PUT',
             headers: { 'Content-Type': 'application/json' },
             body: JSON.stringify({ name, tagline, image })
           });
         } else {
-          await fetch('/api/categories', {
+          res = await fetch('/api/categories', {
             method: 'POST',
             headers: { 'Content-Type': 'application/json' },
             body: JSON.stringify({ id: finalId, name, tagline, image })
           });
         }
-      } catch (err) {
-        console.warn('Backend category sync note:', err);
-      }
-    }
 
-    async function deleteCategory(id) {
-      if (confirm('Are you sure you want to delete this category?')) {
-        CATEGORIES = CATEGORIES.filter(c => c.id !== id);
+        const data = await res.json().catch(() => ({}));
+        if (!res.ok) {
+          throw new Error(data.error || `Server status ${res.status}`);
+        }
+
+        const realId = data.id || finalId;
+        const savedCat = { id: realId, name, tagline, image, active: 1 };
+
+        if (editId) {
+          const idx = CATEGORIES.findIndex(c => c.id === editId);
+          if (idx > -1) CATEGORIES[idx] = Object.assign({}, CATEGORIES[idx], savedCat);
+        } else {
+          const idx = CATEGORIES.findIndex(c => c.id === realId);
+          if (idx > -1) CATEGORIES[idx] = Object.assign({}, CATEGORIES[idx], savedCat);
+          else CATEGORIES.push(savedCat);
+        }
+
         adminCategories = CATEGORIES;
         localStorage.setItem('sikar_admin_categories', JSON.stringify(adminCategories));
         renderCategoriesManager();
         renderStorefrontCategories();
         renderSoftCategories();
-        showToast('Category deleted.');
+        closeCategoryModal();
+        showToast(`Category "${name}" add ho gayi aur website par live hai!`);
 
+        // Refresh dropdowns in admin product modal if open
+        const catSelect = document.getElementById('admin-prod-category');
+        if (catSelect) {
+          catSelect.innerHTML = CATEGORIES.map(c => `
+            <option value="${c.id}">${escapeHTML(c.name)} (${c.id})</option>
+          `).join('');
+        }
+      } catch (err) {
+        console.error('Failed to save category:', err);
+        showToast('Category save nahi ho saki: ' + err.message);
+      }
+    }
+
+    async function deleteCategory(id) {
+      if (confirm('Are you sure you want to delete this category?')) {
         try {
-          await fetch('/api/categories/' + id + '?reassignTo=water', { method: 'DELETE' });
+          const res = await fetch('/api/categories/' + encodeURIComponent(id) + '?reassignTo=water', { method: 'DELETE' });
+          if (!res.ok) {
+            const data = await res.json().catch(() => ({}));
+            throw new Error(data.error || `HTTP ${res.status}`);
+          }
+          CATEGORIES = CATEGORIES.filter(c => c.id !== id);
+          adminCategories = CATEGORIES;
+          localStorage.setItem('sikar_admin_categories', JSON.stringify(adminCategories));
+          renderCategoriesManager();
+          renderStorefrontCategories();
+          renderSoftCategories();
+          showToast('Category deleted.');
         } catch (err) {
-          console.warn('Backend category delete note:', err);
+          console.error('Backend category delete error:', err);
+          showToast('Category delete nahi ho saki: ' + err.message);
         }
       }
     }
@@ -13435,9 +13457,11 @@
               if (ordA !== ordB) return ordA - ordB;
               return (b.created_at || '').localeCompare(a.created_at || '');
             });
-            PRODUCTS = prods;
-            adminProducts = prods;
-            localStorage.setItem('sikar_admin_products', JSON.stringify(prods));
+            const serverIds = new Set(prods.map(p => p.id));
+            const localOnly = (PRODUCTS || []).filter(p => p && p.id && !serverIds.has(p.id));
+            PRODUCTS = [...prods, ...localOnly];
+            adminProducts = PRODUCTS;
+            localStorage.setItem('sikar_admin_products', JSON.stringify(PRODUCTS));
             renderProducts();
             renderBulkCalculatorItems();
           }
@@ -13446,9 +13470,11 @@
         if (catRes.ok) {
           const cats = await catRes.json();
           if (Array.isArray(cats)) {
-            CATEGORIES = cats;
-            adminCategories = cats;
-            localStorage.setItem('sikar_admin_categories', JSON.stringify(cats));
+            const serverIds = new Set(cats.map(c => c.id));
+            const localOnly = (CATEGORIES || []).filter(c => c && c.id && !serverIds.has(c.id));
+            CATEGORIES = [...cats, ...localOnly];
+            adminCategories = CATEGORIES;
+            localStorage.setItem('sikar_admin_categories', JSON.stringify(CATEGORIES));
             renderStorefrontCategories();
             renderSoftCategories();
             renderProducts();

@@ -622,16 +622,20 @@ async function loadCatalogFromBackend() {
           if (ordA !== ordB) return ordA - ordB;
           return (b.created_at || '').localeCompare(a.created_at || '');
         });
-        PRODUCTS = pData;
-        localStorage.setItem('sikar_admin_products', JSON.stringify(pData));
+        const serverIds = new Set(pData.map(p => p.id));
+        const localOnly = (PRODUCTS || []).filter(p => p && p.id && !serverIds.has(p.id));
+        PRODUCTS = [...pData, ...localOnly];
+        localStorage.setItem('sikar_admin_products', JSON.stringify(PRODUCTS));
       }
     }
 
     if (cRes.ok) {
       const cData = await cRes.json();
       if (Array.isArray(cData)) {
-        CATEGORIES = cData;
-        localStorage.setItem('sikar_admin_categories', JSON.stringify(cData));
+        const serverIds = new Set(cData.map(c => c.id));
+        const localOnly = (CATEGORIES || []).filter(c => c && c.id && !serverIds.has(c.id));
+        CATEGORIES = [...cData, ...localOnly];
+        localStorage.setItem('sikar_admin_categories', JSON.stringify(CATEGORIES));
       }
     }
   } catch (err) {
@@ -645,7 +649,7 @@ window.SITE_TEXTS = window.SITE_TEXTS || JSON.parse(localStorage.getItem('sikar_
 
 async function loadSiteTextsFromBackend() {
   try {
-    const res = await fetch('/api/site-texts');
+    const res = await fetch('/api/site-texts?_t=' + Date.now(), { cache: 'no-store' });
     if (res.ok) {
       const t = await res.json();
       if (t && typeof t === 'object') {
