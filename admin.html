@@ -2132,8 +2132,8 @@
       <!-- EMAIL & PASSWORD LOGIN FORM -->
       <form id="form-admin-login" onsubmit="handleAdminLogin(event)">
         <div class="portal-field-group" style="text-align: left; margin-bottom: 14px;">
-          <label for="login-email-input">Admin Email Address</label>
-          <input type="email" id="login-email-input" class="portal-input" placeholder="write email" required autocomplete="username" autocapitalize="none" autocorrect="off" spellcheck="false" inputmode="email">
+          <label for="login-email-input">Admin Email or Username</label>
+          <input type="text" id="login-email-input" class="portal-input" placeholder="write email or username" required autocomplete="username" autocapitalize="none" autocorrect="off" spellcheck="false">
         </div>
         <div class="portal-field-group" style="text-align: left; margin-bottom: 16px;">
           <label for="login-pass-input">Admin Password</label>
@@ -6301,12 +6301,17 @@
         </div>
         <div class="portal-form-grid-2">
           <div class="portal-field-group">
-            <label for="staff-email-input">Login Email *</label>
-            <input type="email" id="staff-email-input" class="portal-input" required>
+            <label for="staff-email-input">Login Email or Username *</label>
+            <input type="text" id="staff-email-input" class="portal-input" placeholder="e.g. rahul@sikardrop.in or rahul" required autocomplete="username">
           </div>
           <div class="portal-field-group">
             <label for="staff-pass-input">Password *</label>
-            <input type="password" id="staff-pass-input" class="portal-input" required>
+            <div style="position: relative; display: flex; align-items: center;">
+              <input type="password" id="staff-pass-input" class="portal-input" placeholder="Enter password" required style="padding-right: 42px;">
+              <button type="button" onclick="toggleStaffPassVisibility()" title="Show/Hide Password" style="position: absolute; right: 10px; background: transparent; border: none; cursor: pointer; color: var(--text-muted); display: flex; align-items: center; justify-content: center; padding: 4px;">
+                <svg id="staff-pass-toggle-icon" width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M1 12s4-8 11-8 11 8 11 8-4 8-11 8-11-8-11-8z"></path><circle cx="12" cy="12" r="3"></circle></svg>
+              </button>
+            </div>
           </div>
         </div>
 
@@ -6804,13 +6809,13 @@
     ];
 
     const DEFAULT_SUBADMINS = [
-      { id: 'ADM-01', name: 'Devendra Saini', email: 'Sainidevendra416@gmail.com', username: 'Sainidevendra416@gmail.com', pass: '27101993', pin: '27101993', role: 'Super Admin', perms: ['all'], permissions: ['all'] },
-      { id: 'ADM-SUB', name: 'Operations Sub-Admin', email: 'subadmin@sikardrop.in', username: 'subadmin@sikardrop.in', pass: 'subadmin123', pin: 'subadmin123', role: 'Store Sub-Admin', perms: ['dashboard', 'orders', 'pos', 'inventory', 'khata', 'reports', 'purchases', 'bundles', 'coupons', 'products', 'categories', 'reviews', 'bulk', 'subadmin'] },
-      { id: 'ADM-02', name: 'Ramesh Kumawat', email: 'ramesh@sikardrop.in', username: 'ramesh@sikardrop.in', pass: 'sikar123', pin: 'sikar123', role: 'Logistics Operator', perms: ['dashboard', 'orders', 'pos', 'inventory'] },
-      { id: 'ADM-03', name: 'Dinesh Accountant', email: 'dinesh@sikardrop.in', username: 'dinesh@sikardrop.in', pass: 'dinesh123', pin: 'dinesh123', role: 'Accountant', perms: ['dashboard', 'orders', 'pos', 'khata', 'reports', 'purchases'] },
-      { id: 'ADM-263', name: 'Pooja Sharma', email: 'pooja@sikardrop.in', username: 'pooja@sikardrop.in', pass: 'pooja789', pin: 'pooja789', role: 'Catalog Manager', perms: ['inventory', 'bundles', 'coupons', 'products'] },
-      { id: 'ADM-903', name: 'Suresh Logistics', email: 'suresh@sikardrop.in', username: 'suresh@sikardrop.in', pass: 'suresh123', pin: 'suresh123', role: 'Dispatch Officer', perms: ['orders', 'inventory'] },
-      { id: 'ADM-919', name: 'Vikram Delivery', email: 'vikram@sikardrop.in', username: 'vikram@sikardrop.in', pass: 'vikrampass', pin: 'vikrampass', role: 'Delivery Specialist', perms: ['orders', 'pos'] }
+      { id: 'ADM-01', name: 'Devendra Saini', email: 'sainidevendra416@gmail.com', username: 'sainidevendra416@gmail.com', pass: '27101993', pin: '27101993', role: 'Super Admin', perms: ['all'], permissions: ['all'] },
+      { id: 'ADM-SUB', name: 'Operations Sub-Admin', email: 'subadmin@sikardrop.in', username: 'subadmin@sikardrop.in', pass: '', pin: '', role: 'Store Sub-Admin', perms: ['dashboard', 'orders', 'pos', 'inventory', 'khata', 'reports', 'purchases', 'bundles', 'coupons', 'products', 'categories', 'reviews', 'bulk', 'subadmin'] },
+      { id: 'ADM-02', name: 'Ramesh Kumawat', email: 'ramesh@sikardrop.in', username: 'ramesh@sikardrop.in', pass: '', pin: '', role: 'Logistics Operator', perms: ['dashboard', 'orders', 'pos', 'inventory'] },
+      { id: 'ADM-03', name: 'Dinesh Accountant', email: 'dinesh@sikardrop.in', username: 'dinesh@sikardrop.in', pass: '', pin: '', role: 'Accountant', perms: ['dashboard', 'orders', 'pos', 'khata', 'reports', 'purchases'] },
+      { id: 'ADM-263', name: 'Pooja Sharma', email: 'pooja@sikardrop.in', username: 'pooja@sikardrop.in', pass: '', pin: '', role: 'Catalog Manager', perms: ['inventory', 'bundles', 'coupons', 'products'] },
+      { id: 'ADM-903', name: 'Suresh Logistics', email: 'suresh@sikardrop.in', username: 'suresh@sikardrop.in', pass: '', pin: '', role: 'Dispatch Officer', perms: ['orders', 'inventory'] },
+      { id: 'ADM-919', name: 'Vikram Delivery', email: 'vikram@sikardrop.in', username: 'vikram@sikardrop.in', pass: '', pin: '', role: 'Delivery Specialist', perms: ['orders', 'pos'] }
     ];
 
     const DEFAULT_SOCIAL_CLICKS = {
@@ -14880,7 +14885,14 @@
           </td>
           <td>
             <code>${escapeHTML(email)}</code>
-            ${s.pass || s.pin ? `<span style="display:block; font-size:0.7rem; color:var(--text-muted); margin-top:2px;">Pass: ${escapeHTML(s.pass || s.pin)}</span>` : ''}
+            ${(() => {
+              const rawPass = s.pass || s.pin || '';
+              if (rawPass && !String(rawPass).startsWith('DISABLED_')) {
+                return `<span style="display:block; font-size:0.75rem; color:#15803D; font-weight:700; margin-top:3px;">Pass: <code>${escapeHTML(rawPass)}</code></span>`;
+              } else {
+                return `<span style="display:block; font-size:0.72rem; color:#DC2626; font-weight:700; margin-top:3px;">No Password &bull; Click Edit to set</span>`;
+              }
+            })()}
           </td>
           <td>
             ${isSuperAdmin 
@@ -14975,6 +14987,12 @@
       openModal('subadmin-modal');
     }
 
+    function toggleStaffPassVisibility() {
+      const input = document.getElementById('staff-pass-input');
+      if (!input) return;
+      input.type = input.type === 'password' ? 'text' : 'password';
+    }
+
     function openEditSubAdminModal(idx) {
       const s = adminSubAdmins[idx];
       if (!s) return;
@@ -15004,7 +15022,13 @@
       }
 
       document.getElementById('staff-email-input').value = s.email || s.username || '';
-      document.getElementById('staff-pass-input').value = s.pass || s.pin || '';
+      const rawPass = s.pass || s.pin || '';
+      const cleanPass = (!String(rawPass).startsWith('DISABLED_')) ? rawPass : '';
+      const passInput = document.getElementById('staff-pass-input');
+      if (passInput) {
+        passInput.value = cleanPass;
+        passInput.placeholder = cleanPass ? 'Leave unchanged or type new password' : 'Enter login password for this account';
+      }
 
       const perms = Array.isArray(s.perms) ? s.perms : (Array.isArray(s.permissions) ? s.permissions : []);
       const isSuper = roleVal === 'Super Admin' || perms.includes('all') || s.id === 'ADM-01';
@@ -15040,8 +15064,20 @@
         });
       }
 
-      if (!name || !email || !pass) {
-        showToast('Please fill in name, email and password.');
+      const isEditing = editingSubAdminIdx !== null && adminSubAdmins[editingSubAdminIdx];
+      const targetSubAdmin = isEditing ? adminSubAdmins[editingSubAdminIdx] : null;
+
+      const finalPass = pass || (targetSubAdmin && !String(targetSubAdmin.pass || targetSubAdmin.pin).startsWith('DISABLED_') ? (targetSubAdmin.pass || targetSubAdmin.pin) : '');
+
+      if (!name || !email) {
+        showToast('Please fill in staff name and login email/username.');
+        return;
+      }
+
+      if (!finalPass) {
+        showToast('Please enter a password for this account.');
+        const pIn = document.getElementById('staff-pass-input');
+        if (pIn) pIn.focus();
         return;
       }
 
@@ -15049,9 +15085,6 @@
         showToast('Please select at least one module permission.');
         return;
       }
-
-      const isEditing = editingSubAdminIdx !== null && adminSubAdmins[editingSubAdminIdx];
-      const targetSubAdmin = isEditing ? adminSubAdmins[editingSubAdminIdx] : null;
 
       try {
         let res;
@@ -15061,8 +15094,8 @@
             email,
             username: email,
             role,
-            password: pass,
-            pin: pass,
+            password: finalPass,
+            pin: finalPass,
             permissions: perms,
             active: true
           });
@@ -15072,9 +15105,10 @@
             email,
             username: email,
             role,
-            password: pass,
-            pin: pass,
-            permissions: perms
+            password: finalPass,
+            pin: finalPass,
+            permissions: perms,
+            active: true
           });
         }
 
@@ -15086,34 +15120,17 @@
             localStorage.setItem('sikar_admin_subadmins', JSON.stringify(adminSubAdmins));
           }
           renderSubAdminTable();
-          showToast(`Account for ${name} (${role}) saved successfully! Password: ${pass}`);
+          showToast(`Account for ${name} (${role}) saved successfully! Password: ${finalPass}`);
           editingSubAdminIdx = null;
           return;
+        } else {
+          throw new Error((res && res.error) || 'Failed to save account to database');
         }
       } catch (err) {
-        console.warn('Backend subadmin save notice:', err);
-        showToast(err.message || 'Error saving account');
+        console.error('Backend subadmin save error:', err);
+        showToast(err.message || 'Error saving account to server. Please try again.');
+        return;
       }
-
-      if (isEditing) {
-        adminSubAdmins[editingSubAdminIdx] = {
-          ...targetSubAdmin,
-          name,
-          email,
-          role,
-          pass,
-          pin: pass,
-          perms,
-          permissions: perms
-        };
-      } else {
-        adminSubAdmins.push({ name, email, pass, pin: pass, role, perms, permissions: perms });
-      }
-      localStorage.setItem('sikar_admin_subadmins', JSON.stringify(adminSubAdmins));
-      closeModal('subadmin-modal');
-      renderSubAdminTable();
-      showToast(`Account saved for ${name} (${role})!`);
-      editingSubAdminIdx = null;
     }
 
     async function deleteSubAdmin(idx) {

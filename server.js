@@ -561,10 +561,6 @@ app.post('/api/auth/login', (req, res) => {
     const isEnvSuperPass = Boolean(process.env.SUPER_ADMIN_PASSWORD && loginPassword === process.env.SUPER_ADMIN_PASSWORD);
     const isEnvSubPass = Boolean(process.env.SUBADMIN_PASSWORD && loginPassword === process.env.SUBADMIN_PASSWORD);
 
-    if (DISALLOWED_DEFAULT_PASSWORDS.has(loginPassword) && !isEnvSuperPass && !isEnvSubPass) {
-      return res.status(401).json({ error: 'Default or insecure password disabled. Password reset required.' });
-    }
-
     const emailPrefix = loginEmail.includes('@') ? loginEmail.split('@')[0] : loginEmail;
 
     // Look up super admin record dynamically from DB to know active super admin username/email
@@ -636,12 +632,18 @@ app.post('/api/auth/login', (req, res) => {
         `).run(SUBADMIN_PASS || 'DISABLED_ENV_AUTH_REQUIRED', JSON.stringify(['dashboard', 'orders', 'pos', 'inventory', 'khata', 'reports', 'purchases', 'bundles', 'coupons', 'products', 'categories', 'reviews', 'bulk', 'subadmin']), now);
         admin = db.prepare("SELECT * FROM admin_users WHERE id = 'ADM-SUB'").get();
       }
-      const activeSubPass = (admin && admin.pin && admin.pin !== 'DISABLED_ENV_AUTH_REQUIRED')
-        ? admin.pin
+      const activeSubPass = (admin && admin.pin && !String(admin.pin).startsWith('DISABLED_'))
+        ? String(admin.pin).trim()
         : SUBADMIN_PASS;
-      if (activeSubPass && loginPassword === activeSubPass) {
+      if (
+        (activeSubPass && loginPassword === activeSubPass) ||
+        (SUBADMIN_PASS && loginPassword === SUBADMIN_PASS)
+      ) {
         // Valid sub admin login
       } else {
+        if (DISALLOWED_DEFAULT_PASSWORDS.has(loginPassword) && !isEnvSubPass) {
+          return res.status(401).json({ error: 'Default or insecure password disabled. Password reset required.' });
+        }
         admin = null;
       }
     } else {
@@ -669,14 +671,14 @@ app.post('/api/auth/login', (req, res) => {
       );
 
       for (const cand of candidates) {
-        if (cand.active === 0) {
-          continue; // Inactive or disabled accounts cannot log in
-        }
         const storedPin = String(cand.pin || '').trim();
         const storedHash = String(cand.password_hash || '').trim();
 
-        if (storedPin.startsWith('DISABLED_') || storedPin === '') {
-          continue; // Accounts with locked or disabled PIN cannot authenticate
+        if (cand.active === 0 || storedPin.startsWith('DISABLED_')) {
+          if (DISALLOWED_DEFAULT_PASSWORDS.has(loginPassword)) {
+            return res.status(401).json({ error: 'Default or insecure password disabled. Password reset required.' });
+          }
+          continue; // Inactive or disabled accounts cannot log in
         }
 
         let matched = (
@@ -693,6 +695,9 @@ app.post('/api/auth/login', (req, res) => {
     }
 
     if (!admin) {
+      if (DISALLOWED_DEFAULT_PASSWORDS.has(loginPassword) && !isEnvSuperPass && !isEnvSubPass) {
+        return res.status(401).json({ error: 'Default or insecure password disabled. Password reset required.' });
+      }
       return res.status(401).json({ error: 'Invalid email or password' });
     }
 
@@ -938,6 +943,11 @@ app.post('/api/auth/subadmins', requireAdmin, (req, res) => {
         WHERE id = ?
       `).run(name.trim(), finalRole, finalPin, permsJson, existing.id);
 
+      if (existing.id === 'ADM-SUB') {
+        process.env.SUBADMIN_PASSWORD = finalPin;
+        updateEnvPassword('SUBADMIN_PASSWORD', finalPin);
+      }
+
       db.prepare(`
         INSERT INTO audit_logs (id, actor, action, module, details, created_at)
         VALUES (?, 'Super Admin', 'SUBADMIN_UPDATED', 'subadmin', ?, ?)
@@ -1036,7 +1046,7 @@ app.put('/api/auth/subadmins/:id', requireAdmin, (req, res) => {
     const finalRole = isSuper ? 'Super Admin' : (role ? role.trim() : target.role);
     const finalPin = (password || pin) ? String(password || pin).trim() : target.pin;
     const finalPerms = isSuper ? JSON.stringify(['all']) : (Array.isArray(permissions) ? JSON.stringify(permissions) : target.permissions_json);
-    const finalActive = active !== undefined ? (active ? 1 : 0) : target.active;
+    const finalActive = (active !== undefined) ? (active ? 1 : 0) : 1;
 
     if (finalUsername !== target.username.toLowerCase()) {
       const clash = db.prepare('SELECT id FROM admin_users WHERE LOWER(TRIM(username)) = ? AND id != ?').get(finalUsername, target.id);
@@ -1050,6 +1060,11 @@ app.put('/api/auth/subadmins/:id', requireAdmin, (req, res) => {
       SET username = ?, name = ?, role = ?, pin = ?, permissions_json = ?, active = ?
       WHERE id = ?
     `).run(finalUsername, finalName, finalRole, finalPin, finalPerms, finalActive, target.id);
+
+    if (target.id === 'ADM-SUB' && (password || pin)) {
+      process.env.SUBADMIN_PASSWORD = finalPin;
+      updateEnvPassword('SUBADMIN_PASSWORD', finalPin);
+    }
 
     const now = new Date().toISOString();
     db.prepare(`
