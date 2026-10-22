@@ -2016,8 +2016,57 @@ app.get('/api/orders', (req, res) => {
   }
 });
 
-app.get('/api/orders/:id', (req, res) => {
+async function ensureOrderHydrated(orderId) {
+  if (!orderId) return false;
+  const existing = db.prepare('SELECT id FROM orders WHERE id = ?').get(orderId);
+  if (existing) return true;
   try {
+    const mongo = await getMongoDb();
+    if (!mongo) return false;
+    const doc = (await mongo.collection('orders').findOne({ _id: orderId })) ||
+                (await mongo.collection('orders').findOne({ id: orderId }));
+    if (!doc) return false;
+    const now = new Date().toISOString();
+    db.prepare(`
+      INSERT INTO orders (id, customer_name, customer_phone, login_phone, delivery_phone, address, corridor, items_json, subtotal, discount, total, coupon_code, payment_method, payment_status, status, vehicle, notes, activity_log_json, created_at, updated_at)
+      VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)
+      ON CONFLICT(id) DO UPDATE SET
+        status = excluded.status,
+        payment_status = excluded.payment_status,
+        vehicle = excluded.vehicle,
+        updated_at = excluded.updated_at
+    `).run(
+      doc.id || doc._id,
+      doc.customer_name || doc.customerName || '',
+      doc.customer_phone || doc.customerPhone || '',
+      doc.login_phone || doc.loginPhone || '',
+      doc.delivery_phone || doc.deliveryPhone || '',
+      doc.address || '',
+      doc.corridor || 'Sikar',
+      typeof doc.items_json === 'string' ? doc.items_json : JSON.stringify(doc.items || []),
+      Number(doc.subtotal || 0),
+      Number(doc.discount || 0),
+      Number(doc.total || 0),
+      doc.coupon_code || doc.couponCode || '',
+      doc.payment_method || doc.paymentMethod || 'COD',
+      doc.payment_status || doc.paymentStatus || 'Pending',
+      doc.status || 'pending',
+      doc.vehicle || '',
+      doc.notes || '',
+      typeof doc.activity_log_json === 'string' ? doc.activity_log_json : JSON.stringify(doc.activityLog || []),
+      doc.created_at || now,
+      doc.updated_at || now
+    );
+    return true;
+  } catch (err) {
+    console.warn('[MongoDB] ensureOrderHydrated error:', err.message);
+    return false;
+  }
+}
+
+app.get('/api/orders/:id', async (req, res) => {
+  try {
+    await ensureOrderHydrated(req.params.id);
     const order = db.prepare('SELECT * FROM orders WHERE id = ?').get(req.params.id);
     if (!order) return res.status(404).json({ error: 'Order not found: ' + req.params.id });
 
@@ -2083,12 +2132,14 @@ app.get('/api/orders/:id', (req, res) => {
   }
 });
 
-app.patch('/api/orders/:id/status', (req, res) => {
+app.patch('/api/orders/:id/status', async (req, res) => {
   try {
     const { status, paymentStatus, vehicle, note, cancellationReason, actor } = req.body || {};
     if (!status && !paymentStatus && vehicle === undefined) {
       return res.status(400).json({ error: 'Please specify status, paymentStatus, or vehicle to update' });
     }
+
+    await ensureOrderHydrated(req.params.id);
 
     const effectiveNote = (note || cancellationReason || '').trim();
 
@@ -2104,7 +2155,7 @@ app.patch('/api/orders/:id/status', (req, res) => {
     try {
       const fullUpdatedOrder = db.prepare('SELECT * FROM orders WHERE id = ?').get(req.params.id);
       if (fullUpdatedOrder) {
-        syncDoc('orders', { _id: fullUpdatedOrder.id }, { ...fullUpdatedOrder, _id: fullUpdatedOrder.id });
+        await syncDoc('orders', { _id: fullUpdatedOrder.id }, { ...fullUpdatedOrder, _id: fullUpdatedOrder.id });
       }
     } catch (e) {}
 
@@ -2165,7 +2216,7 @@ app.post('/api/orders/:id/notify', (req, res) => {
   }
 });
 
-app.post('/api/orders', (req, res) => {
+app.post('/api/orders', async (req, res) => {
   try {
     const b = req.body || {};
     const finalCustomerName = String(b.customerName || b.customer_name || b.name || b.customer || '').trim();
@@ -2250,7 +2301,7 @@ app.post('/api/orders', (req, res) => {
     });
 
     // Synchronize order to MongoDB Atlas cloud in the background
-    syncDoc('orders', { _id: result.orderId }, { ...result, _id: result.orderId });
+    await syncDoc('orders', { _id: result.orderId }, { ...result, _id: result.orderId });
 
     res.status(201).json({
       success: true,
