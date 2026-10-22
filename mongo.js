@@ -65,6 +65,10 @@ async function syncDoc(collectionName, filter, doc) {
       updateDoc._id = String(updateDoc.id || updateDoc.key || updateDoc.sku);
     }
     const cleanFilter = filter || (updateDoc._id ? { _id: updateDoc._id } : updateDoc);
+    const existing = await collection.findOne(cleanFilter, { projection: { _id: 1 } });
+    if (existing) {
+      updateDoc._id = existing._id;
+    }
     await collection.replaceOne(cleanFilter, updateDoc, { upsert: true });
   } catch (err) {
     console.warn(`[MongoDB] syncDoc error on ${collectionName}:`, err.message);

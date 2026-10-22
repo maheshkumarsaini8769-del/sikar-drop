@@ -487,6 +487,8 @@ function applyActiveFestivalTheme(settings) {
 }
 
 function initFestiveWelcomeModal(settings) {
+  const path = (window.location.pathname || '').toLowerCase();
+  if (path.includes('track') || path.includes('cart') || path.includes('admin') || window.location.search.includes('id=')) return;
   if (sessionStorage.getItem('sikar_greeting_shown')) return;
   sessionStorage.setItem('sikar_greeting_shown', 'true');
 

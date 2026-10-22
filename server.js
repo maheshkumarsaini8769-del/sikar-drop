@@ -5999,11 +5999,16 @@ app.post('/api/settings', requireAdmin, async (req, res) => {
     })();
 
     try {
-      syncDoc('website_settings', { key: 'portal_settings' }, { key: 'portal_settings', settings, updated_at: now });
-      Object.entries(settings).forEach(([key, val]) => {
-        syncDoc('website_settings', { key }, { key, value: String(val), updated_at: now });
-      });
-    } catch (e) {}
+      const syncPromises = [
+        syncDoc('website_settings', { key: 'portal_settings' }, { key: 'portal_settings', settings, updated_at: now })
+      ];
+      for (const [key, val] of Object.entries(settings)) {
+        syncPromises.push(syncDoc('website_settings', { key }, { key, value: String(val), updated_at: now }));
+      }
+      await Promise.all(syncPromises);
+    } catch (e) {
+      console.warn('[Settings] Mongo sync error:', e.message);
+    }
 
     if (typeof pageTemplateCache !== 'undefined') {
       pageTemplateCache.clear();
