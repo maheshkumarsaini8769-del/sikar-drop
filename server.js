@@ -382,6 +382,45 @@ async function hydrateFromMongo() {
   return mongoHydrationPromise;
 }
 
+let lastSettingsSyncTime = 0;
+const SETTINGS_CACHE_TTL = 3000; // 3 seconds TTL for serverless elasticity
+
+async function syncSettingsFromMongoIfNeeded() {
+  const now = Date.now();
+  if (now - lastSettingsSyncTime < SETTINGS_CACHE_TTL && isHydratedFromMongo) {
+    return;
+  }
+  try {
+    const mongo = await getMongoDb();
+    if (!mongo) return;
+    const settingsDocs = await mongo.collection('website_settings').find({}).toArray();
+    if (settingsDocs && settingsDocs.length > 0) {
+      const insertSetting = db.prepare(`
+        INSERT INTO website_settings (key, value, updated_at)
+        VALUES (?, ?, ?)
+        ON CONFLICT(key) DO UPDATE SET value = excluded.value, updated_at = excluded.updated_at
+      `);
+      const nowIso = new Date().toISOString();
+      db.transaction(() => {
+        for (const s of settingsDocs) {
+          const sKey = s.key || s._id;
+          if (sKey && s.value !== undefined) {
+            insertSetting.run(
+              String(sKey),
+              typeof s.value === 'string' ? s.value : JSON.stringify(s.value),
+              s.updated_at || nowIso
+            );
+          }
+        }
+      })();
+    }
+    lastSettingsSyncTime = now;
+    isHydratedFromMongo = true;
+  } catch (err) {
+    console.warn('[MongoDB] Sync settings error:', err.message);
+  }
+}
+
 // Kick off cloud hydration immediately in background
 hydrateFromMongo().catch(() => {});
 
@@ -5922,7 +5961,7 @@ const FESTIVAL_THEME_DEFAULTS = {
 
 app.get('/api/settings', async (req, res) => {
   try {
-    if (!isHydratedFromMongo) await hydrateFromMongo();
+    await syncSettingsFromMongoIfNeeded();
     const rows = db.prepare('SELECT key, value FROM website_settings').all();
     const settings = {};
     rows.forEach(r => { settings[r.key] = r.value; });
@@ -6067,7 +6106,7 @@ const DEFAULT_FALLBACK_TEXTS = {
 
 app.get('/api/site-texts', async (req, res) => {
   try {
-    if (!isHydratedFromMongo) await hydrateFromMongo();
+    await syncSettingsFromMongoIfNeeded();
     const row = db.prepare("SELECT value FROM website_settings WHERE key = 'site_texts'").get();
     if (row && row.value) {
       try {
@@ -6151,8 +6190,9 @@ app.post('/api/site-texts', requireAdmin, async (req, res) => {
   }
 });
 
-app.get('/api/bulk-rates', (req, res) => {
+app.get('/api/bulk-rates', async (req, res) => {
   try {
+    await syncSettingsFromMongoIfNeeded();
     const row = db.prepare("SELECT value FROM website_settings WHERE key = 'bulk_mandi_rates'").get();
     if (row && row.value) {
       try {

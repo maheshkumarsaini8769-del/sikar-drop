@@ -15088,7 +15088,7 @@
                     adminTexts.whatsappNumber ||
                     '919829011223';
       let cleanWa = String(rawWa).replace(/\D/g, '');
-      if (cleanWa === '919829011223' || cleanWa === '919829012345' || !cleanWa) cleanWa = '919829011223';
+      if (cleanWa === '919829000000' || cleanWa === '919829012345' || !cleanWa) cleanWa = '919829011223';
       const finalWa = cleanWa.length === 10 ? ('91' + cleanWa) : cleanWa;
 
       const elCmsWa = document.getElementById('cms-whatsapp-number');
@@ -15169,7 +15169,7 @@
       const address = document.getElementById('cfg-contact-address')?.value.trim() || '';
 
       let cleanWaDigits = rawWa.replace(/\D/g, '');
-      if (cleanWaDigits === '919829011223' || cleanWaDigits === '919829012345' || !cleanWaDigits) cleanWaDigits = '919829011223';
+      if (cleanWaDigits === '919829000000' || cleanWaDigits === '919829012345' || !cleanWaDigits) cleanWaDigits = '919829011223';
       const finalWa = cleanWaDigits.length === 10 ? ('91' + cleanWaDigits) : cleanWaDigits;
 
       const cmsPh = document.getElementById('cms-contact-phone');

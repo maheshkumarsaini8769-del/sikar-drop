@@ -419,6 +419,8 @@ window.FESTIVE_STORE_PRESETS = window.FESTIVE_STORE_PRESETS || {
 function applyActiveFestivalTheme(settings) {
   const themeName = (typeof settings === 'string' ? settings : ((settings && settings.active_theme) || 'normal')).toLowerCase();
   currentTheme = themeName;
+  window.currentFestivalTheme = themeName;
+  document.body.dataset.theme = themeName;
   localStorage.setItem('sikar_theme', themeName);
 
   let ribbon = document.getElementById('store-festival-ribbon');
@@ -428,6 +430,8 @@ function applyActiveFestivalTheme(settings) {
 
   if (themeName === 'normal' || themeName === 'default') {
     document.documentElement.removeAttribute('data-theme');
+    document.body.dataset.theme = 'normal';
+    window.currentFestivalTheme = 'normal';
     applyFestiveBackgroundAndColorMix('normal', '#0284C7', cfg);
     if (ribbon) ribbon.style.display = 'none';
     const fw = document.getElementById('festive-floating-widget');
@@ -438,6 +442,8 @@ function applyActiveFestivalTheme(settings) {
   }
 
   document.documentElement.setAttribute('data-theme', themeName);
+  document.body.dataset.theme = themeName;
+  window.currentFestivalTheme = themeName;
   applyFestiveBackgroundAndColorMix(themeName, accentColor, cfg);
 
   if (!ribbon) {
@@ -681,7 +687,7 @@ window.getLiveWhatsAppNumber = function() {
       if (parsed && (parsed.whatsappNumber || parsed.whatsapp)) {
         const raw = parsed.whatsappNumber || parsed.whatsapp;
         let clean = String(raw).replace(/\D/g, '');
-        if (clean === '919829011223' || clean === '919829012345' || !clean) clean = '919829011223';
+        if (clean === '919829000000' || clean === '919829012345' || !clean) clean = '919829011223';
         if (clean.length === 10) return '91' + clean;
         if (clean.length >= 10) return clean;
       }
@@ -692,7 +698,7 @@ window.getLiveWhatsAppNumber = function() {
               (typeof adminTexts !== 'undefined' && adminTexts && (adminTexts.whatsappNumber || adminTexts.whatsapp)) ||
               '919829011223';
   let clean = String(raw).replace(/\D/g, '');
-  if (clean === '919829011223' || clean === '919829012345' || !clean) clean = '919829011223';
+  if (clean === '919829000000' || clean === '919829012345' || !clean) clean = '919829011223';
   return clean.length === 10 ? ('91' + clean) : clean;
 };
 
