@@ -375,84 +375,79 @@
         <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" width="18" height="18"><line x1="18" y1="6" x2="6" y2="18"></line><line x1="6" y1="6" x2="18" y2="18"></line></svg>
       </button>
 
-      <div style="margin-bottom: 14px; padding-right: 32px;">
-        <div style="display: inline-flex; align-items: center; gap: 6px; background: #E0F2FE; color: #0369A1; font-size: 0.74rem; font-weight: 800; padding: 3px 10px; border-radius: 999px; margin-bottom: 6px; letter-spacing: 0.02em;">
-          <span>SIKAR EXPRESS TEMPO</span> &bull; <span>45-60 MINS</span>
-        </div>
-        <h3 id="order-confirm-title" style="margin: 0 0 4px; font-size: 1.32rem; font-family: var(--font-heading); font-weight: 800; color: #0B192C; line-height: 1.25;">
-          Confirm Order Dispatch
+      <!-- CLEAN HEADER -->
+      <div style="margin-bottom: 12px; padding-right: 30px;">
+        <h3 id="order-confirm-title" style="margin: 0 0 2px; font-size: 1.25rem; font-family: var(--font-heading); font-weight: 800; color: #0B192C; line-height: 1.2;">
+          Confirm Dispatch
         </h3>
-        <p style="font-size: 0.82rem; color: #64748B; margin: 0; line-height: 1.35;">
-          Verify delivery address and receiver mobile for immediate vehicle dispatch.
+        <p style="font-size: 0.78rem; color: #64748B; margin: 0;">
+          Express tempo delivery across Sikar (45-60 Mins)
         </p>
       </div>
 
-      <!-- ORDER SUMMARY CARD -->
-      <div style="background: #F8FAFC; border: 1px solid #E2E8F0; border-radius: 12px; padding: 14px 16px; margin-bottom: 14px;">
-        <div style="display: flex; justify-content: space-between; align-items: center; margin-bottom: 8px;">
-          <span style="font-size: 0.82rem; color: #64748B; font-weight: 600;">Customer / Client:</span>
-          <strong style="font-size: 0.88rem; color: #0B192C; font-weight: 700;" id="confirm-customer-name">Valued Customer</strong>
+      <!-- COMPACT ORDER & CUSTOMER SUMMARY (SINGLE CLEAN CONTAINER) -->
+      <div style="background: #F8FAFC; border: 1px solid #E2E8F0; border-radius: 12px; padding: 10px 14px; margin-bottom: 12px; display: flex; align-items: center; justify-content: space-between; gap: 10px;">
+        <div style="min-width: 0;">
+          <div style="font-size: 0.84rem; font-weight: 800; color: #0B192C; white-space: nowrap; overflow: hidden; text-overflow: ellipsis;" id="confirm-customer-name">
+            Valued Customer
+          </div>
+          <div style="display: flex; align-items: center; gap: 4px; font-size: 0.76rem; color: #0369A1; font-weight: 700; margin-top: 1px;">
+            <svg width="12" height="12" viewBox="0 0 24 24" fill="#0066F5"><path d="M12 2C6.48 2 2 6.48 2 12c0 1.85.5 3.58 1.38 5.07L2.1 21.9l4.98-1.28C8.51 21.49 10.2 22 12 22c5.52 0 10-4.48 10-10S17.52 2 12 2zm-1 14.5l-3.5-3.5 1.41-1.41L11 13.67l5.59-5.59L18 9.5l-7 7z"></path></svg>
+            <span id="confirm-customer-phone">+91 98290 12345</span>
+          </div>
         </div>
-        <div style="display: flex; justify-content: space-between; align-items: center; margin-bottom: 8px;">
-          <span style="font-size: 0.82rem; color: #64748B; font-weight: 600;">Login Mobile:</span>
-          <span style="display: inline-flex; align-items: center; gap: 4px; font-size: 0.86rem; color: #0369A1; font-weight: 700;">
-            <svg width="14" height="14" viewBox="0 0 24 24" fill="#0066F5"><path d="M12 2C6.48 2 2 6.48 2 12c0 1.85.5 3.58 1.38 5.07L2.1 21.9l4.98-1.28C8.51 21.49 10.2 22 12 22c5.52 0 10-4.48 10-10S17.52 2 12 2zm-1 14.5l-3.5-3.5 1.41-1.41L11 13.67l5.59-5.59L18 9.5l-7 7z"></path></svg>
-            <strong id="confirm-customer-phone">+91 98290 12345</strong>
-          </span>
-        </div>
-        <div style="display: flex; justify-content: space-between; align-items: center; margin-bottom: 8px; padding-top: 8px; border-top: 1px dashed #CBD5E1;">
-          <span style="font-size: 0.82rem; color: #64748B; font-weight: 600;">Total Selected:</span>
-          <strong style="font-size: 0.88rem; color: #0284C7; font-weight: 800;" id="confirm-total-petis">0 Cases</strong>
-        </div>
-        <div style="display: flex; justify-content: space-between; align-items: baseline; padding-top: 6px;">
-          <span style="font-size: 0.9rem; color: #0F172A; font-weight: 800;">Grand Total Payable:</span>
-          <strong style="font-size: 1.35rem; color: #0F3D64; font-family: var(--font-heading); font-weight: 900;" id="confirm-total-amount">₹0</strong>
+        <div style="text-align: right; flex-shrink: 0;">
+          <span style="font-size: 0.74rem; color: #64748B; font-weight: 700; display: block;" id="confirm-total-petis">0 Cases</span>
+          <strong style="font-size: 1.18rem; color: #0284C7; font-family: var(--font-heading); font-weight: 900;" id="confirm-total-amount">₹0</strong>
         </div>
       </div>
 
-      <!-- DELIVERY RECEIVER MOBILE -->
-      <div class="form-group-field" style="margin-bottom: 12px;">
-        <label for="delivery-phone-input" style="font-size: 0.82rem; font-weight: 700; color: #0F172A; margin-bottom: 4px; display: flex; justify-content: space-between;">
-          <span>Delivery / Receiver Phone Number *</span>
-          <span style="font-size: 0.72rem; color: #64748B; font-weight: 500;">Driver calls this number</span>
-        </label>
-        <div style="position: relative; display: flex; align-items: center;">
-          <span style="position: absolute; left: 12px; font-weight: 700; color: #64748B; font-size: 0.92rem;">+91</span>
-          <input type="tel" id="delivery-phone-input" placeholder="98290 12345" maxlength="10" style="padding-left: 48px; width: 100%; height: 44px; border: 1.5px solid #CBD5E1; border-radius: 8px; font-size: 16px; font-weight: 700; color: #0F172A; box-sizing: border-box; outline: none;">
+      <!-- FORM FIELDS -->
+      <div style="display: flex; flex-direction: column; gap: 10px; margin-bottom: 12px;">
+        <!-- FIELD 1: RECEIVER PHONE -->
+        <div class="form-group-field" style="margin: 0;">
+          <label for="delivery-phone-input" style="font-size: 0.76rem; font-weight: 700; color: #334155; margin-bottom: 3px; display: block;">
+            Driver Contact / Receiver Mobile *
+          </label>
+          <div style="position: relative; display: flex; align-items: center;">
+            <span style="position: absolute; left: 12px; font-weight: 700; color: #64748B; font-size: 0.88rem;">+91</span>
+            <input type="tel" id="delivery-phone-input" placeholder="98290 12345" maxlength="10" style="padding-left: 48px; width: 100%; height: 40px; border: 1.5px solid #CBD5E1; border-radius: 8px; font-size: 15px; font-weight: 700; color: #0F172A; box-sizing: border-box; outline: none; background: #FFFFFF;">
+          </div>
+        </div>
+
+        <!-- FIELD 2: DELIVERY CORRIDOR -->
+        <div class="form-group-field" style="margin: 0;">
+          <label for="delivery-corridor-select" style="font-size: 0.76rem; font-weight: 700; color: #334155; margin-bottom: 3px; display: block;">
+            Select Sikar Delivery Area *
+          </label>
+          <select id="delivery-corridor-select" onchange="validateCheckoutAddressLocation()" style="width: 100%; height: 40px; padding: 0 10px; border: 1.5px solid #CBD5E1; border-radius: 8px; font-size: 14px; font-weight: 600; color: #0F172A; background: #FFFFFF; box-sizing: border-box; outline: none;">
+            <option value="Piprali Road (Coaching Hub & Marriage Gardens)">Piprali Road (Coaching Hub &amp; Gardens)</option>
+            <option value="Nawalgarh Road & Pullia Market">Nawalgarh Road &amp; Pullia Market</option>
+            <option value="Station Road, Subhash Chowk & Krishi Mandi">Station Road, Subhash Chowk &amp; Krishi Mandi</option>
+            <option value="Fatehpur Road & Sabalpura Corridor">Fatehpur Road &amp; Sabalpura Corridor</option>
+            <option value="Rani Sati Road, Silver Jubilee & Collectorate">Rani Sati Road, Silver Jubilee &amp; Collectorate</option>
+            <option value="Salasar Stand, Jaipur Road & Industrial Area">Salasar Stand, Jaipur Road &amp; Industrial Area</option>
+          </select>
+        </div>
+
+        <!-- FIELD 3: STREET ADDRESS & LANDMARK -->
+        <div class="form-group-field" style="margin: 0;">
+          <label for="delivery-note-input" style="font-size: 0.76rem; font-weight: 700; color: #334155; margin-bottom: 3px; display: block;">
+            Shop Name / Street Address / Landmark *
+          </label>
+          <input type="text" id="delivery-note-input" placeholder="e.g. Near Prince School, Piprali Road, Shop No. 4" oninput="validateCheckoutAddressLocation()" style="width: 100%; height: 40px; padding: 0 10px; border: 1.5px solid #CBD5E1; border-radius: 8px; font-size: 15px; font-weight: 600; color: #0F172A; box-sizing: border-box; outline: none; background: #FFFFFF;">
+          <div id="checkout-area-quick-tags" style="display: none;"></div>
+          <div id="checkout-location-check-status" style="margin-top: 4px; font-size: 0.74rem; font-weight: 600; color: #166534; display: flex; align-items: center; gap: 4px;">
+            <span style="display: inline-block; width: 6px; height: 6px; border-radius: 999px; background: #16A34A;"></span>
+            <span>Verified Serviceable Area: Piprali Road &bull; Express Tempo</span>
+          </div>
         </div>
       </div>
 
-      <!-- SIKAR DELIVERY CORRIDOR -->
-      <div class="form-group-field" style="margin-bottom: 12px;">
-        <label for="delivery-corridor-select" style="font-size: 0.82rem; font-weight: 700; color: #0F172A; margin-bottom: 4px;">
-          Select Sikar Delivery Corridor / Zone *
-        </label>
-        <select id="delivery-corridor-select" onchange="validateCheckoutAddressLocation()" style="width: 100%; height: 44px; padding: 0 12px; border: 1.5px solid #CBD5E1; border-radius: 8px; font-size: 15px; font-weight: 600; color: #0F172A; background: #FFFFFF; box-sizing: border-box; outline: none;">
-          <option value="Piprali Road (Coaching Hub & Marriage Gardens)">Piprali Road (Coaching Hub &amp; Gardens)</option>
-          <option value="Nawalgarh Road & Pullia Market">Nawalgarh Road &amp; Pullia Market</option>
-          <option value="Station Road, Subhash Chowk & Krishi Mandi">Station Road, Subhash Chowk &amp; Krishi Mandi</option>
-          <option value="Fatehpur Road & Sabalpura Corridor">Fatehpur Road &amp; Sabalpura Corridor</option>
-          <option value="Rani Sati Road, Silver Jubilee & Collectorate">Rani Sati Road, Silver Jubilee &amp; Collectorate</option>
-          <option value="Salasar Stand, Jaipur Road & Industrial Area">Salasar Stand, Jaipur Road &amp; Industrial Area</option>
-        </select>
-      </div>
-
-      <!-- STREET ADDRESS & LANDMARK -->
-      <div class="form-group-field" style="margin-bottom: 14px;">
-        <label for="delivery-note-input" style="font-size: 0.82rem; font-weight: 700; color: #0F172A; margin-bottom: 4px; display: flex; justify-content: space-between;">
-          <span>Street Address &amp; Landmark *</span>
-          <span style="font-size: 0.72rem; color: #0284C7; font-weight: 600;">Shop / Garden / Colony</span>
-        </label>
-        <input type="text" id="delivery-note-input" placeholder="e.g. Near Prince School, Piprali Road, Shop No. 4" oninput="validateCheckoutAddressLocation()" style="width: 100%; height: 44px; padding: 0 12px; border: 1.5px solid #CBD5E1; border-radius: 8px; font-size: 16px; font-weight: 600; color: #0F172A; box-sizing: border-box; outline: none;">
-        <div id="checkout-area-quick-tags" style="display: flex; gap: 6px; overflow-x: auto; flex-wrap: nowrap; padding: 4px 0; margin-top: 4px; -webkit-overflow-scrolling: touch; scrollbar-width: none;"></div>
-        <div id="checkout-location-check-status" style="margin-top: 6px; padding: 6px 10px; border-radius: 6px; font-size: 0.76rem; font-weight: 700; background: #F0FDF4; border: 1px solid #BBF7D0; color: #166534;">
-          Verified Serviceable Area: Piprali Road &bull; 45-60 Mins Express Tempo
-        </div>
-      </div>
-
-      <button type="button" class="btn-checkout-gate" id="btn-confirm-dispatch-order" style="width: 100%; height: 48px; border-radius: 10px; font-size: 0.98rem; font-weight: 800; letter-spacing: 0.02em; display: flex; align-items: center; justify-content: center; gap: 8px; background: #0284C7; color: #FFFFFF; border: none; cursor: pointer; box-shadow: 0 4px 14px rgba(2, 132, 199, 0.35); margin-top: 10px;" onclick="dispatchFinalWhatsAppOrder()">
+      <!-- PRIMARY ACTION BUTTON -->
+      <button type="button" class="btn-checkout-gate" id="btn-confirm-dispatch-order" style="width: 100%; height: 44px; border-radius: 10px; font-size: 0.94rem; font-weight: 800; letter-spacing: 0.02em; display: flex; align-items: center; justify-content: center; gap: 8px; background: #0284C7; color: #FFFFFF; border: none; cursor: pointer; box-shadow: 0 4px 14px rgba(2, 132, 199, 0.35);" onclick="dispatchFinalWhatsAppOrder()">
         <span>CONFIRM &amp; DISPATCH ORDER</span>
-        <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5"><line x1="5" y1="12" x2="19" y2="12"></line><polyline points="12 5 19 12 12 19"></polyline></svg>
+        <svg width="17" height="17" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5"><line x1="5" y1="12" x2="19" y2="12"></line><polyline points="12 5 19 12 12 19"></polyline></svg>
       </button>
     </div>
   </div>
