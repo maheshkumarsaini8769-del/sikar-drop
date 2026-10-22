@@ -6105,6 +6105,12 @@ app.get('/api/settings', async (req, res) => {
     const settings = {};
     rows.forEach(r => { settings[r.key] = r.value; });
     if (!settings.active_theme) settings.active_theme = 'default';
+    if (!settings.phone) settings.phone = '+91 98290 11223';
+    if (!settings.whatsapp) settings.whatsapp = '919829011223';
+    if (!settings.phone_label_1) settings.phone_label_1 = 'Mandi Main Depot • Order Booking';
+    if (!settings.phone_2) settings.phone_2 = '+91 96602 91825';
+    if (!settings.whatsapp_2) settings.whatsapp_2 = '919660291825';
+    if (!settings.phone_label_2) settings.phone_label_2 = 'Express Dispatch & Urgent Supply';
     res.json(settings);
   } catch (err) {
     res.status(500).json({ error: err.message });
@@ -6226,7 +6232,11 @@ const DEFAULT_FALLBACK_TEXTS = {
   slide3BtnLink: 'products',
   topPolicy: '100% Factory-Sealed Bottles & Cases Only • We Do Not Supply 20L Water Jars (Campers)',
   helpline: '+91 98290 11223',
-  whatsappNumber: '919829000000',
+  whatsappNumber: '919829011223',
+  phoneLabel1: 'Mandi Main Depot • Order Booking',
+  contactPhone2: '+91 96602 91825',
+  whatsappNumber2: '919660291825',
+  phoneLabel2: 'Express Dispatch & Urgent Supply',
   brandTagline: 'Pure Water. Healthy Life.',
   truckTitle: 'Free Delivery in Sikar',
   truckSub: 'On orders above 5 Petis / Marriage Garden Bookings',
@@ -6281,6 +6291,24 @@ app.post('/api/site-texts', requireAdmin, async (req, res) => {
       db.prepare(`INSERT INTO website_settings (key, value, updated_at) VALUES ('whatsapp', ?, ?) ON CONFLICT(key) DO UPDATE SET value = excluded.value, updated_at = excluded.updated_at`).run(String(merged.whatsappNumber), now);
       db.prepare(`INSERT INTO website_settings (key, value, updated_at) VALUES ('whatsappNumber', ?, ?) ON CONFLICT(key) DO UPDATE SET value = excluded.value, updated_at = excluded.updated_at`).run(String(merged.whatsappNumber), now);
     }
+    if (merged.phoneLabel1 || merged.phone_label_1) {
+      const lbl1 = merged.phoneLabel1 || merged.phone_label_1;
+      db.prepare(`INSERT INTO website_settings (key, value, updated_at) VALUES ('phone_label_1', ?, ?) ON CONFLICT(key) DO UPDATE SET value = excluded.value, updated_at = excluded.updated_at`).run(String(lbl1), now);
+    }
+    if (merged.contactPhone2 || merged.phone_2) {
+      const ph2 = merged.contactPhone2 || merged.phone_2;
+      db.prepare(`INSERT INTO website_settings (key, value, updated_at) VALUES ('phone_2', ?, ?) ON CONFLICT(key) DO UPDATE SET value = excluded.value, updated_at = excluded.updated_at`).run(String(ph2), now);
+      db.prepare(`INSERT INTO website_settings (key, value, updated_at) VALUES ('contactPhone2', ?, ?) ON CONFLICT(key) DO UPDATE SET value = excluded.value, updated_at = excluded.updated_at`).run(String(ph2), now);
+    }
+    if (merged.whatsappNumber2 || merged.whatsapp_2) {
+      const wa2 = merged.whatsappNumber2 || merged.whatsapp_2;
+      db.prepare(`INSERT INTO website_settings (key, value, updated_at) VALUES ('whatsapp_2', ?, ?) ON CONFLICT(key) DO UPDATE SET value = excluded.value, updated_at = excluded.updated_at`).run(String(wa2), now);
+      db.prepare(`INSERT INTO website_settings (key, value, updated_at) VALUES ('whatsappNumber2', ?, ?) ON CONFLICT(key) DO UPDATE SET value = excluded.value, updated_at = excluded.updated_at`).run(String(wa2), now);
+    }
+    if (merged.phoneLabel2 || merged.phone_label_2) {
+      const lbl2 = merged.phoneLabel2 || merged.phone_label_2;
+      db.prepare(`INSERT INTO website_settings (key, value, updated_at) VALUES ('phone_label_2', ?, ?) ON CONFLICT(key) DO UPDATE SET value = excluded.value, updated_at = excluded.updated_at`).run(String(lbl2), now);
+    }
     if (merged.helpline) {
       db.prepare(`INSERT INTO website_settings (key, value, updated_at) VALUES ('helpline', ?, ?) ON CONFLICT(key) DO UPDATE SET value = excluded.value, updated_at = excluded.updated_at`).run(String(merged.helpline), now);
     }
@@ -6304,6 +6332,18 @@ app.post('/api/site-texts', requireAdmin, async (req, res) => {
       if (merged.contactPhone) {
         syncPromises.push(syncDoc('website_settings', { key: 'phone' }, { key: 'phone', value: String(merged.contactPhone), updated_at: now }));
         syncPromises.push(syncDoc('website_settings', { key: 'contactPhone' }, { key: 'contactPhone', value: String(merged.contactPhone), updated_at: now }));
+      }
+      if (merged.contactPhone2 || merged.phone_2) {
+        syncPromises.push(syncDoc('website_settings', { key: 'phone_2' }, { key: 'phone_2', value: String(merged.contactPhone2 || merged.phone_2), updated_at: now }));
+      }
+      if (merged.whatsappNumber2 || merged.whatsapp_2) {
+        syncPromises.push(syncDoc('website_settings', { key: 'whatsapp_2' }, { key: 'whatsapp_2', value: String(merged.whatsappNumber2 || merged.whatsapp_2), updated_at: now }));
+      }
+      if (merged.phoneLabel1 || merged.phone_label_1) {
+        syncPromises.push(syncDoc('website_settings', { key: 'phone_label_1' }, { key: 'phone_label_1', value: String(merged.phoneLabel1 || merged.phone_label_1), updated_at: now }));
+      }
+      if (merged.phoneLabel2 || merged.phone_label_2) {
+        syncPromises.push(syncDoc('website_settings', { key: 'phone_label_2' }, { key: 'phone_label_2', value: String(merged.phoneLabel2 || merged.phone_label_2), updated_at: now }));
       }
       if (merged.helpline) {
         syncPromises.push(syncDoc('website_settings', { key: 'helpline' }, { key: 'helpline', value: String(merged.helpline), updated_at: now }));

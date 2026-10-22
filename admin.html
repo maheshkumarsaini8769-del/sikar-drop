@@ -4684,23 +4684,50 @@
 
           <!-- ABOUT & CONTACT CMS -->
           <div style="background: #F8FAFC; border: 1px solid var(--border-subtle); border-radius: var(--radius-sm); padding: 20px; margin-bottom: 24px;">
-            <h3 style="font-family: var(--font-heading); font-size: 1.1rem; font-weight: 800; margin-bottom: 12px;">4. About &amp; Contact Pages CMS</h3>
+            <h3 style="font-family: var(--font-heading); font-size: 1.1rem; font-weight: 800; margin-bottom: 12px;">4. About &amp; Contact Pages CMS (Dual Lines)</h3>
             <div class="portal-field-group">
               <label for="cms-about-story">About Us Mission &amp; Depot Philosophy</label>
               <textarea id="cms-about-story" class="portal-textarea" rows="3"></textarea>
             </div>
-            <div class="portal-form-grid-3">
-              <div class="portal-field-group">
-                <label for="cms-contact-address">Depot Physical Address (Sikar Mandi)</label>
-                <input type="text" id="cms-contact-address" class="portal-input">
+            <div class="portal-field-group">
+              <label for="cms-contact-address">Depot Physical Address (Sikar Mandi)</label>
+              <input type="text" id="cms-contact-address" class="portal-input">
+            </div>
+
+            <!-- DUAL CONTACT LINES GRID -->
+            <div style="margin-top: 14px; padding: 14px; background: #FFFFFF; border: 1px solid var(--border-subtle); border-radius: var(--radius-xs);">
+              <div style="font-size: 0.78rem; font-weight: 800; color: #0284C7; text-transform: uppercase; margin-bottom: 8px;">Line 1 Configuration (Main Depot)</div>
+              <div class="portal-field-group" style="margin-bottom: 10px;">
+                <label for="cms-phone-label-1">Line 1 Label</label>
+                <input type="text" id="cms-phone-label-1" class="portal-input" placeholder="Mandi Main Depot • Order Booking">
               </div>
-              <div class="portal-field-group">
-                <label for="cms-contact-phone">Customer Support &amp; Helpline Phone</label>
-                <input type="text" id="cms-contact-phone" class="portal-input" placeholder="+91 98290 11223">
+              <div class="portal-form-grid-2">
+                <div class="portal-field-group">
+                  <label for="cms-contact-phone">Line 1 Call Phone</label>
+                  <input type="text" id="cms-contact-phone" class="portal-input" placeholder="+91 98290 11223">
+                </div>
+                <div class="portal-field-group">
+                  <label for="cms-whatsapp-number">Line 1 WhatsApp Dispatch</label>
+                  <input type="text" id="cms-whatsapp-number" class="portal-input" placeholder="9829011223 or 919829011223">
+                </div>
               </div>
-              <div class="portal-field-group">
-                <label for="cms-whatsapp-number">Live WhatsApp Number (Order Dispatch &amp; Chat)</label>
-                <input type="text" id="cms-whatsapp-number" class="portal-input" placeholder="9829011223 or 919829011223">
+            </div>
+
+            <div style="margin-top: 12px; padding: 14px; background: #FFFFFF; border: 1px solid var(--border-subtle); border-radius: var(--radius-xs);">
+              <div style="font-size: 0.78rem; font-weight: 800; color: #16A34A; text-transform: uppercase; margin-bottom: 8px;">Line 2 Configuration (Express Dispatch)</div>
+              <div class="portal-field-group" style="margin-bottom: 10px;">
+                <label for="cms-phone-label-2">Line 2 Label</label>
+                <input type="text" id="cms-phone-label-2" class="portal-input" placeholder="Express Dispatch & Urgent Supply">
+              </div>
+              <div class="portal-form-grid-2">
+                <div class="portal-field-group">
+                  <label for="cms-contact-phone-2">Line 2 Call Phone</label>
+                  <input type="text" id="cms-contact-phone-2" class="portal-input" placeholder="+91 96602 91825">
+                </div>
+                <div class="portal-field-group">
+                  <label for="cms-whatsapp-number-2">Line 2 WhatsApp Number</label>
+                  <input type="text" id="cms-whatsapp-number-2" class="portal-input" placeholder="9660291825 or 919660291825">
+                </div>
               </div>
             </div>
           </div>
@@ -5252,18 +5279,52 @@
             <span class="portal-badge badge-success">Live Sync Active</span>
           </div>
 
-          <form onsubmit="saveContactSettingsFromPortal(event)" style="max-width: 680px;">
-            <div class="portal-form-grid-2">
-              <div class="portal-field-group">
-                <label for="cfg-contact-phone">Customer Support Helpline Phone</label>
-                <input type="text" id="cfg-contact-phone" class="portal-input" placeholder="+91 98290 11223" required>
-                <small style="color: var(--text-muted); font-size: 0.76rem; display: block; margin-top: 4px;">Appears in header, footer, and call links.</small>
+          <form onsubmit="saveContactSettingsFromPortal(event)" style="max-width: 740px;">
+            <!-- LINE 1 PRIMARY SETTINGS -->
+            <div style="background: #F8FAFC; border: 1px solid var(--border-subtle); border-radius: var(--radius-sm); padding: 16px; margin-bottom: 14px;">
+              <div style="display: flex; align-items: center; justify-content: space-between; margin-bottom: 10px;">
+                <span class="portal-badge" style="background: #E0F2FE; color: #0369A1; font-weight: 800;">LINE 1 • ORDER DEPOT &amp; WHOLESALE</span>
+                <span style="font-size: 0.74rem; color: #16A34A; font-weight: 700;">Primary Phone Line</span>
               </div>
+              <div class="portal-field-group" style="margin-bottom: 10px;">
+                <label for="cfg-phone-label-1">Line 1 Department Label</label>
+                <input type="text" id="cfg-phone-label-1" class="portal-input" placeholder="Mandi Main Depot • Order Booking" value="Mandi Main Depot • Order Booking">
+              </div>
+              <div class="portal-form-grid-2">
+                <div class="portal-field-group">
+                  <label for="cfg-contact-phone">Line 1 Helpline Phone (Calling)</label>
+                  <input type="text" id="cfg-contact-phone" class="portal-input" placeholder="+91 98290 11223" required>
+                  <small style="color: var(--text-muted); font-size: 0.76rem; display: block; margin-top: 4px;">Appears in header, footer, and Line 1 call button.</small>
+                </div>
+                <div class="portal-field-group">
+                  <label for="cfg-whatsapp-phone">Line 1 WhatsApp Order Dispatch</label>
+                  <input type="text" id="cfg-whatsapp-phone" class="portal-input" placeholder="9829011223 or 919829011223" required>
+                  <small style="color: var(--text-muted); font-size: 0.76rem; display: block; margin-top: 4px;">Receives primary customer cart orders and WhatsApp chats.</small>
+                </div>
+              </div>
+            </div>
 
-              <div class="portal-field-group">
-                <label for="cfg-whatsapp-phone">WhatsApp Order Dispatch Number</label>
-                <input type="text" id="cfg-whatsapp-phone" class="portal-input" placeholder="9829011223 or 919829011223" required>
-                <small style="color: var(--text-muted); font-size: 0.76rem; display: block; margin-top: 4px;">Orders placed on website are sent directly to this WhatsApp.</small>
+            <!-- LINE 2 SECONDARY SETTINGS -->
+            <div style="background: #F8FAFC; border: 1px solid var(--border-subtle); border-radius: var(--radius-sm); padding: 16px; margin-bottom: 14px;">
+              <div style="display: flex; align-items: center; justify-content: space-between; margin-bottom: 10px;">
+                <span class="portal-badge" style="background: #DCFCE7; color: #15803D; font-weight: 800;">LINE 2 • EXPRESS DISPATCH &amp; URGENT</span>
+                <span style="font-size: 0.74rem; color: #0284C7; font-weight: 700;">Secondary Phone Line</span>
+              </div>
+              <div class="portal-field-group" style="margin-bottom: 10px;">
+                <label for="cfg-phone-label-2">Line 2 Department Label</label>
+                <input type="text" id="cfg-phone-label-2" class="portal-input" placeholder="Express Dispatch &amp; Urgent Supply" value="Express Dispatch &amp; Urgent Supply">
+              </div>
+              <div class="portal-form-grid-2">
+                <div class="portal-field-group">
+                  <label for="cfg-contact-phone-2">Line 2 Helpline Phone (Calling)</label>
+                  <input type="text" id="cfg-contact-phone-2" class="portal-input" placeholder="+91 96602 91825">
+                  <small style="color: var(--text-muted); font-size: 0.76rem; display: block; margin-top: 4px;">Appears in multi-contact modal as Line 2 call button.</small>
+                </div>
+                <div class="portal-field-group">
+                  <label for="cfg-whatsapp-phone-2">Line 2 WhatsApp Number</label>
+                  <input type="text" id="cfg-whatsapp-phone-2" class="portal-input" placeholder="9660291825 or 919660291825">
+                  <small style="color: var(--text-muted); font-size: 0.76rem; display: block; margin-top: 4px;">Appears in multi-contact modal as Line 2 WhatsApp chat.</small>
+                </div>
               </div>
             </div>
 
@@ -5274,7 +5335,7 @@
 
             <div style="display: flex; align-items: center; gap: 12px; margin-top: 18px;">
               <button type="submit" class="btn-portal-primary" style="background: #16A34A; border-color: #15803D;">
-                <span>Save Contact &amp; WhatsApp Settings</span>
+                <span>Save Dual Contact &amp; WhatsApp Settings</span>
               </button>
             </div>
           </form>
@@ -6828,7 +6889,12 @@
       bulkSub: 'For Offices, Hotels, Schools & Marriage Gardens',
       aboutStory: 'Sikar Drop was established in 2024 with a singular objective: eliminating contaminated 20L camper jars completely and providing 100% genuine factory-sealed bottled water and chilled beverages across Sikar Mandi.',
       contactAddress: 'Plot 14-B, Near Krishi Upaj Mandi, Station Road Bypass, Sikar (Raj.) 332001',
-      contactPhone: '+91 98290 XXXXX / +91 98290 84210',
+      contactPhone: '+91 98290 11223',
+      whatsappNumber: '919829011223',
+      phoneLabel1: 'Mandi Main Depot • Order Booking',
+      contactPhone2: '+91 96602 91825',
+      whatsappNumber2: '919660291825',
+      phoneLabel2: 'Express Dispatch & Urgent Supply',
       footerCamper: 'We do not supply 20L plastic water jars (campers) in Sikar. Only 100% factory-sealed branded bottles and crates are supplied.',
       footerAbout: 'Sikar\'s premier wholesale beverage depot. Providing 100% factory-sealed mineral water bottle cases, chilled cold drink crates, fruit juices, and soda can trays directly to wedding gardens, kirana stores, coaching canteens, and residences.',
       wholesaleBundlesTag: 'Mandi Direct Wholesale • 100% Factory Sealed',
@@ -15065,13 +15131,21 @@
       setV('cms-wholesale-link', t.wholesaleBundlesLinkText || 'View Full Rate Slab');
       setV('cms-about-story', t.aboutStory || '');
       setV('cms-contact-address', t.contactAddress || '');
-      setV('cms-contact-phone', t.contactPhone || t.helpline || '+91 98290 11223');
-      setV('cms-whatsapp-number', t.whatsappNumber || '919829011223');
+      setV('cms-phone-label-1', t.phoneLabel1 || t.phone_label_1 || 'Mandi Main Depot • Order Booking');
+      setV('cms-contact-phone', t.contactPhone || t.helpline || t.phone || '+91 98290 11223');
+      setV('cms-whatsapp-number', t.whatsappNumber || t.whatsapp || '919829011223');
+      setV('cms-phone-label-2', t.phoneLabel2 || t.phone_label_2 || 'Express Dispatch & Urgent Supply');
+      setV('cms-contact-phone-2', t.contactPhone2 || t.phone_2 || '+91 96602 91825');
+      setV('cms-whatsapp-number-2', t.whatsappNumber2 || t.whatsapp_2 || '919660291825');
       setV('cms-footer-camper', t.footerCamper);
       setV('cms-footer-about', t.footerAbout);
 
-      setV('cfg-contact-phone', t.contactPhone || t.helpline || '+91 98290 11223');
-      setV('cfg-whatsapp-phone', t.whatsappNumber || '919829011223');
+      setV('cfg-phone-label-1', t.phoneLabel1 || t.phone_label_1 || 'Mandi Main Depot • Order Booking');
+      setV('cfg-contact-phone', t.contactPhone || t.helpline || t.phone || '+91 98290 11223');
+      setV('cfg-whatsapp-phone', t.whatsappNumber || t.whatsapp || '919829011223');
+      setV('cfg-phone-label-2', t.phoneLabel2 || t.phone_label_2 || 'Express Dispatch & Urgent Supply');
+      setV('cfg-contact-phone-2', t.contactPhone2 || t.phone_2 || '+91 96602 91825');
+      setV('cfg-whatsapp-phone-2', t.whatsappNumber2 || t.whatsapp_2 || '919660291825');
       setV('cfg-contact-address', t.contactAddress || '');
     }
     window.populateCmsForm = renderCmsForm;
@@ -15091,10 +15165,63 @@
       if (cleanWa === '919829000000' || cleanWa === '919829012345' || !cleanWa) cleanWa = '919829011223';
       const finalWa = cleanWa.length === 10 ? ('91' + cleanWa) : cleanWa;
 
+      const rawWa2 = (document.getElementById('cms-whatsapp-number-2')?.value.trim()) ||
+                     (document.getElementById('cfg-whatsapp-phone-2')?.value.trim()) ||
+                     adminTexts.whatsappNumber2 ||
+                     '919660291825';
+      let cleanWa2 = String(rawWa2).replace(/\D/g, '');
+      if (!cleanWa2) cleanWa2 = '919660291825';
+      const finalWa2 = cleanWa2.length === 10 ? ('91' + cleanWa2) : cleanWa2;
+
+      const phone1 = (document.getElementById('cfg-contact-phone')?.value.trim()) ||
+                     (document.getElementById('cms-contact-phone')?.value.trim()) ||
+                     adminTexts.contactPhone ||
+                     '+91 98290 11223';
+
+      const phone2 = (document.getElementById('cfg-contact-phone-2')?.value.trim()) ||
+                     (document.getElementById('cms-contact-phone-2')?.value.trim()) ||
+                     adminTexts.contactPhone2 ||
+                     '+91 96602 91825';
+
+      const label1 = (document.getElementById('cfg-phone-label-1')?.value.trim()) ||
+                     (document.getElementById('cms-phone-label-1')?.value.trim()) ||
+                     adminTexts.phoneLabel1 ||
+                     'Mandi Main Depot • Order Booking';
+
+      const label2 = (document.getElementById('cfg-phone-label-2')?.value.trim()) ||
+                     (document.getElementById('cms-phone-label-2')?.value.trim()) ||
+                     adminTexts.phoneLabel2 ||
+                     'Express Dispatch & Urgent Supply';
+
       const elCmsWa = document.getElementById('cms-whatsapp-number');
       if (elCmsWa) elCmsWa.value = finalWa;
       const elCfgWa = document.getElementById('cfg-whatsapp-phone');
       if (elCfgWa) elCfgWa.value = finalWa;
+
+      const elCmsWa2 = document.getElementById('cms-whatsapp-number-2');
+      if (elCmsWa2) elCmsWa2.value = finalWa2;
+      const elCfgWa2 = document.getElementById('cfg-whatsapp-phone-2');
+      if (elCfgWa2) elCfgWa2.value = finalWa2;
+
+      const elCmsPh = document.getElementById('cms-contact-phone');
+      if (elCmsPh) elCmsPh.value = phone1;
+      const elCfgPh = document.getElementById('cfg-contact-phone');
+      if (elCfgPh) elCfgPh.value = phone1;
+
+      const elCmsPh2 = document.getElementById('cms-contact-phone-2');
+      if (elCmsPh2) elCmsPh2.value = phone2;
+      const elCfgPh2 = document.getElementById('cfg-contact-phone-2');
+      if (elCfgPh2) elCfgPh2.value = phone2;
+
+      const elCmsLbl1 = document.getElementById('cms-phone-label-1');
+      if (elCmsLbl1) elCmsLbl1.value = label1;
+      const elCfgLbl1 = document.getElementById('cfg-phone-label-1');
+      if (elCfgLbl1) elCfgLbl1.value = label1;
+
+      const elCmsLbl2 = document.getElementById('cms-phone-label-2');
+      if (elCmsLbl2) elCmsLbl2.value = label2;
+      const elCfgLbl2 = document.getElementById('cfg-phone-label-2');
+      if (elCfgLbl2) elCfgLbl2.value = label2;
 
       adminTexts = {
         heroPill: getV('cms-hero-pill', adminTexts.heroPill || 'Trusted by 10,000+ Families in Sikar'),
@@ -15136,8 +15263,12 @@
         wholesaleBundlesLinkText: getV('cms-wholesale-link', adminTexts.wholesaleBundlesLinkText || 'View Full Rate Slab'),
         aboutStory: getV('cms-about-story', adminTexts.aboutStory || ''),
         contactAddress: getV('cms-contact-address', adminTexts.contactAddress || ''),
-        contactPhone: getV('cms-contact-phone', adminTexts.contactPhone || '+91 98290 11223'),
+        contactPhone: phone1,
         whatsappNumber: finalWa,
+        phoneLabel1: label1,
+        contactPhone2: phone2,
+        whatsappNumber2: finalWa2,
+        phoneLabel2: label2,
         footerCamper: getV('cms-footer-camper', adminTexts.footerCamper),
         footerAbout: getV('cms-footer-about', adminTexts.footerAbout)
       };
@@ -15153,9 +15284,13 @@
           helpline: adminTexts.helpline || adminTexts.contactPhone,
           whatsapp: adminTexts.whatsappNumber,
           whatsappNumber: adminTexts.whatsappNumber,
+          phone_label_1: adminTexts.phoneLabel1,
+          phone_2: adminTexts.contactPhone2,
+          whatsapp_2: adminTexts.whatsappNumber2,
+          phone_label_2: adminTexts.phoneLabel2,
           address: adminTexts.contactAddress
         });
-        showToast('All Homepage slides, about, contact phone & WhatsApp numbers saved live!');
+        showToast('All Homepage slides, about, dual contact phones & WhatsApp numbers saved live!');
       } catch (e) {
         console.error('Sync site texts error:', e);
         showToast('Site texts save failed: ' + (e.message || 'Server error'));
@@ -15164,18 +15299,38 @@
 
     async function saveContactSettingsFromPortal(e) {
       if (e) e.preventDefault();
-      const phone = document.getElementById('cfg-contact-phone')?.value.trim() || '+91 98290 11223';
-      const rawWa = document.getElementById('cfg-whatsapp-phone')?.value.trim() || '919829011223';
+      const phone1 = document.getElementById('cfg-contact-phone')?.value.trim() || '+91 98290 11223';
+      const rawWa1 = document.getElementById('cfg-whatsapp-phone')?.value.trim() || '919829011223';
+      const label1 = document.getElementById('cfg-phone-label-1')?.value.trim() || 'Mandi Main Depot • Order Booking';
+
+      const phone2 = document.getElementById('cfg-contact-phone-2')?.value.trim() || '+91 96602 91825';
+      const rawWa2 = document.getElementById('cfg-whatsapp-phone-2')?.value.trim() || '919660291825';
+      const label2 = document.getElementById('cfg-phone-label-2')?.value.trim() || 'Express Dispatch & Urgent Supply';
+
       const address = document.getElementById('cfg-contact-address')?.value.trim() || '';
 
-      let cleanWaDigits = rawWa.replace(/\D/g, '');
-      if (cleanWaDigits === '919829000000' || cleanWaDigits === '919829012345' || !cleanWaDigits) cleanWaDigits = '919829011223';
-      const finalWa = cleanWaDigits.length === 10 ? ('91' + cleanWaDigits) : cleanWaDigits;
+      let cleanWa1 = rawWa1.replace(/\D/g, '');
+      if (cleanWa1 === '919829000000' || cleanWa1 === '919829012345' || !cleanWa1) cleanWa1 = '919829011223';
+      const finalWa1 = cleanWa1.length === 10 ? ('91' + cleanWa1) : cleanWa1;
+
+      let cleanWa2 = rawWa2.replace(/\D/g, '');
+      if (!cleanWa2) cleanWa2 = '919660291825';
+      const finalWa2 = cleanWa2.length === 10 ? ('91' + cleanWa2) : cleanWa2;
 
       const cmsPh = document.getElementById('cms-contact-phone');
-      if (cmsPh) cmsPh.value = phone;
+      if (cmsPh) cmsPh.value = phone1;
       const cmsWa = document.getElementById('cms-whatsapp-number');
-      if (cmsWa) cmsWa.value = finalWa;
+      if (cmsWa) cmsWa.value = finalWa1;
+      const cmsLbl1 = document.getElementById('cms-phone-label-1');
+      if (cmsLbl1) cmsLbl1.value = label1;
+
+      const cmsPh2 = document.getElementById('cms-contact-phone-2');
+      if (cmsPh2) cmsPh2.value = phone2;
+      const cmsWa2 = document.getElementById('cms-whatsapp-number-2');
+      if (cmsWa2) cmsWa2.value = finalWa2;
+      const cmsLbl2 = document.getElementById('cms-phone-label-2');
+      if (cmsLbl2) cmsLbl2.value = label2;
+
       const cmsAddr = document.getElementById('cms-contact-address');
       if (cmsAddr) cmsAddr.value = address;
 

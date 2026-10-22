@@ -907,19 +907,229 @@ function applyStorefrontSiteTexts(t) {
     }
   }
 
-  // DYNAMIC LIVE CONTACT PHONE NUMBER BINDING
-  const rawPh = t.contactPhone || t.helpline;
-  if (rawPh) {
-    const cleanPh = String(rawPh).replace(/[^0-9+]/g, '');
-    document.querySelectorAll('.mobile-menu-call-btn, .btn-vip-call, a[href^="tel:"]').forEach(a => {
-      a.href = 'tel:' + cleanPh;
-      const span = a.querySelector('span');
-      if (span && (span.textContent.includes('Call Mandi Depot') || span.textContent.includes('+91') || span.textContent.includes('Call'))) {
-        span.textContent = `Call ${rawPh}`;
-      }
-    });
-  }
+  // DYNAMIC LIVE DUAL-CONTACT PHONE & WHATSAPP BINDING
+  const phone1 = t.phone || t.contactPhone || t.helpline || '+91 98290 11223';
+  const wa1 = t.whatsapp || t.whatsappNumber || '919829011223';
+  const label1 = t.phone_label_1 || t.phoneLabel1 || 'Mandi Main Depot • Order Booking';
+
+  const phone2 = t.phone_2 || t.contactPhone2 || '+91 96602 91825';
+  const wa2 = t.whatsapp_2 || t.whatsappNumber2 || '919660291825';
+  const label2 = t.phone_label_2 || t.phoneLabel2 || 'Express Dispatch & Urgent Supply';
+
+  const cleanPh1 = String(phone1).replace(/[^0-9+]/g, '');
+  const cleanPh2 = String(phone2).replace(/[^0-9+]/g, '');
+  const cleanWa1 = String(wa1).replace(/\D/g, '');
+  const finalWa1 = cleanWa1.length === 10 ? ('91' + cleanWa1) : cleanWa1;
+  const cleanWa2 = String(wa2).replace(/\D/g, '');
+  const finalWa2 = cleanWa2.length === 10 ? ('91' + cleanWa2) : cleanWa2;
+
+  const elLine1Lbl = document.getElementById('live-line1-label');
+  if (elLine1Lbl) elLine1Lbl.textContent = label1;
+  const elLine1PhTxt = document.getElementById('live-line1-phone-txt');
+  if (elLine1PhTxt) elLine1PhTxt.textContent = `Call ${phone1}`;
+  const elLine1Call = document.getElementById('live-line1-call');
+  if (elLine1Call) elLine1Call.href = `tel:${cleanPh1}`;
+  const elLine1Wa = document.getElementById('live-line1-wa');
+  if (elLine1Wa) elLine1Wa.href = `https://wa.me/${finalWa1}?text=${encodeURIComponent('Namaste Sikar Drop, I want to order water and cold drinks')}`;
+
+  const elLine2Lbl = document.getElementById('live-line2-label');
+  if (elLine2Lbl) elLine2Lbl.textContent = label2;
+  const elLine2PhTxt = document.getElementById('live-line2-phone-txt');
+  if (elLine2PhTxt) elLine2PhTxt.textContent = `Call ${phone2}`;
+  const elLine2Call = document.getElementById('live-line2-call');
+  if (elLine2Call) elLine2Call.href = `tel:${cleanPh2}`;
+  const elLine2Wa = document.getElementById('live-line2-wa');
+  if (elLine2Wa) elLine2Wa.href = `https://wa.me/${finalWa2}?text=${encodeURIComponent('Namaste Sikar Drop, I need urgent tempo delivery')}`;
+
+  document.querySelectorAll('.mobile-menu-call-btn, .btn-vip-call, a[href^="tel:"]').forEach(a => {
+    a.href = 'tel:' + cleanPh1;
+    const span = a.querySelector('span');
+    if (span && (span.textContent.includes('Call Mandi Depot') || span.textContent.includes('+91') || span.textContent.includes('Call'))) {
+      span.textContent = `Call ${phone1}`;
+    }
+  });
+
+  ensureFloatingContactWidget();
 }
+
+// =========================================================
+// MULTI-CONTACT DUAL-NUMBER ACTION SHEET MODAL
+// =========================================================
+window.openMultiContactModal = function(e) {
+  if (e && typeof e.preventDefault === 'function') {
+    e.preventDefault();
+    e.stopPropagation();
+  }
+
+  let backdrop = document.getElementById('multi-contact-modal');
+  if (!backdrop) {
+    backdrop = document.createElement('div');
+    backdrop.id = 'multi-contact-modal';
+    backdrop.className = 'multi-contact-modal-backdrop';
+    backdrop.setAttribute('role', 'dialog');
+    backdrop.setAttribute('aria-modal', 'true');
+    backdrop.setAttribute('aria-label', 'Sikar Drop Depot Contact Lines');
+    backdrop.onclick = (evt) => {
+      if (evt.target === backdrop) closeMultiContactModal();
+    };
+    document.body.appendChild(backdrop);
+  }
+
+  // Get active settings or fallbacks
+  let s = window.STOREFRONT_SETTINGS || {};
+  let t = {};
+  try { t = JSON.parse(localStorage.getItem('sikar_admin_texts') || '{}'); } catch(err) {}
+  if (!s.phone) {
+    try { s = JSON.parse(localStorage.getItem('sikar_settings') || '{}'); } catch(err) {}
+  }
+
+  const phone1 = s.phone || s.contactPhone || s.helpline || t.contactPhone || t.phone || '+91 98290 11223';
+  const wa1 = s.whatsapp || s.whatsappNumber || t.whatsappNumber || t.whatsapp || '919829011223';
+  const label1 = s.phone_label_1 || t.phoneLabel1 || t.phone_label_1 || 'Mandi Main Depot • Order Booking';
+
+  const phone2 = s.phone_2 || s.contactPhone2 || t.contactPhone2 || t.phone_2 || '+91 96602 91825';
+  const wa2 = s.whatsapp_2 || s.whatsappNumber2 || t.whatsappNumber2 || t.whatsapp_2 || '919660291825';
+  const label2 = s.phone_label_2 || t.phoneLabel2 || t.phone_label_2 || 'Express Dispatch & Urgent Supply';
+
+  const cleanWa1 = String(wa1).replace(/\D/g, '');
+  const finalWa1 = cleanWa1.length === 10 ? ('91' + cleanWa1) : cleanWa1;
+  const cleanPh1 = String(phone1).replace(/[^0-9+]/g, '');
+
+  const cleanWa2 = String(wa2).replace(/\D/g, '');
+  const finalWa2 = cleanWa2.length === 10 ? ('91' + cleanWa2) : cleanWa2;
+  const cleanPh2 = String(phone2).replace(/[^0-9+]/g, '');
+
+  const waText = encodeURIComponent('Hello Sikar Drop, I want to inquire about wholesale water bottle and beverage delivery.');
+
+  backdrop.innerHTML = `
+    <div class="multi-contact-modal-card">
+      <button type="button" onclick="closeMultiContactModal()" style="position:absolute; top:14px; right:14px; background:none; border:none; color:#64748B; cursor:pointer; width:34px; height:34px; display:flex; align-items:center; justify-content:center; border-radius:50%;" aria-label="Close dialog">
+        <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.4" width="20" height="20"><line x1="18" y1="6" x2="6" y2="18"/><line x1="6" y1="6" x2="18" y2="18"/></svg>
+      </button>
+
+      <div style="display:flex; align-items:center; gap:10px; margin-bottom:14px;">
+        <div style="width:42px; height:42px; border-radius:50%; background:#EFF6FF; color:#0284C7; display:flex; align-items:center; justify-content:center; flex-shrink:0;">
+          <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2" width="22" height="22"><path d="M22 16.92v3a2 2 0 0 1-2.18 2 19.79 19.79 0 0 1-8.63-3.07 19.5 19.5 0 0 1-6-6 19.79 19.79 0 0 1-3.07-8.67A2 2 0 0 1 4.11 2h3a2 2 0 0 1 2 1.72 12.84 12.84 0 0 0 .7 2.81 2 2 0 0 1-.45 2.11L8.09 9.91a16 16 0 0 0 6 6l1.27-1.27a2 2 0 0 1 2.11-.45 12.84 12.84 0 0 0 2.81.7A2 2 0 0 1 22 16.92z"/></svg>
+        </div>
+        <div>
+          <h3 style="font-family:var(--font-heading); font-size:1.24rem; font-weight:800; color:#0B192C; margin:0 0 2px 0;">Sikar Drop Depot Support</h3>
+          <p style="font-size:0.8rem; color:#64748B; margin:0; line-height:1.3;">Choose any depot contact to Call or WhatsApp directly</p>
+        </div>
+      </div>
+
+      <!-- LINE 1: MANDI MAIN DEPOT -->
+      <div class="multi-contact-line-box" id="contact-choice-line-1">
+        <div style="display:flex; justify-content:space-between; align-items:center; margin-bottom:6px;">
+          <span class="multi-contact-pill-badge pill-badge-line1">LINE 1 • ORDER DEPOT</span>
+          <span style="font-size:0.72rem; color:#16A34A; font-weight:800;">Available Now</span>
+        </div>
+        <div style="font-size:0.95rem; font-weight:800; color:#0B192C; margin-bottom:2px;">${escapeHTML(label1)}</div>
+        <div style="font-size:1.15rem; font-weight:900; color:#0284C7; font-family:monospace; margin-bottom:4px;">${escapeHTML(phone1)}</div>
+        <div style="font-size:0.74rem; color:#64748B; margin-bottom:10px;">For Wholesale Petis, Marriage Quotes & Rate Slabs</div>
+
+        <div class="contact-actions-row">
+          <a href="https://wa.me/${finalWa1}?text=${waText}" target="_blank" rel="noopener" class="btn-contact-action btn-contact-wa" onclick="trackContactClick('whatsapp', '${finalWa1}')">
+            <svg viewBox="0 0 24 24" fill="currentColor" width="17" height="17"><path d="M.057 24l1.687-6.163c-1.041-1.804-1.588-3.849-1.587-5.946.003-6.556 5.338-11.891 11.893-11.891 3.181.001 6.167 1.24 8.413 3.488 2.245 2.248 3.481 5.236 3.48 8.414-.003 6.557-5.338 11.892-11.893 11.892-1.99-.001-3.951-.5-5.688-1.448l-6.305 1.654zm6.597-3.807c1.676.995 3.276 1.591 5.392 1.592 5.448 0 9.886-4.434 9.889-9.885.002-5.462-4.415-9.89-9.881-9.892-5.452 0-9.887 4.434-9.889 9.884-.001 2.225.651 3.891 1.746 5.634l-.999 3.648 3.742-.981zm11.387-5.464c-.074-.124-.272-.198-.57-.347-.297-.149-1.758-.868-2.031-.967-.272-.099-.47-.149-.669.149-.198.297-.768.967-.941 1.165-.173.198-.347.223-.644.074-.297-.149-1.255-.462-2.39-1.475-.883-.788-1.48-1.761-1.653-2.059-.173-.297-.018-.458.13-.606.134-.133.297-.347.446-.521.151-.172.2-.296.3-.495.099-.198.05-.372-.025-.521-.075-.148-.669-1.611-.916-2.206-.242-.579-.487-.501-.669-.51l-.57-.01c-.198 0-.52.074-.792.372s-1.04 1.016-1.04 2.479 1.065 2.876 1.213 3.074c.149.198 2.095 3.2 5.076 4.487.709.306 1.263.489 1.694.626.712.226 1.36.194 1.872.118.571-.085 1.758-.719 2.006-1.413.248-.695.248-1.29.173-1.414z"/></svg>
+            <span>WhatsApp</span>
+          </a>
+          <a href="tel:${cleanPh1}" class="btn-contact-action btn-contact-call" onclick="trackContactClick('call', '${cleanPh1}')">
+            <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2" width="17" height="17"><path d="M22 16.92v3a2 2 0 0 1-2.18 2 19.79 19.79 0 0 1-8.63-3.07 19.5 19.5 0 0 1-6-6 19.79 19.79 0 0 1-3.07-8.67A2 2 0 0 1 4.11 2h3a2 2 0 0 1 2 1.72 12.84 12.84 0 0 0 .7 2.81 2 2 0 0 1-.45 2.11L8.09 9.91a16 16 0 0 0 6 6l1.27-1.27a2 2 0 0 1 2.11-.45 12.84 12.84 0 0 0 2.81.7A2 2 0 0 1 22 16.92z"/></svg>
+            <span>Call Now</span>
+          </a>
+        </div>
+      </div>
+
+      <!-- LINE 2: EXPRESS DISPATCH & SUPPORT -->
+      <div class="multi-contact-line-box" id="contact-choice-line-2">
+        <div style="display:flex; justify-content:space-between; align-items:center; margin-bottom:6px;">
+          <span class="multi-contact-pill-badge pill-badge-line2">LINE 2 • EXPRESS DISPATCH</span>
+          <span style="font-size:0.72rem; color:#0284C7; font-weight:800;">Tempo Hub</span>
+        </div>
+        <div style="font-size:0.95rem; font-weight:800; color:#0B192C; margin-bottom:2px;">${escapeHTML(label2)}</div>
+        <div style="font-size:1.15rem; font-weight:900; color:#15803D; font-family:monospace; margin-bottom:4px;">${escapeHTML(phone2)}</div>
+        <div style="font-size:0.74rem; color:#64748B; margin-bottom:10px;">For Tempo Dispatch, Live Driver Tracking & Urgent Unloading</div>
+
+        <div class="contact-actions-row">
+          <a href="https://wa.me/${finalWa2}?text=${waText}" target="_blank" rel="noopener" class="btn-contact-action btn-contact-wa" onclick="trackContactClick('whatsapp', '${finalWa2}')">
+            <svg viewBox="0 0 24 24" fill="currentColor" width="17" height="17"><path d="M.057 24l1.687-6.163c-1.041-1.804-1.588-3.849-1.587-5.946.003-6.556 5.338-11.891 11.893-11.891 3.181.001 6.167 1.24 8.413 3.488 2.245 2.248 3.481 5.236 3.48 8.414-.003 6.557-5.338 11.892-11.893 11.892-1.99-.001-3.951-.5-5.688-1.448l-6.305 1.654zm6.597-3.807c1.676.995 3.276 1.591 5.392 1.592 5.448 0 9.886-4.434 9.889-9.885.002-5.462-4.415-9.89-9.881-9.892-5.452 0-9.887 4.434-9.889 9.884-.001 2.225.651 3.891 1.746 5.634l-.999 3.648 3.742-.981zm11.387-5.464c-.074-.124-.272-.198-.57-.347-.297-.149-1.758-.868-2.031-.967-.272-.099-.47-.149-.669.149-.198.297-.768.967-.941 1.165-.173.198-.347.223-.644.074-.297-.149-1.255-.462-2.39-1.475-.883-.788-1.48-1.761-1.653-2.059-.173-.297-.018-.458.13-.606.134-.133.297-.347.446-.521.151-.172.2-.296.3-.495.099-.198.05-.372-.025-.521-.075-.148-.669-1.611-.916-2.206-.242-.579-.487-.501-.669-.51l-.57-.01c-.198 0-.52.074-.792.372s-1.04 1.016-1.04 2.479 1.065 2.876 1.213 3.074c.149.198 2.095 3.2 5.076 4.487.709.306 1.263.489 1.694.626.712.226 1.36.194 1.872.118.571-.085 1.758-.719 2.006-1.413.248-.695.248-1.29.173-1.414z"/></svg>
+            <span>WhatsApp</span>
+          </a>
+          <a href="tel:${cleanPh2}" class="btn-contact-action btn-contact-call" onclick="trackContactClick('call', '${cleanPh2}')">
+            <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2" width="17" height="17"><path d="M22 16.92v3a2 2 0 0 1-2.18 2 19.79 19.79 0 0 1-8.63-3.07 19.5 19.5 0 0 1-6-6 19.79 19.79 0 0 1-3.07-8.67A2 2 0 0 1 4.11 2h3a2 2 0 0 1 2 1.72 12.84 12.84 0 0 0 .7 2.81 2 2 0 0 1-.45 2.11L8.09 9.91a16 16 0 0 0 6 6l1.27-1.27a2 2 0 0 1 2.11-.45 12.84 12.84 0 0 0 2.81.7A2 2 0 0 1 22 16.92z"/></svg>
+            <span>Call Now</span>
+          </a>
+        </div>
+      </div>
+
+      <div style="text-align:center; margin-top:14px; font-size:0.75rem; color:#94A3B8;">
+        100% Factory-Sealed Direct Depot Delivery Across Sikar
+      </div>
+    </div>
+  `;
+
+  backdrop.classList.add('active');
+  document.body.style.overflow = 'hidden';
+};
+
+window.closeMultiContactModal = function() {
+  const backdrop = document.getElementById('multi-contact-modal');
+  if (backdrop) {
+    backdrop.classList.remove('active');
+  }
+  document.body.style.overflow = '';
+};
+
+function trackContactClick(channel, number) {
+  try {
+    if (window.SikarAnalytics && typeof window.SikarAnalytics.track === 'function') {
+      window.SikarAnalytics.track('contact_click', { channel, number });
+    }
+  } catch(e) {}
+}
+
+window.ensureFloatingContactWidget = function() {
+  if (typeof document === 'undefined') return;
+  let widget = document.querySelector('.floating-whatsapp-widget');
+  if (!widget) {
+    widget = document.createElement('aside');
+    widget.className = 'floating-whatsapp-widget';
+    document.body.appendChild(widget);
+  }
+
+  let btn = widget.querySelector('.btn-floating-whatsapp');
+  if (!btn) {
+    btn = document.createElement('a');
+    btn.className = 'btn-floating-whatsapp';
+    btn.setAttribute('aria-label', 'Contact Sikar Drop Depot');
+    btn.href = 'https://wa.me/919829011223';
+    btn.innerHTML = `
+      <span class="floating-contact-dual-badge">2 LINES</span>
+      <svg viewBox="0 0 24 24" fill="currentColor"><path d="M.057 24l1.687-6.163c-1.041-1.804-1.588-3.849-1.587-5.946.003-6.556 5.338-11.891 11.893-11.891 3.181.001 6.167 1.24 8.413 3.488 2.245 2.248 3.481 5.236 3.48 8.414-.003 6.557-5.338 11.892-11.893 11.892-1.99-.001-3.951-.5-5.688-1.448l-6.305 1.654zm6.597-3.807c1.676.995 3.276 1.591 5.392 1.592 5.448 0 9.886-4.434 9.889-9.885.002-5.462-4.415-9.89-9.881-9.892-5.452 0-9.887 4.434-9.889 9.884-.001 2.225.651 3.891 1.746 5.634l-.999 3.648 3.742-.981zm11.387-5.464c-.074-.124-.272-.198-.57-.347-.297-.149-1.758-.868-2.031-.967-.272-.099-.47-.149-.669.149-.198.297-.768.967-.941 1.165-.173.198-.347.223-.644.074-.297-.149-1.255-.462-2.39-1.475-.883-.788-1.48-1.761-1.653-2.059-.173-.297-.018-.458.13-.606.134-.133.297-.347.446-.521.151-.172.2-.296.3-.495.099-.198.05-.372-.025-.521-.075-.148-.669-1.611-.916-2.206-.242-.579-.487-.501-.669-.51l-.57-.01c-.198 0-.52.074-.792.372s-1.04 1.016-1.04 2.479 1.065 2.876 1.213 3.074c.149.198 2.095 3.2 5.076 4.487.709.306 1.263.489 1.694.626.712.226 1.36.194 1.872.118.571-.085 1.758-.719 2.006-1.413.248-.695.248-1.29.173-1.414z"/></svg>
+      <span>Instant Order</span>
+    `;
+    widget.appendChild(btn);
+  }
+
+  if (!btn.querySelector('.floating-contact-dual-badge')) {
+    const badge = document.createElement('span');
+    badge.className = 'floating-contact-dual-badge';
+    badge.textContent = '2 LINES';
+    btn.prepend(badge);
+  }
+
+  btn.onclick = (e) => openMultiContactModal(e);
+
+  document.querySelectorAll('.mobile-menu-call-btn, .mobile-menu-wa-btn').forEach(el => {
+    el.onclick = (e) => {
+      openMultiContactModal(e);
+      if (typeof toggleMobileMenu === 'function') toggleMobileMenu(false);
+    };
+  });
+};
+
+document.addEventListener('DOMContentLoaded', () => {
+  ensureFloatingContactWidget();
+});
 
 // 3. CART MANAGEMENT & FLYING ANIMATION
 function toggleCartDrawer(open) {
