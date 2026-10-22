@@ -2614,7 +2614,7 @@
       position: fixed;
       bottom: 26px;
       right: 26px;
-      z-index: 1000;
+      z-index: 9999;
     }
 
     .btn-floating-whatsapp {
@@ -2977,7 +2977,7 @@
       .floating-whatsapp-widget {
         bottom: calc(74px + env(safe-area-inset-bottom, 0px)) !important;
         right: 14px !important;
-        z-index: 990 !important;
+        z-index: 9999 !important;
       }
       .btn-floating-whatsapp {
         width: 48px !important;

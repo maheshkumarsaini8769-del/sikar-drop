@@ -446,37 +446,61 @@ function applyActiveFestivalTheme(settings) {
   window.currentFestivalTheme = themeName;
   applyFestiveBackgroundAndColorMix(themeName, accentColor, cfg);
 
-  if (!ribbon) {
-    ribbon = document.createElement('aside');
-    ribbon.id = 'store-festival-ribbon';
-    ribbon.className = 'store-festival-ribbon';
-    const navbar = document.querySelector('.site-navbar');
-    if (navbar && navbar.parentNode) {
-      navbar.parentNode.insertBefore(ribbon, navbar);
-    } else {
-      document.body.prepend(ribbon);
+  if (sessionStorage.getItem('sikar_ribbon_dismissed') === 'true') {
+    if (ribbon) ribbon.remove();
+  } else {
+    if (!ribbon) {
+      ribbon = document.createElement('aside');
+      ribbon.id = 'store-festival-ribbon';
+      ribbon.className = 'store-festival-ribbon';
+      const navbar = document.querySelector('.site-navbar');
+      if (navbar && navbar.parentNode) {
+        navbar.parentNode.insertBefore(ribbon, navbar);
+      } else {
+        document.body.prepend(ribbon);
+      }
     }
+
+    const badgeText = cfg.top_ribbon_badge || preset.badge || 'FESTIVAL SPECIAL';
+    const msgText = cfg.banner_message || preset.banner || 'Wholesale packaged water & beverage cases delivered in Sikar.';
+    const isCountdown = (cfg.countdown_timer_enabled === '1' || (cfg.countdown_timer_enabled === undefined && preset.countdown));
+
+    ribbon.style.display = 'block';
+    ribbon.style.position = 'relative';
+    ribbon.style.background = `linear-gradient(90deg, #0B192C 0%, ${accentColor} 50%, #0B192C 100%)`;
+    ribbon.style.color = '#FFFFFF';
+    ribbon.style.padding = '4px 34px 4px 10px';
+    ribbon.style.fontSize = '0.74rem';
+    ribbon.style.fontWeight = '700';
+    ribbon.style.lineHeight = '1.25';
+    ribbon.style.textAlign = 'center';
+    ribbon.style.zIndex = '950';
+
+    ribbon.innerHTML = `
+      <div style="display:flex; align-items:center; justify-content:center; gap:6px; flex-wrap:nowrap; overflow:hidden; text-overflow:ellipsis; white-space:nowrap; max-width:calc(100% - 24px); margin:0 auto;">
+        <span style="background:rgba(255,255,255,0.22); padding:1px 7px; border-radius:3px; font-size:0.65rem; letter-spacing:0.04em; text-transform:uppercase; font-weight:800; flex-shrink:0;">${escapeHTML(badgeText)}</span>
+        <span style="overflow:hidden; text-overflow:ellipsis; white-space:nowrap; font-size:0.75rem;">${escapeHTML(msgText)}</span>
+        ${isCountdown ? `<span id="ribbon-countdown-badge" style="background:#0F172A; color:#FDE047; padding:1px 6px; border-radius:3px; font-family:monospace; font-size:0.68rem; flex-shrink:0;">Ends In: 02d 08h</span>` : ''}
+      </div>
+      <button type="button" class="btn-ribbon-cut" onclick="dismissFestivalRibbon(event)" aria-label="Close Announcement" title="Cut / Dismiss" style="position:absolute; right:8px; top:50%; transform:translateY(-50%); width:22px; height:22px; border-radius:50%; background:rgba(255,255,255,0.25); border:none; color:#FFFFFF; display:flex; align-items:center; justify-content:center; cursor:pointer; padding:0; line-height:1;">
+        <svg viewBox="0 0 24 24" width="13" height="13" stroke="currentColor" stroke-width="2.6" fill="none"><line x1="18" y1="6" x2="6" y2="18"/><line x1="6" y1="6" x2="18" y2="18"/></svg>
+      </button>
+    `;
   }
 
-  const badgeText = cfg.top_ribbon_badge || preset.badge || 'FESTIVAL SPECIAL';
-  const msgText = cfg.banner_message || preset.banner || 'Wholesale packaged water & beverage cases delivered in Sikar.';
-  const isCountdown = (cfg.countdown_timer_enabled === '1' || (cfg.countdown_timer_enabled === undefined && preset.countdown));
-
-  ribbon.style.display = 'block';
-  ribbon.style.background = `linear-gradient(90deg, #0B192C 0%, ${accentColor} 50%, #0B192C 100%)`;
-  ribbon.style.color = '#FFFFFF';
-  ribbon.style.padding = '8px 14px';
-  ribbon.style.fontSize = '0.82rem';
-  ribbon.style.fontWeight = '700';
-  ribbon.style.textAlign = 'center';
-
-  ribbon.innerHTML = `
-    <div class="container" style="display:flex; align-items:center; justify-content:center; gap:10px; flex-wrap:wrap;">
-      <span style="background:rgba(255,255,255,0.22); padding:2px 10px; border-radius:4px; font-size:0.72rem; letter-spacing:0.05em; text-transform:uppercase; font-weight:800;">${escapeHTML(badgeText)}</span>
-      <span>${escapeHTML(msgText)}</span>
-      ${isCountdown ? `<span id="ribbon-countdown-badge" style="background:#0F172A; color:#FDE047; padding:2px 8px; border-radius:4px; font-family:monospace; font-size:0.75rem;">Ends In: 02d 08h 45m</span>` : ''}
-    </div>
-  `;
+  window.dismissFestivalRibbon = function(e) {
+    if (e) { e.preventDefault(); e.stopPropagation(); }
+    const r = document.getElementById('store-festival-ribbon');
+    if (r) {
+      r.style.transition = 'all 0.22s ease-out';
+      r.style.maxHeight = '0px';
+      r.style.padding = '0';
+      r.style.opacity = '0';
+      r.style.overflow = 'hidden';
+      setTimeout(() => r.remove(), 240);
+    }
+    sessionStorage.setItem('sikar_ribbon_dismissed', 'true');
+  };
 
   const showModal = (cfg.welcome_modal_enabled === '1' || (cfg.welcome_modal_enabled === undefined && preset.welcomeModal));
   if (showModal) {
@@ -541,19 +565,104 @@ function initFestiveFloatingWidget(settings) {
 
   const w = document.createElement('div');
   w.id = 'festive-floating-widget';
-  w.style.cssText = `position:fixed; bottom:76px; right:18px; z-index:9998; width:48px; height:48px; border-radius:50%; background:${color}; color:#FFFFFF; display:flex; align-items:center; justify-content:center; box-shadow:0 6px 18px rgba(0,0,0,0.25); cursor:pointer; transition:transform 0.2s;`;
+  w.className = 'festive-floating-widget-fab';
+  w.style.cssText = `
+    position: fixed;
+    bottom: calc(134px + env(safe-area-inset-bottom, 0px));
+    right: 14px;
+    z-index: 9998;
+    width: 48px;
+    height: 48px;
+    border-radius: 50%;
+    background: ${color};
+    color: #FFFFFF;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    box-shadow: 0 6px 20px rgba(0,0,0,0.3);
+    cursor: pointer;
+    transition: transform 0.2s, box-shadow 0.2s;
+  `;
   w.title = `Click to reveal festive discount (${code})`;
+  w.setAttribute('aria-label', `Festive Gift Offer: ${code}`);
 
-  w.innerHTML = `<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2" width="22" height="22"><polyline points="20 12 20 22 4 22 4 12"/><rect width="20" height="5" x="2" y="7"/><line x1="12" x2="12" y1="22" y2="7"/><path d="M12 7H7.5a2.5 2.5 0 0 1 0-5C11 2 12 7 12 7z"/><path d="M12 7h4.5a2.5 2.5 0 0 0 0-5C13 2 12 7 12 7z"/></svg>`;
-  
+  w.innerHTML = `
+    <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2" width="22" height="22">
+      <polyline points="20 12 20 22 4 22 4 12"/>
+      <rect width="20" height="5" x="2" y="7"/>
+      <line x1="12" x2="12" y1="22" y2="7"/>
+      <path d="M12 7H7.5a2.5 2.5 0 0 1 0-5C11 2 12 7 12 7z"/>
+      <path d="M12 7h4.5a2.5 2.5 0 0 0 0-5C13 2 12 7 12 7z"/>
+    </svg>
+    <span style="position:absolute; top:-4px; right:-4px; background:#EF4444; color:#FFFFFF; font-size:0.6rem; font-weight:900; padding:1px 5px; border-radius:9999px; border:1.5px solid #FFFFFF; letter-spacing:0.02em;">OFFER</span>
+  `;
+
   w.onclick = () => {
-    showToast(`Festive Coupon: ${code} (Applied to Cart!)`);
-    sessionStorage.setItem('sikar_applied_coupon', JSON.stringify({ code, pct: parseInt(settings.discount_percentage, 10) || 10 }));
-    updateCartUI();
+    openFestiveGiftDialog(settings);
   };
 
   document.body.appendChild(w);
 }
+
+function openFestiveGiftDialog(settings) {
+  let existing = document.getElementById('festive-gift-dialog');
+  if (existing) existing.remove();
+
+  const color = settings.theme_accent_color || '#D97706';
+  const code = settings.promo_coupon_code || 'DIWALI2026';
+  const pct = settings.discount_percentage || '15';
+  const title = settings.welcome_greeting_title || 'Diwali Dhamaka Exclusive Offer';
+  const sub = settings.welcome_greeting_subtitle || 'Direct wholesale supply of pure factory-sealed water and chilled beverages across Sikar.';
+
+  const dlg = document.createElement('div');
+  dlg.id = 'festive-gift-dialog';
+  dlg.style.cssText = 'position:fixed; top:0; left:0; width:100vw; height:100vh; background:rgba(15,23,42,0.72); backdrop-filter:blur(5px); z-index:100000; display:flex; align-items:center; justify-content:center; padding:16px; animation:fadeInModal 0.25s ease-out;';
+
+  dlg.innerHTML = `
+    <div style="background:#FFFFFF; border-radius:18px; padding:28px 24px; max-width:420px; width:100%; text-align:center; position:relative; box-shadow:0 24px 48px rgba(0,0,0,0.35); border:2px solid ${color};">
+      <button type="button" onclick="document.getElementById('festive-gift-dialog').remove()" style="position:absolute; top:12px; right:12px; background:none; border:none; color:#64748B; cursor:pointer; width:32px; height:32px; display:flex; align-items:center; justify-content:center; border-radius:50%;" aria-label="Close">
+        <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" width="20" height="20"><line x1="18" y1="6" x2="6" y2="18"/><line x1="6" y1="6" x2="18" y2="18"/></svg>
+      </button>
+      <div style="width:52px; height:52px; border-radius:50%; background:${color}22; color:${color}; margin:0 auto 12px; display:flex; align-items:center; justify-content:center;">
+        <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2" width="28" height="28"><polyline points="20 12 20 22 4 22 4 12"/><rect width="20" height="5" x="2" y="7"/><line x1="12" x2="12" y1="22" y2="7"/><path d="M12 7H7.5a2.5 2.5 0 0 1 0-5C11 2 12 7 12 7z"/><path d="M12 7h4.5a2.5 2.5 0 0 0 0-5C13 2 12 7 12 7z"/></svg>
+      </div>
+      <h3 style="font-family:var(--font-heading); font-size:1.3rem; font-weight:800; color:#0B192C; margin:0 0 6px 0;">${escapeHTML(title)}</h3>
+      <p style="font-size:0.84rem; color:#64748B; line-height:1.45; margin:0 0 16px 0;">${escapeHTML(sub)}</p>
+      
+      <div style="background:#FFFBEB; border:1.5px dashed ${color}; border-radius:12px; padding:16px 12px; margin-bottom:18px;">
+        <div style="font-size:0.72rem; font-weight:800; color:#78350F; text-transform:uppercase; letter-spacing:0.06em; margin-bottom:4px;">Festive Discount Voucher</div>
+        <div style="font-size:1.4rem; font-weight:900; color:${color}; font-family:monospace; letter-spacing:0.08em; margin:2px 0;">${escapeHTML(code)}</div>
+        <div style="font-size:0.82rem; color:#15803D; font-weight:800;">Flat ${pct}% Discount on Bulk Petis</div>
+      </div>
+
+      <div style="display:flex; flex-direction:column; gap:8px;">
+        <button type="button" class="btn-primary" onclick="applyAndCopyFestiveVoucher('${escapeHTML(code)}', ${parseInt(pct, 10) || 15})" style="width:100%; padding:13px 18px; font-weight:800; font-size:0.92rem; border-radius:9999px; background:${color}; color:#FFFFFF; border:none; cursor:pointer;">
+          <span>COPY CODE &amp; APPLY TO CART</span>
+        </button>
+        <button type="button" onclick="document.getElementById('festive-gift-dialog').remove()" style="background:none; border:none; color:#64748B; font-size:0.84rem; font-weight:700; cursor:pointer; padding:6px;">
+          Continue Shopping
+        </button>
+      </div>
+    </div>
+  `;
+
+  dlg.onclick = (e) => {
+    if (e.target === dlg) dlg.remove();
+  };
+  document.body.appendChild(dlg);
+}
+
+window.applyAndCopyFestiveVoucher = function(code, pct) {
+  if (navigator.clipboard) {
+    navigator.clipboard.writeText(code).catch(() => {});
+  }
+  sessionStorage.setItem('sikar_applied_coupon', JSON.stringify({ code, pct }));
+  localStorage.setItem('sikar_applied_coupon', JSON.stringify({ code, pct }));
+  if (typeof updateCartUI === 'function') updateCartUI();
+  showToast(`Coupon ${code} Copied & Applied! Flat ${pct}% OFF`);
+  const dlg = document.getElementById('festive-gift-dialog');
+  if (dlg) dlg.remove();
+};
 
 function initSparklerTrail(accentColor) {
   if (window._sparklerAttached) return;
