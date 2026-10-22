@@ -3953,8 +3953,49 @@ app.post('/api/products', requireAdmin, async (req, res) => {
   }
 });
 
+async function ensureProductHydrated(productId) {
+  if (!productId) return false;
+  let existing = db.prepare('SELECT id FROM products WHERE id = ?').get(productId);
+  if (existing) return true;
+  try {
+    const mongo = await getMongoDb();
+    if (!mongo) return false;
+    const doc = (await mongo.collection('products').findOne({ _id: productId })) ||
+                (await mongo.collection('products').findOne({ id: productId }));
+    if (!doc) return false;
+    const now = new Date().toISOString();
+    db.prepare(`
+      INSERT INTO products (id, sku, title, category, price, mrp, cost, stock, low_stock_threshold, spec, image, description, active, display_order, created_at, updated_at)
+      VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)
+      ON CONFLICT(id) DO UPDATE SET price = excluded.price, updated_at = excluded.updated_at
+    `).run(
+      doc.id || doc._id,
+      doc.sku || doc.id || doc._id,
+      doc.title || 'Product',
+      doc.category || 'water',
+      Number(doc.price || 0),
+      Number(doc.mrp || 0),
+      Number(doc.cost || 0),
+      Number(doc.stock !== undefined ? doc.stock : 50),
+      Number(doc.low_stock_threshold || 10),
+      doc.spec || 'Factory Sealed Peti',
+      doc.image || 'assets/cat_chilled_cans.webp',
+      doc.description || '',
+      Number(doc.active !== undefined ? doc.active : 1),
+      Number(doc.display_order || 0),
+      doc.created_at || now,
+      doc.updated_at || now
+    );
+    return true;
+  } catch (err) {
+    console.warn('[MongoDB] ensureProductHydrated error:', err.message);
+    return false;
+  }
+}
+
 app.put('/api/products/:id', requireAdmin, async (req, res) => {
   try {
+    await ensureProductHydrated(req.params.id);
     const { title, category, price, mrp, cost, stock, lowStockThreshold, spec, image, description, active } = req.body;
     const now = new Date().toISOString();
 
@@ -4034,6 +4075,7 @@ app.delete('/api/products/:id', requireAdmin, async (req, res) => {
     const { permanent } = req.query;
     const now = new Date().toISOString();
 
+    await ensureProductHydrated(id);
     const existing = db.prepare('SELECT * FROM products WHERE id = ?').get(id);
     if (!existing) {
       return res.status(404).json({ error: 'Product not found' });
