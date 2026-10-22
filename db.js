@@ -811,6 +811,22 @@ function initDatabase() {
     console.warn('Payments columns migration notice:', err.message);
   }
 
+  // Purchases columns migration (bill_image, items_json)
+  try {
+    const purCols = db.prepare('PRAGMA table_info(purchases)').all().map(c => c.name);
+    const neededPurCols = [
+      ['bill_image', "TEXT DEFAULT ''"],
+      ['items_json', "TEXT DEFAULT '[]'"]
+    ];
+    for (const [col, colType] of neededPurCols) {
+      if (!purCols.includes(col)) {
+        db.exec(`ALTER TABLE purchases ADD COLUMN ${col} ${colType}`);
+      }
+    }
+  } catch (err) {
+    console.warn('Purchases columns migration notice:', err.message);
+  }
+
   console.log('Database tables initialized successfully');
   seedDefaultData();
 }
@@ -1225,7 +1241,7 @@ function seedDefaultData() {
 // TRANSACTIONAL HELPERS
 
 // 1. ATOMIC MANUAL CASH SALE
-function recordManualSaleTransaction({ idempotencyToken, customerId, customerName, customerPhone, items = [], subtotal, discount = 0, totalAmount, amountReceived, outstandingAmount, paymentMethod = 'Cash', saleDate, dueDate = '', notes = '', actor = 'Admin' }) {
+function recordManualSaleTransaction({ idempotencyToken, customerId, customerName, customerPhone, corridor = '', items = [], subtotal, discount = 0, totalAmount, amountReceived, outstandingAmount, paymentMethod = 'Cash', saleDate, dueDate = '', notes = '', actor = 'Admin' }) {
   const runTx = db.transaction(() => {
     // Check idempotency token to strictly prevent double submission
     if (idempotencyToken) {
@@ -1290,33 +1306,39 @@ function recordManualSaleTransaction({ idempotencyToken, customerId, customerNam
       `).run('MOV-' + Math.floor(100000 + Math.random() * 900000), pid, -pqty, beforeStock, afterStock, saleId, `Manual Cash Sale ${saleId}`, actor, now);
     }
 
-    // Insert Manual Sale record
-    db.prepare(`
-      INSERT INTO manual_sales (id, idempotency_token, customer_id, customer_name, customer_phone, items_json, subtotal, discount, total_amount, amount_received, outstanding_amount, payment_method, sale_date, notes, created_at, status, actor)
-      VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, 'completed', ?)
-    `).run(saleId, idempotencyToken || null, customerId || null, customerName, customerPhone, JSON.stringify(items), finalSubtotal, finalDiscount, finalTotal, finalReceived, finalOutstanding, paymentMethod, saleDate || now.split('T')[0], notes || '', now, actor);
-
-    // Update or Create Customer
+    // Resolve or Create Customer first so customer_id is strictly linked
     let cust = null;
     if (customerId) {
       cust = db.prepare('SELECT * FROM customers WHERE id = ?').get(customerId);
     } else if (customerPhone) {
+      const cleanPhone = String(customerPhone).replace(/\D/g, '');
       cust = db.prepare('SELECT * FROM customers WHERE phone = ?').get(customerPhone);
+      if (!cust && cleanPhone.length >= 10) {
+        cust = db.prepare("SELECT * FROM customers WHERE REPLACE(phone, ' ', '') = ? OR phone LIKE ?").get(cleanPhone, `%${cleanPhone.slice(-10)}`);
+      }
     }
 
     let custId = cust ? cust.id : ('CUST-' + Math.floor(1000 + Math.random() * 9000));
+    const assignedCorridor = corridor || (cust && cust.corridor) || 'Piprali Road Mandi';
+
     if (cust) {
       const newOrders = cust.total_orders + 1;
       const newSpend = cust.lifetime_spend + finalTotal;
       const newBalance = cust.outstanding_balance + finalOutstanding;
-      db.prepare('UPDATE customers SET total_orders = ?, lifetime_spend = ?, outstanding_balance = ?, last_activity = ? WHERE id = ?')
-        .run(newOrders, newSpend, newBalance, now, cust.id);
+      db.prepare('UPDATE customers SET total_orders = ?, lifetime_spend = ?, outstanding_balance = ?, last_activity = ?, corridor = COALESCE(corridor, ?) WHERE id = ?')
+        .run(newOrders, newSpend, newBalance, now, assignedCorridor, cust.id);
     } else {
       db.prepare(`
-        INSERT INTO customers (id, name, phone, verified, total_orders, lifetime_spend, outstanding_balance, created_at, last_activity)
-        VALUES (?, ?, ?, 1, 1, ?, ?, ?, ?)
-      `).run(custId, customerName, customerPhone, finalTotal, finalOutstanding, now, now);
+        INSERT INTO customers (id, name, phone, corridor, verified, total_orders, lifetime_spend, outstanding_balance, created_at, last_activity)
+        VALUES (?, ?, ?, ?, 1, 1, ?, ?, ?, ?)
+      `).run(custId, customerName, customerPhone, assignedCorridor, finalTotal, finalOutstanding, now, now);
     }
+
+    // Insert Manual Sale record with customer_id explicitly set
+    db.prepare(`
+      INSERT INTO manual_sales (id, idempotency_token, customer_id, customer_name, customer_phone, items_json, subtotal, discount, total_amount, amount_received, outstanding_amount, payment_method, sale_date, notes, created_at, status, actor)
+      VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, 'completed', ?)
+    `).run(saleId, idempotencyToken || null, custId, customerName, customerPhone, JSON.stringify(items), finalSubtotal, finalDiscount, finalTotal, finalReceived, finalOutstanding, paymentMethod, saleDate || now.split('T')[0], notes || '', now, actor);
 
     // Record Payment transaction if amount received > 0
     if (finalReceived > 0) {

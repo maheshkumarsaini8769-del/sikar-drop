@@ -8470,7 +8470,7 @@
     function setStoreTheme(themeName, btn) {
       currentTheme = themeName;
       localStorage.setItem('sikar_theme', themeName);
-      if (themeName === 'default') {
+      if (themeName === 'default' || themeName === 'normal') {
         document.documentElement.removeAttribute('data-theme');
       } else {
         document.documentElement.setAttribute('data-theme', themeName);
@@ -8481,6 +8481,11 @@
         const targetBtn = document.getElementById(`theme-btn-${themeName}`);
         if (targetBtn) targetBtn.classList.add('active');
       }
+      fetch('/api/settings/theme', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ theme: (themeName === 'default' ? 'normal' : themeName) })
+      }).catch(() => {});
       showToast(`Store theme changed to: ${themeName.toUpperCase()}`);
     }
 
@@ -14118,13 +14123,16 @@
 
     // INITIALIZATION ON DOM READY
     window.addEventListener('DOMContentLoaded', () => {
-      // 1. Synchronously apply cached festival theme from localStorage immediately
+      // 1. Synchronously apply cached festival theme from server or localStorage immediately
       try {
         const cachedSettings = JSON.parse(localStorage.getItem('sikar_settings') || 'null');
-        const cachedTheme = localStorage.getItem('sikar_theme') || (cachedSettings && cachedSettings.active_theme) || 'normal';
-        if (cachedTheme && cachedTheme !== 'normal' && cachedTheme !== 'default') {
-          applyActiveFestivalTheme(cachedSettings || cachedTheme);
-        } else if (currentTheme && currentTheme !== 'default') {
+        const serverTheme = document.documentElement.getAttribute('data-theme');
+        const effectiveTheme = (serverTheme && serverTheme !== 'normal' && serverTheme !== 'default')
+          ? serverTheme
+          : (localStorage.getItem('sikar_theme') || (cachedSettings && cachedSettings.active_theme) || 'normal');
+        if (effectiveTheme && effectiveTheme !== 'normal' && effectiveTheme !== 'default') {
+          applyActiveFestivalTheme(cachedSettings || effectiveTheme);
+        } else if (currentTheme && currentTheme !== 'default' && currentTheme !== 'normal') {
           document.documentElement.setAttribute('data-theme', currentTheme);
         }
       } catch (e) {

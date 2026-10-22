@@ -2389,7 +2389,7 @@ app.get('/api/manual-sales/:id', (req, res) => {
 
 app.post('/api/manual-sales', (req, res) => {
   try {
-    const { idempotencyToken, customerId, customerName, customerPhone, items, subtotal, discount, totalAmount, amountReceived, outstandingAmount, paymentMethod, saleDate, notes, actor } = req.body;
+    const { idempotencyToken, customerId, customerName, customerPhone, corridor, items, subtotal, discount, totalAmount, amountReceived, outstandingAmount, paymentMethod, saleDate, notes, actor } = req.body;
 
     if (!customerName || !customerPhone || !items || !Array.isArray(items) || items.length === 0) {
       return res.status(400).json({ error: 'Customer name, phone, and at least one item are required' });
@@ -2423,6 +2423,7 @@ app.post('/api/manual-sales', (req, res) => {
       customerId,
       customerName,
       customerPhone,
+      corridor: (corridor || '').trim(),
       items,
       subtotal,
       discount: discount || 0,
@@ -3470,7 +3471,11 @@ app.get('/api/purchases', (req, res) => {
     }
 
     query += ' ORDER BY COALESCE(invoice_date, date(created_at)) DESC, created_at DESC';
-    const purchases = db.prepare(query).all(...params);
+    const purchases = db.prepare(query).all(...params).map(p => {
+      let items = [];
+      try { items = JSON.parse(p.items_json || '[]'); } catch (e) { items = []; }
+      return { ...p, items };
+    });
     res.json(purchases);
   } catch (err) {
     res.status(500).json({ error: err.message });
@@ -3479,29 +3484,175 @@ app.get('/api/purchases', (req, res) => {
 
 app.post('/api/purchases', (req, res) => {
   try {
-    const { supplierName, supplierPhone, productId, qty, unitCost, billNo, invoiceDate, paymentMethod, notes, status, autoReceive } = req.body;
-    if (!supplierName || !productId || !qty || !unitCost) {
-      return res.status(400).json({ error: 'Supplier name, product, quantity, and unit cost are required' });
+    const {
+      supplierName,
+      supplierPhone,
+      productId,
+      qty,
+      unitCost,
+      billNo,
+      invoiceDate,
+      paymentMethod,
+      notes,
+      status,
+      autoReceive,
+      billImage,
+      bill_image,
+      items,
+      actor
+    } = req.body;
+
+    const finalSupplier = String(supplierName || '').trim();
+    if (!finalSupplier) {
+      return res.status(400).json({ error: 'Supplier / Bottling Plant name is required' });
+    }
+
+    const finalBillImage = String(billImage || bill_image || '').trim();
+    const finalInvoiceDate = String(invoiceDate || new Date().toISOString().split('T')[0]).trim();
+    const finalBillNo = String(billNo || `BILL-${Date.now().toString().slice(-6)}`).trim();
+    const finalPayMethod = String(paymentMethod || 'Bank Transfer').trim();
+    const finalActor = String(actor || (req.headers['x-operator-name'] || 'Admin')).trim();
+    const now = new Date().toISOString();
+
+    // Multi-item purchase handling
+    if (Array.isArray(items) && items.length > 0) {
+      let grandTotalCost = 0;
+      let totalBoxes = 0;
+      const sanitizedItems = [];
+
+      for (const it of items) {
+        const pid = it.productId || it.id;
+        const q = parseInt(it.qty || it.quantity, 10) || 0;
+        const cost = parseFloat(it.unitCost || it.cost || it.price) || 0;
+        if (!pid || q <= 0) continue;
+
+        const prod = db.prepare('SELECT title, stock, cost FROM products WHERE id = ?').get(pid);
+        const pTitle = prod ? prod.title : (it.productTitle || it.title || ('Product ' + pid));
+        const lineTotal = q * cost;
+        grandTotalCost += lineTotal;
+        totalBoxes += q;
+
+        sanitizedItems.push({
+          productId: pid,
+          productTitle: pTitle,
+          qty: q,
+          unitCost: cost,
+          totalCost: lineTotal
+        });
+
+        // Inward stock atomically
+        if (autoReceive || status === 'received' || status === undefined) {
+          if (prod) {
+            const beforeStock = prod.stock || 0;
+            const afterStock = beforeStock + q;
+            db.prepare('UPDATE products SET stock = ?, cost = ?, updated_at = ? WHERE id = ?').run(afterStock, cost, now, pid);
+            db.prepare(`
+              INSERT INTO inventory_movements (id, product_id, movement_type, quantity, before_stock, after_stock, reference_id, reason, actor, created_at)
+              VALUES (?, ?, 'purchase_received', ?, ?, ?, ?, ?, ?, ?)
+            `).run('MOV-' + Math.floor(100000 + Math.random() * 900000), pid, q, beforeStock, afterStock, finalBillNo, `Stock Inward: ${finalSupplier}`, finalActor, now);
+          }
+        }
+      }
+
+      if (sanitizedItems.length === 0) {
+        return res.status(400).json({ error: 'Please provide at least one product with quantity greater than 0' });
+      }
+
+      const id = 'PUR-' + Date.now().toString().slice(-6) + Math.floor(10 + Math.random() * 90);
+      const primaryTitle = sanitizedItems.length === 1
+        ? sanitizedItems[0].productTitle
+        : sanitizedItems.map(i => `${i.qty}x ${i.productTitle}`).join(', ');
+      const primaryPid = sanitizedItems.length === 1 ? sanitizedItems[0].productId : 'MULTI';
+      const avgUnitCost = totalBoxes > 0 ? (grandTotalCost / totalBoxes) : 0;
+
+      db.prepare(`
+        INSERT INTO purchases (id, supplier_name, supplier_phone, product_id, product_title, qty, unit_cost, total_cost, bill_no, invoice_date, payment_method, payment_status, status, notes, bill_image, items_json, created_at)
+        VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, 'Paid', 'received', ?, ?, ?, ?)
+      `).run(
+        id,
+        finalSupplier,
+        supplierPhone || '',
+        primaryPid,
+        primaryTitle,
+        totalBoxes,
+        avgUnitCost,
+        grandTotalCost,
+        finalBillNo,
+        finalInvoiceDate,
+        finalPayMethod,
+        notes || '',
+        finalBillImage,
+        JSON.stringify(sanitizedItems),
+        now
+      );
+
+      db.prepare(`
+        INSERT INTO audit_logs (id, actor, action, module, details, created_at)
+        VALUES (?, ?, 'PURCHASE_STOCK_RECEIVED', 'purchases', ?, ?)
+      `).run('AUD-' + Math.floor(100000 + Math.random() * 900000), finalActor, `Recorded multi-item inward ${id} from ${finalSupplier}: ${totalBoxes} boxes (₹${grandTotalCost})`, now);
+
+      return res.status(201).json({
+        success: true,
+        id,
+        totalCost: grandTotalCost,
+        totalBoxes,
+        itemsCount: sanitizedItems.length,
+        items: sanitizedItems
+      });
+    }
+
+    // Single item fallback
+    if (!productId || !qty || !unitCost) {
+      return res.status(400).json({ error: 'Product, quantity, and unit cost are required' });
     }
 
     const prod = db.prepare('SELECT title FROM products WHERE id = ?').get(productId);
     const prodTitle = prod ? prod.title : (req.body.productTitle || ('Product ' + productId));
-
     const id = 'PUR-' + Date.now().toString().slice(-6) + Math.floor(10 + Math.random() * 90);
-    const now = new Date().toISOString();
     const totalCost = Number(qty) * Number(unitCost);
+    const singleItems = [{ productId, productTitle: prodTitle, qty: Number(qty), unitCost: Number(unitCost), totalCost }];
 
     db.prepare(`
-      INSERT INTO purchases (id, supplier_name, supplier_phone, product_id, product_title, qty, unit_cost, total_cost, bill_no, invoice_date, payment_method, payment_status, status, notes, created_at)
-      VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, 'Paid', ?, ?, ?)
-    `).run(id, supplierName, supplierPhone || '', productId, prodTitle, qty, unitCost, totalCost, billNo || '', invoiceDate || now.split('T')[0], paymentMethod || 'Bank Transfer', autoReceive ? 'draft' : (status || 'draft'), notes || '', now);
+      INSERT INTO purchases (id, supplier_name, supplier_phone, product_id, product_title, qty, unit_cost, total_cost, bill_no, invoice_date, payment_method, payment_status, status, notes, bill_image, items_json, created_at)
+      VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, 'Paid', ?, ?, ?, ?, ?)
+    `).run(
+      id,
+      finalSupplier,
+      supplierPhone || '',
+      productId,
+      prodTitle,
+      qty,
+      unitCost,
+      totalCost,
+      finalBillNo,
+      finalInvoiceDate,
+      finalPayMethod,
+      autoReceive ? 'draft' : (status || 'draft'),
+      notes || '',
+      finalBillImage,
+      JSON.stringify(singleItems),
+      now
+    );
 
-    // If autoReceive is true, immediately receive and increment inventory
     if (autoReceive || status === 'received') {
-      receivePurchaseTransaction({ purchaseId: id, actor: 'Admin' });
+      receivePurchaseTransaction({ purchaseId: id, actor: finalActor });
     }
 
     res.status(201).json({ success: true, id, totalCost });
+  } catch (err) {
+    res.status(400).json({ error: err.message });
+  }
+});
+
+app.patch('/api/purchases/:id/bill', (req, res) => {
+  try {
+    const { billImage, billNo } = req.body;
+    if (billNo) {
+      db.prepare('UPDATE purchases SET bill_image = ?, bill_no = ? WHERE id = ?').run(billImage || '', billNo, req.params.id);
+    } else {
+      db.prepare('UPDATE purchases SET bill_image = ? WHERE id = ?').run(billImage || '', req.params.id);
+    }
+    res.json({ success: true, message: 'Bill receipt updated' });
   } catch (err) {
     res.status(400).json({ error: err.message });
   }
@@ -6591,6 +6742,10 @@ function renderStorefrontPage(file) {
           return `<html${attrs.replace(/data-theme="[^"]*"/i, `data-theme="${activeTheme}"`)}>`;
         }
         return `<html${attrs} data-theme="${activeTheme}">`;
+      });
+    } else {
+      html = html.replace(/<html([^>]*)>/i, (m, attrs) => {
+        return `<html${attrs.replace(/\s*data-theme="[^"]*"/i, '')}>`;
       });
     }
   } catch (e) {}
