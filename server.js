@@ -3666,7 +3666,7 @@ app.post('/api/purchases', (req, res) => {
       finalBillNo,
       finalInvoiceDate,
       finalPayMethod,
-      autoReceive ? 'draft' : (status || 'draft'),
+      (autoReceive || status === 'received') ? 'draft' : (status || 'draft'),
       notes || '',
       finalBillImage,
       JSON.stringify(singleItems),
