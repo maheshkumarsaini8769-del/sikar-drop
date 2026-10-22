@@ -6308,6 +6308,7 @@ app.get(['/products', '/products.html'], sendSeoPage('products.html'));
 app.get(['/categories', '/categories.html'], sendSeoPage('categories.html'));
 app.get(['/bulk', '/bulk.html', '/corporate', '/corporate.html'], sendSeoPage('bulk.html'));
 app.get(['/track', '/track.html'], sendSeoPage('track.html'));
+app.get(['/orders', '/orders.html', '/my-orders', '/my-orders.html'], sendSeoPage('orders.html'));
 app.get(['/about', '/about.html'], sendSeoPage('about.html'));
 app.get(['/why', '/why.html'], sendSeoPage('why.html'));
 app.get(['/faq', '/faq.html', '/faqs', '/faqs.html'], sendSeoPage('faq.html'));

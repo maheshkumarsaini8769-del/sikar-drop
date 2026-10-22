@@ -1,0 +1,1246 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <meta name="robots" content="noindex, follow">
+  <meta name="theme-color" content="#0284C7">
+  
+  <!-- STRONG SEO META TAGS -->
+  <title>My Orders &amp; Live Tracking | Sikar Water Bottle Supply</title>
+  <meta name="description" content="View your wholesale drinking water, cold drink peti and beverage order history with live real-time tempo dispatch tracking in Sikar.">
+  <meta name="keywords" content="my orders sikar drop, water order history, track order sikar, tempo dispatch status">
+  
+  <!-- FAVICONS -->
+  <link rel="icon" type="image/svg+xml" href="/favicon.svg">
+  <link rel="alternate icon" type="image/x-icon" href="/favicon.ico">
+  <link rel="apple-touch-icon" href="/favicon.png">
+  <link rel="canonical" href="https://sikar-drop.vercel.app/orders">
+
+  <!-- FONTS & STYLES -->
+  <link rel="preconnect" href="https://fonts.googleapis.com">
+  <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+  <link href="https://fonts.googleapis.com/css2?family=Be+Vietnam+Pro:wght@400;500;600;700;800&family=Outfit:wght@500;600;700;800;900&display=swap" rel="stylesheet">
+  <link rel="stylesheet" href="assets/site.css?v=20261021b">
+
+  <style>
+    /* DEDICATED MY ORDERS CUSTOMER PORTAL STYLES */
+    .orders-customer-banner {
+      background: linear-gradient(135deg, #0B192C 0%, #0F3D64 60%, #0284C7 100%);
+      border-radius: var(--radius-sm);
+      padding: 24px;
+      color: #FFFFFF;
+      margin-bottom: 24px;
+      box-shadow: 0 4px 20px rgba(11, 25, 44, 0.12);
+      position: relative;
+      overflow: hidden;
+    }
+
+    .orders-customer-banner::after {
+      content: "";
+      position: absolute;
+      top: -40px;
+      right: -40px;
+      width: 180px;
+      height: 180px;
+      border-radius: 50%;
+      background: radial-gradient(circle, rgba(56, 189, 248, 0.18) 0%, transparent 70%);
+      pointer-events: none;
+    }
+
+    .orders-header-row {
+      display: flex;
+      justify-content: space-between;
+      align-items: center;
+      flex-wrap: wrap;
+      gap: 16px;
+    }
+
+    .orders-avatar-col {
+      display: flex;
+      align-items: center;
+      gap: 14px;
+    }
+
+    .orders-avatar-circle {
+      width: 52px;
+      height: 52px;
+      border-radius: 50%;
+      background: #E0F2FE;
+      color: #0369A1;
+      font-family: var(--font-heading);
+      font-size: 1.3rem;
+      font-weight: 900;
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      border: 2px solid rgba(255, 255, 255, 0.8);
+      flex-shrink: 0;
+    }
+
+    .orders-customer-title {
+      font-family: var(--font-heading);
+      font-size: 1.45rem;
+      font-weight: 800;
+      color: #FFFFFF;
+      margin: 0 0 4px 0;
+      line-height: 1.2;
+    }
+
+    .orders-verified-pill {
+      display: inline-flex;
+      align-items: center;
+      gap: 5px;
+      background: rgba(22, 163, 74, 0.2);
+      border: 1px solid rgba(34, 197, 94, 0.5);
+      color: #86EFAC;
+      font-size: 0.74rem;
+      font-weight: 800;
+      padding: 2px 8px;
+      border-radius: var(--radius-pill);
+    }
+
+    .orders-stat-strip {
+      display: grid;
+      grid-template-columns: repeat(auto-fit, minmax(130px, 1fr));
+      gap: 10px;
+      margin-top: 18px;
+      padding-top: 16px;
+      border-top: 1px solid rgba(255, 255, 255, 0.15);
+    }
+
+    .orders-stat-box {
+      background: rgba(255, 255, 255, 0.08);
+      backdrop-filter: blur(4px);
+      border-radius: var(--radius-xs);
+      padding: 10px 14px;
+      border: 1px solid rgba(255, 255, 255, 0.12);
+    }
+
+    .orders-stat-val {
+      font-family: var(--font-heading);
+      font-size: 1.25rem;
+      font-weight: 900;
+      color: #38BDF8;
+      display: block;
+      line-height: 1.2;
+    }
+
+    .orders-stat-label {
+      font-size: 0.74rem;
+      color: #CBD5E1;
+      font-weight: 700;
+      text-transform: uppercase;
+      letter-spacing: 0.03em;
+    }
+
+    /* FILTER BUTTONS ROW */
+    .orders-filter-row {
+      display: flex;
+      justify-content: space-between;
+      align-items: center;
+      margin-bottom: 20px;
+      flex-wrap: wrap;
+      gap: 12px;
+    }
+
+    .orders-filter-pills {
+      display: flex;
+      gap: 8px;
+      overflow-x: auto;
+      padding-bottom: 2px;
+      max-width: 100%;
+      -webkit-overflow-scrolling: touch;
+    }
+
+    .orders-filter-btn {
+      background: #FFFFFF;
+      border: 1.5px solid var(--border-subtle);
+      border-radius: var(--radius-pill);
+      padding: 7px 16px;
+      font-family: var(--font-heading);
+      font-size: 0.84rem;
+      font-weight: 700;
+      color: var(--text-muted);
+      cursor: pointer;
+      transition: all 0.15s ease;
+      white-space: nowrap;
+      display: inline-flex;
+      align-items: center;
+      gap: 6px;
+    }
+
+    .orders-filter-btn:hover {
+      border-color: #0284C7;
+      color: #0284C7;
+      background: #F0F9FF;
+    }
+
+    .orders-filter-btn.active {
+      background: #0284C7;
+      border-color: #0284C7;
+      color: #FFFFFF;
+      box-shadow: 0 2px 8px rgba(2, 132, 199, 0.25);
+    }
+
+    /* INDIVIDUAL ORDER CARD */
+    .order-history-card {
+      background: #FFFFFF;
+      border: 1.5px solid var(--border-subtle);
+      border-radius: var(--radius-sm);
+      margin-bottom: 18px;
+      padding: 20px;
+      transition: all 0.2s ease;
+      box-shadow: 0 1px 3px rgba(11, 25, 44, 0.04);
+    }
+
+    .order-history-card:hover {
+      border-color: #BAE6FD;
+      box-shadow: 0 4px 14px rgba(2, 132, 199, 0.08);
+    }
+
+    .order-card-header-bar {
+      display: flex;
+      justify-content: space-between;
+      align-items: flex-start;
+      flex-wrap: wrap;
+      gap: 10px;
+      padding-bottom: 14px;
+      border-bottom: 1px solid var(--border-subtle);
+      margin-bottom: 14px;
+    }
+
+    .order-bilty-tag {
+      font-family: var(--font-heading);
+      font-size: 1.25rem;
+      font-weight: 900;
+      color: #0F172A;
+      display: inline-flex;
+      align-items: center;
+      gap: 8px;
+    }
+
+    .order-date-text {
+      font-size: 0.82rem;
+      color: var(--text-light);
+      margin-top: 2px;
+      font-weight: 600;
+    }
+
+    .order-items-table {
+      width: 100%;
+      border-collapse: collapse;
+      margin: 14px 0;
+      font-size: 0.88rem;
+    }
+
+    .order-items-table tr {
+      border-bottom: 1px dashed var(--border-subtle);
+    }
+
+    .order-items-table tr:last-child {
+      border-bottom: none;
+    }
+
+    .order-items-table td {
+      padding: 8px 0;
+    }
+
+    .order-items-name {
+      color: #0F172A;
+      font-weight: 700;
+    }
+
+    .order-items-qty {
+      color: #64748B;
+      font-size: 0.82rem;
+      display: block;
+    }
+
+    .order-items-rate {
+      text-align: right;
+      font-weight: 800;
+      color: #0F3D64;
+      white-space: nowrap;
+    }
+
+    .order-address-strip {
+      background: #F8FAFC;
+      border: 1px solid var(--border-subtle);
+      border-radius: var(--radius-xs);
+      padding: 10px 14px;
+      margin-bottom: 14px;
+      display: flex;
+      align-items: flex-start;
+      gap: 10px;
+      font-size: 0.84rem;
+      color: var(--text-muted);
+    }
+
+    .order-actions-footer {
+      display: flex;
+      justify-content: space-between;
+      align-items: center;
+      flex-wrap: wrap;
+      gap: 10px;
+      padding-top: 14px;
+      border-top: 1px solid var(--border-subtle);
+    }
+
+    .order-total-badge {
+      font-family: var(--font-heading);
+      font-size: 1.25rem;
+      font-weight: 900;
+      color: #0284C7;
+    }
+
+    .order-btn-group {
+      display: flex;
+      gap: 8px;
+      flex-wrap: wrap;
+    }
+
+    .btn-order-action {
+      padding: 8px 16px;
+      font-family: var(--font-heading);
+      font-size: 0.82rem;
+      font-weight: 800;
+      border-radius: var(--radius-xs);
+      cursor: pointer;
+      display: inline-flex;
+      align-items: center;
+      gap: 6px;
+      text-decoration: none;
+      transition: all 0.15s ease;
+      white-space: nowrap;
+    }
+
+    .btn-order-primary {
+      background: #0284C7;
+      color: #FFFFFF;
+      border: 1.5px solid #0284C7;
+    }
+
+    .btn-order-primary:hover {
+      background: #0369A1;
+      border-color: #0369A1;
+    }
+
+    .btn-order-whatsapp {
+      background: #16A34A;
+      color: #FFFFFF;
+      border: 1.5px solid #16A34A;
+    }
+
+    .btn-order-whatsapp:hover {
+      background: #15803D;
+      border-color: #15803D;
+    }
+
+    .btn-order-outline {
+      background: #FFFFFF;
+      color: #0F172A;
+      border: 1.5px solid var(--border-subtle);
+    }
+
+    .btn-order-outline:hover {
+      background: #F8FAFC;
+      border-color: #94A3B8;
+    }
+
+    /* STEPPER INTEGRATION INSIDE CARD */
+    .card-stepper-row {
+      margin: 14px 0;
+      padding: 12px 14px;
+      background: #F0F9FF;
+      border-radius: var(--radius-xs);
+      border: 1px solid #BAE6FD;
+    }
+
+    .card-stepper-steps {
+      display: flex;
+      justify-content: space-between;
+      align-items: center;
+      position: relative;
+    }
+
+    .card-step-item {
+      display: flex;
+      flex-direction: column;
+      align-items: center;
+      text-align: center;
+      position: relative;
+      z-index: 2;
+      flex: 1;
+    }
+
+    .card-step-dot {
+      width: 26px;
+      height: 26px;
+      border-radius: 50%;
+      background: #FFFFFF;
+      border: 2px solid #CBD5E1;
+      color: #64748B;
+      font-size: 0.75rem;
+      font-weight: 800;
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      margin-bottom: 4px;
+      transition: all 0.2s ease;
+    }
+
+    .card-step-item.active .card-step-dot {
+      border-color: #0284C7;
+      background: #0284C7;
+      color: #FFFFFF;
+      box-shadow: 0 0 0 3px rgba(2, 132, 199, 0.25);
+    }
+
+    .card-step-item.completed .card-step-dot {
+      border-color: #16A34A;
+      background: #16A34A;
+      color: #FFFFFF;
+    }
+
+    .card-step-title {
+      font-size: 0.74rem;
+      font-weight: 800;
+      color: #334155;
+    }
+
+    .card-step-line {
+      position: absolute;
+      top: 13px;
+      left: 16%;
+      right: 16%;
+      height: 2px;
+      background: #E2E8F0;
+      z-index: 1;
+    }
+
+    /* LOGGED OUT HERO CARD */
+    .orders-guest-hero {
+      background: #FFFFFF;
+      border: 1.5px solid var(--border-subtle);
+      border-radius: var(--radius-sm);
+      padding: 36px 24px;
+      text-align: center;
+      margin-bottom: 24px;
+      box-shadow: 0 2px 10px rgba(11, 25, 44, 0.04);
+    }
+
+    .orders-guest-icon {
+      width: 64px;
+      height: 64px;
+      border-radius: 50%;
+      background: #E0F2FE;
+      color: #0284C7;
+      display: inline-flex;
+      align-items: center;
+      justify-content: center;
+      margin-bottom: 16px;
+    }
+
+    /* COPY BUTTON */
+    .btn-copy-id {
+      background: none;
+      border: none;
+      cursor: pointer;
+      color: var(--text-light);
+      padding: 2px;
+      border-radius: 4px;
+      display: inline-flex;
+      align-items: center;
+    }
+
+    .btn-copy-id:hover {
+      color: #0284C7;
+      background: #F1F5F9;
+    }
+  </style>
+</head>
+<body>
+
+  <!-- NAVBAR -->
+  <header class="site-navbar">
+    <div class="container nav-layout">
+      <!-- HAMBURGER MENU BUTTON -->
+      <button type="button" class="nav-hamburger-btn" onclick="toggleMobileMenu(true)" aria-label="Open Navigation Menu">
+        <svg viewBox="0 0 24 24" width="20" height="20" stroke="currentColor" stroke-width="2.3" fill="none"><line x1="3" y1="6" x2="21" y2="6"></line><line x1="3" y1="12" x2="21" y2="12"></line><line x1="3" y1="18" x2="21" y2="18"></line></svg>
+        <span>Menu</span>
+      </button>
+
+      <a href="/" class="brand-block">
+        <div class="brand-icon-drop">
+          <img src="/assets/sikar_drop_icon.webp" alt="Sikar Drop Logo" class="brand-logo-img" width="36" height="36">
+        </div>
+        <div class="brand-text-col">
+          <div class="brand-title"><span class="brand-name-main">SIKAR</span> <span class="accent-blue brand-name-sub">WATER BOTTLE SUPPLY</span></div>
+          <span class="brand-tagline">Pure Water. Healthy Life.</span>
+        </div>
+      </a>
+
+      <!-- DESKTOP NAV MENU LINKS -->
+      <nav class="nav-links-menu" aria-label="Main Navigation">
+        <a href="/" class="nav-item-link">Home</a>
+        <a href="/products" class="nav-item-link">Products</a>
+        <a href="/categories" class="nav-item-link">Categories</a>
+        <a href="/bulk" class="nav-item-link">Corporate Supply</a>
+        <a href="/orders" class="nav-item-link active">My Orders</a>
+        <a href="/track" class="nav-item-link">Track Order</a>
+        <a href="/about" class="nav-item-link">About Us</a>
+        <a href="/contact" class="nav-item-link">Contact</a>
+      </nav>
+
+      <div class="nav-search-bar">
+        <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.3">
+          <circle cx="11" cy="11" r="8"></circle>
+          <line x1="21" y1="21" x2="16.65" y2="16.65"></line>
+        </svg>
+        <input type="text" class="nav-search-input" id="orders-nav-search-input" placeholder="Search orders..." oninput="handleOrdersFilterSearch(this.value)">
+      </div>
+
+      <div class="nav-right-actions">
+        <button type="button" class="nav-icon-action-btn" onclick="toggleCartDrawer(true)" title="Shopping Cart">
+          <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2">
+            <circle cx="9" cy="21" r="1"></circle>
+            <circle cx="20" cy="21" r="1"></circle>
+            <path d="M1 1h4l2.68 13.39a2 2 0 0 0 2 1.61h9.72a2 2 0 0 0 2-1.61L23 6H6"></path>
+          </svg>
+          <span class="cart-badge-counter" id="cart-badge">0</span>
+        </button>
+
+        <div id="auth-nav-slot">
+          <button type="button" class="nav-icon-action-btn" onclick="openLoginModal('orders')" title="Customer Account">
+            <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2">
+              <path d="M20 21v-2a4 4 0 0 0-4-4H8a4 4 0 0 0-4 4v2"></path>
+              <circle cx="12" cy="7" r="4"></circle>
+            </svg>
+          </button>
+        </div>
+      </div>
+    </div>
+  </header>
+
+  <!-- MOBILE MENU BACKDROP & DRAWER -->
+  <div class="mobile-menu-backdrop" id="mobile-menu-backdrop" onclick="toggleMobileMenu(false)"></div>
+  <aside class="mobile-menu-drawer" id="mobile-menu-drawer" aria-label="Site Navigation" style="position: fixed; top: 0; left: -340px; width: 320px; max-width: 86vw; height: 100%; height: 100dvh; background: #FFFFFF; z-index: 1001; display: flex; flex-direction: column; overflow-y: auto;">
+    <div class="mobile-menu-header">
+      <div class="mobile-menu-brand">
+        <img src="/assets/sikar_drop_icon.webp" alt="Sikar Water Bottle Supply" class="mobile-menu-brand-icon">
+        <div>
+          <div class="mobile-menu-brand-text">SIKAR <span style="color:#38BDF8;">WATER SUPPLY</span></div>
+          <span class="mobile-menu-brand-sub">Wholesale Depot Sikar</span>
+        </div>
+      </div>
+      <button type="button" class="mobile-menu-close-btn" onclick="toggleMobileMenu(false)" aria-label="Close menu">
+        <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.4"><line x1="18" y1="6" x2="6" y2="18"></line><line x1="6" y1="6" x2="18" y2="18"></line></svg>
+      </button>
+    </div>
+    <nav class="mobile-menu-nav">
+      <a href="/" class="mobile-menu-link">
+        <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2"><path d="m3 9 9-7 9 7v11a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2z"></path><polyline points="9 22 9 12 15 12 15 22"></polyline></svg>
+        <span>Home</span>
+      </a>
+      <a href="/orders" class="mobile-menu-link active">
+        <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2"><path d="M6 2L3 6v14a2 2 0 0 0 2 2h14a2 2 0 0 0 2-2V6l-3-4z"></path><line x1="3" y1="6" x2="21" y2="6"></line><path d="M16 10a4 4 0 0 1-8 0"></path></svg>
+        <span>My Orders</span>
+        <span class="menu-badge" id="mobile-orders-badge">Active</span>
+      </a>
+      <a href="/products" class="mobile-menu-link">
+        <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2"><path d="M6 2 3 6v14a2 2 0 0 0 2 2h14a2 2 0 0 0 2-2V6l-3-4Z"></path><path d="M3 6h18"></path><path d="M16 10a4 4 0 0 1-8 0"></path></svg>
+        <span>Products &amp; Water</span>
+      </a>
+      <a href="/categories" class="mobile-menu-link">
+        <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2"><rect x="3" y="3" width="7" height="7"></rect><rect x="14" y="3" width="7" height="7"></rect><rect x="14" y="14" width="7" height="7"></rect><rect x="3" y="14" width="7" height="7"></rect></svg>
+        <span>Categories</span>
+      </a>
+      <a href="/bulk" class="mobile-menu-link">
+        <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2"><rect x="1" y="3" width="15" height="13"></rect><polygon points="16 8 20 8 23 11 23 16 16 16 8"></polygon><circle cx="5.5" cy="18.5" r="2.5"></circle><circle cx="18.5" cy="18.5" r="2.5"></circle></svg>
+        <span>Corporate &amp; Shaadi Supply</span>
+      </a>
+      <a href="/track" class="mobile-menu-link">
+        <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2"><circle cx="12" cy="12" r="10"></circle><polygon points="16.24 7.76 14.12 14.12 7.76 16.24 9.88 9.88 16.24 7.76"></polygon></svg>
+        <span>Track Order Bilty</span>
+      </a>
+      <a href="/contact" class="mobile-menu-link">
+        <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2"><path d="M22 16.92v3a2 2 0 0 1-2.18 2 19.79 19.79 0 0 1-8.63-3.07 19.5 19.5 0 0 1-6-6 19.79 19.79 0 0 1-3.07-8.67A2 2 0 0 1 4.11 2h3a2 2 0 0 1 2 1.72 12.84 12.84 0 0 0 .7 2.81 2 2 0 0 1-.45 2.11L8.09 9.91a16 16 0 0 0 6 6l1.27-1.27a2 2 0 0 1 2.11-.45 12.84 12.84 0 0 0 2.81.7A2 2 0 0 1 22 16.92z"></path></svg>
+        <span>Contact Support</span>
+      </a>
+    </nav>
+    <div class="mobile-menu-footer">
+      <a href="tel:+919829011223" class="mobile-menu-call-btn">
+        <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2"><path d="M22 16.92v3a2 2 0 0 1-2.18 2 19.79 19.79 0 0 1-8.63-3.07 19.5 19.5 0 0 1-6-6 19.79 19.79 0 0 1-3.07-8.67A2 2 0 0 1 4.11 2h3a2 2 0 0 1 2 1.72 12.84 12.84 0 0 0 .7 2.81 2 2 0 0 1-.45 2.11L8.09 9.91a16 16 0 0 0 6 6l1.27-1.27a2 2 0 0 1 2.11-.45 12.84 12.84 0 0 0 2.81.7A2 2 0 0 1 22 16.92z"></path></svg>
+        <span>Call Mandi Depot: +91 98290 11223</span>
+      </a>
+    </div>
+  </aside>
+
+  <!-- MAIN BODY -->
+  <main style="padding: 28px 0 64px; background: #F8FAFC; min-height: 85vh;">
+    <div class="container" style="max-width: 900px;">
+      
+      <!-- BREADCRUMB & HEADER -->
+      <div style="margin-bottom: 20px;">
+        <div style="font-size: 0.82rem; color: var(--text-light); margin-bottom: 6px;">
+          <a href="/" style="color: var(--primary); text-decoration: none;">Home</a> / <span style="color: var(--text-muted);">My Orders</span>
+        </div>
+        <div style="display: flex; justify-content: space-between; align-items: flex-end; flex-wrap: wrap; gap: 10px;">
+          <div>
+            <h1 style="font-family: var(--font-heading); font-size: 2.1rem; font-weight: 900; color: #0B192C; margin: 0 0 4px 0;">
+              My Orders &amp; Consignments
+            </h1>
+            <p style="color: var(--text-muted); font-size: 0.94rem; margin: 0;">
+              Real-time tempo dispatch progress, item breakdown, and delivery records for your verified phone.
+            </p>
+          </div>
+          <div>
+            <a href="/products" class="btn-checkout-gate" style="width: auto; padding: 10px 18px; font-size: 0.84rem; text-decoration: none;">
+              <span>+ ORDER MORE ITEMS</span>
+            </a>
+          </div>
+        </div>
+      </div>
+
+      <!-- 1. AUTHENTICATED USER PROFILE BANNER (Auto shown when logged in) -->
+      <div id="orders-user-banner" class="orders-customer-banner" style="display: none;">
+        <div class="orders-header-row">
+          <div class="orders-avatar-col">
+            <div class="orders-avatar-circle" id="banner-user-initials">C</div>
+            <div>
+              <h2 class="orders-customer-title" id="banner-user-name">Valued Customer</h2>
+              <div style="display: flex; align-items: center; gap: 8px; flex-wrap: wrap;">
+                <span style="font-size: 0.88rem; font-weight: 700; color: #E0F2FE;" id="banner-user-phone">+91 98290 XXXXX</span>
+                <span class="orders-verified-pill">
+                  <svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="3"><polyline points="20 6 9 17 4 12"></polyline></svg>
+                  <span>Verified Account</span>
+                </span>
+              </div>
+            </div>
+          </div>
+          <div>
+            <button type="button" class="btn-order-outline" onclick="handleLogout()" style="background: rgba(255,255,255,0.12); color: #FFFFFF; border-color: rgba(255,255,255,0.3); font-size: 0.78rem;">
+              <span>Switch Account / Logout</span>
+            </button>
+          </div>
+        </div>
+
+        <div class="orders-stat-strip">
+          <div class="orders-stat-box">
+            <span class="orders-stat-val" id="stat-total-count">0</span>
+            <span class="orders-stat-label">Total Orders</span>
+          </div>
+          <div class="orders-stat-box">
+            <span class="orders-stat-val" id="stat-active-count" style="color: #FBBF24;">0</span>
+            <span class="orders-stat-label">In Transit / Active</span>
+          </div>
+          <div class="orders-stat-box">
+            <span class="orders-stat-val" id="stat-delivered-count" style="color: #4ADE80;">0</span>
+            <span class="orders-stat-label">Delivered</span>
+          </div>
+          <div class="orders-stat-box">
+            <span class="orders-stat-val" id="stat-total-spent">₹0</span>
+            <span class="orders-stat-label">Total Volume</span>
+          </div>
+        </div>
+      </div>
+
+      <!-- 2. GUEST / LOGGED-OUT PROMPT (Shown when user is not logged in) -->
+      <div id="orders-guest-box" class="orders-guest-hero">
+        <div class="orders-guest-icon">
+          <svg width="32" height="32" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.3">
+            <path d="M12 22s8-4 8-10V5l-8-3-8 3v7c0 6 8 10 8 10z"></path>
+          </svg>
+        </div>
+        <h2 style="font-family: var(--font-heading); font-size: 1.5rem; font-weight: 800; color: #0F172A; margin-bottom: 6px;">
+          Log In to See Your Orders Automatically
+        </h2>
+        <p style="color: var(--text-muted); font-size: 0.94rem; max-width: 520px; margin: 0 auto 20px; line-height: 1.5;">
+          No need to remember Bilty IDs or type phone numbers manually. Log in with your mobile number to view all your active dispatches, past orders, and live tracking in one place.
+        </p>
+        <button type="button" class="btn-checkout-gate" style="max-width: 340px; margin: 0 auto 24px;" onclick="openLoginModal('orders')">
+          <span>1-TAP MOBILE LOGIN (TRUECALLER)</span>
+        </button>
+
+        <div style="position: relative; margin: 24px 0 20px; text-align: center;">
+          <div style="position: absolute; top: 50%; left: 0; right: 0; height: 1px; background: var(--border-subtle);"></div>
+          <span style="position: relative; background: #FFFFFF; padding: 0 16px; font-size: 0.76rem; font-weight: 800; color: var(--text-light); text-transform: uppercase; letter-spacing: 0.05em;">OR TRACK GUEST CONSIGNMENT</span>
+        </div>
+
+        <form onsubmit="handleGuestSearch(event)" style="max-width: 480px; margin: 0 auto; display: flex; gap: 10px; flex-wrap: wrap;">
+          <input type="text" id="guest-phone-input" placeholder="Enter 10-digit Phone or Bilty ID" class="portal-input" style="flex: 1; min-width: 220px;" autocomplete="tel">
+          <button type="submit" class="btn-order-primary" style="padding: 12px 20px;">
+            <span>Search</span>
+          </button>
+        </form>
+      </div>
+
+      <!-- 3. FILTER & SEARCH CONTROLS -->
+      <div id="orders-filter-container" class="orders-filter-row" style="display: none;">
+        <div class="orders-filter-pills">
+          <button type="button" class="orders-filter-btn active" data-filter="all" onclick="setOrdersFilter('all', this)">
+            <span>All Orders</span>
+            <span id="badge-tab-all" style="background: rgba(0,0,0,0.08); padding: 2px 6px; border-radius: 999px; font-size: 0.72rem;">0</span>
+          </button>
+          <button type="button" class="orders-filter-btn" data-filter="active" onclick="setOrdersFilter('active', this)">
+            <span style="display:inline-block; width:7px; height:7px; border-radius:50%; background:#F59E0B;"></span>
+            <span>Active Deliveries</span>
+            <span id="badge-tab-active" style="background: rgba(0,0,0,0.08); padding: 2px 6px; border-radius: 999px; font-size: 0.72rem;">0</span>
+          </button>
+          <button type="button" class="orders-filter-btn" data-filter="delivered" onclick="setOrdersFilter('delivered', this)">
+            <span style="display:inline-block; width:7px; height:7px; border-radius:50%; background:#16A34A;"></span>
+            <span>Delivered</span>
+            <span id="badge-tab-delivered" style="background: rgba(0,0,0,0.08); padding: 2px 6px; border-radius: 999px; font-size: 0.72rem;">0</span>
+          </button>
+        </div>
+
+        <div style="font-size: 0.8rem; color: var(--text-light); display: flex; align-items: center; gap: 6px;">
+          <span style="display: inline-block; width: 8px; height: 8px; border-radius: 50%; background: #22C55E; animation: pulse 2s infinite;"></span>
+          <span>Live Dispatch Sync Active</span>
+        </div>
+      </div>
+
+      <!-- 4. ORDERS FEED CONTAINER -->
+      <div id="orders-feed-container"></div>
+
+      <!-- 5. EMPTY SEARCH STATE (When no orders match current filter) -->
+      <div id="orders-empty-state" class="portal-card" style="padding: 40px 20px; text-align: center; display: none;">
+        <div style="width: 56px; height: 56px; border-radius: 50%; background: #F1F5F9; color: #64748B; display: inline-flex; align-items: center; justify-content: center; margin-bottom: 12px;">
+          <svg width="28" height="28" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2"><circle cx="12" cy="12" r="10"></circle><line x1="12" y1="8" x2="12" y2="12"></line><line x1="12" y1="16" x2="12.01" y2="16"></line></svg>
+        </div>
+        <h3 style="font-family: var(--font-heading); font-size: 1.25rem; font-weight: 800; color: #0F172A; margin: 0 0 6px 0;" id="empty-state-title">
+          No Orders Found
+        </h3>
+        <p style="color: var(--text-muted); font-size: 0.9rem; max-width: 420px; margin: 0 auto 16px;" id="empty-state-desc">
+          No orders match the selected filter. Try choosing "All Orders" or place a new order.
+        </p>
+        <a href="/products" class="btn-checkout-gate" style="width: auto; padding: 10px 22px; text-decoration: none; display: inline-flex;">
+          <span>Browse Products Catalog</span>
+        </a>
+      </div>
+
+    </div>
+  </main>
+
+  <!-- CART SLIDE DRAWER -->
+  <div class="drawer-backdrop" id="cart-backdrop" onclick="toggleCartDrawer(false)"></div>
+  <aside class="cart-drawer-panel" id="cart-drawer" role="dialog" aria-modal="true" aria-label="Shopping Cart">
+    <div class="cart-drawer-header">
+      <div class="cart-drawer-title-row">
+        <h3>Dispatch Cart</h3>
+        <span class="drawer-count-badge" id="drawer-total-count">0</span>
+      </div>
+      <button type="button" class="drawer-close-btn" onclick="toggleCartDrawer(false)" aria-label="Close cart">
+        <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2" width="18" height="18"><line x1="18" y1="6" x2="6" y2="18"></line><line x1="6" y1="6" x2="18" y2="18"></line></svg>
+      </button>
+    </div>
+    <div class="cart-drawer-body" id="cart-drawer-items-list"></div>
+    <div class="cart-drawer-footer">
+      <div class="drawer-total-row">
+        <span class="total-label">Subtotal:</span>
+        <span class="total-val tabular" id="cart-drawer-subtotal">₹0</span>
+      </div>
+      <button type="button" class="btn-checkout-gate" onclick="proceedToCheckout()">
+        <span>PROCEED TO ORDER</span>
+      </button>
+      <a href="/cart" style="display: block; text-align: center; margin-top: 10px; font-size: 0.84rem; font-weight: 700; color: var(--sky-pure); text-decoration: none;">View Full Dedicated Cart Page &rarr;</a>
+    </div>
+  </aside>
+
+  <!-- APP TOAST NOTIFICATION -->
+  <div class="app-toast-box" id="app-toast">
+    <div class="app-toast-content">
+      <span class="app-toast-msg" id="toast-text">Message</span>
+    </div>
+  </div>
+
+  <!-- CORE SCRIPTS -->
+  <script src="assets/site.js?v=20261021b"></script>
+  <script>
+    let activeCustomerOrders = [];
+    let currentFilter = 'all';
+    let searchQuery = '';
+    let autoRefreshTimer = null;
+
+    window.addEventListener('DOMContentLoaded', () => {
+      renderOrdersState();
+      
+      // Auto-poll orders every 20 seconds for live status updates
+      if (autoRefreshTimer) clearInterval(autoRefreshTimer);
+      autoRefreshTimer = setInterval(() => {
+        const user = getSignedInUser();
+        const lastPhone = localStorage.getItem('sikar_last_order_phone');
+        const phone = (user && user.phone) ? user.phone : lastPhone;
+        if (phone) {
+          fetchCustomerOrdersSilent(phone);
+        }
+      }, 20000);
+    });
+
+    window.addEventListener('sikar_auth_changed', () => {
+      renderOrdersState();
+    });
+
+    // Callback called from site.js on successful login
+    window.loadCustomerOrdersDirectly = function() {
+      renderOrdersState();
+    };
+
+    async function renderOrdersState() {
+      const user = getSignedInUser();
+      const lastPhone = localStorage.getItem('sikar_last_order_phone');
+      const activePhone = (user && user.phone) ? user.phone : lastPhone;
+
+      const userBanner = document.getElementById('orders-user-banner');
+      const guestBox = document.getElementById('orders-guest-box');
+      const filterRow = document.getElementById('orders-filter-container');
+
+      if (user && user.phone) {
+        // Authenticated user
+        if (guestBox) guestBox.style.display = 'none';
+        if (userBanner) {
+          userBanner.style.display = 'block';
+          document.getElementById('banner-user-name').textContent = user.name || 'Valued Customer';
+          document.getElementById('banner-user-phone').textContent = `+91 ${formatPhoneNumber(user.phone)}`;
+          const initials = (user.name || 'C').split(' ').map(n => n[0]).join('').slice(0, 2).toUpperCase();
+          document.getElementById('banner-user-initials').textContent = initials || 'C';
+        }
+        await fetchAndRenderOrders(user.phone);
+      } else if (lastPhone) {
+        // Guest who previously placed an order on this browser
+        if (guestBox) guestBox.style.display = 'none';
+        if (userBanner) {
+          userBanner.style.display = 'block';
+          document.getElementById('banner-user-name').textContent = 'Recent Customer Consignments';
+          document.getElementById('banner-user-phone').textContent = `+91 ${formatPhoneNumber(lastPhone)}`;
+          document.getElementById('banner-user-initials').textContent = 'RP';
+        }
+        await fetchAndRenderOrders(lastPhone);
+      } else {
+        // Not logged in and no prior order phone
+        if (userBanner) userBanner.style.display = 'none';
+        if (guestBox) guestBox.style.display = 'block';
+        if (filterRow) filterRow.style.display = 'none';
+        const feed = document.getElementById('orders-feed-container');
+        if (feed) feed.innerHTML = '';
+        const empty = document.getElementById('orders-empty-state');
+        if (empty) empty.style.display = 'none';
+      }
+    }
+
+    async function fetchAndRenderOrders(rawPhone) {
+      const cleanPhone = String(rawPhone || '').replace(/\D/g, '').slice(-10);
+      if (!cleanPhone || cleanPhone.length !== 10) return;
+
+      const feed = document.getElementById('orders-feed-container');
+      const filterRow = document.getElementById('orders-filter-container');
+      if (feed && (!activeCustomerOrders || activeCustomerOrders.length === 0)) {
+        feed.innerHTML = `
+          <div style="text-align: center; padding: 40px; color: var(--text-muted); font-size: 0.92rem; font-weight: 700;">
+            <div style="display: inline-block; width: 28px; height: 28px; border: 3px solid #BAE6FD; border-top-color: #0284C7; border-radius: 50%; animation: spin 0.8s linear infinite; margin-bottom: 10px;"></div>
+            <div>Loading your order consignments...</div>
+          </div>
+        `;
+      }
+
+      try {
+        const res = await fetch(`/api/orders?phone=${encodeURIComponent(cleanPhone)}`);
+        let ordersList = [];
+        if (res.ok) {
+          ordersList = await res.json();
+        }
+
+        // Merge with local storage fallback orders
+        const localOrders = JSON.parse(localStorage.getItem('sikar_my_orders') || '[]');
+        const matchedLocal = localOrders.filter(lo => {
+          const lp = String(lo.phone || '').replace(/\D/g, '').slice(-10);
+          return lp === cleanPhone && !ordersList.some(o => o.id === lo.id);
+        });
+
+        activeCustomerOrders = [...ordersList, ...matchedLocal];
+        activeCustomerOrders.sort((a, b) => new Date(b.created_at || b.date || 0) - new Date(a.created_at || a.date || 0));
+
+        updateStatsPills(activeCustomerOrders);
+        if (filterRow) filterRow.style.display = 'flex';
+        renderFilteredOrders();
+      } catch (err) {
+        console.error('Fetch orders error:', err);
+        if (feed) {
+          feed.innerHTML = `
+            <div class="portal-card" style="padding: 24px; text-align: center; color: #DC2626;">
+              <p style="margin: 0 0 10px 0; font-weight: 700;">Could not connect to orders server. Please check your connection.</p>
+              <button type="button" class="btn-order-primary" onclick="renderOrdersState()">Try Again</button>
+            </div>
+          `;
+        }
+      }
+    }
+
+    async function fetchCustomerOrdersSilent(rawPhone) {
+      const cleanPhone = String(rawPhone || '').replace(/\D/g, '').slice(-10);
+      if (!cleanPhone || cleanPhone.length !== 10) return;
+      try {
+        const res = await fetch(`/api/orders?phone=${encodeURIComponent(cleanPhone)}`);
+        if (res.ok) {
+          const list = await res.json();
+          if (Array.isArray(list)) {
+            activeCustomerOrders = list;
+            updateStatsPills(activeCustomerOrders);
+            renderFilteredOrders(true);
+          }
+        }
+      } catch (e) {}
+    }
+
+    function updateStatsPills(orders) {
+      const total = orders.length;
+      const active = orders.filter(o => {
+        const s = String(o.status || 'pending').toLowerCase();
+        return s === 'pending' || s === 'processing' || s === 'in_transit' || s === 'shipped' || s === 'out_for_delivery';
+      }).length;
+      const delivered = orders.filter(o => {
+        const s = String(o.status || '').toLowerCase();
+        return s === 'delivered' || s === 'completed';
+      }).length;
+
+      const totalSpent = orders.reduce((sum, o) => sum + Number(o.total || 0), 0);
+
+      const elTot = document.getElementById('stat-total-count');
+      const elAct = document.getElementById('stat-active-count');
+      const elDel = document.getElementById('stat-delivered-count');
+      const elSpn = document.getElementById('stat-total-spent');
+
+      if (elTot) elTot.textContent = total;
+      if (elAct) elAct.textContent = active;
+      if (elDel) elDel.textContent = delivered;
+      if (elSpn) elSpn.textContent = `₹${totalSpent.toLocaleString('en-IN')}`;
+
+      // Tab badges
+      const tabAll = document.getElementById('badge-tab-all');
+      const tabAct = document.getElementById('badge-tab-active');
+      const tabDel = document.getElementById('badge-tab-delivered');
+      if (tabAll) tabAll.textContent = total;
+      if (tabAct) tabAct.textContent = active;
+      if (tabDel) tabDel.textContent = delivered;
+
+      const mobBadge = document.getElementById('mobile-orders-badge');
+      if (mobBadge) mobBadge.textContent = active > 0 ? `${active} Active` : `${total} Total`;
+    }
+
+    function setOrdersFilter(filterName, btnEl) {
+      currentFilter = filterName;
+      document.querySelectorAll('.orders-filter-btn').forEach(b => b.classList.remove('active'));
+      if (btnEl) btnEl.classList.add('active');
+      renderFilteredOrders();
+    }
+
+    function handleOrdersFilterSearch(val) {
+      searchQuery = String(val || '').trim().toLowerCase();
+      renderFilteredOrders();
+    }
+
+    function renderFilteredOrders(isSilent = false) {
+      const feed = document.getElementById('orders-feed-container');
+      const emptyState = document.getElementById('orders-empty-state');
+      if (!feed) return;
+
+      let filtered = activeCustomerOrders.slice();
+
+      // Filter by status tab
+      if (currentFilter === 'active') {
+        filtered = filtered.filter(o => {
+          const s = String(o.status || 'pending').toLowerCase();
+          return s === 'pending' || s === 'processing' || s === 'in_transit' || s === 'shipped' || s === 'out_for_delivery';
+        });
+      } else if (currentFilter === 'delivered') {
+        filtered = filtered.filter(o => {
+          const s = String(o.status || '').toLowerCase();
+          return s === 'delivered' || s === 'completed';
+        });
+      }
+
+      // Filter by search query
+      if (searchQuery) {
+        filtered = filtered.filter(o => {
+          const id = String(o.id || '').toLowerCase();
+          const items = String(o.items_summary || o.itemsDesc || JSON.stringify(o.items || [])).toLowerCase();
+          const address = String(o.delivery_address || o.address || o.corridor || '').toLowerCase();
+          return id.includes(searchQuery) || items.includes(searchQuery) || address.includes(searchQuery);
+        });
+      }
+
+      if (filtered.length === 0) {
+        feed.innerHTML = '';
+        if (emptyState) {
+          emptyState.style.display = 'block';
+          if (activeCustomerOrders.length === 0) {
+            document.getElementById('empty-state-title').textContent = 'No Orders Placed Yet';
+            document.getElementById('empty-state-desc').textContent = 'You haven’t booked any wholesale water or beverage dispatches yet. Place your first order with 45-60 min tempo delivery across Sikar!';
+          } else {
+            document.getElementById('empty-state-title').textContent = 'No Matching Orders';
+            document.getElementById('empty-state-desc').textContent = 'No orders match your selected filter or search keyword. Switch to "All Orders" to see your full history.';
+          }
+        }
+        return;
+      }
+
+      if (emptyState) emptyState.style.display = 'none';
+
+      feed.innerHTML = filtered.map(o => renderOrderCardHtml(o)).join('');
+    }
+
+    function renderOrderCardHtml(o) {
+      const orderId = o.id || o.orderId || 'SKR-0000';
+      const status = String(o.status || 'pending').toLowerCase();
+      const corridor = o.delivery_corridor || o.corridor || 'Sikar Mandi';
+      const address = o.delivery_address || o.address || `${corridor}, Sikar`;
+      const total = Number(o.total || 0);
+
+      let dateFormatted = 'Recent Booking';
+      if (o.created_at || o.date) {
+        try {
+          const d = new Date(o.created_at || o.date);
+          dateFormatted = d.toLocaleDateString('en-IN', {
+            day: 'numeric',
+            month: 'short',
+            year: 'numeric',
+            hour: '2-digit',
+            minute: '2-digit'
+          });
+        } catch (e) {}
+      }
+
+      const st = computeStepInfo(status);
+
+      // Parse items
+      let itemsListHtml = '';
+      if (Array.isArray(o.items) && o.items.length > 0) {
+        itemsListHtml = o.items.map(it => {
+          const qty = it.quantity || it.qty || 1;
+          const rate = it.price || it.rate || 0;
+          return `
+            <tr>
+              <td>
+                <span class="order-items-name">${escapeHtml(it.title || 'Water Bottle Peti')}</span>
+                <span class="order-items-qty">Quantity: ${qty} Cases / Petis</span>
+              </td>
+              <td class="order-items-rate">₹${(rate * qty).toLocaleString('en-IN')}</td>
+            </tr>
+          `;
+        }).join('');
+      } else {
+        const summary = o.items_summary || o.itemsDesc || 'Factory Sealed Beverage Consignment';
+        itemsListHtml = `
+          <tr>
+            <td>
+              <span class="order-items-name">${escapeHtml(summary)}</span>
+            </td>
+            <td class="order-items-rate">₹${total.toLocaleString('en-IN')}</td>
+          </tr>
+        `;
+      }
+
+      const waMsg = `Hello Sikar Water Bottle Supply, I need an update on my Order #${orderId} (${corridor}). Total: Rs.${total}.`;
+      const waNum = (window.getLiveWhatsAppNumber ? window.getLiveWhatsAppNumber() : '919829000000');
+      const waUrl = `https://wa.me/${waNum}?text=${encodeURIComponent(waMsg)}`;
+
+      return `
+        <article class="order-history-card" id="card-${orderId}">
+          <div class="order-card-header-bar">
+            <div>
+              <div class="order-bilty-tag">
+                <span>#${escapeHtml(orderId)}</span>
+                <button type="button" class="btn-copy-id" onclick="copyBiltyId('${orderId}')" title="Copy Order Bilty ID">
+                  <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5"><rect x="9" y="9" width="13" height="13" rx="2" ry="2"></rect><path d="M5 15H4a2 2 0 0 1-2-2V4a2 2 0 0 1 2-2h9a2 2 0 0 1 2 2v1"></path></svg>
+                </button>
+              </div>
+              <div class="order-date-text">Booked on ${dateFormatted}</div>
+            </div>
+            <div>
+              <span class="badge-status ${st.badgeClass}" style="font-size: 0.8rem; padding: 5px 12px; font-weight: 800; border-radius: 6px; text-transform: uppercase;">
+                ${st.badgeText}
+              </span>
+            </div>
+          </div>
+
+          <!-- 3-STEP PROGRESS STEPPER -->
+          <div class="card-stepper-row">
+            <div class="card-stepper-steps">
+              <div class="card-step-line"></div>
+              
+              <div class="card-step-item ${st.step1}">
+                <div class="card-step-dot">${st.step1 === 'completed' ? '<svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="3" stroke-linecap="round" stroke-linejoin="round"><polyline points="20 6 9 17 4 12"/></svg>' : '1'}</div>
+                <div class="card-step-title">Order Placed</div>
+              </div>
+
+              <div class="card-step-item ${st.step2}">
+                <div class="card-step-dot">${st.step2 === 'completed' ? '<svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="3" stroke-linecap="round" stroke-linejoin="round"><polyline points="20 6 9 17 4 12"/></svg>' : '2'}</div>
+                <div class="card-step-title">Tempo Dispatch</div>
+              </div>
+
+              <div class="card-step-item ${st.step3}">
+                <div class="card-step-dot">${st.step3 === 'completed' ? '<svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="3" stroke-linecap="round" stroke-linejoin="round"><polyline points="20 6 9 17 4 12"/></svg>' : '3'}</div>
+                <div class="card-step-title">Delivered</div>
+              </div>
+            </div>
+          </div>
+
+          <!-- DELIVERY ADDRESS -->
+          <div class="order-address-strip">
+            <svg width="16" height="16" style="flex-shrink:0; margin-top:2px; color:#0284C7;" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.3">
+              <path d="M21 10c0 7-9 13-9 13s-9-6-9-13a9 9 0 0 1 18 0z"></path>
+              <circle cx="12" cy="10" r="3"></circle>
+            </svg>
+            <div>
+              <strong style="color: #0F172A; display: block;">Destination Corridor: ${escapeHtml(corridor)}</strong>
+              <span>${escapeHtml(address)}</span>
+            </div>
+          </div>
+
+          <!-- ITEMS TABLE -->
+          <table class="order-items-table">
+            <tbody>
+              ${itemsListHtml}
+            </tbody>
+          </table>
+
+          <!-- FOOTER ACTIONS -->
+          <div class="order-actions-footer">
+            <div>
+              <span style="font-size: 0.76rem; color: var(--text-light); display: block; text-transform: uppercase; font-weight: 700;">Grand Total</span>
+              <span class="order-total-badge">₹${total.toLocaleString('en-IN')}</span>
+            </div>
+            <div class="order-btn-group">
+              <a href="/track?order=${encodeURIComponent(orderId)}" class="btn-order-action btn-order-outline">
+                <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.3"><circle cx="12" cy="12" r="10"></circle><polygon points="16.24 7.76 14.12 14.12 7.76 16.24 9.88 9.88 16.24 7.76"></polygon></svg>
+                <span>Live Tracker</span>
+              </a>
+              <button type="button" class="btn-order-action btn-order-primary" onclick="reorderItems('${orderId}')">
+                <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.3"><polyline points="1 4 1 10 7 10"></polyline><path d="M3.51 15a9 9 0 1 0 2.13-9.36L1 10"></path></svg>
+                <span>Order Again</span>
+              </button>
+              <a href="${waUrl}" target="_blank" class="btn-order-action btn-order-whatsapp">
+                <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.3"><path d="M21 11.5a8.38 8.38 0 0 1-.9 3.8 8.5 8.5 0 0 1-7.6 4.7 8.38 8.38 0 0 1-3.8-.9L3 21l1.9-5.7a8.38 8.38 0 0 1-.9-3.8 8.5 8.5 0 0 1 4.7-7.6 8.38 8.38 0 0 1 3.8-.9h.5a8.48 8.48 0 0 1 8 8v.5z"></path></svg>
+                <span>WhatsApp Desk</span>
+              </a>
+            </div>
+          </div>
+        </article>
+      `;
+    }
+
+    function computeStepInfo(status) {
+      const s = String(status || '').toLowerCase().trim();
+      if (s === 'delivered' || s === 'completed') {
+        return {
+          badgeText: 'Delivered',
+          badgeClass: 'status-delivered',
+          step1: 'completed',
+          step2: 'completed',
+          step3: 'completed'
+        };
+      }
+      if (s === 'processing' || s === 'in_transit' || s === 'shipped' || s === 'out_for_delivery') {
+        return {
+          badgeText: 'Tempo Dispatch',
+          badgeClass: 'status-processing',
+          step1: 'completed',
+          step2: 'active',
+          step3: ''
+        };
+      }
+      if (s === 'cancelled') {
+        return {
+          badgeText: 'Cancelled',
+          badgeClass: 'status-cancelled',
+          step1: 'completed',
+          step2: '',
+          step3: ''
+        };
+      }
+      return {
+        badgeText: 'Order Placed',
+        badgeClass: 'status-placed',
+        step1: 'active',
+        step2: '',
+        step3: ''
+      };
+    }
+
+    function reorderItems(orderId) {
+      const order = activeCustomerOrders.find(o => o.id === orderId);
+      if (!order) return;
+
+      const currentCart = JSON.parse(localStorage.getItem('sikar_cart') || '{}');
+      let itemsAdded = 0;
+
+      if (Array.isArray(order.items) && order.items.length > 0) {
+        order.items.forEach(it => {
+          const pId = it.productId || it.id;
+          const qty = it.quantity || it.qty || 1;
+          if (pId) {
+            currentCart[pId] = (currentCart[pId] || 0) + qty;
+            itemsAdded += qty;
+          }
+        });
+      }
+
+      localStorage.setItem('sikar_cart', JSON.stringify(currentCart));
+      if (typeof cart !== 'undefined') window.cart = currentCart;
+      if (typeof updateCartUI === 'function') updateCartUI();
+
+      showToast(`Added ${itemsAdded > 0 ? itemsAdded : 'order'} items to cart!`);
+      toggleCartDrawer(true);
+    }
+
+    function copyBiltyId(id) {
+      if (navigator.clipboard && navigator.clipboard.writeText) {
+        navigator.clipboard.writeText(id).then(() => {
+          showToast(`Copied Bilty ID #${id} to clipboard!`);
+        });
+      } else {
+        showToast(`Bilty ID: ${id}`);
+      }
+    }
+
+    function handleGuestSearch(e) {
+      if (e) e.preventDefault();
+      const val = document.getElementById('guest-phone-input').value.trim();
+      if (!val) {
+        showToast('Please enter mobile number or Bilty ID');
+        return;
+      }
+      const digitsOnly = val.replace(/\D/g, '').slice(-10);
+      if (digitsOnly.length === 10) {
+        fetchAndRenderOrders(digitsOnly);
+        document.getElementById('orders-guest-box').style.display = 'none';
+        const userBanner = document.getElementById('orders-user-banner');
+        if (userBanner) {
+          userBanner.style.display = 'block';
+          document.getElementById('banner-user-name').textContent = 'Guest Order Consignments';
+          document.getElementById('banner-user-phone').textContent = `+91 ${formatPhoneNumber(digitsOnly)}`;
+          document.getElementById('banner-user-initials').textContent = 'GO';
+        }
+      } else {
+        window.location.href = `/track?order=${encodeURIComponent(val)}`;
+      }
+    }
+
+    function formatPhoneNumber(num) {
+      const clean = String(num || '').replace(/\D/g, '').slice(-10);
+      if (clean.length === 10) {
+        return `${clean.slice(0, 5)} ${clean.slice(5)}`;
+      }
+      return clean;
+    }
+
+    function escapeHtml(str) {
+      if (!str) return '';
+      return String(str).replace(/[&<>"']/g, function(m) {
+        return { '&': '&amp;', '<': '&lt;', '>': '&gt;', '"': '&quot;', "'": '&#39;' }[m];
+      });
+    }
+  </script>
+</body>
+</html>

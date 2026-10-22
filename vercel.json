@@ -34,6 +34,18 @@
       "headers": [{ "key": "X-Robots-Tag", "value": "noindex, follow" }]
     },
     {
+      "source": "/orders",
+      "headers": [{ "key": "X-Robots-Tag", "value": "noindex, follow" }]
+    },
+    {
+      "source": "/orders.html",
+      "headers": [{ "key": "X-Robots-Tag", "value": "noindex, follow" }]
+    },
+    {
+      "source": "/my-orders",
+      "headers": [{ "key": "X-Robots-Tag", "value": "noindex, follow" }]
+    },
+    {
       "source": "/assets/(.*)\\.(css|js)",
       "headers": [
         { "key": "Cache-Control", "value": "public, max-age=0, must-revalidate" }
@@ -67,6 +79,7 @@
   },
   "rewrites": [
     { "source": "/api/(.*)", "destination": "/api/[...all].js" },
-    { "source": "/api", "destination": "/api/[...all].js" }
+    { "source": "/api", "destination": "/api/[...all].js" },
+    { "source": "/my-orders", "destination": "/orders.html" }
   ]
 }

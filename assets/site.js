@@ -860,6 +860,10 @@ function ensureMobileMenuElements() {
           <svg width="18" height="18" style="width: 18px; height: 18px; max-width: 18px; max-height: 18px; flex-shrink: 0;" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2"><rect x="1" y="3" width="15" height="13"></rect><polygon points="16 8 20 8 23 11 23 16 16 16 8"></polygon><circle cx="5.5" cy="18.5" r="2.5"></circle><circle cx="18.5" cy="18.5" r="2.5"></circle></svg>
           <span>Corporate &amp; Shaadi Supply</span>
         </a>
+        <a href="/orders" class="mobile-menu-link">
+          <svg width="18" height="18" style="width: 18px; height: 18px; max-width: 18px; max-height: 18px; flex-shrink: 0;" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2"><path d="M16 4h2a2 2 0 0 1 2 2v14a2 2 0 0 1-2 2H6a2 2 0 0 1-2-2V6a2 2 0 0 1 2-2h2"></path><rect x="8" y="2" width="8" height="4" rx="1" ry="1"></rect><path d="M9 14h6"></path><path d="M9 10h6"></path><path d="M9 18h4"></path></svg>
+          <span>My Orders</span>
+        </a>
         <a href="/track" class="mobile-menu-link">
           <svg width="18" height="18" style="width: 18px; height: 18px; max-width: 18px; max-height: 18px; flex-shrink: 0;" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2"><rect x="1" y="3" width="15" height="13"></rect><polygon points="16 8 20 8 23 11 23 16 16 16 8"></polygon><circle cx="5.5" cy="18.5" r="2.5"></circle><circle cx="18.5" cy="18.5" r="2.5"></circle></svg>
           <span>Track Order</span>
@@ -1595,6 +1599,10 @@ function handleAuthSuccess(userData, method = 'Truecaller Verified') {
   closeLoginModal();
   showToast(`Verified via Truecaller! Welcome, ${currentUser.name}.`);
 
+  try {
+    window.dispatchEvent(new CustomEvent('sikar_auth_changed', { detail: verifiedUser }));
+  } catch (e) {}
+
   const purpose = window.loginPurpose || (typeof loginPurpose !== 'undefined' ? loginPurpose : 'nav');
   if (purpose === 'checkout') {
     // Resume the checkout exactly where the customer left off.
@@ -1606,8 +1614,74 @@ function handleAuthSuccess(userData, method = 'Truecaller Verified') {
         console.warn('Checkout resume error:', e);
       }
     }, 60);
+  } else if (purpose === 'orders') {
+    if (typeof loadCustomerOrdersDirectly === 'function') {
+      loadCustomerOrdersDirectly();
+    }
   }
 }
+
+function handleLogout() {
+  if (confirm('Are you sure you want to log out of your Sikar Drop account?')) {
+    window.currentUser = null;
+    currentUser = null;
+    try {
+      localStorage.removeItem('sikar_user');
+      window.dispatchEvent(new CustomEvent('sikar_auth_changed', { detail: null }));
+    } catch (e) {}
+    if (typeof updateAuthNav === 'function') updateAuthNav();
+    showToast('Logged out successfully.');
+    if (typeof renderOrdersState === 'function') renderOrdersState();
+  }
+}
+
+function updateAuthNav() {
+  const user = (typeof getSignedInUser === 'function') ? getSignedInUser() : (window.currentUser || JSON.parse(localStorage.getItem('sikar_user') || 'null'));
+  const slot = document.getElementById('auth-nav-slot');
+  if (slot) {
+    if (user && user.phone) {
+      const displayName = user.name || 'Account';
+      slot.innerHTML = `
+        <a href="/orders" class="nav-icon-action-btn" title="Logged in as ${escapeHTML(displayName)} - View My Orders" style="color:#0284C7; text-decoration:none; position:relative; display:inline-flex; align-items:center; justify-content:center;">
+          <svg viewBox="0 0 24 24" width="22" height="22" fill="currentColor"><path d="M12 2a5 5 0 1 0 5 5 5 5 0 0 0-5-5zm0 14c-5 0-9 2.5-9 5v1h18v-1c0-2.5-4-5-9-5z"/></svg>
+          <span style="position: absolute; top: 6px; right: 6px; width: 8px; height: 8px; background: #22C55E; border-radius: 50%; border: 1.5px solid #FFFFFF;"></span>
+        </a>
+      `;
+    } else {
+      slot.innerHTML = `
+        <button type="button" class="nav-icon-action-btn" onclick="openLoginModal('nav')" title="Account / Login">
+          <svg viewBox="0 0 24 24" width="22" height="22" fill="none" stroke="currentColor" stroke-width="2.2"><path d="M20 21v-2a4 4 0 0 0-4-4H8a4 4 0 0 0-4 4v2"></path><circle cx="12" cy="7" r="4"></circle></svg>
+        </button>
+      `;
+    }
+  }
+
+  const accBtn = document.getElementById('nav-btn-account');
+  if (accBtn && !slot) {
+    if (user && user.phone) {
+      accBtn.onclick = () => { window.location.href = '/orders'; };
+      accBtn.title = `Logged in as ${user.name || 'User'} - My Orders`;
+      accBtn.style.color = '#0284C7';
+    } else {
+      accBtn.onclick = () => { openLoginModal('nav'); };
+      accBtn.title = 'Account / Sign In';
+      accBtn.style.color = '';
+    }
+  }
+}
+
+try {
+  window.addEventListener('sikar_auth_changed', () => {
+    try { updateAuthNav(); } catch (e) {}
+  });
+  if (document.readyState === 'loading') {
+    document.addEventListener('DOMContentLoaded', () => {
+      try { updateAuthNav(); } catch (e) {}
+    });
+  } else {
+    try { updateAuthNav(); } catch (e) {}
+  }
+} catch (e) {}
 
 // Global Aliases for Compatibility
 // SECURITY: All aliases route to Truecaller. Old OTP-based names kept
