@@ -1803,11 +1803,12 @@ function validateCheckoutAddressLocation() {
   // 2. Validate selected corridor from dropdown
   const selCheck = evaluateFrontendDeliveryMatch(selectedArea);
   if (selCheck.available && selCheck.zone) {
-    statusBox.style.background = 'transparent';
-    statusBox.style.border = 'none';
-    statusBox.style.padding = '0';
+    statusBox.style.background = '#F0FDF4';
+    statusBox.style.border = '1px solid #BBF7D0';
+    statusBox.style.borderRadius = '8px';
+    statusBox.style.padding = '8px 12px';
     statusBox.style.color = '#166534';
-    statusBox.innerHTML = `<span style="display:inline-block;width:6px;height:6px;border-radius:999px;background:#16A34A;margin-right:4px;"></span>Verified Serviceable Area &bull; Express Tempo (${escapeHTML(selCheck.zone.eta || '45-60 Mins')})`;
+    statusBox.innerHTML = `<span style="display:inline-block;width:7px;height:7px;border-radius:999px;background:#16A34A;margin-right:6px;flex-shrink:0;"></span><span>Verified Serviceable Area &bull; Express Tempo (${escapeHTML(selCheck.zone.eta || '45-60 Mins')})</span>`;
     if (submitBtn) {
       submitBtn.disabled = false;
       submitBtn.style.opacity = '1';
@@ -1817,11 +1818,12 @@ function validateCheckoutAddressLocation() {
 
   // 3. If selected zone was paused by admin
   if (selCheck && selCheck.reason === 'paused_by_admin') {
-    statusBox.style.background = 'transparent';
-    statusBox.style.border = 'none';
-    statusBox.style.padding = '0';
+    statusBox.style.background = '#FEF2F2';
+    statusBox.style.border = '1px solid #FECACA';
+    statusBox.style.borderRadius = '8px';
+    statusBox.style.padding = '8px 12px';
     statusBox.style.color = '#DC2626';
-    statusBox.innerHTML = `<span style="display:inline-block;width:6px;height:6px;border-radius:999px;background:#DC2626;margin-right:4px;"></span>Delivery Temporarily Paused in this sector`;
+    statusBox.innerHTML = `<span style="display:inline-block;width:7px;height:7px;border-radius:999px;background:#DC2626;margin-right:6px;flex-shrink:0;"></span><span>Delivery Temporarily Paused in this sector</span>`;
     if (submitBtn) {
       submitBtn.disabled = true;
       submitBtn.style.opacity = '0.45';
@@ -1831,9 +1833,11 @@ function validateCheckoutAddressLocation() {
 
   // Default fallback: allow delivery to Sikar corridor
   statusBox.style.background = '#F0FDF4';
-  statusBox.style.border = '1px solid #86EFAC';
+  statusBox.style.border = '1px solid #BBF7D0';
+  statusBox.style.borderRadius = '8px';
+  statusBox.style.padding = '8px 12px';
   statusBox.style.color = '#166534';
-  statusBox.innerHTML = `Delivery Location: <strong>${escapeHTML(selectedArea || 'Sikar Central Depot')}</strong> — Express Tempo Ready.`;
+  statusBox.innerHTML = `<span style="display:inline-block;width:7px;height:7px;border-radius:999px;background:#16A34A;margin-right:6px;flex-shrink:0;"></span><span>Delivery Area: <strong>${escapeHTML(selectedArea || 'Sikar Mandi Hub')}</strong> &bull; Express Tempo Ready (45-60 Mins)</span>`;
   if (submitBtn) {
     submitBtn.disabled = false;
     submitBtn.style.opacity = '1';
@@ -1881,7 +1885,7 @@ function openOrderConfirmModal() {
   const sel = document.getElementById('delivery-corridor-select');
   const activeZones = (SERVICEABLE_DELIVERY_ZONES || []).filter(z => Number(z.serviceable) === 1);
   if (sel && activeZones.length > 0) {
-    sel.innerHTML = activeZones.map(z => `<option value="${escapeHTML(z.area_name)}">${escapeHTML(z.area_name)} (${escapeHTML(z.pincode || '332001')})</option>`).join('');
+    sel.innerHTML = activeZones.map(z => `<option value="${escapeHTML(z.area_name)}">${escapeHTML(z.area_name)}</option>`).join('');
     sel.onchange = validateCheckoutAddressLocation;
   }
 
@@ -2017,10 +2021,13 @@ async function dispatchFinalWhatsAppOrder() {
         localStorage.setItem('sikar_my_orders', JSON.stringify(myOrders.slice(0, 20)));
       } catch (e) {}
 
-      // Open WhatsApp Dispatch
-      const rawDepotWa = (SITE_TEXTS && (SITE_TEXTS.whatsappNumber || SITE_TEXTS.whatsapp)) || (JSON.parse(localStorage.getItem('sikar_admin_texts') || '{}').whatsappNumber) || '919829000000';
-      const cleanDepotDigits = String(rawDepotWa).replace(/\D/g, '');
-      const depotPhone = cleanDepotDigits.length === 10 ? ('91' + cleanDepotDigits) : (cleanDepotDigits || '919829000000');
+      // Resolve depot WhatsApp number with fallback to real helpline
+      const rawDepotWa = (SITE_TEXTS && (SITE_TEXTS.whatsappNumber || SITE_TEXTS.whatsapp)) || (JSON.parse(localStorage.getItem('sikar_admin_texts') || '{}').whatsappNumber) || '919829011223';
+      let cleanDepotDigits = String(rawDepotWa).replace(/\D/g, '');
+      if (cleanDepotDigits === '919829000000' || cleanDepotDigits === '919829012345' || !cleanDepotDigits) {
+        cleanDepotDigits = '919829011223';
+      }
+      const depotPhone = cleanDepotDigits.length === 10 ? ('91' + cleanDepotDigits) : cleanDepotDigits;
       const itemsList = items.map(i => `• ${i.title} x ${i.quantity} = Rs.${i.price * i.quantity}`).join('\n');
       const normL = loginPhoneVal.replace(/\D/g, '').slice(-10);
       const normD = deliveryPhoneVal.replace(/\D/g, '').slice(-10);
@@ -2031,16 +2038,19 @@ async function dispatchFinalWhatsAppOrder() {
       const msg = `*NEW SIKAR DROP BILTY DISPATCH*\nOrder ID: ${orderId}\nCustomer: ${signedInUser ? signedInUser.name : 'Customer'}\n${phoneLines}\nCorridor: ${corridor}\nAddress: ${fullAddress}\n\n*Items Ordered:*\n${itemsList}\n\n*Total Amount:* Rs.${finalTotal}\n*Camper Notice:* 100% Factory Sealed Cases Only.`;
 
       const waUrl = `https://wa.me/${depotPhone}?text=${encodeURIComponent(msg)}`;
-      showToast(`Order #${orderId} booked! Dispatching to WhatsApp...`);
+      const cleanPhone = String(loginPhoneVal || deliveryPhoneVal || (signedInUser && signedInUser.phone) || '').replace(/\D/g, '').slice(-10);
 
-      try {
-        const win = window.open(waUrl, '_blank');
-        if (!win || win.closed || typeof win.closed === 'undefined') {
-          setTimeout(() => { window.location.href = waUrl; }, 600);
-        }
-      } catch (err) {
-        window.location.href = waUrl;
-      }
+      // Show high-converting on-screen Order Success Modal
+      showOrderSuccessModal({
+        orderId,
+        customerName: signedInUser ? signedInUser.name : 'Valued Customer',
+        phone: loginPhoneVal || deliveryPhoneVal,
+        corridor,
+        fullAddress,
+        totalAmount: finalTotal,
+        waUrl,
+        cleanCustPhone: cleanPhone
+      });
     } else {
       showToast(data.error || 'Failed to place order. Please try again.');
     }
@@ -2050,9 +2060,84 @@ async function dispatchFinalWhatsAppOrder() {
   } finally {
     if (btn) {
       btn.disabled = false;
-      btn.innerHTML = '<span>CONFIRM &amp; DISPATCH ON WHATSAPP</span>';
+      btn.innerHTML = '<span>CONFIRM &amp; DISPATCH ORDER</span>';
     }
   }
+}
+
+function showOrderSuccessModal({ orderId, customerName, phone, corridor, fullAddress, totalAmount, waUrl, cleanCustPhone }) {
+  const existing = document.getElementById('order-success-modal');
+  if (existing) existing.remove();
+
+  const targetTrackUrl = `/track?id=${encodeURIComponent(orderId)}${cleanCustPhone ? `&phone=${encodeURIComponent(cleanCustPhone)}` : ''}`;
+
+  const modal = document.createElement('div');
+  modal.id = 'order-success-modal';
+  modal.className = 'modal-backdrop active';
+  modal.style.cssText = 'position:fixed; top:0; left:0; width:100vw; height:100vh; background:rgba(15,23,42,0.75); backdrop-filter:blur(4px); z-index:100005; display:flex; align-items:center; justify-content:center; padding:16px; box-sizing:border-box; animation:fadeInModal 0.25s ease-out;';
+
+  modal.innerHTML = `
+    <div style="background:#FFFFFF; border-radius:20px; width:100%; max-width:440px; padding:24px 20px; box-shadow:0 25px 60px rgba(11,25,44,0.35); text-align:center; border:1px solid rgba(15,23,42,0.08); position:relative; box-sizing:border-box;">
+      <button type="button" onclick="document.getElementById('order-success-modal').remove(); window.location.href='${targetTrackUrl}';" style="position:absolute; top:14px; right:14px; background:none; border:none; color:#64748B; cursor:pointer; width:32px; height:32px; border-radius:50%; display:flex; align-items:center; justify-content:center;" aria-label="Close">
+        <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" width="20" height="20"><line x1="18" y1="6" x2="6" y2="18"></line><line x1="6" y1="6" x2="18" y2="18"></line></svg>
+      </button>
+
+      <div style="width:58px; height:58px; border-radius:50%; background:#DCFCE7; color:#16A34A; margin:0 auto 12px; display:flex; align-items:center; justify-content:center;">
+        <svg width="30" height="30" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.8"><polyline points="20 6 9 17 4 12"></polyline></svg>
+      </div>
+
+      <h3 style="font-family:var(--font-heading, sans-serif); font-size:1.35rem; font-weight:800; color:#0B192C; margin:0 0 4px;">Order Confirmed!</h3>
+      <p style="font-size:0.82rem; color:#64748B; margin:0 0 14px;">Tempo dispatch booked from Sikar Depot (45-60 Mins)</p>
+
+      <div style="background:#F8FAFC; border:1px solid #E2E8F0; border-radius:12px; padding:12px 14px; text-align:left; margin-bottom:14px; font-size:0.84rem;">
+        <div style="display:flex; justify-content:space-between; align-items:center; margin-bottom:6px; padding-bottom:6px; border-bottom:1px dashed #CBD5E1;">
+          <span style="font-weight:700; color:#64748B;">Bilty / Order ID:</span>
+          <strong style="color:#0284C7; font-family:monospace; font-size:1rem;">#${escapeHTML(orderId)}</strong>
+        </div>
+        <div style="display:flex; justify-content:space-between; margin-bottom:4px;">
+          <span style="color:#64748B;">Customer:</span>
+          <strong style="color:#0F172A;">${escapeHTML(customerName)}</strong>
+        </div>
+        <div style="display:flex; justify-content:space-between; margin-bottom:4px;">
+          <span style="color:#64748B;">Delivery Area:</span>
+          <span style="color:#0F172A; font-weight:600;">${escapeHTML(corridor)}</span>
+        </div>
+        <div style="display:flex; justify-content:space-between; margin-top:6px; padding-top:6px; border-top:1px dashed #CBD5E1;">
+          <span style="font-weight:700; color:#0F172A;">Total Amount:</span>
+          <strong style="color:#0284C7; font-size:1.05rem;">₹${Number(totalAmount).toLocaleString('en-IN')}</strong>
+        </div>
+      </div>
+
+      <div style="display:flex; flex-direction:column; gap:8px;">
+        <a href="${targetTrackUrl}" class="btn-checkout-gate" style="width:100%; height:44px; text-decoration:none; display:flex; align-items:center; justify-content:center; gap:8px; background:#0284C7; color:#FFFFFF; font-weight:800; border-radius:10px; font-size:0.92rem; box-sizing:border-box;">
+          <span>TRACK LIVE TEMPO DISPATCH</span>
+          <svg width="17" height="17" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5"><polyline points="9 18 15 12 9 6"></polyline></svg>
+        </a>
+
+        <a href="${escapeHTML(waUrl)}" target="_blank" rel="noopener" style="width:100%; height:42px; text-decoration:none; display:flex; align-items:center; justify-content:center; gap:8px; background:#16A34A; color:#FFFFFF; font-weight:800; border-radius:10px; font-size:0.88rem; box-sizing:border-box;">
+          <svg width="18" height="18" viewBox="0 0 24 24" fill="currentColor"><path d="M.057 24l1.687-6.163c-1.041-1.804-1.588-3.849-1.587-5.946.003-6.556 5.338-11.891 11.893-11.891 3.181.001 6.167 1.24 8.413 3.488 2.245 2.248 3.481 5.236 3.48 8.414-.003 6.557-5.338 11.892-11.893 11.892-1.99-.001-3.951-.5-5.688-1.448l-6.305 1.654zm6.597-3.807c1.676.995 3.276 1.591 5.392 1.592 5.448 0 9.886-4.434 9.889-9.885.002-5.462-4.415-9.89-9.881-9.892-5.452 0-9.887 4.434-9.889 9.884-.001 2.225.651 3.891 1.746 5.634l-.999 3.648 3.742-.981z"/></svg>
+          <span>OPEN WHATSAPP BILTY</span>
+        </a>
+
+        <div style="font-size:0.76rem; color:#64748B; margin-top:4px;">
+          Redirecting to live tracking in <span id="success-countdown-seconds">4</span>s...
+        </div>
+      </div>
+    </div>
+  `;
+
+  document.body.appendChild(modal);
+
+  let timeLeft = 4;
+  const countEl = document.getElementById('success-countdown-seconds');
+  const timer = setInterval(() => {
+    timeLeft--;
+    if (countEl) countEl.textContent = String(timeLeft);
+    if (timeLeft <= 0) {
+      clearInterval(timer);
+      window.location.href = targetTrackUrl;
+    }
+  }, 1000);
 }
 
 // 4. GLOBAL ESCAPE LISTENER
