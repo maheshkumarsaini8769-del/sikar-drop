@@ -121,21 +121,21 @@ try {
     }
     const defaultSuperPass = process.env.SUPER_ADMIN_PASSWORD || 'mahesh99830';
     const superHash = bcrypt.hashSync(defaultSuperPass, 10);
-    db.prepare("UPDATE admin_users SET username = 'maheshkumarsaini8769@gmail.com', name = 'Mahesh Kumar Saini', password_hash = ?, pin = '[BCRYPT_PROTECTED]', role = 'Super Admin', active = 1, permissions_json = '[\"*\"]' WHERE id = 'ADM-01'").run(superHash);
+    db.prepare("UPDATE admin_users SET username = 'maheshkumarsaini8769@gmail.com', name = 'Mahesh Kumar Saini', password_hash = ?, pin = '[BCRYPT_PROTECTED]', role = 'Super Admin', active = 1, permissions_json = '[\"all\",\"*\"]' WHERE id = 'ADM-01'").run(superHash);
 
     // Devendra Saini (Super Admin) - supports password 27101993 and mahesh99830
     const devPass = '27101993';
     const devHash = bcrypt.hashSync(devPass, 10);
     db.prepare(`
       INSERT INTO admin_users (id, username, name, role, pin, password_hash, permissions_json, active, created_at)
-      VALUES ('ADM-DEV', 'sainidevendra416@gmail.com', 'Devendra Saini', 'Super Admin', '[BCRYPT_PROTECTED]', ?, '["*"]', 1, datetime('now'))
+      VALUES ('ADM-DEV', 'sainidevendra416@gmail.com', 'Devendra Saini', 'Super Admin', '[BCRYPT_PROTECTED]', ?, '["all","*"]', 1, datetime('now'))
       ON CONFLICT(id) DO UPDATE SET
         username = 'sainidevendra416@gmail.com',
         name = 'Devendra Saini',
         role = 'Super Admin',
         password_hash = excluded.password_hash,
         active = 1,
-        permissions_json = '["*"]'
+        permissions_json = '["all","*"]'
     `).run(devHash);
   }
 } catch (migErr) {
@@ -820,10 +820,17 @@ app.post('/api/auth/login', (req, res) => {
     try {
       parsedPerms = JSON.parse(admin.permissions_json || '[]');
     } catch (e) {
-      parsedPerms = admin.role.includes('Super') ? ['*'] : ['orders:view'];
+      parsedPerms = ['dashboard'];
+    }
+    const isSuperRole = (admin.role && String(admin.role).toLowerCase().includes('super')) ||
+                        admin.id === 'ADM-01' ||
+                        admin.id === 'ADM-DEV' ||
+                        (admin.username && (admin.username.toLowerCase().includes('sainidevendra') || admin.username.toLowerCase().includes('mahesh')));
+    if (isSuperRole) {
+      parsedPerms = ['all', '*'];
     }
 
-    const token = signAdminToken(admin.id, { role: admin.role });
+    const token = signAdminToken(admin.id, { role: isSuperRole ? 'Super Admin' : admin.role });
 
     return res.json({
       success: true,
@@ -834,7 +841,7 @@ app.post('/api/auth/login', (req, res) => {
         name: admin.name,
         email: admin.username,
         username: admin.username,
-        role: admin.role,
+        role: isSuperRole ? 'Super Admin' : admin.role,
         perms: parsedPerms
       }
     });
@@ -866,12 +873,20 @@ app.post('/api/auth/verify-2fa', (req, res) => {
       return res.status(401).json({ error: 'Invalid 2-Step Verification code' });
     }
 
-    const token = signAdminToken(admin.id, { role: admin.role });
+    const isSuperRole = (admin.role && String(admin.role).toLowerCase().includes('super')) ||
+                        admin.id === 'ADM-01' ||
+                        admin.id === 'ADM-DEV' ||
+                        (admin.username && (admin.username.toLowerCase().includes('sainidevendra') || admin.username.toLowerCase().includes('mahesh')));
+
+    const token = signAdminToken(admin.id, { role: isSuperRole ? 'Super Admin' : admin.role });
     let parsedPerms = [];
     try {
       parsedPerms = JSON.parse(admin.permissions_json || '[]');
     } catch (e) {
-      parsedPerms = admin.role.includes('Super') ? ['*'] : ['orders:view'];
+      parsedPerms = ['dashboard'];
+    }
+    if (isSuperRole) {
+      parsedPerms = ['all', '*'];
     }
 
     res.json({
@@ -882,7 +897,7 @@ app.post('/api/auth/verify-2fa', (req, res) => {
         name: admin.name,
         email: admin.username,
         username: admin.username,
-        role: admin.role,
+        role: isSuperRole ? 'Super Admin' : admin.role,
         perms: parsedPerms
       }
     });
@@ -905,6 +920,13 @@ app.get('/api/auth/verify-token', (req, res) => {
     }
     let parsedPerms = [];
     try { parsedPerms = JSON.parse(admin.permissions_json || '[]'); } catch (e) { parsedPerms = []; }
+    const isSuperRole = (admin.role && String(admin.role).toLowerCase().includes('super')) ||
+                        admin.id === 'ADM-01' ||
+                        admin.id === 'ADM-DEV' ||
+                        (admin.username && (admin.username.toLowerCase().includes('sainidevendra') || admin.username.toLowerCase().includes('mahesh')));
+    if (isSuperRole) {
+      parsedPerms = ['all', '*'];
+    }
     res.json({
       valid: true,
       user: {
@@ -912,7 +934,7 @@ app.get('/api/auth/verify-token', (req, res) => {
         name: admin.name,
         email: admin.username,
         username: admin.username,
-        role: admin.role,
+        role: isSuperRole ? 'Super Admin' : admin.role,
         perms: parsedPerms
       }
     });
@@ -973,16 +995,28 @@ app.post('/api/settings/security', requireAdmin, (req, res) => {
 
 app.get('/api/auth/profile', (req, res) => {
   try {
-    const adminId = req.query.id || 'ADM-01';
-    const admin = db.prepare('SELECT id, username, name, role, permissions_json, active, created_at, last_login FROM admin_users WHERE id = ?').get(adminId);
+    const adminId = String(req.query.id || 'ADM-01').trim();
+    let admin = db.prepare('SELECT id, username, name, role, permissions_json, active, created_at, last_login FROM admin_users WHERE id = ? OR LOWER(username) = LOWER(?)').get(adminId, adminId);
+    if (!admin) {
+      admin = db.prepare('SELECT id, username, name, role, permissions_json, active, created_at, last_login FROM admin_users WHERE id = ?').get('ADM-01');
+    }
     if (!admin) return res.status(404).json({ error: 'Admin account not found' });
+    let parsedPerms = [];
+    try { parsedPerms = JSON.parse(admin.permissions_json || '[]'); } catch (e) { parsedPerms = []; }
+    const isSuperRole = (admin.role && String(admin.role).toLowerCase().includes('super')) ||
+                        admin.id === 'ADM-01' ||
+                        admin.id === 'ADM-DEV' ||
+                        (admin.username && (admin.username.toLowerCase().includes('sainidevendra') || admin.username.toLowerCase().includes('mahesh')));
+    if (isSuperRole) {
+      parsedPerms = ['all', '*'];
+    }
     res.json({
       id: admin.id,
       name: admin.name,
       email: admin.username,
       username: admin.username,
-      role: admin.role,
-      permissions: JSON.parse(admin.permissions_json),
+      role: isSuperRole ? 'Super Admin' : admin.role,
+      permissions: parsedPerms,
       active: admin.active,
       created_at: admin.created_at,
       last_login: admin.last_login
@@ -1137,16 +1171,23 @@ app.post('/api/auth/credentials', requireAdmin, handleCredentialsUpdate);
 
 app.get('/api/auth/subadmins', requirePermission('*'), (req, res) => {
   try {
-    const users = db.prepare("SELECT id, username, name, role, permissions_json, active, created_at, last_login FROM admin_users ORDER BY CASE WHEN id = 'ADM-01' THEN 0 ELSE 1 END, id ASC").all();
+    const users = db.prepare("SELECT id, username, name, role, permissions_json, active, created_at, last_login FROM admin_users ORDER BY CASE WHEN id = 'ADM-01' THEN 0 WHEN id = 'ADM-DEV' THEN 1 ELSE 2 END, id ASC").all();
     const formatted = users.map(u => {
       let parsedPerms = [];
       try { parsedPerms = JSON.parse(u.permissions_json || '[]'); } catch (e) { parsedPerms = ['dashboard']; }
+      const isSuper = (u.role && String(u.role).toLowerCase().includes('super')) ||
+                      u.id === 'ADM-01' ||
+                      u.id === 'ADM-DEV' ||
+                      (u.username && (u.username.toLowerCase().includes('sainidevendra') || u.username.toLowerCase().includes('mahesh')));
+      if (isSuper) {
+        parsedPerms = ['all', '*'];
+      }
       return {
         id: u.id,
         name: u.name,
         email: u.username,
         username: u.username,
-        role: u.role || 'Staff',
+        role: isSuper ? 'Super Admin' : (u.role || 'Staff'),
         perms: parsedPerms,
         permissions: parsedPerms,
         active: u.active === 1,
@@ -1174,9 +1215,10 @@ app.post('/api/auth/subadmins', requirePermission('*'), (req, res) => {
 
     const hash = bcrypt.hashSync(finalPass, 10);
     const now = new Date().toISOString();
-    const cleanPerms = Array.isArray(permissions) && permissions.length > 0 ? permissions : ['orders:view'];
+    const isSuperRole = (role && String(role).toLowerCase().includes('super')) || finalUsername.includes('sainidevendra') || finalUsername.includes('mahesh');
+    const cleanPerms = isSuperRole ? ['all', '*'] : (Array.isArray(permissions) && permissions.length > 0 ? permissions : ['orders:view']);
     const permsJson = JSON.stringify(cleanPerms);
-    const finalRole = role || 'Order Manager';
+    const finalRole = isSuperRole ? 'Super Admin' : (role || 'Order Manager');
 
     const existing = db.prepare('SELECT id FROM admin_users WHERE LOWER(TRIM(username)) = ?').get(finalUsername);
     if (existing) {
@@ -1209,9 +1251,10 @@ app.put('/api/auth/subadmins/:id', requirePermission('*'), (req, res) => {
     const { name, email, username, role, password, pin, permissions, active } = req.body || {};
     const finalUsername = String(email || username || target.username).trim().toLowerCase();
     const finalName = name ? name.trim() : target.name;
-    const finalRole = (target.id === 'ADM-01') ? 'Super Admin' : (role ? role.trim() : target.role);
-    const finalPerms = (target.id === 'ADM-01') ? JSON.stringify(['*']) : (Array.isArray(permissions) ? JSON.stringify(permissions) : target.permissions_json);
-    const finalActive = (target.id === 'ADM-01') ? 1 : ((active !== undefined) ? (active ? 1 : 0) : 1);
+    const isSuperAccount = (target.id === 'ADM-01' || target.id === 'ADM-DEV' || finalUsername.includes('sainidevendra') || finalUsername.includes('mahesh'));
+    const finalRole = isSuperAccount ? 'Super Admin' : (role ? role.trim() : target.role);
+    const finalPerms = isSuperAccount ? JSON.stringify(['all', '*']) : (Array.isArray(permissions) ? JSON.stringify(permissions) : target.permissions_json);
+    const finalActive = isSuperAccount ? 1 : ((active !== undefined) ? (active ? 1 : 0) : 1);
 
     let hash = target.password_hash;
     const newPass = String(password || pin || '').trim();
@@ -1247,7 +1290,7 @@ app.put('/api/auth/subadmins/:id', requirePermission('*'), (req, res) => {
 app.delete('/api/auth/subadmins/:id', requirePermission('*'), (req, res) => {
   try {
     const { id } = req.params;
-    if (id === 'ADM-01') {
+    if (id === 'ADM-01' || id === 'ADM-DEV') {
       return res.status(400).json({ error: 'Cannot delete Super Admin account' });
     }
     db.prepare('DELETE FROM admin_users WHERE id = ?').run(id);

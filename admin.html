@@ -2367,9 +2367,6 @@
           <span id="sidebar-operator-role">Depot Owner</span>
         </div>
       </div>
-      <button type="button" id="btn-revert-superadmin" onclick="switchBackToSuperAdmin()" style="display:none; width:100%; margin:8px 0; padding:6px 10px; font-size:0.75rem; font-weight:700; background:#0284C7; color:#FFFFFF; border:none; border-radius:4px; cursor:pointer;">
-        Switch to Super Admin
-      </button>
       <div class="sidebar-action-row">
         <a href="index.html" class="btn-side-action" title="View Storefront">
           <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" width="14" height="14"><path d="M18 13v6a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2V8a2 2 0 0 1 2-2h6"></path><polyline points="15 3 21 3 21 9"></polyline><line x1="10" y1="14" x2="21" y2="3"></line></svg>
@@ -7885,6 +7882,21 @@
       showToast(message || 'Google Security: Admin Console locked.');
     }
 
+    function isSuperAdminUser(op) {
+      if (!op) return false;
+      const role = String(op.role || '').toLowerCase();
+      const id = String(op.id || '').toUpperCase();
+      const email = String(op.email || op.username || '').toLowerCase();
+      if (role.includes('super') || role === 'owner' || id === 'ADM-01' || id === 'ADM-DEV' || email.includes('sainidevendra') || email.includes('mahesh')) {
+        return true;
+      }
+      const perms = op.permissions || op.perms || [];
+      if (perms === 'all' || perms === '*' || (Array.isArray(perms) && (perms.includes('all') || perms.includes('*')))) {
+        return true;
+      }
+      return false;
+    }
+
     async function renderAdminCredentials() {
       const emailInput = document.getElementById('cfg-admin-email');
       if (!emailInput) return;
@@ -7892,12 +7904,13 @@
         emailInput.value = currentOperator.email;
       }
       try {
-        const res = await fetch('/api/auth/profile?id=ADM-01');
+        const opId = (currentOperator && currentOperator.id) || 'ADM-01';
+        const res = await fetch(`/api/auth/profile?id=${encodeURIComponent(opId)}`);
         if (res.ok) {
           const profile = await res.json();
           if (profile && profile.email) {
             emailInput.value = profile.email;
-            if (currentOperator && currentOperator.id === 'ADM-01') {
+            if (currentOperator) {
               currentOperator.email = profile.email;
               currentOperator.username = profile.email;
               sessionStorage.setItem('sikar_portal_operator', JSON.stringify(currentOperator));
@@ -7920,16 +7933,17 @@
       if (roleEl) roleEl.textContent = currentOperator.role;
       if (avatarEl) avatarEl.textContent = currentOperator.name.split(' ').map(n => n[0]).join('').slice(0, 2).toUpperCase();
 
-      const isSubAdmin = currentOperator.id !== 'ADM-01';
       const switchBackBtn = document.getElementById('btn-revert-superadmin');
       if (switchBackBtn) {
-        switchBackBtn.style.display = isSubAdmin ? 'block' : 'none';
+        switchBackBtn.style.display = 'none';
       }
+
+      const isSuper = isSuperAdminUser(currentOperator);
 
       // Filter tabs in sidebar if restricted
       document.querySelectorAll('.sidebar-tab-btn').forEach(btn => {
         const tab = btn.getAttribute('data-tab');
-        if (hasPermission(tab)) {
+        if (isSuper || hasPermission(tab)) {
           btn.style.display = 'flex';
         } else {
           btn.style.display = 'none';
@@ -7939,7 +7953,7 @@
       // If active tab is restricted, redirect to first allowed tab or dashboard
       if (!hasPermission(currentTab)) {
         const perms = currentOperator.permissions || currentOperator.perms || [];
-        const firstPerm = (Array.isArray(perms) && perms.find(p => p !== 'all' && document.getElementById(`pane-${p}`))) || 'dashboard';
+        const firstPerm = (Array.isArray(perms) && perms.find(p => p !== 'all' && p !== '*' && document.getElementById(`pane-${p}`))) || 'dashboard';
         switchTab(firstPerm);
       }
     }
@@ -7947,15 +7961,17 @@
     function hasPermission(tabId) {
       if (!currentOperator) return false;
       if (tabId === 'dashboard') return true;
+      if (isSuperAdminUser(currentOperator)) return true;
+
       const perms = currentOperator.permissions || currentOperator.perms || 'all';
-      if (perms === 'all') return true;
+      if (perms === 'all' || perms === '*' || (Array.isArray(perms) && (perms.includes('all') || perms.includes('*')))) return true;
       if (Array.isArray(perms)) {
-        if (tabId === 'delivery') return perms.includes('all') || perms.includes('delivery') || perms.includes('settings') || perms.includes('orders');
-        return perms.includes('all') || perms.includes(tabId);
+        if (tabId === 'delivery') return perms.includes('delivery') || perms.includes('settings') || perms.includes('orders');
+        return perms.includes(tabId);
       }
       if (typeof perms === 'string') {
-        if (tabId === 'delivery') return perms === 'all' || perms.includes('delivery') || perms.includes('settings') || perms.includes('orders');
-        return perms === 'all' || perms.includes(tabId);
+        if (tabId === 'delivery') return perms.includes('delivery') || perms.includes('settings') || perms.includes('orders');
+        return perms.includes(tabId);
       }
       return false;
     }
@@ -15923,11 +15939,9 @@
           </td>
           <td>
             <div style="display:flex; align-items:center; gap:6px;">
-              <button type="button" class="btn-tbl-action" style="${isCurrentActive ? 'background:#16A34A; color:#FFFFFF;' : 'background:#0F172A; color:#FFFFFF;'}" onclick="switchOperatorSession(${idx})">
-                ${isCurrentActive ? 'Active Now' : 'Test Login'}
-              </button>
+              ${isCurrentActive ? `<span style="font-size:0.72rem; font-weight:700; color:#15803D; background:#DCFCE7; border:1px solid #86EFAC; padding:4px 8px; border-radius:4px;">Current Session</span>` : ''}
               <button type="button" class="btn-tbl-action" style="background:#0284C7; color:#FFFFFF;" onclick="openEditSubAdminModal(${idx})">Edit</button>
-              ${s.id === 'ADM-01'
+              ${(s.id === 'ADM-01' || s.id === 'ADM-DEV' || isSuperAdmin)
                 ? `<span style="font-size:0.72rem; font-weight:700; color:#0369A1; background:#E0F2FE; border:1px solid #BAE6FD; padding:4px 8px; border-radius:4px;">Master Account</span>`
                 : `<button type="button" class="btn-tbl-action danger" onclick="deleteSubAdmin(${idx})">Revoke</button>`
               }
@@ -15939,48 +15953,6 @@
     }
 
     let editingSubAdminIdx = null;
-
-    function switchOperatorSession(idx) {
-      const staff = adminSubAdmins[idx];
-      if (!staff) return;
-
-      const isSuper = (staff.role && String(staff.role).toLowerCase().includes('super')) || staff.id === 'ADM-01';
-      currentOperator = {
-        id: staff.id || ('ADM-SUB-' + (idx + 1)),
-        name: staff.name,
-        email: staff.email || staff.username,
-        username: staff.username || staff.email,
-        role: staff.role || (isSuper ? 'Super Admin' : 'Staff Operator'),
-        perms: isSuper ? ['all'] : (staff.perms || staff.permissions || ['dashboard']),
-        permissions: isSuper ? ['all'] : (staff.perms || staff.permissions || ['dashboard'])
-      };
-
-      adminAuth = true;
-      sessionStorage.setItem('sikar_portal_auth', 'true');
-      sessionStorage.setItem('sikar_portal_operator', JSON.stringify(currentOperator));
-
-      applyOperatorPermissions();
-      renderSubAdminTable();
-      showToast(`Logged in as Operator: ${staff.name} (${staff.role || 'Staff'})`);
-    }
-
-    function switchBackToSuperAdmin() {
-      currentOperator = {
-        id: 'ADM-01',
-        name: 'Devendra Saini',
-        email: 'Sainidevendra416@gmail.com',
-        username: 'Sainidevendra416@gmail.com',
-        role: 'Super Admin',
-        perms: ['all'],
-        permissions: ['all']
-      };
-      adminAuth = true;
-      sessionStorage.setItem('sikar_portal_auth', 'true');
-      sessionStorage.setItem('sikar_portal_operator', JSON.stringify(currentOperator));
-      applyOperatorPermissions();
-      renderSubAdminTable();
-      showToast('Switched back to Super Admin (Full Access)');
-    }
 
     function openAddSubAdminModal() {
       editingSubAdminIdx = null;
@@ -16044,7 +16016,7 @@
       }
 
       const perms = Array.isArray(s.perms) ? s.perms : (Array.isArray(s.permissions) ? s.permissions : []);
-      const isSuper = roleVal === 'Super Admin' || perms.includes('all') || s.id === 'ADM-01';
+      const isSuper = roleVal === 'Super Admin' || perms.includes('all') || perms.includes('*') || s.id === 'ADM-01' || s.id === 'ADM-DEV';
       document.querySelectorAll('input[name="staff-perms"]').forEach(cb => {
         cb.checked = isSuper || perms.includes(cb.value);
       });
@@ -16067,7 +16039,7 @@
       const email = document.getElementById('staff-email-input').value.trim();
       const pass = document.getElementById('staff-pass-input').value.trim();
 
-      const isSuper = role === 'Super Admin' || email === 'sainidevendra416@gmail.com' || email === 'maheshsaini10101@gmail.com';
+      const isSuper = role === 'Super Admin' || email === 'sainidevendra416@gmail.com' || email === 'maheshkumarsaini8769@gmail.com' || email === 'maheshsaini10101@gmail.com';
       const perms = [];
       if (isSuper) {
         perms.push('all');
