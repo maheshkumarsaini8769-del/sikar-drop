@@ -1300,6 +1300,24 @@ if (typeof document !== 'undefined') {
   }, { passive: true });
 }
 
+function toggleNavDropdown(event) {
+  if (event) {
+    event.preventDefault();
+    event.stopPropagation();
+  }
+  const dropdown = document.getElementById('nav-dropdown-more');
+  if (dropdown) dropdown.classList.toggle('is-open');
+}
+
+if (typeof document !== 'undefined') {
+  document.addEventListener('click', (e) => {
+    const dropdown = document.getElementById('nav-dropdown-more');
+    if (dropdown && !dropdown.contains(e.target)) {
+      dropdown.classList.remove('is-open');
+    }
+  });
+}
+
 function flyProductToCart(sourceElement) {
   if (!sourceElement) return;
   const targetBadge = (window.innerWidth <= 768)
