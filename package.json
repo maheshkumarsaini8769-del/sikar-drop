@@ -4,7 +4,8 @@
   "description": "Sikar Drop Wholesale Bottled Water & Beverage Depot",
   "main": "server.js",
   "scripts": {
-    "start": "node server.js"
+    "start": "node server.js",
+    "test:security": "node test_security_audit.js"
   },
   "dependencies": {
     "bcryptjs": "^3.0.3",

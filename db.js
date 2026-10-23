@@ -1,5 +1,6 @@
 const fs = require('fs');
 const path = require('path');
+const crypto = require('crypto');
 
 let Database;
 try {
@@ -645,12 +646,21 @@ function initDatabase() {
       ['utm_content', "TEXT DEFAULT ''"],
       ['utm_term', "TEXT DEFAULT ''"],
       ['attribution_platform', "TEXT DEFAULT ''"],
-      ['session_id', "TEXT DEFAULT ''"]
+      ['session_id', "TEXT DEFAULT ''"],
+      ['tracking_token', "TEXT DEFAULT ''"],
+      ['idempotency_key', "TEXT DEFAULT ''"]
     ];
     for (const [col, colType] of neededOrderCols) {
       if (!orderCols.includes(col)) {
         db.exec(`ALTER TABLE orders ADD COLUMN ${col} ${colType}`);
       }
+    }
+    // Backfill historical orders with random tracking token if empty
+    const ordersWithoutToken = db.prepare("SELECT id FROM orders WHERE tracking_token IS NULL OR tracking_token = ''").all();
+    const updateTokenStmt = db.prepare("UPDATE orders SET tracking_token = ? WHERE id = ?");
+    for (const o of ordersWithoutToken) {
+      const randToken = crypto.randomBytes(16).toString('hex');
+      updateTokenStmt.run(randToken, o.id);
     }
     // Backfill historical orders with representative attribution if empty
     db.prepare("UPDATE orders SET utm_source = 'instagram', utm_medium = 'stories', utm_campaign = 'wedding_season_2026', utm_content = 'wedding_pack_video', attribution_platform = 'instagram' WHERE id = 'SKR-8421' AND (utm_campaign IS NULL OR utm_campaign = '')").run();
@@ -2109,8 +2119,33 @@ function receivePurchaseTransaction({ purchaseId, actor = 'Admin' }) {
 }
 
 // 4. ATOMIC ORDER CREATION (ONLINE STOREFRONT)
-function createOnlineOrderTransaction({ orderId: customOrderId, customerName, customerPhone, loginPhone = '', deliveryPhone = '', addressPhone = '', corridor, address = '', deliveryAddress = '', items = [], subtotal, discount = 0, total, couponCode = '', paymentMethod = 'COD', paymentStatus = '', notes = '', attribution = {} }) {
+function createOnlineOrderTransaction({ orderId: customOrderId, customerName, customerPhone, loginPhone = '', deliveryPhone = '', addressPhone = '', corridor, address = '', deliveryAddress = '', items = [], subtotal, discount = 0, total, couponCode = '', paymentMethod = 'COD', paymentStatus = '', notes = '', attribution = {}, idempotencyKey = '' }) {
   const runTx = db.transaction(() => {
+    // Idempotency check: If an idempotency key is provided, return existing order
+    const cleanIdempotencyKey = String(idempotencyKey || '').trim();
+    if (cleanIdempotencyKey) {
+      const existing = db.prepare('SELECT * FROM orders WHERE idempotency_key = ?').get(cleanIdempotencyKey);
+      if (existing) {
+        let existingItems = [];
+        try { existingItems = JSON.parse(existing.items_json || '[]'); } catch (e) {}
+        return {
+          orderId: existing.id,
+          trackingToken: existing.tracking_token,
+          total: existing.total,
+          subtotal: existing.subtotal,
+          discount: existing.discount,
+          itemsCount: existing.items_count,
+          status: existing.status,
+          paymentStatus: existing.payment_status,
+          customerPhone: existing.customer_phone,
+          customerName: existing.customer_name,
+          items: existingItems,
+          duplicate: true,
+          message: 'Idempotent request: returning existing order'
+        };
+      }
+    }
+
     // Order IDs are ALWAYS minted server-side. Client-supplied IDs are ignored
     // so a duplicate/stale ID can never abort an order placement.
     let orderId = '';
@@ -2139,7 +2174,11 @@ function createOnlineOrderTransaction({ orderId: customOrderId, customerName, cu
     // coupons table, so a tampered payload can never change what is billed.
     const pricedItems = items.map((item) => {
       const pid = String(item.id || item.productId || '').trim();
-      const pqty = Math.max(1, Number(item.qty || item.quantity || 1));
+      const rawQty = Number(item.qty !== undefined ? item.qty : (item.quantity !== undefined ? item.quantity : 1));
+      if (!Number.isInteger(rawQty) || rawQty < 1 || rawQty > 1000) {
+        throw new Error(`Invalid quantity (${item.qty}) for product "${pid}". Must be an integer between 1 and 1000.`);
+      }
+      const pqty = rawQty;
       let unitPrice = 0;
       let unitTitle = String(item.title || '').trim();
 
@@ -2162,7 +2201,9 @@ function createOnlineOrderTransaction({ orderId: customOrderId, customerName, cu
           }
         }
       }
-      if (!unitPrice) unitPrice = Number(item.price || 0);
+      if (!unitPrice) {
+        throw new Error(`Invalid or unknown product ID "${pid}". Order rejected.`);
+      }
 
       return {
         id: pid,
@@ -2197,6 +2238,36 @@ function createOnlineOrderTransaction({ orderId: customOrderId, customerName, cu
 
     const finalSubtotal = authoritativeSubtotal;
     const finalTotal = Math.max(0, finalSubtotal - finalDiscount);
+
+    // Duplicate submission suppression: prevent rapid duplicate submissions within 30 seconds for same phone & amount
+    const thirtySecsAgo = new Date(Date.now() - 30 * 1000).toISOString();
+    const recentDuplicate = db.prepare(`
+      SELECT * FROM orders 
+      WHERE (customer_phone = ? OR login_phone = ?) 
+        AND total = ? 
+        AND created_at >= ?
+      ORDER BY created_at DESC LIMIT 1
+    `).get(primaryPhone, primaryPhone, finalTotal, thirtySecsAgo);
+
+    if (recentDuplicate) {
+      let dupItems = [];
+      try { dupItems = JSON.parse(recentDuplicate.items_json || '[]'); } catch (e) {}
+      return {
+        orderId: recentDuplicate.id,
+        trackingToken: recentDuplicate.tracking_token,
+        total: recentDuplicate.total,
+        subtotal: recentDuplicate.subtotal,
+        discount: recentDuplicate.discount,
+        itemsCount: recentDuplicate.items_count,
+        status: recentDuplicate.status,
+        paymentStatus: recentDuplicate.payment_status,
+        customerPhone: recentDuplicate.customer_phone,
+        customerName: recentDuplicate.customer_name,
+        items: dupItems,
+        duplicate: true,
+        message: 'Duplicate order suppressed: identical order placed within last 30 seconds'
+      };
+    }
 
     // Check stock for all items (using the server-priced quantities)
     for (const item of pricedItems) {
@@ -2272,7 +2343,10 @@ function createOnlineOrderTransaction({ orderId: customOrderId, customerName, cu
       { status: 'pending', timestamp: now, actor: 'Customer', note: 'Order placed on website' }
     ]);
 
-    const finalPaymentStatus = paymentStatus || (paymentMethod === 'UPI' ? 'Paid' : 'Pending');
+    const trackingToken = crypto.randomBytes(16).toString('hex');
+    // SECURITY: Storefront online orders are never pre-marked as Paid by client parameter.
+    // They always start as 'Pending' until explicitly verified by depot admin or signature webhook.
+    const finalPaymentStatus = 'Pending';
 
     db.prepare(`
       INSERT INTO orders (
@@ -2280,15 +2354,17 @@ function createOnlineOrderTransaction({ orderId: customOrderId, customerName, cu
         corridor, delivery_address, items_json, items_count, subtotal, discount, total,
         payment_method, payment_status, status, vehicle, order_date, delivery_time,
         notes, activity_log_json, created_at, updated_at,
-        utm_source, utm_medium, utm_campaign, utm_content, utm_term, attribution_platform, session_id
+        utm_source, utm_medium, utm_campaign, utm_content, utm_term, attribution_platform, session_id,
+        tracking_token, idempotency_key
       )
-      VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, 'pending', '', ?, 'Within 40 Mins', ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)
+      VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, 'pending', '', ?, 'Within 40 Mins', ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)
     `).run(
       orderId, custId, customerName, primaryPhone, finalLoginPhone, finalDeliveryPhone,
       corridor || 'Sikar', finalAddress, JSON.stringify(pricedItems), totalItemsCount,
       finalSubtotal, finalDiscount, finalTotal, paymentMethod, finalPaymentStatus,
       now.split('T')[0], notes, activityLog, now, now,
-      utmSource, utmMedium, utmCampaign, utmContent, utmTerm, attributionPlatform, sessionId
+      utmSource, utmMedium, utmCampaign, utmContent, utmTerm, attributionPlatform, sessionId,
+      trackingToken, cleanIdempotencyKey || null
     );
 
     // Record purchase conversion event in social_analytics (deduplicated by order_id)
@@ -2327,12 +2403,14 @@ function createOnlineOrderTransaction({ orderId: customOrderId, customerName, cu
 
     return {
       orderId,
+      trackingToken,
       total: finalTotal,
       subtotal: finalSubtotal,
       discount: finalDiscount,
       couponCode: finalDiscount > 0 ? cleanCoupon : '',
       itemsCount: totalItemsCount,
       status: 'pending',
+      paymentStatus: finalPaymentStatus,
       loginPhone: finalLoginPhone,
       deliveryPhone: finalDeliveryPhone,
       customerPhone: primaryPhone,

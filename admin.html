@@ -2180,7 +2180,7 @@
         <form id="form-admin-2fa" onsubmit="handleAdmin2FaVerify(event)">
           <div class="portal-field-group" style="text-align: left; margin-bottom: 16px;">
             <label for="login-2fa-input" style="color: #cbd5e1; font-size: 0.82rem; font-weight: 600;">6-Digit Security Code</label>
-            <input type="text" id="login-2fa-input" class="portal-input" placeholder="271019" maxlength="32" autocomplete="one-time-code" style="background: #1e293b; border-color: #334155; color: #ffffff; font-size: 1.25rem; font-family: monospace; letter-spacing: 4px; text-align: center;" required>
+            <input type="text" id="login-2fa-input" class="portal-input" placeholder="••••••" maxlength="32" autocomplete="one-time-code" style="background: #1e293b; border-color: #334155; color: #ffffff; font-size: 1.25rem; font-family: monospace; letter-spacing: 4px; text-align: center;" required>
             <span style="font-size: 0.72rem; color: #94a3b8; margin-top: 4px; display: block;">Enter code from Google Authenticator, Depot PIN, or Recovery Key</span>
           </div>
 
@@ -5250,8 +5250,8 @@
           <div style="display: grid; grid-template-columns: repeat(auto-fit, minmax(220px, 1fr)); gap: 14px; margin: 18px 0;">
             <div style="padding: 14px; border-radius: 10px; background: #f8fafc; border: 1px solid #e2e8f0;">
               <div style="font-size: 0.72rem; color: #64748b; font-weight: 700; text-transform: uppercase;">2-Step Verification</div>
-              <div style="font-size: 1rem; font-weight: 800; color: #059669; margin-top: 4px;">ACTIVE (Google Authenticator)</div>
-              <div style="font-size: 0.74rem; color: #64748b; margin-top: 2px;">Master Code: <strong>271019</strong></div>
+              <div style="font-size: 1rem; font-weight: 800; color: #059669; margin-top: 4px;">ACTIVE (Server Enforced)</div>
+              <div style="font-size: 0.74rem; color: #64748b; margin-top: 2px;">Policy: <strong>Zero-Trust Dynamic Verification</strong></div>
             </div>
 
             <div style="padding: 14px; border-radius: 10px; background: #f8fafc; border: 1px solid #e2e8f0;">
@@ -5267,9 +5267,9 @@
             </div>
 
             <div style="padding: 14px; border-radius: 10px; background: #f8fafc; border: 1px solid #e2e8f0;">
-              <div style="font-size: 0.72rem; color: #64748b; font-weight: 700; text-transform: uppercase;">Emergency Recovery Key</div>
-              <div style="font-size: 0.92rem; font-weight: 800; color: #0f172a; margin-top: 4px; font-family: monospace;">SIKAR-SECURE-2026</div>
-              <div style="font-size: 0.74rem; color: #64748b; margin-top: 2px;">Super Admin Hardware Recovery</div>
+              <div style="font-size: 0.72rem; color: #64748b; font-weight: 700; text-transform: uppercase;">Recovery Protection</div>
+              <div style="font-size: 0.92rem; font-weight: 800; color: #0f172a; margin-top: 4px; font-family: monospace;">ENV-RESTRICTED</div>
+              <div style="font-size: 0.74rem; color: #64748b; margin-top: 2px;">Controlled via Production Environment</div>
             </div>
           </div>
 
@@ -7112,10 +7112,6 @@
       title: 'Sikar Drop • Wholesale Water Bottles & Cold Drink Crates in Sikar',
       desc: 'Sikar premier beverage depot supplying 100% factory-sealed Bisleri, Kinley, Coca-Cola and Real juice petis directly to marriage gardens, kirana stores and hostels. No 20L campers.',
       keywords: 'sikar water supplier, cold drink wholesale sikar, marriage garden water bottles piprali road, bisleri wholesale sikar, nawalgarh road water delivery'
-    };
-
-    const DEFAULT_PIN = '1234';
-
     // APP STATE (LOADED FROM LOCALSTORAGE)
     let adminProducts = JSON.parse(localStorage.getItem('sikar_admin_products')) || DEFAULT_PRODUCTS;
     let adminCategories = JSON.parse(localStorage.getItem('sikar_admin_categories')) || DEFAULT_CATEGORIES;
@@ -7133,10 +7129,10 @@
     let adminSocialClicks = JSON.parse(localStorage.getItem('sikar_admin_social_clicks')) || DEFAULT_SOCIAL_CLICKS;
     let adminUsers = JSON.parse(localStorage.getItem('sikar_admin_users')) || DEFAULT_USERS;
     let adminSeo = JSON.parse(localStorage.getItem('sikar_admin_seo')) || DEFAULT_SEO;
-    let adminPin = localStorage.getItem('sikar_admin_pin') || DEFAULT_PIN;
+    let adminPin = localStorage.getItem('sikar_admin_pin') || '';
 
-    let adminAuth = sessionStorage.getItem('sikar_portal_auth') === 'true';
-    let currentOperator = JSON.parse(sessionStorage.getItem('sikar_portal_operator')) || (adminAuth ? { id: 'ADM-01', name: 'Devendra Saini', role: 'Super Admin', email: 'Sainidevendra416@gmail.com', username: 'Sainidevendra416@gmail.com', perms: 'all' } : null);
+    let adminAuth = false;
+    let currentOperator = null;
     let currentTab = 'dashboard';
     let currentOrdersFilter = 'all';
     let currentPosHistoryFilter = 'all';
@@ -7646,12 +7642,7 @@
           lockAdmin('Google Security: Session expired. Please re-authenticate.');
         }
       } catch (err) {
-        if (sessionStorage.getItem('sikar_portal_auth') === 'true' && currentOperator) {
-          if (lockScreen) lockScreen.style.display = 'none';
-          applyOperatorPermissions();
-        } else {
-          lockAdmin('Google Security: Connection error. Please re-authenticate.');
-        }
+        lockAdmin('Google Security: Connection error or session expired. Please sign in again.');
       }
     }
 
