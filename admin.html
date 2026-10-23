@@ -7150,7 +7150,21 @@
 
     let adminAuth = false;
     let currentOperator = null;
+    try {
+      const cachedOp = sessionStorage.getItem('sikar_portal_operator');
+      if (cachedOp) {
+        currentOperator = JSON.parse(cachedOp);
+        adminAuth = sessionStorage.getItem('sikar_portal_auth') === 'true';
+      }
+    } catch (e) {}
+
     let currentTab = 'dashboard';
+    try {
+      const _p = new URLSearchParams(window.location.search).get('tab');
+      const _h = (window.location.hash || '').replace(/^#/, '').trim();
+      const _s = localStorage.getItem('sikar_admin_active_tab');
+      currentTab = _p || _h || _s || 'dashboard';
+    } catch (e) {}
     let currentOrdersFilter = 'all';
     let currentPosHistoryFilter = 'all';
     // GOOGLE CLOUD SECURITY GLOBAL FETCH INTERCEPTOR
@@ -7655,6 +7669,7 @@
           applyOperatorPermissions();
           renderAdminCredentials();
           resetAutoLockTimer();
+          restoreAdminActiveTab();
         } else {
           lockAdmin('Google Security: Session expired. Please re-authenticate.');
         }
@@ -7743,6 +7758,7 @@
           applyOperatorPermissions();
           renderAdminCredentials();
           resetAutoLockTimer();
+          restoreAdminActiveTab();
           showToast(`Welcome back, ${currentOperator.name || 'Admin'}!`);
         }
       } catch (err) {
@@ -7815,6 +7831,7 @@
         applyOperatorPermissions();
         renderAdminCredentials();
         resetAutoLockTimer();
+        restoreAdminActiveTab();
         showToast(`Google 2-Step Verification Verified! Welcome, ${currentOperator.name}!`);
       } catch (err) {
         if (errBox) {
@@ -7988,14 +8005,63 @@
       return false;
     }
 
-    // TAB SWITCHING
+    // TAB SWITCHING & ROUTING PERSISTENCE
+    function resolveTargetAdminTab() {
+      try {
+        const params = new URLSearchParams(window.location.search);
+        const tabParam = params.get('tab');
+        if (tabParam && document.getElementById(`pane-${tabParam}`)) return tabParam;
+      } catch (e) {}
+
+      try {
+        const hash = (window.location.hash || '').replace(/^#/, '').trim();
+        if (hash && document.getElementById(`pane-${hash}`)) return hash;
+      } catch (e) {}
+
+      try {
+        const savedTab = localStorage.getItem('sikar_admin_active_tab');
+        if (savedTab && document.getElementById(`pane-${savedTab}`)) return savedTab;
+      } catch (e) {}
+
+      return 'dashboard';
+    }
+
+    function restoreAdminActiveTab() {
+      const targetTab = resolveTargetAdminTab();
+      if (hasPermission(targetTab)) {
+        switchTab(targetTab);
+      } else if (currentOperator) {
+        const perms = currentOperator.permissions || currentOperator.perms || [];
+        const firstPerm = (Array.isArray(perms) && perms.find(p => p !== 'all' && p !== '*' && document.getElementById(`pane-${p}`))) || 'dashboard';
+        switchTab(firstPerm);
+      } else {
+        switchTab('dashboard');
+      }
+    }
+
     function switchTab(tabId) {
+      if (!tabId || !document.getElementById(`pane-${tabId}`)) {
+        tabId = 'dashboard';
+      }
+
       if (!hasPermission(tabId)) {
         showToast(`Access Restricted: Operator is not authorized for module '${tabId}'.`);
         return;
       }
 
       currentTab = tabId;
+
+      // Persist active tab across browser reloads
+      try {
+        localStorage.setItem('sikar_admin_active_tab', tabId);
+      } catch (e) {}
+
+      // Update URL hash cleanly without page jump or history pollution
+      try {
+        if (window.location.hash !== '#' + tabId) {
+          history.replaceState(null, '', '#' + tabId);
+        }
+      } catch (e) {}
 
       // Update Sidebar buttons
       document.querySelectorAll('.sidebar-tab-btn').forEach(btn => {
@@ -16716,14 +16782,19 @@
         }
       });
 
-      // Check URL query parameters for direct tab or modal routing
+      // Restore active tab from query parameter, URL hash, or localStorage
+      restoreAdminActiveTab();
+
+      // Listen for browser Back/Forward navigation or manual hash changes
+      window.addEventListener('hashchange', () => {
+        const h = (window.location.hash || '').replace(/^#/, '').trim();
+        if (h && h !== currentTab && document.getElementById(`pane-${h}`) && hasPermission(h)) {
+          switchTab(h);
+        }
+      });
+
+      // Check URL query parameters for modal routing
       const params = new URLSearchParams(window.location.search);
-      const tabParam = params.get('tab');
-      if (tabParam) {
-        switchTab(tabParam);
-      } else {
-        renderDashboard();
-      }
 
       const modalParam = params.get('modal');
       if (modalParam === 'pos') switchTab('pos');
