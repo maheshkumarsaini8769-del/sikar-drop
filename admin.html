@@ -7170,7 +7170,6 @@
     // GOOGLE CLOUD SECURITY GLOBAL FETCH INTERCEPTOR
     let activeTemp2faToken = null;
     let autoLockTimer = null;
-    const INACTIVITY_TIMEOUT_MS = 15 * 60 * 1000; // 15 minutes auto-lock
 
     (function installGoogleSecurityInterceptor() {
       if (window.__googleSecurityInstalled) return;
@@ -7629,18 +7628,13 @@
     }
 
     function resetAutoLockTimer() {
-      if (!adminAuth) return;
-      if (autoLockTimer) clearTimeout(autoLockTimer);
-      autoLockTimer = setTimeout(() => {
-        if (adminAuth) {
-          lockAdmin('Google Security: Console automatically locked after 15 minutes of inactivity.');
-        }
-      }, INACTIVITY_TIMEOUT_MS);
+      // Auto-lock on inactivity is disabled per administrator request.
+      // Session remains active until explicit logout or manual lock.
+      if (autoLockTimer) {
+        clearTimeout(autoLockTimer);
+        autoLockTimer = null;
+      }
     }
-
-    ['mousemove', 'keydown', 'touchstart', 'click', 'scroll'].forEach(evt => {
-      window.addEventListener(evt, resetAutoLockTimer, { passive: true });
-    });
 
     async function checkAuth() {
       const lockScreen = document.getElementById('auth-lock-screen');
