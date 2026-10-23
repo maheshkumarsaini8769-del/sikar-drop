@@ -8039,7 +8039,7 @@
     function renderActiveTab(tabId) {
       if (tabId === 'dashboard') renderDashboard();
       else if (tabId === 'reports') renderReportsPage();
-      else if (tabId === 'orders') { renderOrdersTable(); fetchOrdersFromBackend(); }
+      else if (tabId === 'orders') { renderOrdersTable(); renderOrdersKpis(ordersMetricsData); fetchOrdersFromBackend(); }
       else if (tabId === 'pos') renderPosForm();
       else if (tabId === 'khata') { renderKhataTable(); fetchKhataFromBackend(); }
       else if (tabId === 'customers') { renderCustomersList(); fetchCustomersFromBackend(); }
@@ -8711,15 +8711,17 @@
           ordersMetricsData = res.metrics;
 
           renderOrdersTable();
-          if (res.metrics) renderOrdersKpis(res.metrics);
+          renderOrdersKpis(res.metrics || ordersMetricsData);
           if (res.pagination) renderOrdersPagination(res.pagination);
         } else if (Array.isArray(res)) {
           adminOrders = res;
           renderOrdersTable();
+          renderOrdersKpis();
         }
       } catch (err) {
         console.error('Failed to load orders from backend:', err);
         renderOrdersTable();
+        renderOrdersKpis();
       } finally {
         ordersHubLoading = false;
         if (loader) loader.style.display = 'none';
@@ -8831,7 +8833,18 @@
     }
 
     function renderOrdersKpis(metrics) {
-      if (!metrics) return;
+      if (!metrics || typeof metrics !== 'object') {
+        const list = Array.isArray(adminOrders) ? adminOrders : [];
+        metrics = {
+          totalOrders: ordersTotalCount || list.length,
+          pendingCount: list.filter(o => o.status === 'pending').length,
+          confirmedCount: list.filter(o => o.status === 'confirmed').length,
+          inTransitCount: list.filter(o => ['in_transit', 'shipped', 'out_for_delivery'].includes(o.status)).length,
+          completedCount: list.filter(o => ['completed', 'delivered'].includes(o.status)).length,
+          cancelledCount: list.filter(o => o.status === 'cancelled').length,
+          totalRevenue: list.filter(o => o.status !== 'cancelled').reduce((sum, o) => sum + Number(o.total || 0), 0)
+        };
+      }
       const elTotal = document.getElementById('orders-kpi-total');
       const elPending = document.getElementById('orders-kpi-pending');
       const elConfirmed = document.getElementById('orders-kpi-confirmed');
@@ -8840,13 +8853,13 @@
       const elCancelled = document.getElementById('orders-kpi-cancelled');
       const elRevenue = document.getElementById('orders-kpi-revenue');
 
-      if (elTotal) elTotal.textContent = String(metrics.totalOrders || 0);
-      if (elPending) elPending.textContent = String(metrics.pendingCount || 0);
-      if (elConfirmed) elConfirmed.textContent = String(metrics.confirmedCount || 0);
-      if (elTransit) elTransit.textContent = String(metrics.inTransitCount || 0);
-      if (elCompleted) elCompleted.textContent = String(metrics.completedCount || 0);
-      if (elCancelled) elCancelled.textContent = String(metrics.cancelledCount || 0);
-      if (elRevenue) elRevenue.textContent = `₹${(metrics.totalRevenue || 0).toLocaleString('en-IN')}`;
+      if (elTotal) elTotal.textContent = String(metrics.totalOrders !== undefined ? metrics.totalOrders : 0);
+      if (elPending) elPending.textContent = String(metrics.pendingCount !== undefined ? metrics.pendingCount : 0);
+      if (elConfirmed) elConfirmed.textContent = String(metrics.confirmedCount !== undefined ? metrics.confirmedCount : 0);
+      if (elTransit) elTransit.textContent = String(metrics.inTransitCount !== undefined ? metrics.inTransitCount : 0);
+      if (elCompleted) elCompleted.textContent = String(metrics.completedCount !== undefined ? metrics.completedCount : 0);
+      if (elCancelled) elCancelled.textContent = String(metrics.cancelledCount !== undefined ? metrics.cancelledCount : 0);
+      if (elRevenue) elRevenue.textContent = `₹${(Number(metrics.totalRevenue) || 0).toLocaleString('en-IN')}`;
 
       // Highlight active filter card
       document.querySelectorAll('#orders-kpi-strip .order-stat-card').forEach(card => {

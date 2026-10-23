@@ -2174,9 +2174,45 @@ app.get('/api/orders', async (req, res) => {
     const sql = `SELECT * FROM orders${whereSql}${orderSql}${limitSql}`;
     const orders = db.prepare(sql).all(...params);
 
+    // Compute executive KPI strip metrics (total, pending, confirmed, transit, delivered, cancelled, revenue)
+    let metricsDateClauses = [];
+    let metricsDateParams = [];
+    if (effectiveStart) {
+      metricsDateClauses.push("(order_date >= ? OR created_at >= ?)");
+      metricsDateParams.push(effectiveStart, effectiveStart);
+    }
+    if (effectiveEnd) {
+      const endInclusive = effectiveEnd.length === 10 ? `${effectiveEnd}T23:59:59.999Z` : effectiveEnd;
+      metricsDateClauses.push("(order_date <= ? OR created_at <= ?)");
+      metricsDateParams.push(effectiveEnd.slice(0, 10), endInclusive);
+    }
+    const metricsWhereSql = metricsDateClauses.length > 0 ? ` WHERE ${metricsDateClauses.join(' AND ')}` : '';
+    const metricsRow = db.prepare(`
+      SELECT 
+        COUNT(*) as totalOrders,
+        SUM(CASE WHEN LOWER(status) = 'pending' THEN 1 ELSE 0 END) as pendingCount,
+        SUM(CASE WHEN LOWER(status) = 'confirmed' THEN 1 ELSE 0 END) as confirmedCount,
+        SUM(CASE WHEN LOWER(status) IN ('in_transit', 'shipped', 'out_for_delivery') THEN 1 ELSE 0 END) as inTransitCount,
+        SUM(CASE WHEN LOWER(status) IN ('completed', 'delivered') THEN 1 ELSE 0 END) as completedCount,
+        SUM(CASE WHEN LOWER(status) = 'cancelled' THEN 1 ELSE 0 END) as cancelledCount,
+        SUM(CASE WHEN LOWER(status) NOT IN ('cancelled') THEN total ELSE 0 END) as totalRevenue
+      FROM orders${metricsWhereSql}
+    `).get(...metricsDateParams);
+
+    const metrics = {
+      totalOrders: Number((metricsRow && metricsRow.totalOrders) || 0),
+      pendingCount: Number((metricsRow && metricsRow.pendingCount) || 0),
+      confirmedCount: Number((metricsRow && metricsRow.confirmedCount) || 0),
+      inTransitCount: Number((metricsRow && metricsRow.inTransitCount) || 0),
+      completedCount: Number((metricsRow && metricsRow.completedCount) || 0),
+      cancelledCount: Number((metricsRow && metricsRow.cancelledCount) || 0),
+      totalRevenue: Number((metricsRow && metricsRow.totalRevenue) || 0)
+    };
+
     if (paginated === '1' || paginated === 'true') {
       return res.json({
         orders,
+        metrics,
         pagination: {
           total: totalFiltered,
           page: pageNum,

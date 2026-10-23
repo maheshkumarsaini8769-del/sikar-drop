@@ -370,11 +370,26 @@ async function runAuditTests() {
   console.log(`TOTAL TESTS: ${total} | PASSED: ${passed} | FAILED: ${failed}`);
   console.log('====================================================\n');
 
-  // Clean up synthetic test data
+  // Clean up synthetic test data from SQLite and MongoDB Atlas
   try {
-    db.prepare("DELETE FROM orders WHERE customer_phone LIKE '98290%' AND (customer_name LIKE 'Customer %' OR customer_name LIKE '%Tester%')").run();
+    db.prepare("DELETE FROM orders WHERE customer_phone LIKE '98290%' AND (customer_name LIKE 'Customer %' OR customer_name LIKE '%Tester%' OR customer_name LIKE 'Audit%' OR customer_name LIKE '%Test%')").run();
     db.prepare("DELETE FROM admin_users WHERE id = 'ADM-TEST-STAFF'").run();
     db.prepare("DELETE FROM reviews WHERE id LIKE 'REV-%' AND customer_name LIKE '%Test User%'").run();
+
+    const { getMongoDb } = require('./mongo.js');
+    const m = await getMongoDb();
+    if (m) {
+      await m.collection('orders').deleteMany({
+        $or: [
+          { customer_name: { $regex: /Customer|Tester|Audit|Test|Hindi/i } },
+          { customerName: { $regex: /Customer|Tester|Audit|Test|Hindi/i } },
+          { customer_phone: { $in: ['9999999999', '9829011111', '9829022222', '9829033333', '9829044444', '9829055555', '9829066666', '9829077777', '9829088888', '9829099999', '9829099887'] } },
+          { customerPhone: { $in: ['9999999999', '9829011111', '9829022222', '9829033333', '9829044444', '9829055555', '9829066666', '9829077777', '9829088888', '9829099999', '9829099887'] } }
+        ]
+      });
+      await m.collection('admin_users').deleteOne({ id: 'ADM-TEST-STAFF' });
+      await m.collection('reviews').deleteMany({ id: { $regex: /^REV-/ }, customer_name: { $regex: /Test User/i } });
+    }
   } catch (e) {}
 
   if (failed > 0) {
