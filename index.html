@@ -7664,7 +7664,7 @@
                 tcText.textContent = `SIM Verified (+91 ${cleanPhone})! Logging in...`;
                 tcText.style.color = '#16A34A';
               }
-              handleAuthSuccess(statusData.user, 'Truecaller SIM Verified');
+              handleAuthSuccess({ ...statusData.user, token: statusData.token }, 'Truecaller SIM Verified');
               return;
             }
 
@@ -7731,7 +7731,8 @@
         channel: method,
         verified: true,
         verifiedBy: method,
-        truecallerBadge: method.includes('Truecaller')
+        truecallerBadge: method.includes('Truecaller'),
+        token: userData.token || ''
       };
       localStorage.setItem('sikar_user', JSON.stringify(currentUser));
 
@@ -8189,7 +8190,10 @@
         }
         fetch('/api/orders', {
           method: 'POST',
-          headers: { 'Content-Type': 'application/json' },
+          headers: {
+            'Content-Type': 'application/json',
+            'x-truecaller-token': activeUser ? (activeUser.token || '') : ''
+          },
           body: JSON.stringify({
             orderId: orderId,
             customerName: newAdminOrder.customer,
@@ -8201,6 +8205,7 @@
             items: orderItemsPayload,
             couponCode: couponCodeUsed || null,
             notes: note,
+            truecallerToken: activeUser ? (activeUser.token || '') : '',
             attribution: window.SikarAnalytics && typeof window.SikarAnalytics.getAttributionPayload === 'function'
               ? window.SikarAnalytics.getAttributionPayload()
               : {}

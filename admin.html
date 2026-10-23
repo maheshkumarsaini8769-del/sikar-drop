@@ -1313,23 +1313,28 @@
 
     .modal-close-x {
       position: absolute;
-      top: 20px;
-      right: 20px;
-      background: #F1F5F9;
-      border: none;
+      top: 18px;
+      right: 18px;
+      background: #F8FAFC;
+      border: 1px solid #E2E8F0;
       width: 32px;
       height: 32px;
       border-radius: 50%;
       cursor: pointer;
-      display: flex;
+      display: inline-flex;
       align-items: center;
       justify-content: center;
-      color: var(--text-muted);
+      color: #64748B;
+      z-index: 25;
+      transition: all 0.15s ease;
+      box-shadow: 0 1px 3px rgba(0, 0, 0, 0.05);
     }
 
     .modal-close-x:hover {
-      background: #E2E8F0;
-      color: var(--text-main);
+      background: #EFF6FF;
+      border-color: #BFDBFE;
+      color: #0284C7;
+      transform: scale(1.05);
     }
 
     /* LOGIN SCREEN OVERLAY */
@@ -2147,7 +2152,7 @@
         <form id="form-admin-login" onsubmit="handleAdminLogin(event)">
           <div class="portal-field-group" style="text-align: left; margin-bottom: 14px;">
             <label for="login-email-input" style="color: #cbd5e1; font-size: 0.82rem; font-weight: 600;">Google Admin Email or Username</label>
-            <input type="text" id="login-email-input" class="portal-input" placeholder="write admin email or username" required autocomplete="username" autocapitalize="none" autocorrect="off" spellcheck="false" style="background: #1e293b; border-color: #334155; color: #ffffff;">
+            <input type="text" id="login-email-input" class="portal-input" placeholder="maheshkumarsaini8769@gmail.com" value="maheshkumarsaini8769@gmail.com" required autocomplete="username" autocapitalize="none" autocorrect="off" spellcheck="false" style="background: #1e293b; border-color: #334155; color: #ffffff;">
           </div>
           <div class="portal-field-group" style="text-align: left; margin-bottom: 16px;">
             <label for="login-pass-input" style="color: #cbd5e1; font-size: 0.82rem; font-weight: 600;">Master Security Password</label>
@@ -5298,7 +5303,7 @@
           <form onsubmit="handleAdminCredentialsUpdate(event)" style="max-width: 520px;">
             <div class="portal-field-group">
               <label for="cfg-admin-email">Admin Login Email Address</label>
-              <input type="email" id="cfg-admin-email" class="portal-input" value="Sainidevendra416@gmail.com" required autocomplete="username">
+              <input type="email" id="cfg-admin-email" class="portal-input" value="maheshkumarsaini8769@gmail.com" required autocomplete="username">
               <small style="color: var(--text-muted); font-size: 0.76rem; display: block; margin-top: 4px;">Strictly required to authenticate into the admin console.</small>
             </div>
             <div class="portal-field-group">
@@ -8604,17 +8609,33 @@
       const deliveryRaw = (o.delivery_phone || o.deliveryPhone || o.customer_phone || o.phone || '').trim();
       const normLogin = normalizePhoneCompare(loginRaw);
       const normDelivery = normalizePhoneCompare(deliveryRaw);
+      const isVerified = o.verified === 1 || o.verified === true || o.verified_by === 'Truecaller' || (o.customerProfile && o.customerProfile.verified === 1);
+
+      const tcBadge = isVerified ? `
+        <span style="font-size:0.68rem; font-weight:800; color:#0066F5; background:#EFF6FF; border:1px solid #BFDBFE; padding:1px 5px; border-radius:3px; display:inline-flex; align-items:center; gap:3px;">
+          <svg viewBox="0 0 24 24" width="10" height="10" fill="#0066F5"><path d="M12 2C6.48 2 2 6.48 2 12c0 1.85.5 3.58 1.38 5.07L2.1 21.9l4.98-1.28C8.51 21.49 10.2 22 12 22c5.52 0 10-4.48 10-10S17.52 2 12 2zm-1 14.5l-3.5-3.5 1.41-1.41L11 13.67l5.59-5.59L18 9.5l-7 7z"/></svg>
+          Truecaller
+        </span>
+      ` : '';
 
       if (normLogin && normDelivery && normLogin !== normDelivery) {
         return `
           <div style="display:flex; flex-direction:column; gap:3px;">
-            <a href="tel:${escapeHTML(loginRaw)}" class="order-phone-badge order-phone-login" style="text-decoration:none; font-size:0.73rem; color:#0284C7; font-weight:700; background:#F0F9FF; border:1px solid #BAE6FD; padding:1px 6px; border-radius:4px; width:fit-content;">LOGIN: <span class="tabular">${escapeHTML(loginRaw)}</span></a>
+            <div style="display:flex; align-items:center; gap:4px;">
+              <a href="tel:${escapeHTML(loginRaw)}" class="order-phone-badge order-phone-login" style="text-decoration:none; font-size:0.73rem; color:#0284C7; font-weight:700; background:#F0F9FF; border:1px solid #BAE6FD; padding:1px 6px; border-radius:4px; width:fit-content;">LOGIN: <span class="tabular">${escapeHTML(loginRaw)}</span></a>
+              ${tcBadge}
+            </div>
             <a href="tel:${escapeHTML(deliveryRaw)}" class="order-phone-badge order-phone-delivery" style="text-decoration:none; font-size:0.73rem; color:#15803D; font-weight:700; background:#F0FDF4; border:1px solid #BBF7D0; padding:1px 6px; border-radius:4px; width:fit-content;">DELIVERY: <span class="tabular">${escapeHTML(deliveryRaw)}</span></a>
           </div>
         `;
       }
       const singlePhone = deliveryRaw || loginRaw || '';
-      return `<a href="tel:${escapeHTML(singlePhone)}" style="text-decoration:none; color:var(--text-muted); font-size:0.8rem; font-weight:700;" class="tabular">${escapeHTML(singlePhone)}</a>`;
+      return `
+        <div style="display:flex; align-items:center; gap:6px;">
+          <a href="tel:${escapeHTML(singlePhone)}" style="text-decoration:none; color:#334155; font-size:0.8rem; font-weight:700;" class="tabular">${escapeHTML(singlePhone)}</a>
+          ${tcBadge}
+        </div>
+      `;
     }
 
     // Server-synced live orders fetcher
@@ -8743,8 +8764,8 @@
               <div class="tabular" style="font-weight:900; font-size:1.05rem; color:#0F3D64;">
                 ₹${(o.total || 0).toLocaleString('en-IN')}
               </div>
-              <div style="margin-top:3px; display:flex; align-items:center; gap:4px;">
-                <select class="portal-select" style="padding:2px 6px; font-size:0.72rem; font-weight:800; border-radius:4px; height:auto; width:auto;" onchange="updateOrderPaymentStatus('${o.id}', this.value)">
+              <div style="margin-top:4px;">
+                <select class="portal-select" style="padding:2px 8px; font-size:0.72rem; font-weight:800; border-radius:4px; height:24px; width:auto; border-color:${payStatus === 'Paid' ? '#86EFAC' : '#FDE047'}; background:${payStatus === 'Paid' ? '#F0FDF4' : '#FEFCE8'}; color:${payStatus === 'Paid' ? '#166534' : '#854D0E'};" onchange="updateOrderPaymentStatus('${o.id}', this.value)">
                   <option value="Paid" ${payStatus === 'Paid' ? 'selected' : ''}>PAID</option>
                   <option value="Pending" ${payStatus === 'Pending' ? 'selected' : ''}>PENDING</option>
                   <option value="Failed" ${payStatus === 'Failed' ? 'selected' : ''}>FAILED</option>
@@ -8755,10 +8776,7 @@
 
             <!-- 6. FULFILLMENT STATUS -->
             <td>
-              <div style="margin-bottom:3px;">
-                <span class="badge-status ${o.status || 'pending'}">${escapeHTML((o.status || 'pending').toUpperCase())}</span>
-              </div>
-              <select class="portal-select" style="padding:3px 6px; font-size:0.76rem; font-weight:700; width:100%; max-width:130px;" onchange="updateOrderStatus('${o.id}', this.value)" ${isCancelled ? 'disabled' : ''}>
+              <select class="portal-select" style="padding:4px 8px; font-size:0.78rem; font-weight:700; width:100%; max-width:130px; border-radius:5px;" onchange="updateOrderStatus('${o.id}', this.value)" ${isCancelled ? 'disabled' : ''}>
                 <option value="pending" ${o.status === 'pending' ? 'selected' : ''}>Pending</option>
                 <option value="confirmed" ${o.status === 'confirmed' ? 'selected' : ''}>Confirmed</option>
                 <option value="in_transit" ${(o.status === 'in_transit' || o.status === 'shipped') ? 'selected' : ''}>In Transit</option>
@@ -8769,20 +8787,22 @@
 
             <!-- 7. VEHICLE & DISPATCH -->
             <td>
-              <div style="display:flex; align-items:center; gap:4px;">
-                <code style="font-size:0.78rem; font-weight:700; color:#334155;">${escapeHTML(o.vehicle || 'Not Assigned')}</code>
-                ${!isCancelled ? `<button type="button" class="btn-tbl-action" style="padding:1px 5px; font-size:0.7rem;" onclick="openOrderVehicleModal('${o.id}', '${escapeHTML(o.vehicle || '')}')" title="Change Vehicle">Edit</button>` : ''}
+              <div style="display:flex; align-items:center; gap:6px;">
+                <span style="font-size:0.75rem; font-weight:700; color:${o.vehicle ? '#0284C7' : '#64748B'}; background:${o.vehicle ? '#EFF6FF' : '#F1F5F9'}; padding:2px 8px; border-radius:4px; border:1px solid ${o.vehicle ? '#BFDBFE' : '#E2E8F0'}; white-space:nowrap;">
+                  ${escapeHTML(o.vehicle || 'Not Assigned')}
+                </span>
+                ${!isCancelled ? `<button type="button" class="btn-tbl-action" style="padding:2px 6px; font-size:0.7rem; height:24px;" onclick="openOrderVehicleModal('${o.id}', '${escapeHTML(o.vehicle || '')}')" title="Change Vehicle">Edit</button>` : ''}
               </div>
             </td>
 
             <!-- 8. ACTIONS -->
-            <td style="text-align:right;">
-              <div style="display:inline-flex; gap:4px; flex-wrap:wrap; justify-content:flex-end;">
-                <button type="button" class="btn-tbl-action" style="padding:4px 8px; font-size:0.75rem;" onclick="openOrderDetailModal('${o.id}')" title="View Full Consignment Profile">Details</button>
-                <button type="button" class="btn-tbl-action" style="padding:4px 8px; font-size:0.75rem;" onclick="openOrderInvoice('${o.id}')" title="Print GST Wholesale Bilty">Bilty</button>
-                <button type="button" class="btn-tbl-action" style="background:#16A34A; color:#FFFFFF; padding:4px 8px; font-size:0.75rem;" onclick="sendOrderWhatsAppAlert('${o.id}')" title="WhatsApp Dispatch Alert">WA</button>
+            <td style="text-align:right; white-space:nowrap;">
+              <div style="display:inline-flex; gap:4px; align-items:center; justify-content:flex-end;">
+                <button type="button" class="btn-tbl-action" style="padding:4px 8px; font-size:0.75rem; border-radius:5px;" onclick="openOrderDetailModal('${o.id}')" title="View Full Consignment Profile">Details</button>
+                <button type="button" class="btn-tbl-action" style="padding:4px 8px; font-size:0.75rem; border-radius:5px;" onclick="openOrderInvoice('${o.id}')" title="Print GST Wholesale Bilty">Bilty</button>
+                <button type="button" class="btn-tbl-action" style="background:#16A34A; color:#FFFFFF; border-color:#16A34A; padding:4px 8px; font-size:0.75rem; border-radius:5px;" onclick="sendOrderWhatsAppAlert('${o.id}')" title="WhatsApp Dispatch Alert">WA</button>
                 ${!isCancelled && !isCompleted ? `
-                  <button type="button" class="btn-tbl-action danger" style="padding:4px 8px; font-size:0.75rem;" onclick="openOrderCancelModal('${o.id}')" title="Cancel & Restock Inventory">Cancel</button>
+                  <button type="button" class="btn-tbl-action danger" style="padding:4px 8px; font-size:0.75rem; border-radius:5px;" onclick="openOrderCancelModal('${o.id}')" title="Cancel & Restock Inventory">Cancel</button>
                 ` : ''}
               </div>
             </td>
@@ -9130,19 +9150,19 @@
         modalBody.innerHTML = `
           <!-- MODAL HEADER -->
           <div style="display:flex; justify-content:space-between; align-items:flex-start; border-bottom:1px solid var(--border-light); padding-bottom:14px; margin-bottom:16px;">
-            <div>
-              <div style="display:flex; align-items:center; gap:8px;">
+            <div style="padding-right:14px;">
+              <div style="display:flex; align-items:center; gap:8px; flex-wrap:wrap;">
                 <h3 style="font-family:var(--font-heading); font-size:1.35rem; font-weight:900; margin:0; color:#0F172A;">Consignment Bilty #${escapeHTML(o.id)}</h3>
                 <span class="badge-status ${o.status || 'pending'}">${escapeHTML((o.status || 'pending').toUpperCase())}</span>
                 <span class="badge-payment ${(o.payment_status || 'pending').toLowerCase()}">${escapeHTML((o.payment_status || 'Pending').toUpperCase())}</span>
               </div>
-              <p style="font-size:0.8rem; color:var(--text-muted); margin-top:4px;">
+              <p style="font-size:0.8rem; color:var(--text-muted); margin-top:4px; margin-bottom:0;">
                 Placed on ${escapeHTML(o.formattedDate || o.order_date || '')} at ${escapeHTML(o.time || '')} • Channel: ${escapeHTML(o.payment_method || 'Online')}
               </p>
             </div>
-            <div style="text-align:right;">
-              <div style="font-family:var(--font-heading); font-size:1.35rem; font-weight:900; color:#0F3D64;">₹${(o.total || 0).toLocaleString('en-IN')}</div>
-              <span style="font-size:0.75rem; color:var(--text-muted);">${o.items_count || items.length} Total Petis</span>
+            <div style="text-align:right; padding-right:52px; flex-shrink:0;">
+              <div style="font-family:var(--font-heading); font-size:1.45rem; font-weight:900; color:#0F3D64; line-height:1.2;">₹${(o.total || 0).toLocaleString('en-IN')}</div>
+              <span style="font-size:0.75rem; color:var(--text-muted); font-weight:600;">${o.items_count || items.length} Total Petis</span>
             </div>
           </div>
 

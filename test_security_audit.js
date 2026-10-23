@@ -129,23 +129,26 @@ async function runAuditTests() {
     record(5, 'Customers cannot alter stock, khata ledger, or payment status', pass5);
 
     // ----------------------------------------------------
+    // ----------------------------------------------------
     // Setup synthetic orders for Customer Privacy tests
     // ----------------------------------------------------
+    const tokenTcA = app.signTruecallerToken('9829011111');
     const orderResA = await request('POST', '/api/orders', {
       customerName: 'Customer Alpha',
       customerPhone: '9829011111',
       items: [{ id: 'p1', qty: 2 }],
       address: 'Piprali Road, Colony A'
-    });
+    }, { 'x-truecaller-token': tokenTcA });
     const orderIdA = orderResA.body.orderId;
     const tokenA = orderResA.body.trackingToken;
 
+    const tokenTcB = app.signTruecallerToken('9829022222');
     const orderResB = await request('POST', '/api/orders', {
       customerName: 'Customer Beta',
       customerPhone: '9829022222',
       items: [{ id: 'p2', qty: 1 }],
       address: 'Nawalgarh Road, Colony B'
-    });
+    }, { 'x-truecaller-token': tokenTcB });
     const orderIdB = orderResB.body.orderId;
     const tokenB = orderResB.body.trackingToken;
 
@@ -168,13 +171,14 @@ async function runAuditTests() {
     // ----------------------------------------------------
     // TEST 8: Changing price or total in client request does not alter server-calculated billing
     // ----------------------------------------------------
+    const tokenTc8 = app.signTruecallerToken('9829033333');
     const tamperedRes = await request('POST', '/api/orders', {
       customerName: 'Tamper Tester',
       customerPhone: '9829033333',
       items: [{ id: 'p1', qty: 2, price: 1.0 }], // submitting price 1.0 instead of 195.0
       subtotal: 2.0,
       total: 2.0
-    });
+    }, { 'x-truecaller-token': tokenTc8 });
     const expectedTotal = 195.0 * 2; // p1 catalogue price is 195
     const pass8 = tamperedRes.body && tamperedRes.body.total === expectedTotal;
     record(8, 'Server recalculates item prices and ignores client-submitted price tampering', pass8, `Expected: ${expectedTotal}, Got: ${tamperedRes.body ? tamperedRes.body.total : 'null'}`);
@@ -182,40 +186,42 @@ async function runAuditTests() {
     // ----------------------------------------------------
     // TEST 9: Invalid quantities, discounts, and product IDs are rejected
     // ----------------------------------------------------
+    const tokenTc9 = app.signTruecallerToken('9829044444');
     const res9a = await request('POST', '/api/orders', {
       customerName: 'Invalid Item Tester',
       customerPhone: '9829044444',
       items: [{ id: 'non_existent_fake_id', qty: 1 }]
-    });
+    }, { 'x-truecaller-token': tokenTc9 });
     const res9b = await request('POST', '/api/orders', {
       customerName: 'Invalid Qty Tester',
       customerPhone: '9829044444',
       items: [{ id: 'p1', qty: -5 }]
-    });
+    }, { 'x-truecaller-token': tokenTc9 });
     const res9c = await request('POST', '/api/orders', {
       customerName: 'Zero Qty Tester',
       customerPhone: '9829044444',
       items: [{ id: 'p1', qty: 0 }]
-    });
+    }, { 'x-truecaller-token': tokenTc9 });
     const pass9 = res9a.status === 400 && res9b.status === 400 && res9c.status === 400;
     record(9, 'Invalid product IDs, negative quantities, and zero quantities are rejected', pass9);
 
     // ----------------------------------------------------
     // TEST 10: Duplicate checkout requests do not create unintended duplicate orders
     // ----------------------------------------------------
+    const tokenTc10 = app.signTruecallerToken('9829055555');
     const dupRes1 = await request('POST', '/api/orders', {
       customerName: 'Duplicate Tester',
       customerPhone: '9829055555',
       items: [{ id: 'p1', qty: 1 }],
       clientOrderId: 'unique-checkout-nonce-1234'
-    }, { 'idempotency-key': 'unique-checkout-nonce-1234' });
+    }, { 'idempotency-key': 'unique-checkout-nonce-1234', 'x-truecaller-token': tokenTc10 });
 
     const dupRes2 = await request('POST', '/api/orders', {
       customerName: 'Duplicate Tester',
       customerPhone: '9829055555',
       items: [{ id: 'p1', qty: 1 }],
       clientOrderId: 'unique-checkout-nonce-1234'
-    }, { 'idempotency-key': 'unique-checkout-nonce-1234' });
+    }, { 'idempotency-key': 'unique-checkout-nonce-1234', 'x-truecaller-token': tokenTc10 });
 
     const pass10 = dupRes1.body.orderId === dupRes2.body.orderId && dupRes2.body.idempotent === true;
     record(10, 'Duplicate checkout requests return existing order without duplicate insertion', pass10);
@@ -225,11 +231,12 @@ async function runAuditTests() {
     // ----------------------------------------------------
     const prodBefore = db.prepare("SELECT stock FROM products WHERE id = 'p1'").get();
     const excessiveQty = prodBefore.stock + 50;
+    const tokenTc11 = app.signTruecallerToken('9829066666');
     const res11 = await request('POST', '/api/orders', {
       customerName: 'Oversell Tester',
       customerPhone: '9829066666',
       items: [{ id: 'p1', qty: excessiveQty }]
-    });
+    }, { 'x-truecaller-token': tokenTc11 });
     const pass11 = res11.status === 400 && res11.body.error && res11.body.error.includes('Insufficient stock');
     record(11, 'Concurrent/excess orders cannot oversell stock beyond available inventory', pass11);
 
@@ -244,16 +251,46 @@ async function runAuditTests() {
     // ----------------------------------------------------
     // TEST 13 & 14: Customer cannot self-assert Paid status on checkout
     // ----------------------------------------------------
+    const tokenTc13 = app.signTruecallerToken('9829077777');
     const res13 = await request('POST', '/api/orders', {
       customerName: 'Fraud Payment Tester',
       customerPhone: '9829077777',
       items: [{ id: 'p1', qty: 1 }],
       paymentMethod: 'UPI',
       paymentStatus: 'Paid' // Untrusted customer assertion
-    });
+    }, { 'x-truecaller-token': tokenTc13 });
     const pass13 = res13.body && res13.body.paymentStatus === 'Pending';
     record(13, 'Forged client-side payment status "Paid" is rejected; orders start as Pending', pass13);
     record(14, 'Duplicate order submissions do not double-bill or double-deduct inventory', pass10);
+
+    // ----------------------------------------------------
+    // TRUECALLER ENFORCEMENT & BYPASS PREVENTION TESTS
+    // ----------------------------------------------------
+    // A: Dummy phone number 9999999999 is rejected
+    const resDummyPhone = await request('POST', '/api/orders', {
+      customerName: 'Dummy User',
+      customerPhone: '9999999999',
+      items: [{ id: 'p1', qty: 1 }]
+    });
+    const passDummy = resDummyPhone.status === 400;
+
+    // B: Unverified customer request without token is rejected
+    const resUnverified = await request('POST', '/api/orders', {
+      customerName: 'Unverified User',
+      customerPhone: '9829088888',
+      items: [{ id: 'p1', qty: 1 }]
+    });
+    const passUnverified = resUnverified.status === 401 && resUnverified.body.requiresTruecaller === true;
+
+    // C: Forged / tampered Truecaller token is rejected
+    const resForgedToken = await request('POST', '/api/orders', {
+      customerName: 'Forged User',
+      customerPhone: '9829088888',
+      items: [{ id: 'p1', qty: 1 }]
+    }, { 'x-truecaller-token': 'forged.fake.token' });
+    const passForged = resForgedToken.status === 401;
+
+    record(14.5, 'Truecaller verification enforced; dummy phones and unverified orders rejected', passDummy && passUnverified && passForged);
 
     // ----------------------------------------------------
     // TEST 15: Unauthorized staff cannot access owner-only settings or exports

@@ -651,10 +651,10 @@
       }
 
       // LOGIN GATE
-      // Already logged in -> continue straight to order placement.
-      // Not logged in     -> verify first, then automatically resume the order.
+      // Already logged in with Truecaller -> continue straight to order placement.
+      // Not logged in or unverified     -> verify first via Truecaller 1-Tap.
       const activeUser = JSON.parse(localStorage.getItem('sikar_user') || 'null');
-      if (!activeUser || !activeUser.phone) {
+      if (!activeUser || !activeUser.phone || !activeUser.verified) {
         window.cartLoginResume = true;
         openCartLoginModal();
         return;
@@ -662,7 +662,8 @@
       window.cartLoginResume = false;
 
       const name = document.getElementById('order-cust-name').value.trim() || activeUser.name || 'Valued Customer';
-      const phone = document.getElementById('order-cust-phone').value.trim() || activeUser.phone;
+      // SECURITY: Order phone is strictly locked to the Truecaller-verified SIM number
+      const phone = String(activeUser.phone).replace(/\D/g, '').slice(-10);
       const corridor = document.getElementById('order-delivery-corridor').value;
       const address = document.getElementById('order-cust-address').value.trim();
       const payMethod = document.querySelector('input[name="pay-method"]:checked')?.value || 'COD';
@@ -726,11 +727,12 @@
           total_amount: finalAmount,
           paymentMethod: payMethod,
           payment_method: payMethod,
-          paymentStatus: payMethod === 'UPI' ? 'Paid' : 'Pending',
-          payment_status: payMethod === 'UPI' ? 'Paid' : 'Pending',
+          paymentStatus: 'Pending',
+          payment_status: 'Pending',
           notes: notes,
           couponCode: pageAppliedCoupon ? pageAppliedCoupon.code : null,
           coupon_code: pageAppliedCoupon ? pageAppliedCoupon.code : null,
+          truecallerToken: activeUser.token || '',
           attribution: window.SikarAnalytics && typeof window.SikarAnalytics.getAttributionPayload === 'function'
             ? window.SikarAnalytics.getAttributionPayload()
             : {}
@@ -738,12 +740,21 @@
 
         const res = await fetch('/api/orders', {
           method: 'POST',
-          headers: { 'Content-Type': 'application/json' },
+          headers: {
+            'Content-Type': 'application/json',
+            'x-truecaller-token': activeUser.token || ''
+          },
           body: JSON.stringify(orderPayload)
         });
 
         const data = await res.json();
         if (!res.ok || !data.success) {
+          if (res.status === 401 && data.requiresTruecaller) {
+            localStorage.removeItem('sikar_user');
+            checkUserAuthCart();
+            openCartLoginModal();
+            throw new Error('Please complete Truecaller verification for your mobile number first.');
+          }
           throw new Error(data.error || 'Failed to place order. Please check details and try again.');
         }
 
@@ -921,14 +932,29 @@
       const nameInput = document.getElementById('order-cust-name');
       const phoneInput = document.getElementById('order-cust-phone');
 
-      if (user && user.phone) {
+      if (user && user.phone && user.verified) {
         if (nameInput && (!nameInput.value || nameInput.value === '')) nameInput.value = user.name || '';
-        if (phoneInput && (!phoneInput.value || phoneInput.value === '')) phoneInput.value = String(user.phone).replace(/\D/g, '').slice(-10);
+        if (phoneInput) {
+          phoneInput.value = String(user.phone).replace(/\D/g, '').slice(-10);
+          phoneInput.readOnly = true;
+          phoneInput.style.backgroundColor = '#F8FAFC';
+          phoneInput.style.cursor = 'not-allowed';
+        }
         if (banner && bannerText) {
-          bannerText.innerHTML = `<strong>Truecaller 1-Tap Verified:</strong> ${user.name ? user.name + ' • ' : ''}+91 ${user.phone}`;
+          bannerText.innerHTML = `
+            <span style="display:inline-flex; align-items:center; gap:6px;">
+              <svg viewBox="0 0 24 24" width="16" height="16" fill="#0066F5"><path d="M12 2C6.48 2 2 6.48 2 12c0 1.85.5 3.58 1.38 5.07L2.1 21.9l4.98-1.28C8.51 21.49 10.2 22 12 22c5.52 0 10-4.48 10-10S17.52 2 12 2zm-1 14.5l-3.5-3.5 1.41-1.41L11 13.67l5.59-5.59L18 9.5l-7 7z"/></svg>
+              <strong>Truecaller SIM Verified:</strong> ${user.name ? user.name + ' • ' : ''}+91 ${user.phone}
+            </span>
+          `;
           banner.style.display = 'flex';
         }
       } else {
+        if (phoneInput) {
+          phoneInput.readOnly = false;
+          phoneInput.style.backgroundColor = '#FFFFFF';
+          phoneInput.style.cursor = 'text';
+        }
         if (banner) banner.style.display = 'none';
       }
     }
@@ -1031,6 +1057,7 @@
                 name: statusData.user.name || enteredName,
                 phone: cleanPhone,
                 verified: true,
+                token: statusData.token || '',
                 channel: 'Truecaller SIM Verified'
               };
               localStorage.setItem('sikar_user', JSON.stringify(verifiedUser));

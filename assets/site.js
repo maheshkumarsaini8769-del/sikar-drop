@@ -1837,7 +1837,7 @@ async function startTruecaller1TapFlow() {
             tcText.textContent = `SIM Verified (+91 ${cleanPhone})! Logging in...`;
             tcText.style.color = '#16A34A';
           }
-          handleAuthSuccess(statusData.user, 'Truecaller SIM Verified');
+          handleAuthSuccess({ ...statusData.user, token: statusData.token }, 'Truecaller SIM Verified');
           return;
         }
 
@@ -1904,7 +1904,8 @@ function handleAuthSuccess(userData, method = 'Truecaller Verified') {
     channel: method,
     verified: true,
     verifiedBy: method,
-    truecallerBadge: true
+    truecallerBadge: true,
+    token: userData.token || ''
   };
   // Keep both the window property and any page-level binding in sync.
   window.currentUser = verifiedUser;
