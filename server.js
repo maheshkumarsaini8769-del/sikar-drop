@@ -771,46 +771,30 @@ app.post('/api/auth/login', (req, res) => {
     db.prepare('UPDATE admin_users SET last_login = ? WHERE id = ?').run(now, admin.id);
     db.prepare(`
       INSERT INTO audit_logs (id, actor, action, module, details, created_at)
-      VALUES (?, ?, 'LOGIN_STEP1_SUCCESS', 'auth', ?, ?)
-    `).run('AUD-' + Math.floor(100000 + Math.random() * 900000), admin.name, `Successful password verification for ${admin.role} (${admin.username}) from IP ${ip}`, now);
+      VALUES (?, ?, 'LOGIN_SUCCESS', 'auth', ?, ?)
+    `).run('AUD-' + Math.floor(100000 + Math.random() * 900000), admin.name, `Successful login for ${admin.role} (${admin.username}) from IP ${ip}`, now);
 
-    const providedCode = String(req.body.code || req.body.twoFactorCode || req.body['2fa'] || '').trim();
-    const settingRow = db.prepare("SELECT value FROM website_settings WHERE key = 'google_2fa_code'").get();
-    const configuredCode = (settingRow && settingRow.value) || process.env.GOOGLE_2FA_CODE || '271019';
-
-    // If 2FA code is provided upfront in the login request, verify directly
-    if (providedCode && (providedCode === configuredCode || providedCode === '271019' || providedCode === '27101993')) {
-      let parsedPerms = [];
-      try {
-        parsedPerms = JSON.parse(admin.permissions_json || '[]');
-      } catch (e) {
-        parsedPerms = admin.role.includes('Super') ? ['*'] : ['orders:view'];
-      }
-      const token = signAdminToken(admin.id, { role: admin.role });
-      return res.json({
-        success: true,
-        token,
-        user: {
-          id: admin.id,
-          name: admin.name,
-          email: admin.username,
-          username: admin.username,
-          role: admin.role,
-          perms: parsedPerms
-        }
-      });
+    let parsedPerms = [];
+    try {
+      parsedPerms = JSON.parse(admin.permissions_json || '[]');
+    } catch (e) {
+      parsedPerms = admin.role.includes('Super') ? ['*'] : ['orders:view'];
     }
 
-    // Otherwise, issue Google 2-Step Verification challenge
-    const tempToken = signTemp2faToken(admin.id);
+    const token = signAdminToken(admin.id, { role: admin.role });
+
     return res.json({
       success: true,
-      require2FA: true,
-      tempToken,
-      id: admin.id,
-      name: admin.name,
-      role: admin.role,
-      email: admin.username
+      token,
+      tempToken: signTemp2faToken(admin.id),
+      user: {
+        id: admin.id,
+        name: admin.name,
+        email: admin.username,
+        username: admin.username,
+        role: admin.role,
+        perms: parsedPerms
+      }
     });
   } catch (err) {
     res.status(500).json({ error: 'Internal login error' });
