@@ -2152,7 +2152,7 @@
         <form id="form-admin-login" onsubmit="handleAdminLogin(event)">
           <div class="portal-field-group" style="text-align: left; margin-bottom: 14px;">
             <label for="login-email-input" style="color: #cbd5e1; font-size: 0.82rem; font-weight: 600;">Google Admin Email or Username</label>
-            <input type="text" id="login-email-input" class="portal-input" placeholder="maheshkumarsaini8769@gmail.com" value="maheshkumarsaini8769@gmail.com" required autocomplete="username" autocapitalize="none" autocorrect="off" spellcheck="false" style="background: #1e293b; border-color: #334155; color: #ffffff;">
+            <input type="text" id="login-email-input" class="portal-input" placeholder="sainidevendra416@gmail.com or maheshkumarsaini8769@gmail.com" required autocomplete="username" autocapitalize="none" autocorrect="off" spellcheck="false" style="background: #1e293b; border-color: #334155; color: #ffffff;">
           </div>
           <div class="portal-field-group" style="text-align: left; margin-bottom: 16px;">
             <label for="login-pass-input" style="color: #cbd5e1; font-size: 0.82rem; font-weight: 600;">Master Security Password</label>
@@ -7088,7 +7088,8 @@
     ];
 
     const DEFAULT_SUBADMINS = [
-      { id: 'ADM-01', name: 'Devendra Saini', email: 'sainidevendra416@gmail.com', username: 'sainidevendra416@gmail.com', pass: '', pin: '', role: 'Super Admin', perms: ['all'], permissions: ['all'] },
+      { id: 'ADM-01', name: 'Mahesh Kumar Saini', email: 'maheshkumarsaini8769@gmail.com', username: 'maheshkumarsaini8769@gmail.com', pass: '', pin: '', role: 'Super Admin', perms: ['all'], permissions: ['all'] },
+      { id: 'ADM-DEV', name: 'Devendra Saini', email: 'sainidevendra416@gmail.com', username: 'sainidevendra416@gmail.com', pass: '', pin: '', role: 'Super Admin', perms: ['all'], permissions: ['all'] },
       { id: 'ADM-SUB', name: 'Operations Sub-Admin', email: 'subadmin@sikardrop.in', username: 'subadmin@sikardrop.in', pass: '', pin: '', role: 'Store Sub-Admin', perms: ['dashboard', 'orders', 'pos', 'inventory', 'khata', 'reports', 'purchases', 'bundles', 'coupons', 'products', 'categories', 'reviews', 'bulk', 'subadmin'] },
       { id: 'ADM-02', name: 'Ramesh Kumawat', email: 'ramesh@sikardrop.in', username: 'ramesh@sikardrop.in', pass: '', pin: '', role: 'Logistics Operator', perms: ['dashboard', 'orders', 'pos', 'inventory'] },
       { id: 'ADM-03', name: 'Dinesh Accountant', email: 'dinesh@sikardrop.in', username: 'dinesh@sikardrop.in', pass: '', pin: '', role: 'Accountant', perms: ['dashboard', 'orders', 'pos', 'khata', 'reports', 'purchases'] },
@@ -15885,7 +15886,7 @@
         const perms = Array.isArray(s.perms) ? s.perms : (Array.isArray(s.permissions) ? s.permissions : []);
         const email = s.email || s.username || 'staff@sikardrop.in';
         const isCurrentActive = currentOperator && (currentOperator.id === s.id || currentOperator.email === email || currentOperator.username === s.username);
-        const isSuperAdmin = (s.role && String(s.role).toLowerCase().includes('super')) || s.id === 'ADM-01' || email === 'sainidevendra416@gmail.com' || email === 'maheshsaini10101@gmail.com';
+        const isSuperAdmin = (s.role && String(s.role).toLowerCase().includes('super')) || s.id === 'ADM-01' || s.id === 'ADM-DEV' || email === 'sainidevendra416@gmail.com' || email === 'maheshkumarsaini8769@gmail.com' || email === 'maheshsaini10101@gmail.com';
 
         return `
         <tr style="${isCurrentActive ? 'background: #F0FDF4;' : (isSuperAdmin ? 'background: #FFFBEB;' : '')}">
