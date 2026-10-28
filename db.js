@@ -833,6 +833,11 @@ function initDatabase() {
         db.exec(`ALTER TABLE purchases ADD COLUMN ${col} ${colType}`);
       }
     }
+
+    const prodCols = db.prepare('PRAGMA table_info(products)').all().map(c => c.name);
+    if (!prodCols.includes('volume')) {
+      db.exec('ALTER TABLE products ADD COLUMN volume TEXT');
+    }
   } catch (err) {
     console.warn('Purchases columns migration notice:', err.message);
   }

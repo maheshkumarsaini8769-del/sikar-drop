@@ -2260,17 +2260,17 @@
       </button>
 
       <!-- SECTION 2: ORDERS, SALES & CASH POS -->
-      <span class="sidebar-nav-section-title">SALES &amp; ORDERS</span>
+      <span class="sidebar-nav-section-title">ORDERS &amp; SALES</span>
 
       <button type="button" class="sidebar-tab-btn" data-tab="orders" onclick="switchTab('orders')">
         <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M6 2 3 6v14a2 2 0 0 0 2 2h14a2 2 0 0 0 2-2V6l-3-4Z"/><path d="M3 6h18"/><path d="M16 10a4 4 0 0 1-8 0"/></svg>
-        <span>Live Orders</span>
+        <span>Online Orders (Website)</span>
         <span class="tab-badge-pill" id="badge-orders-count" style="display:none;">5</span>
       </button>
 
       <button type="button" class="sidebar-tab-btn" data-tab="pos" onclick="switchTab('pos')">
         <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><rect width="18" height="18" x="3" y="3" rx="3"/><line x1="12" y1="8" x2="12" y2="16"/><line x1="8" y1="12" x2="16" y2="12"/></svg>
-        <span>POS Sales</span>
+        <span>Manual Sell (Counter Sale)</span>
       </button>
 
       <button type="button" class="sidebar-tab-btn" data-tab="customers" onclick="switchTab('customers')">
@@ -3083,8 +3083,8 @@
         <div class="portal-card">
           <div class="portal-card-header" style="flex-wrap: wrap; gap: 12px; align-items: flex-start;">
             <div>
-              <h2>Live Orders &amp; Dispatch Fleet Hub</h2>
-              <p>Real-time order lifecycle management, atomic stock restock, payment status tracking and driver bilty dispatch.</p>
+              <h2>Online Orders (Website Live Orders &amp; Dispatch)</h2>
+              <p>Storefront website se aane wale sabhi online orders yahan dikhte hain. Status update karein, driver assign karein aur bilty print karein.</p>
             </div>
             <div style="display:flex; align-items:center; gap:8px; flex-wrap:wrap;">
               <button type="button" class="btn-portal-outline" onclick="refreshOrdersHub(true)" id="btn-orders-refresh" style="display:inline-flex; align-items:center; gap:6px;">
@@ -3292,8 +3292,8 @@
         <div class="portal-card">
           <div class="portal-card-header">
             <div>
-              <h2>Counter Case Sell (POS Manual Entry)</h2>
-              <p>Record genuine wholesale offline counter sales. Automatically deducts sold boxes from live warehouse inventory and posts balances to Udhar Khata.</p>
+              <h2>Manual Sell / Counter Billing (Dukan &amp; Offline Sale)</h2>
+              <p>Dukan ya godown counter par aane wale offline grahak ka seedha bill banayein. Yahan bill banate hi stock godown se kam ho jayega aur baki rupaye Khata me jud jayenge.</p>
             </div>
           </div>
 
@@ -3301,6 +3301,9 @@
             <input type="hidden" id="pos-idempotency-token">
 
             <!-- 1. CUSTOMER / PARTY INFO -->
+            <div style="font-size: 0.82rem; font-weight: 800; color: #0284C7; text-transform: uppercase; margin-bottom: 8px;">
+              Step 1: Grahak Ki Jankari (Customer Details)
+            </div>
             <div class="portal-form-grid-3">
               <div class="portal-field-group">
                 <label for="pos-cust-name">Customer / Party Name *</label>
@@ -3318,9 +3321,12 @@
             </div>
 
             <!-- 2. QUICK ADD POPULAR PETIS BAR -->
-            <div style="margin-top: 14px;">
-              <span style="font-size: 0.74rem; font-weight: 800; text-transform: uppercase; color: var(--text-muted); display: block; margin-bottom: 6px;">
-                Quick Add Wholesale Petis (1-Click)
+            <div style="margin-top: 18px; margin-bottom: 6px;">
+              <div style="font-size: 0.82rem; font-weight: 800; color: #0284C7; text-transform: uppercase; margin-bottom: 6px;">
+                Step 2: Peti / Bottle Chunein (Select Wholesale Boxes)
+              </div>
+              <span style="font-size: 0.76rem; font-weight: 700; color: var(--text-muted); display: block; margin-bottom: 6px;">
+                Quick Select: 1-Click Me Peti Jodein
               </span>
               <div class="pos-quick-petis" id="pos-quick-petis-container">
                 <!-- Rendered dynamically by renderPosQuickChips() -->
@@ -3331,10 +3337,10 @@
             <div style="background: #FFFFFF; border: 1px solid var(--border-light); border-radius: var(--radius-sm); padding: 14px; margin-top: 10px; margin-bottom: 16px;">
               <div style="display: flex; justify-content: space-between; align-items: center; margin-bottom: 10px;">
                 <h4 style="font-size: 0.88rem; font-weight: 800; color: #0F172A; text-transform: uppercase; letter-spacing: 0.03em;">
-                  Line Items / Wholesale Boxes Sold
+                  Bechi Gayi Peti Ki List (Line Items)
                 </h4>
                 <button type="button" class="btn-portal-outline" onclick="addPosLineItem()" style="padding: 4px 12px; font-size: 0.8rem; font-weight: 700;">
-                  + Add Another Peti
+                  + Aur Peti Jodein
                 </button>
               </div>
 
@@ -3359,43 +3365,46 @@
 
             <!-- 4. LIVE INVENTORY IMPACT PREVIEW & WARNING -->
             <div id="pos-inventory-alert-box" style="background: #F0FDF4; border: 1px solid #BBF7D0; border-radius: var(--radius-sm); padding: 12px 16px; margin-bottom: 18px; font-size: 0.84rem; color: #166534;">
-              <strong>Live Inventory Deduction Preview:</strong>
-              <div id="pos-stock-preview-text" style="margin-top: 4px;">Select wholesale petis above to preview warehouse stock deduction.</div>
+              <strong>Godown Stock Deduction Preview:</strong>
+              <div id="pos-stock-preview-text" style="margin-top: 4px;">Upar peti chunein, yahan dikhega ki godown se kitni peti kam hongi.</div>
             </div>
 
             <!-- 5. FINANCIAL CALCULATIONS & PAYMENT METHOD -->
             <div style="background: #F8FAFC; border: 1px solid var(--border-light); border-radius: var(--radius-sm); padding: 16px; margin-bottom: 20px;">
+              <div style="font-size: 0.82rem; font-weight: 800; color: #0284C7; text-transform: uppercase; margin-bottom: 12px;">
+                Step 3: Payment Hisab (Payment Mode &amp; Amount Received)
+              </div>
               <div class="portal-form-grid-3">
                 <div class="portal-field-group">
-                  <label>Gross Peti Subtotal</label>
+                  <label>Kul Peti Subtotal</label>
                   <input type="text" id="pos-subtotal-display" class="portal-input tabular" readonly style="background: #FFFFFF; font-weight: 700; font-size: 1rem;">
                 </div>
                 <div class="portal-field-group">
-                  <label for="pos-discount-input">Wholesale Discount ₹</label>
+                  <label for="pos-discount-input">Discount / Chhoot ₹</label>
                   <input type="number" id="pos-discount-input" class="portal-input tabular" value="0" min="0" oninput="updatePosCalculations()">
                 </div>
                 <div class="portal-field-group">
-                  <label>Mandi Tax / Cess</label>
+                  <label>Tax / Mandi Shulk</label>
                   <input type="text" id="pos-tax-display" class="portal-input tabular" readonly value="₹0 (Tax Included)" style="background: #FFFFFF; font-size: 0.88rem; color: var(--text-muted);">
                 </div>
               </div>
 
               <div class="portal-form-grid-3" style="margin-top: 12px;">
                 <div class="portal-field-group">
-                  <label>Final Net Bill Total</label>
+                  <label>Final Net Bill Total ₹</label>
                   <input type="text" id="pos-total-display" class="portal-input tabular" readonly style="background: #EFF6FF; font-weight: 900; font-size: 1.25rem; color: #0284C7; border-color: #BAE6FD;">
                 </div>
                 <div class="portal-field-group">
-                  <label for="pos-payment-method">Payment Mode *</label>
+                  <label for="pos-payment-method">Payment Mode (Kaise Rupaye Mile) *</label>
                   <select id="pos-payment-method" class="portal-select" onchange="handlePosPaymentMethodChange(this.value)">
-                    <option value="Cash" selected>Cash Payment</option>
-                    <option value="UPI">UPI / QR Code</option>
-                    <option value="Split">Split Payment (Cash + UPI)</option>
-                    <option value="Khata Credit">Full Khata Credit (Udhar)</option>
+                    <option value="Cash" selected>Cash Payment (Nagad)</option>
+                    <option value="UPI">UPI / QR Code (PhonePe / GPay)</option>
+                    <option value="Split">Split Payment (Kuchh Cash + Kuchh UPI)</option>
+                    <option value="Khata Credit">Full Khata Credit (Poora Udhar)</option>
                   </select>
                 </div>
                 <div class="portal-field-group">
-                  <label for="pos-paid-input">Total Amount Received ₹</label>
+                  <label for="pos-paid-input">Kitne Rupaye Mile (Received ₹) *</label>
                   <input type="number" id="pos-paid-input" class="portal-input tabular" value="0" min="0" oninput="handlePosPaidInputChange()" required>
                   <div style="display: flex; gap: 4px; margin-top: 6px; flex-wrap: wrap;">
                     <button type="button" class="pos-amount-btn" onclick="setPosPaidPreset('full')">Full Paid</button>
@@ -3421,18 +3430,18 @@
 
               <div class="portal-form-grid-2" style="margin-top: 12px;">
                 <div class="portal-field-group">
-                  <label>Unpaid Balance (Posted to Udhar Khata)</label>
+                  <label>Baki Udhar (Khata Ledger Me Judega)</label>
                   <input type="text" id="pos-balance-display" class="portal-input tabular" readonly style="background: #FEF2F2; font-weight: 800; font-size: 1.1rem; color: #DC2626;">
                 </div>
                 <div class="portal-field-group" id="pos-due-date-group" style="display: none;">
-                  <label for="pos-due-date-input">Promise Due Date for Pending Payment *</label>
+                  <label for="pos-due-date-input">Promise Due Date (Udhar Chukane Ki Tarikh) *</label>
                   <input type="date" id="pos-due-date-input" class="portal-input">
                 </div>
               </div>
 
               <div class="portal-field-group" style="margin-top: 12px;">
-                <label for="pos-notes-input">Counter Memo / Vehicle No. / Bilty Note</label>
-                <input type="text" id="pos-notes-input" class="portal-input" placeholder="e.g. Handover to shop tempo / Counter pickup">
+                <label for="pos-notes-input">Bill Note / Gadi No. / Reference</label>
+                <input type="text" id="pos-notes-input" class="portal-input" placeholder="e.g. Counter pickup ya dukandar tempo driver ko diya">
               </div>
             </div>
 
@@ -3440,7 +3449,7 @@
             <div style="display: flex; justify-content: flex-end; gap: 12px; align-items: center;">
               <button type="button" class="btn-portal-outline" onclick="resetPosForm()">Cancel</button>
               <button type="submit" id="pos-submit-btn" class="btn-portal-success" style="padding: 12px 28px; font-size: 0.98rem; font-weight: 800;">
-                <span id="pos-submit-btn-text">Submit POS Sale &amp; Deduct Inventory</span>
+                <span id="pos-submit-btn-text">Bill Save Karein &amp; Stock Kam Karein</span>
               </button>
             </div>
           </form>
@@ -3775,6 +3784,7 @@
               <p>Adjust stock directly or record purchase from bottling plant. Automatically increments inventory stock.</p>
             </div>
             <div class="header-actions-flex">
+              <button type="button" class="btn-portal-primary" style="background:#0284C7; border-color:#0284C7; font-weight:800;" onclick="openOpeningStockModal()">+ Pehle Se Pada Stock Dalein (Direct Stock)</button>
               <button type="button" class="btn-portal-success" onclick="openPurchaseModal()">+ Record Supplier Purchase</button>
               <button type="button" class="btn-portal-primary" onclick="openBulkPriceModal()">Universal Price &amp; Discount Tool</button>
             </div>
@@ -6257,6 +6267,56 @@
     </div>
   </div>
 
+  <!-- 4B. OPENING STOCK / DIRECT STOCK SET MODAL -->
+  <div class="portal-modal-overlay" id="opening-stock-modal">
+    <div class="portal-modal-card" style="max-width: 520px; width: 94%;">
+      <button type="button" class="modal-close-x" onclick="closeModal('opening-stock-modal')"><svg style="width:14px;height:14px;display:block;" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5"><line x1="18" y1="6" x2="6" y2="18"></line><line x1="6" y1="6" x2="18" y2="18"></line></svg></button>
+      <h3 style="font-family: var(--font-heading); font-size: 1.3rem; font-weight: 900; margin-bottom: 4px;">Pehle Se Pada Stock Dalein (Direct Stock Set)</h3>
+      <p style="font-size: 0.82rem; color: var(--text-muted); margin-bottom: 16px;">Agar aapke pass godown me pehle se stock pada hai, to bina supplier purchase bill banaye yahan se direct actual stock update kar sakte hain.</p>
+
+      <form onsubmit="handleOpeningStockSubmit(event)">
+        <div class="portal-field-group">
+          <label for="opening-stock-product-select">Product Chunein *</label>
+          <select id="opening-stock-product-select" class="portal-select" onchange="onOpeningStockProductChange(this.value)" required></select>
+        </div>
+
+        <div style="background: #F8FAFC; border: 1.5px solid #E2E8F0; border-radius: 6px; padding: 12px; margin-bottom: 14px; display: flex; justify-content: space-between; align-items: center;">
+          <span style="font-size: 0.84rem; color: #475569;">System Me Abhi Ka Stock:</span>
+          <strong id="opening-stock-current-display" class="tabular" style="font-size: 1.15rem; color: #0284C7;">0 Boxes</strong>
+        </div>
+
+        <div class="portal-field-group">
+          <label style="font-size: 0.84rem; font-weight: 800; color: #0F172A; display: block; margin-bottom: 6px;">Aap Kya Karna Chahte Hain? *</label>
+          <div style="display: flex; gap: 12px; margin-bottom: 8px; flex-wrap: wrap;">
+            <label style="display: flex; align-items: center; gap: 6px; cursor: pointer; font-size: 0.86rem; font-weight: 700;">
+              <input type="radio" name="opening-stock-mode" value="set" checked onchange="toggleOpeningStockMode(this.value)">
+              <span>Direct Naya Stock Set Karein (Actual Count)</span>
+            </label>
+            <label style="display: flex; align-items: center; gap: 6px; cursor: pointer; font-size: 0.86rem; font-weight: 700;">
+              <input type="radio" name="opening-stock-mode" value="add" onchange="toggleOpeningStockMode(this.value)">
+              <span>Pehle Ka Stock Jodein (+Add Boxes)</span>
+            </label>
+          </div>
+        </div>
+
+        <div class="portal-field-group">
+          <label for="opening-stock-qty-input" id="opening-stock-qty-label">Godown Me Actual Kitni Peti Hain (Total Boxes) *</label>
+          <input type="number" id="opening-stock-qty-input" class="portal-input tabular" min="0" step="1" placeholder="e.g. 100" required>
+        </div>
+
+        <div class="portal-field-group">
+          <label for="opening-stock-reason-input">Reason / Note</label>
+          <input type="text" id="opening-stock-reason-input" class="portal-input" value="Pehle Se Pada Stock (Opening Stock)" required>
+        </div>
+
+        <div style="display: flex; justify-content: flex-end; gap: 10px; margin-top: 18px;">
+          <button type="button" class="btn-portal-outline" onclick="closeModal('opening-stock-modal')">Cancel</button>
+          <button type="submit" id="opening-stock-submit-btn" class="btn-portal-primary" style="background: #0284C7; font-weight: 800;">Stock Save Karein</button>
+        </div>
+      </form>
+    </div>
+  </div>
+
   <!-- 5. PRODUCT ADD/EDIT MODAL -->
   <div class="portal-modal-overlay" id="product-modal">
     <div class="portal-modal-card" style="max-width: 680px; width: 94%;">
@@ -6269,6 +6329,34 @@
         <div class="portal-field-group">
           <label for="prod-title-input">Product Title *</label>
           <input type="text" id="prod-title-input" class="portal-input" placeholder="e.g. Bisleri 1L Mineral Water Bottle" required>
+        </div>
+
+        <!-- BOTTLE VOLUME / CAPACITY SELECTOR -->
+        <div style="background: #F1F5F9; border: 1.5px solid #CBD5E1; border-radius: var(--radius-sm); padding: 12px 14px; margin-bottom: 14px;">
+          <label style="font-size: 0.84rem; font-weight: 800; color: #0F172A; display: block; margin-bottom: 6px;">
+            Bottle Size / Capacity (Kitne ML / Litre Ki Bottle Hai) *
+          </label>
+          <div style="display: flex; gap: 6px; flex-wrap: wrap; margin-bottom: 8px;">
+            <button type="button" class="btn-tbl-action" onclick="setProductVolume('200 ml')">200 ml</button>
+            <button type="button" class="btn-tbl-action" onclick="setProductVolume('250 ml')">250 ml</button>
+            <button type="button" class="btn-tbl-action" onclick="setProductVolume('300 ml')">300 ml</button>
+            <button type="button" class="btn-tbl-action" onclick="setProductVolume('500 ml')">500 ml</button>
+            <button type="button" class="btn-tbl-action" onclick="setProductVolume('750 ml')">750 ml</button>
+            <button type="button" class="btn-tbl-action" onclick="setProductVolume('1 Litre')">1 Litre</button>
+            <button type="button" class="btn-tbl-action" onclick="setProductVolume('2 Litre')">2 Litre</button>
+            <button type="button" class="btn-tbl-action" onclick="setProductVolume('5 Litre')">5 Litre</button>
+            <button type="button" class="btn-tbl-action" onclick="setProductVolume('20 Litre Camper')">20L Camper</button>
+          </div>
+          <div class="portal-form-grid-2">
+            <div class="portal-field-group" style="margin-bottom:0;">
+              <label for="prod-volume-input" style="font-size: 0.78rem;">Bottle Volume (e.g. 250 ml, 1 Litre) *</label>
+              <input type="text" id="prod-volume-input" class="portal-input" placeholder="e.g. 250 ml, 500 ml, 1 Litre" oninput="autoUpdatePackagingSpec()" required>
+            </div>
+            <div class="portal-field-group" style="margin-bottom:0;">
+              <label for="prod-bottles-per-peti-input" style="font-size: 0.78rem;">Ek Peti Me Kitni Bottle (Pack Count)</label>
+              <input type="number" id="prod-bottles-per-peti-input" class="portal-input tabular" placeholder="e.g. 12, 24, 28" min="1" oninput="autoUpdatePackagingSpec()">
+            </div>
+          </div>
         </div>
 
         <div class="portal-form-grid-2">
@@ -6315,29 +6403,29 @@
           </div>
         </div>
 
-        <!-- PRODUCT IMAGE GALLERY PICKER & DEVICE UPLOAD -->
+        <!-- PRODUCT IMAGE UPLOAD OR URL (NO PAST IMAGES GRID) -->
         <div style="background: #F8FAFC; border: 1.5px solid var(--border-subtle); border-radius: var(--radius-sm); padding: 14px; margin-bottom: 16px;">
-          <div style="display: flex; align-items: center; justify-content: space-between; gap: 12px; margin-bottom: 10px; flex-wrap: wrap;">
-            <label for="prod-img-input" style="font-size: 0.84rem; font-weight: 800; color: #0F172A; margin: 0;">Product Photo (Select from Gallery or Upload) *</label>
-            <label for="prod-file-upload-input" class="btn-portal-success" style="cursor: pointer; padding: 6px 12px; font-size: 0.78rem; display: inline-flex; align-items: center; gap: 6px; margin: 0;">
-              <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.4"><path d="M21 15v4a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2v-4"></path><polyline points="17 8 12 3 7 8"></polyline><line x1="12" y1="3" x2="12" y2="15"></line></svg>
-              <span>Choose from Device Gallery</span>
-            </label>
-            <input type="file" id="prod-file-upload-input" accept="image/*" style="display: none;" onchange="handleDeviceGalleryUpload(event, 'prod')">
+          <div style="font-size: 0.84rem; font-weight: 800; color: #0F172A; margin-bottom: 8px;">
+            Product Photo (Choose from Device Gallery or Enter Image URL)
           </div>
-
-          <div style="display: flex; align-items: center; gap: 12px; margin-bottom: 12px;">
-            <div style="width: 64px; height: 64px; border-radius: 8px; background: #FFFFFF; border: 1.5px solid #CBD5E1; display: flex; align-items: center; justify-content: center; overflow: hidden; flex-shrink: 0;">
+          <div style="display: flex; gap: 14px; align-items: center; flex-wrap: wrap;">
+            <div style="width: 80px; height: 80px; border-radius: 8px; background: #FFFFFF; border: 1.5px solid #CBD5E1; display: flex; align-items: center; justify-content: center; overflow: hidden; flex-shrink: 0; box-shadow: 0 1px 3px rgba(0,0,0,0.05);">
               <img id="prod-img-preview-img" src="assets/prod_bisleri_1l.webp" alt="Preview" style="width: 100%; height: 100%; object-fit: contain;">
             </div>
-            <div style="flex: 1;">
-              <input type="text" id="prod-img-input" class="portal-input" placeholder="assets/prod_bisleri_1l.webp" oninput="updateModalImagePreview('prod', this.value)" required>
-              <small style="display: block; color: var(--text-muted); font-size: 0.74rem; margin-top: 4px;">Click any image below from the Gallery or upload a photo from your phone/computer.</small>
+            <div style="flex: 1; min-width: 220px;">
+              <div style="display: flex; gap: 8px; margin-bottom: 8px; flex-wrap: wrap;">
+                <label for="prod-file-upload-input" class="btn-portal-success" style="cursor: pointer; padding: 7px 14px; font-size: 0.82rem; display: inline-flex; align-items: center; gap: 6px; margin: 0;">
+                  <svg width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.4"><path d="M21 15v4a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2v-4"></path><polyline points="17 8 12 3 7 8"></polyline><line x1="12" y1="3" x2="12" y2="15"></line></svg>
+                  <span>Choose from Gallery</span>
+                </label>
+                <input type="file" id="prod-file-upload-input" accept="image/*" style="display: none;" onchange="handleDeviceGalleryUpload(event, 'prod')">
+              </div>
+              <div class="portal-field-group" style="margin-bottom: 0;">
+                <label for="prod-img-input" style="font-size: 0.74rem; color: var(--text-muted);">Or Paste Image URL / Path:</label>
+                <input type="text" id="prod-img-input" class="portal-input" placeholder="assets/prod_bisleri_1l.webp" oninput="updateModalImagePreview('prod', this.value)" required>
+              </div>
             </div>
           </div>
-
-          <div style="font-size: 0.75rem; font-weight: 800; color: #475569; text-transform: uppercase; letter-spacing: 0.04em; margin-bottom: 6px;">Depot Photo Gallery (1-Click Select):</div>
-          <div id="prod-gallery-picker-grid" style="display: grid; grid-template-columns: repeat(auto-fill, minmax(88px, 1fr)); gap: 8px; max-height: 175px; overflow-y: auto; padding: 4px;"></div>
         </div>
 
         <button type="submit" class="btn-portal-primary" style="width: 100%; justify-content: center;">Save Product</button>
@@ -12624,9 +12712,10 @@
             <td class="tabular"><strong>₹${p.price}</strong></td>
             <td class="tabular"><strong style="color:#15803D;">+₹${profit} / Box</strong></td>
             <td>
-              <div style="display:flex; gap:6px;">
+              <div style="display:flex; gap:6px; flex-wrap:wrap;">
                 <button type="button" class="btn-tbl-action" onclick="quickAdjustStock('${p.id}', -5)">-5</button>
                 <button type="button" class="btn-tbl-action success" onclick="quickAdjustStock('${p.id}', 10)">+10</button>
+                <button type="button" class="btn-tbl-action" onclick="openDirectSetStockModal('${p.id}')" style="background:#0284C7; color:#FFF; font-weight:700;" title="Pehle Se Pada Stock Set Karein">Set Stock</button>
               </div>
             </td>
           </tr>
@@ -13862,11 +13951,33 @@
       `}).join('');
     }
 
+    function setProductVolume(vol) {
+      const input = document.getElementById('prod-volume-input');
+      if (input) {
+        input.value = vol;
+        autoUpdatePackagingSpec();
+      }
+    }
+
+    function autoUpdatePackagingSpec() {
+      const vol = (document.getElementById('prod-volume-input')?.value || '').trim();
+      const count = (document.getElementById('prod-bottles-per-peti-input')?.value || '').trim();
+      const specInput = document.getElementById('prod-spec-input');
+      if (!specInput) return;
+      if (vol && count) {
+        specInput.value = `${count} Sealed Bottles Box (${vol}) • Wholesale Peti`;
+      } else if (vol) {
+        specInput.value = `Sealed Bottles Box (${vol}) • Wholesale Peti`;
+      }
+    }
+
     function openAddProductModal() {
       document.getElementById('prod-modal-title').textContent = 'Add Wholesale Product';
       document.getElementById('prod-id-input').value = '';
       document.getElementById('prod-title-input').value = '';
-      document.getElementById('prod-spec-input').value = '12 Sealed Bottles Box • Wholesale Peti';
+      document.getElementById('prod-volume-input').value = '1 Litre';
+      document.getElementById('prod-bottles-per-peti-input').value = '12';
+      document.getElementById('prod-spec-input').value = '12 Sealed Bottles Box (1 Litre) • Wholesale Peti';
       document.getElementById('prod-cost-input').value = '140';
       document.getElementById('prod-price-input').value = '180';
       document.getElementById('prod-mrp-input').value = '240';
@@ -13878,7 +13989,6 @@
       updateModalImagePreview('prod', defaultImg);
 
       populateCategorySelectDropdown();
-      loadMediaGalleryPicker('prod', defaultImg);
       openModal('product-modal');
     }
 
@@ -13889,6 +13999,24 @@
       document.getElementById('prod-modal-title').textContent = 'Edit Wholesale Product & Photo';
       document.getElementById('prod-id-input').value = p.id;
       document.getElementById('prod-title-input').value = p.title || '';
+
+      // Bottle volume detection
+      let detectedVol = p.volume || '';
+      if (!detectedVol) {
+        const text = `${p.title || ''} ${p.spec || ''}`;
+        const match = text.match(/(20\s*L(?:itre)?\s*camper|200\s*ml|250\s*ml|300\s*ml|500\s*ml|750\s*ml|1\.2\s*L(?:itre)?|1\s*L(?:itre)?|2\s*L(?:itre)?|5\s*L(?:itre)?)/i);
+        if (match) detectedVol = match[0];
+      }
+      document.getElementById('prod-volume-input').value = detectedVol || '1 Litre';
+
+      // Bottles per peti detection
+      let detectedCount = '';
+      if (p.spec) {
+        const mCount = p.spec.match(/^(\d+)\s*(?:bottles|sealed|pcs)/i);
+        if (mCount) detectedCount = mCount[1];
+      }
+      document.getElementById('prod-bottles-per-peti-input').value = detectedCount || '12';
+
       document.getElementById('prod-spec-input').value = p.spec || 'Factory Sealed Peti';
       document.getElementById('prod-cost-input').value = p.cost !== undefined ? p.cost : Math.round((p.price || 150) * 0.75);
       document.getElementById('prod-price-input').value = p.price !== undefined ? p.price : 180;
@@ -13902,17 +14030,19 @@
       updateModalImagePreview('prod', currentImg);
 
       populateCategorySelectDropdown(p.category);
-      loadMediaGalleryPicker('prod', currentImg);
       openModal('product-modal');
     }
 
     function populateCategorySelectDropdown(selectedCat = '') {
       const select = document.getElementById('prod-cat-select');
       if (!select) return;
-      const cats = (adminCategories && adminCategories.length > 0) ? adminCategories : DEFAULT_CATEGORIES;
+      const cats = (adminCategories && adminCategories.length > 0) ? [...adminCategories] : [...DEFAULT_CATEGORIES];
+      if (selectedCat && !cats.some(c => c.id === selectedCat)) {
+        cats.unshift({ id: selectedCat, name: selectedCat });
+      }
       select.innerHTML = cats.map(c => `
         <option value="${c.id}" ${c.id === selectedCat ? 'selected' : ''}>
-          ${escapeHTML(c.name)} (${c.id})
+          ${escapeHTML(c.name || c.id)} (${c.id})
         </option>
       `).join('');
     }
@@ -13922,11 +14052,12 @@
       const editId = document.getElementById('prod-id-input').value.trim();
       const title = document.getElementById('prod-title-input').value.trim();
       const cat = document.getElementById('prod-cat-select').value;
+      const volume = document.getElementById('prod-volume-input').value.trim() || '';
       const spec = document.getElementById('prod-spec-input').value.trim() || 'Factory Sealed Peti';
       const cost = parseFloat(document.getElementById('prod-cost-input').value) || 0;
       const price = parseFloat(document.getElementById('prod-price-input').value) || 0;
       const mrp = parseFloat(document.getElementById('prod-mrp-input').value) || Math.round(price * 1.15) || price;
-      const stock = parseInt(document.getElementById('prod-stock-input').value, 10) || 50;
+      const stock = parseInt(document.getElementById('prod-stock-input').value, 10);
       const lowStock = parseInt(document.getElementById('prod-low-stock-input')?.value, 10) || 10;
       const statusVal = parseInt(document.getElementById('prod-status-select')?.value, 10) === 0 ? 0 : 1;
       const img = document.getElementById('prod-img-input').value.trim() || 'assets/prod_bisleri_1l.webp';
@@ -13945,21 +14076,26 @@
       const finalId = editId || ('p_' + Date.now());
       const now = new Date().toISOString();
 
+      const existingProd = editId ? adminProducts.find(p => p.id === editId) : null;
+      const finalStock = !isNaN(stock) && stock >= 0 ? stock : (existingProd ? (existingProd.stock || 0) : 50);
+
       const prodRecord = {
         id: finalId,
         title,
         category: cat,
         spec,
+        volume,
         cost: cost || Math.round(price * 0.75),
         price,
         mrp,
-        stock,
+        stock: finalStock,
         lowStockThreshold: lowStock,
         low_stock_threshold: lowStock,
         image: img,
         active: statusVal,
-        display_order: 0,
-        displayOrder: 0,
+        display_order: existingProd ? (existingProd.display_order || 0) : 0,
+        displayOrder: existingProd ? (existingProd.display_order || 0) : 0,
+        created_at: existingProd ? (existingProd.created_at || now) : now,
         updated_at: now
       };
 
@@ -13973,6 +14109,9 @@
 
         const realId = (serverRes && serverRes.id) ? serverRes.id : finalId;
         prodRecord.id = realId;
+        if (serverRes && serverRes.product) {
+          Object.assign(prodRecord, serverRes.product);
+        }
 
         if (editId) {
           const idx = adminProducts.findIndex(p => p.id === editId);
@@ -13982,7 +14121,6 @@
             adminProducts.unshift(prodRecord);
           }
         } else {
-          prodRecord.created_at = now;
           const idx = adminProducts.findIndex(p => p.id === realId);
           if (idx > -1) adminProducts[idx] = Object.assign({}, adminProducts[idx], prodRecord);
           else adminProducts.unshift(prodRecord);
@@ -13993,8 +14131,10 @@
         closeModal('product-modal');
         showToast(`Product '${title}' saved successfully and live on website.`);
 
-        await syncFromBackend();
-        renderProductsTable();
+        try {
+          await syncFromBackend();
+          renderProductsTable();
+        } catch (e) {}
         notifyStorefrontSync('CATALOG_UPDATED');
       } catch (err) {
         console.error('Failed to save product:', err);
@@ -14003,6 +14143,127 @@
         if (submitBtn) {
           submitBtn.disabled = false;
           submitBtn.textContent = 'Save Product';
+        }
+      }
+    }
+
+    // =========================================================
+    // 7B. OPENING STOCK (EXISTING STOCK ON HAND) MANAGER
+    // =========================================================
+    function openOpeningStockModal(targetProdId = '') {
+      const select = document.getElementById('opening-stock-product-select');
+      if (!select) return;
+      select.innerHTML = adminProducts.map(p => `
+        <option value="${p.id}" ${p.id === targetProdId ? 'selected' : ''}>
+          ${escapeHTML(p.title)} (${p.stock} Boxes in stock)
+        </option>
+      `).join('');
+
+      const activeProd = adminProducts.find(p => p.id === (targetProdId || select.value)) || adminProducts[0];
+      if (activeProd) {
+        select.value = activeProd.id;
+        document.getElementById('opening-stock-current-display').textContent = `${activeProd.stock || 0} Boxes`;
+        document.getElementById('opening-stock-qty-input').value = activeProd.stock || 0;
+      }
+      document.querySelector('input[name="opening-stock-mode"][value="set"]').checked = true;
+      document.getElementById('opening-stock-qty-label').textContent = 'Godown Me Actual Kitni Peti Hain (Total Boxes) *';
+      document.getElementById('opening-stock-reason-input').value = 'Pehle Se Pada Stock (Opening Stock)';
+      openModal('opening-stock-modal');
+    }
+
+    function openDirectSetStockModal(prodId) {
+      openOpeningStockModal(prodId);
+    }
+
+    function onOpeningStockProductChange(prodId) {
+      const p = adminProducts.find(item => item.id === prodId);
+      if (p) {
+        document.getElementById('opening-stock-current-display').textContent = `${p.stock || 0} Boxes`;
+        const mode = document.querySelector('input[name="opening-stock-mode"]:checked')?.value || 'set';
+        if (mode === 'set') {
+          document.getElementById('opening-stock-qty-input').value = p.stock || 0;
+        }
+      }
+    }
+
+    function toggleOpeningStockMode(mode) {
+      const label = document.getElementById('opening-stock-qty-label');
+      const input = document.getElementById('opening-stock-qty-input');
+      const prodId = document.getElementById('opening-stock-product-select')?.value;
+      const p = adminProducts.find(item => item.id === prodId);
+      if (mode === 'set') {
+        label.textContent = 'Godown Me Actual Kitni Peti Hain (Total Boxes) *';
+        input.placeholder = 'e.g. 100';
+        if (p) input.value = p.stock || 0;
+      } else {
+        label.textContent = 'Kitni Peti Aur Jodni Hain (+Add Boxes) *';
+        input.placeholder = 'e.g. 25';
+        input.value = '';
+      }
+    }
+
+    async function handleOpeningStockSubmit(e) {
+      if (e) e.preventDefault();
+      const prodId = document.getElementById('opening-stock-product-select').value;
+      const p = adminProducts.find(item => item.id === prodId);
+      if (!p) {
+        showToast('Please select a valid product.');
+        return;
+      }
+
+      const mode = document.querySelector('input[name="opening-stock-mode"]:checked')?.value || 'set';
+      const qty = parseInt(document.getElementById('opening-stock-qty-input').value, 10);
+      if (isNaN(qty) || qty < 0) {
+        showToast('Valid box quantity required.');
+        return;
+      }
+
+      const reason = document.getElementById('opening-stock-reason-input').value.trim() || 'Pehle Se Pada Stock (Opening Stock)';
+      const submitBtn = document.getElementById('opening-stock-submit-btn');
+      if (submitBtn) {
+        submitBtn.disabled = true;
+        submitBtn.textContent = 'Saving Stock...';
+      }
+
+      const beforeStock = p.stock || 0;
+      let finalNewStock = beforeStock;
+      let adjQty = 0;
+
+      if (mode === 'set') {
+        finalNewStock = qty;
+        adjQty = finalNewStock - beforeStock;
+      } else {
+        adjQty = qty;
+        finalNewStock = beforeStock + adjQty;
+      }
+
+      p.stock = finalNewStock;
+      localStorage.setItem('sikar_admin_products', JSON.stringify(adminProducts));
+      renderInventoryTable();
+      renderDashboard();
+      closeModal('opening-stock-modal');
+      showToast(`${p.title} stock set to ${finalNewStock} boxes.`);
+
+      try {
+        const payload = {
+          productId: p.id,
+          newStock: finalNewStock,
+          adjustmentQty: adjQty,
+          reason: reason,
+          movementType: 'OPENING_STOCK',
+          actor: currentOperator ? currentOperator.name : 'Admin'
+        };
+        await sikarApi.post('/api/inventory/adjust', payload);
+        await syncFromBackend();
+        renderInventoryTable();
+        notifyStorefrontSync('CATALOG_UPDATED');
+      } catch (err) {
+        console.warn('Backend stock adjust error:', err);
+        showToast('Stock updated locally. Sync note: ' + err.message);
+      } finally {
+        if (submitBtn) {
+          submitBtn.disabled = false;
+          submitBtn.textContent = 'Stock Save Karein';
         }
       }
     }

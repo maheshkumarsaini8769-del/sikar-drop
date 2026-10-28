@@ -7285,7 +7285,8 @@
         }
       }
 
-      const toShow = (currentFilter === 'all' && !searchQuery) ? list.slice(0, 12) : list;
+      let showLimit = window.showAllHomeProducts ? list.length : 24;
+      const toShow = (currentFilter === 'all' && !searchQuery) ? list.slice(0, showLimit) : list;
 
       if (toShow.length === 0) {
         grid.innerHTML = `
@@ -7298,7 +7299,7 @@
         return;
       }
 
-      grid.innerHTML = toShow.map(p => {
+      let cardsHtml = toShow.map(p => {
         const qty = cart[p.id] || 0;
         const isWish = wishlist.includes(p.id);
 
@@ -7315,7 +7316,10 @@
               </div>
 
               <h3 class="card-title-text" onclick="openQuickView('${p.id}')" style="cursor: pointer;" title="Click to view details">${escapeHTML(p.title)}</h3>
-              <div class="card-spec-sub">${escapeHTML(p.spec)}</div>
+              <div class="card-spec-sub">
+                ${p.volume ? `<span style="display:inline-block; background:#E0F2FE; color:#0369A1; font-weight:800; font-size:0.75rem; padding:1px 6px; border-radius:4px; margin-right:4px;">${escapeHTML(p.volume)}</span>` : ''}
+                ${escapeHTML(p.spec)}
+              </div>
             </div>
 
             <div class="card-bottom-action-row">
@@ -7341,6 +7345,19 @@
           </article>
         `;
       }).join('');
+
+      if (currentFilter === 'all' && !searchQuery && list.length > toShow.length) {
+        cardsHtml += `
+          <div style="grid-column: 1 / -1; text-align: center; margin-top: 18px; margin-bottom: 10px;">
+            <button type="button" onclick="window.showAllHomeProducts=true; renderProducts();" style="padding: 10px 24px; font-weight: 800; font-size: 0.92rem; border-radius: 999px; background: #FFFFFF; border: 2px solid #0284C7; color: #0284C7; cursor: pointer; display: inline-flex; align-items: center; gap: 8px;">
+              <span>View All ${list.length} Wholesale Petis &amp; Crates</span>
+              <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5"><polyline points="6 9 12 15 18 9"></polyline></svg>
+            </button>
+          </div>
+        `;
+      }
+
+      grid.innerHTML = cardsHtml;
     }
 
     // CATALOG FILTER CHIPS
@@ -9701,11 +9718,11 @@
     async function syncStorefrontFromBackend() {
       try {
         const [prodRes, catRes, setRes, zonesRes, textsRes] = await Promise.all([
-          fetch('/api/products'),
-          fetch('/api/categories'),
-          fetch('/api/settings'),
-          fetch('/api/delivery-zones'),
-          fetch('/api/site-texts')
+          fetch('/api/products?_t=' + Date.now(), { cache: 'no-store' }),
+          fetch('/api/categories?_t=' + Date.now(), { cache: 'no-store' }),
+          fetch('/api/settings?_t=' + Date.now(), { cache: 'no-store' }),
+          fetch('/api/delivery-zones?_t=' + Date.now(), { cache: 'no-store' }),
+          fetch('/api/site-texts?_t=' + Date.now(), { cache: 'no-store' })
         ]);
 
         if (zonesRes && zonesRes.ok) {

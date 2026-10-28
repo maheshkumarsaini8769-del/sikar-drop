@@ -679,9 +679,10 @@
       const title = (p.title || '').toLowerCase();
       const cat = (p.category || '').toLowerCase();
       const spec = (p.spec || '').toLowerCase();
+      const vol = (p.volume || '').toLowerCase();
       const sku = (p.sku || '').toLowerCase();
       const desc = (p.description || '').toLowerCase();
-      const combined = `${title} ${cat} ${spec} ${sku} ${desc}`;
+      const combined = `${title} ${cat} ${spec} ${vol} ${sku} ${desc}`;
 
       // 1. Direct whole-query match
       if (title === q) return 100;
@@ -846,7 +847,7 @@
                 ${p.mrp > p.price ? `<span class="badge-discount-save" style="position: absolute; top: 8px; left: 8px; background: #DC2626; color: #FFF; font-size: 0.7rem; font-weight: 800; padding: 2px 6px; border-radius: 4px; z-index: 2; pointer-events: none;">SAVE ₹${p.mrp - p.price}</span>` : ''}
               </div>
               <h3 class="card-title-text">${escapeHTML(p.title)}</h3>
-              <div class="card-spec-sub">${escapeHTML(p.spec)}</div>
+              <div class="card-spec-sub">${p.volume ? `<span style="display:inline-block; background:#E0F2FE; color:#0369A1; font-weight:800; font-size:0.72rem; padding:1px 5px; border-radius:4px; margin-right:4px;">${escapeHTML(p.volume)}</span>` : ''}${escapeHTML(p.spec)}</div>
             </div>
             <div class="card-bottom-action-row">
               <div class="card-price-row tabular">

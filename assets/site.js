@@ -725,8 +725,8 @@ function initSparklerTrail(accentColor) {
 async function loadCatalogFromBackend() {
   try {
     const [pRes, cRes] = await Promise.all([
-      fetch('/api/products'),
-      fetch('/api/categories')
+      fetch('/api/products?_t=' + Date.now(), { cache: 'no-store' }),
+      fetch('/api/categories?_t=' + Date.now(), { cache: 'no-store' })
     ]);
 
     if (pRes.ok) {

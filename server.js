@@ -466,17 +466,9 @@ async function hydrateFromMongo() {
       // 2. Products
       const mongoProds = await mongo.collection('products').find({}).toArray();
       if (mongoProds && mongoProds.length > 0) {
-        const mongoProdIds = new Set(mongoProds.map(p => String(p.id || p._id)));
-        const localProds = db.prepare('SELECT id FROM products').all();
-        for (const lp of localProds) {
-          if (!mongoProdIds.has(String(lp.id))) {
-            db.prepare('DELETE FROM inventory_movements WHERE product_id = ?').run(lp.id);
-            db.prepare('DELETE FROM products WHERE id = ?').run(lp.id);
-          }
-        }
         const insertProd = db.prepare(`
-          INSERT INTO products (id, sku, title, category, price, mrp, cost, stock, low_stock_threshold, spec, image, description, active, display_order, created_at, updated_at)
-          VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)
+          INSERT INTO products (id, sku, title, category, price, mrp, cost, stock, low_stock_threshold, spec, volume, image, description, active, display_order, created_at, updated_at)
+          VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)
           ON CONFLICT(id) DO UPDATE SET
             sku = excluded.sku,
             title = excluded.title,
@@ -487,6 +479,7 @@ async function hydrateFromMongo() {
             stock = excluded.stock,
             low_stock_threshold = excluded.low_stock_threshold,
             spec = excluded.spec,
+            volume = COALESCE(excluded.volume, products.volume),
             image = excluded.image,
             description = excluded.description,
             active = excluded.active,
@@ -506,6 +499,7 @@ async function hydrateFromMongo() {
             Number(p.stock !== undefined ? p.stock : 50),
             Number(p.low_stock_threshold || p.lowStockThreshold || 10),
             p.spec || 'Factory Sealed Peti',
+            p.volume || '',
             p.image || 'assets/prod_bisleri_1l.webp',
             p.description || '',
             p.active !== undefined ? Number(p.active) : 1,
@@ -3823,14 +3817,14 @@ app.get('/api/inventory/movements', requirePermission('inventory:view'), (req, r
   }
 });
 
-app.post('/api/inventory/adjust', requireAdmin, (req, res) => {
+app.post('/api/inventory/adjust', requireAdmin, async (req, res) => {
   try {
     const { productId, adjustmentQty, newStock, reason, movementType, actor } = req.body;
     if (!productId || (adjustmentQty === undefined && newStock === undefined)) {
       return res.status(400).json({ error: 'Product ID and adjustment quantity or new stock are required' });
     }
 
-    const prod = db.prepare('SELECT stock, title FROM products WHERE id = ?').get(productId);
+    const prod = db.prepare('SELECT * FROM products WHERE id = ?').get(productId);
     if (!prod) return res.status(404).json({ error: 'Product not found' });
 
     const beforeStock = prod.stock;
@@ -3852,7 +3846,16 @@ app.post('/api/inventory/adjust', requireAdmin, (req, res) => {
       `).run('AUD-' + Math.floor(100000 + Math.random() * 900000), actor || 'Admin', `Adjusted stock for ${prod.title}: ${beforeStock} -> ${afterStock} (Qty: ${qty > 0 ? '+' + qty : qty}, Reason: ${reason})`, now);
     })();
 
-    res.json({ success: true, productId, beforeStock, afterStock, adjustment: qty });
+    const updatedProd = db.prepare('SELECT * FROM products WHERE id = ?').get(productId);
+    if (updatedProd) {
+      try {
+        await syncDoc('products', { _id: productId }, { ...updatedProd, _id: productId });
+      } catch (e) {
+        console.warn('[Inventory] Mongo sync error:', e.message);
+      }
+    }
+
+    res.json({ success: true, productId, beforeStock, afterStock, adjustment: qty, product: updatedProd });
   } catch (err) {
     res.status(400).json({ error: err.message });
   }
@@ -4125,8 +4128,12 @@ app.get('/api/products', async (req, res) => {
   try {
     const { category, active } = req.query;
 
-    // HTTP Cache-Control: Allow browser & CDN to return instantly while revalidating
-    res.setHeader('Cache-Control', 'public, max-age=30, stale-while-revalidate=120');
+    // HTTP Cache-Control: no-cache to ensure real-time storefront synchronization
+    res.setHeader('Cache-Control', 'no-cache, no-store, must-revalidate');
+
+    if (!isHydratedFromMongo) {
+      try { await hydrateFromMongo(); } catch (e) {}
+    }
 
     let query = 'SELECT * FROM products WHERE 1=1';
     const params = [];
@@ -4147,15 +4154,6 @@ app.get('/api/products', async (req, res) => {
     query += ' ORDER BY display_order ASC, created_at DESC, id DESC';
     let products = db.prepare(query).all(...params);
 
-    if (products && products.length > 0) {
-      return res.json(products);
-    }
-
-    // Fallback if SQLite is not yet hydrated from cloud MongoDB
-    if (!isHydratedFromMongo) {
-      await hydrateFromMongo();
-      products = db.prepare(query).all(...params);
-    }
     res.json(products || []);
   } catch (err) {
     res.status(500).json({ error: err.message });
@@ -4164,18 +4162,18 @@ app.get('/api/products', async (req, res) => {
 
 app.post('/api/products', requireAdmin, async (req, res) => {
   try {
-    const { id, title, sku, category, price, mrp, cost, stock, lowStockThreshold, spec, image, description, displayOrder, active } = req.body;
+    const { id, title, sku, category, price, mrp, cost, stock, lowStockThreshold, spec, volume, image, description, displayOrder, active } = req.body;
     if (!title || price === undefined || !category) return res.status(400).json({ error: 'Title, price, and category are required' });
 
     const finalId = id || ('p_' + Date.now());
     const now = new Date().toISOString();
     const finalSku = sku || ('SKR-' + Math.floor(1000 + Math.random() * 9000));
     const finalOrder = displayOrder !== undefined ? Number(displayOrder) : 0;
-    const finalActive = active !== undefined ? Number(active) : 1;
+    const finalActive = (active !== undefined && active !== null) ? Number(active) : 1;
 
     db.prepare(`
-      INSERT INTO products (id, sku, title, category, price, mrp, cost, stock, low_stock_threshold, spec, image, description, active, display_order, created_at, updated_at)
-      VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)
+      INSERT INTO products (id, sku, title, category, price, mrp, cost, stock, low_stock_threshold, spec, volume, image, description, active, display_order, created_at, updated_at)
+      VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)
       ON CONFLICT(id) DO UPDATE SET
         title = excluded.title,
         category = excluded.category,
@@ -4185,6 +4183,7 @@ app.post('/api/products', requireAdmin, async (req, res) => {
         stock = excluded.stock,
         low_stock_threshold = excluded.low_stock_threshold,
         spec = excluded.spec,
+        volume = excluded.volume,
         image = excluded.image,
         description = excluded.description,
         active = excluded.active,
@@ -4197,9 +4196,10 @@ app.post('/api/products', requireAdmin, async (req, res) => {
       Number(price),
       Number(mrp || price),
       Number(cost !== undefined ? cost : (price * 0.75)),
-      parseInt(stock, 10) || 50,
+      parseInt(stock, 10) || 0,
       parseInt(lowStockThreshold, 10) || 10,
       spec || 'Factory Sealed Peti',
+      volume || '',
       image || 'assets/prod_bisleri_1l.webp',
       description || '',
       finalActive,
@@ -4217,7 +4217,7 @@ app.post('/api/products', requireAdmin, async (req, res) => {
       }
     }
 
-    res.status(201).json({ success: true, id: finalId });
+    res.status(201).json(fullProd || { success: true, id: finalId });
   } catch (err) {
     res.status(400).json({ error: err.message });
   }
@@ -4235,9 +4235,9 @@ async function ensureProductHydrated(productId) {
     if (!doc) return false;
     const now = new Date().toISOString();
     db.prepare(`
-      INSERT INTO products (id, sku, title, category, price, mrp, cost, stock, low_stock_threshold, spec, image, description, active, display_order, created_at, updated_at)
-      VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)
-      ON CONFLICT(id) DO UPDATE SET price = excluded.price, updated_at = excluded.updated_at
+      INSERT INTO products (id, sku, title, category, price, mrp, cost, stock, low_stock_threshold, spec, volume, image, description, active, display_order, created_at, updated_at)
+      VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)
+      ON CONFLICT(id) DO UPDATE SET price = excluded.price, volume = excluded.volume, updated_at = excluded.updated_at
     `).run(
       doc.id || doc._id,
       doc.sku || doc.id || doc._id,
@@ -4249,6 +4249,7 @@ async function ensureProductHydrated(productId) {
       Number(doc.stock !== undefined ? doc.stock : 50),
       Number(doc.low_stock_threshold || 10),
       doc.spec || 'Factory Sealed Peti',
+      doc.volume || '',
       doc.image || 'assets/cat_chilled_cans.webp',
       doc.description || '',
       Number(doc.active !== undefined ? doc.active : 1),
@@ -4266,7 +4267,7 @@ async function ensureProductHydrated(productId) {
 app.put('/api/products/:id', requireAdmin, async (req, res) => {
   try {
     await ensureProductHydrated(req.params.id);
-    const { title, category, price, mrp, cost, stock, lowStockThreshold, spec, image, description, active } = req.body;
+    const { title, category, price, mrp, cost, stock, lowStockThreshold, spec, volume, image, description, active } = req.body;
     const now = new Date().toISOString();
 
     const info = db.prepare(`
@@ -4279,6 +4280,7 @@ app.put('/api/products/:id', requireAdmin, async (req, res) => {
         stock = COALESCE(?, stock),
         low_stock_threshold = COALESCE(?, low_stock_threshold),
         spec = COALESCE(?, spec),
+        volume = COALESCE(?, volume),
         image = COALESCE(?, image),
         description = COALESCE(?, description),
         active = COALESCE(?, active),
@@ -4293,9 +4295,10 @@ app.put('/api/products/:id', requireAdmin, async (req, res) => {
       stock !== undefined ? parseInt(stock, 10) : null,
       lowStockThreshold !== undefined ? parseInt(lowStockThreshold, 10) : null,
       spec,
+      volume,
       image,
       description,
-      active !== undefined ? Number(active) : null,
+      (active !== undefined && active !== null) ? Number(active) : null,
       now,
       req.params.id
     );
@@ -4304,8 +4307,8 @@ app.put('/api/products/:id', requireAdmin, async (req, res) => {
       // If product did not exist, insert it as an upsert guarantee
       const finalSku = 'SKR-' + Math.floor(1000 + Math.random() * 9000);
       db.prepare(`
-        INSERT INTO products (id, sku, title, category, price, mrp, cost, stock, low_stock_threshold, spec, image, description, active, display_order, created_at, updated_at)
-        VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, 1, 0, ?, ?)
+        INSERT INTO products (id, sku, title, category, price, mrp, cost, stock, low_stock_threshold, spec, volume, image, description, active, display_order, created_at, updated_at)
+        VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, 0, ?, ?)
       `).run(
         req.params.id,
         finalSku,
@@ -4317,8 +4320,10 @@ app.put('/api/products/:id', requireAdmin, async (req, res) => {
         parseInt(stock, 10) || 50,
         parseInt(lowStockThreshold, 10) || 10,
         spec || 'Factory Sealed Peti',
+        volume || '',
         image || 'assets/prod_bisleri_1l.webp',
         description || '',
+        (active !== undefined && active !== null) ? Number(active) : 1,
         now,
         now
       );
@@ -4333,7 +4338,7 @@ app.put('/api/products/:id', requireAdmin, async (req, res) => {
       }
     }
 
-    res.json({ success: true, id: req.params.id });
+    res.json({ success: true, id: req.params.id, product: fullProd });
   } catch (err) {
     res.status(400).json({ error: err.message });
   }
