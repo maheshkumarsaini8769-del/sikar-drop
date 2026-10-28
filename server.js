@@ -2053,13 +2053,22 @@ app.get('/api/orders', async (req, res) => {
         return res.status(400).json({ error: 'Valid 10-digit phone number required for order tracking' });
       }
 
-      await ensureOrdersByPhoneHydrated(cleanPhone);
-      const rows = db.prepare(`
+      let rows = db.prepare(`
         SELECT id, customer_name, customer_phone, corridor, items_json, items_count, total, payment_method, payment_status, status, order_date, delivery_time, created_at
         FROM orders
         WHERE (customer_phone LIKE ? OR login_phone LIKE ? OR delivery_phone LIKE ?)
         ORDER BY created_at DESC LIMIT 20
       `).all(`%${cleanPhone}%`, `%${cleanPhone}%`, `%${cleanPhone}%`);
+
+      if (rows.length === 0) {
+        await ensureOrdersByPhoneHydrated(cleanPhone);
+        rows = db.prepare(`
+          SELECT id, customer_name, customer_phone, corridor, items_json, items_count, total, payment_method, payment_status, status, order_date, delivery_time, created_at
+          FROM orders
+          WHERE (customer_phone LIKE ? OR login_phone LIKE ? OR delivery_phone LIKE ?)
+          ORDER BY created_at DESC LIMIT 20
+        `).all(`%${cleanPhone}%`, `%${cleanPhone}%`, `%${cleanPhone}%`);
+      }
 
       const sanitizedOrders = rows.map(o => {
         let items = [];
@@ -4106,89 +4115,10 @@ app.post('/api/suppliers', requireAdmin, (req, res) => {
 app.get('/api/products', async (req, res) => {
   try {
     const { category, active } = req.query;
-    const mongo = await getMongoDb();
-    if (mongo) {
-      const mongoQuery = {};
-      if (active === 'all') {
-        // all
-      } else if (active !== undefined) {
-        mongoQuery.active = Number(active);
-      } else {
-        mongoQuery.active = { $ne: 0 };
-      }
-      if (category && category !== 'all') {
-        mongoQuery.category = category;
-      }
-      const mongoProds = await mongo.collection('products').find(mongoQuery).sort({ display_order: 1, created_at: -1, _id: -1 }).toArray();
-      if (mongoProds && mongoProds.length > 0) {
-        try {
-          const insertProd = db.prepare(`
-            INSERT INTO products (id, sku, title, category, price, mrp, cost, stock, low_stock_threshold, spec, image, description, active, display_order, created_at, updated_at)
-            VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)
-            ON CONFLICT(id) DO UPDATE SET
-              sku = COALESCE(excluded.sku, products.sku),
-              title = excluded.title,
-              category = excluded.category,
-              price = excluded.price,
-              mrp = excluded.mrp,
-              cost = excluded.cost,
-              stock = excluded.stock,
-              low_stock_threshold = excluded.low_stock_threshold,
-              spec = excluded.spec,
-              image = excluded.image,
-              description = excluded.description,
-              active = excluded.active,
-              display_order = excluded.display_order,
-              updated_at = excluded.updated_at
-          `);
-          for (const p of mongoProds) {
-            const pId = String(p.id || p._id);
-            insertProd.run(
-              pId,
-              p.sku || ('SKR-' + Math.floor(1000 + Math.random() * 9000)),
-              p.title || 'Product',
-              p.category || 'water',
-              Number(p.price || 0),
-              Number(p.mrp || p.price || 0),
-              Number(p.cost || 0),
-              parseInt(p.stock, 10) || 50,
-              parseInt(p.low_stock_threshold || p.lowStockThreshold, 10) || 10,
-              p.spec || 'Factory Sealed Peti',
-              p.image || 'assets/prod_bisleri_1l.webp',
-              p.description || '',
-              p.active !== undefined ? Number(p.active) : 1,
-              Number(p.display_order || p.displayOrder || 0),
-              p.created_at || new Date().toISOString(),
-              p.updated_at || new Date().toISOString()
-            );
-          }
-        } catch (syncErr) {
-          console.warn('[Products] SQLite mirror warning:', syncErr.message);
-        }
 
-        const formatted = mongoProds.map(p => ({
-          id: String(p.id || p._id),
-          sku: p.sku || ('SKR-' + Math.floor(1000 + Math.random() * 9000)),
-          title: p.title,
-          category: p.category,
-          price: Number(p.price || 0),
-          mrp: Number(p.mrp || p.price || 0),
-          cost: Number(p.cost || 0),
-          stock: parseInt(p.stock, 10) || 50,
-          low_stock_threshold: parseInt(p.low_stock_threshold || p.lowStockThreshold, 10) || 10,
-          spec: p.spec || 'Factory Sealed Peti',
-          image: p.image || 'assets/prod_bisleri_1l.webp',
-          description: p.description || '',
-          active: p.active !== undefined ? Number(p.active) : 1,
-          display_order: Number(p.display_order || p.displayOrder || 0),
-          created_at: p.created_at,
-          updated_at: p.updated_at
-        }));
-        return res.json(formatted);
-      }
-    }
+    // HTTP Cache-Control: Allow browser & CDN to return instantly while revalidating
+    res.setHeader('Cache-Control', 'public, max-age=30, stale-while-revalidate=120');
 
-    if (!isHydratedFromMongo) await hydrateFromMongo();
     let query = 'SELECT * FROM products WHERE 1=1';
     const params = [];
 
@@ -4206,8 +4136,18 @@ app.get('/api/products', async (req, res) => {
       params.push(category);
     }
     query += ' ORDER BY display_order ASC, created_at DESC, id DESC';
-    const products = db.prepare(query).all(...params);
-    res.json(products);
+    let products = db.prepare(query).all(...params);
+
+    if (products && products.length > 0) {
+      return res.json(products);
+    }
+
+    // Fallback if SQLite is not yet hydrated from cloud MongoDB
+    if (!isHydratedFromMongo) {
+      await hydrateFromMongo();
+      products = db.prepare(query).all(...params);
+    }
+    res.json(products || []);
   } catch (err) {
     res.status(500).json({ error: err.message });
   }
@@ -4515,60 +4455,26 @@ app.post('/api/products/bulk-price', requireAdmin, (req, res) => {
 app.get('/api/categories', async (req, res) => {
   try {
     const { active } = req.query;
-    const mongo = await getMongoDb();
-    if (mongo) {
-      const mongoQuery = {};
-      if (active !== 'all') {
-        mongoQuery.active = { $ne: 0 };
-      }
-      const mongoCats = await mongo.collection('categories').find(mongoQuery).sort({ display_order: 1 }).toArray();
-      if (mongoCats && mongoCats.length > 0) {
-        try {
-          const insertCat = db.prepare(`
-            INSERT INTO categories (id, name, tagline, image, active, display_order)
-            VALUES (?, ?, ?, ?, ?, ?)
-            ON CONFLICT(id) DO UPDATE SET
-              name = excluded.name,
-              tagline = excluded.tagline,
-              image = excluded.image,
-              active = excluded.active,
-              display_order = excluded.display_order
-          `);
-          for (const c of mongoCats) {
-            const cId = String(c.id || c._id);
-            insertCat.run(
-              cId,
-              c.name || cId,
-              c.tagline || '',
-              c.image || 'assets/cat_water_bottles.webp',
-              c.active !== undefined ? Number(c.active) : 1,
-              Number(c.display_order || c.displayOrder || 0)
-            );
-          }
-        } catch (syncErr) {
-          console.warn('[Categories] SQLite mirror warning:', syncErr.message);
-        }
 
-        const formatted = mongoCats.map(c => ({
-          id: String(c.id || c._id),
-          name: c.name || String(c.id || c._id),
-          tagline: c.tagline || '',
-          image: c.image || 'assets/cat_water_bottles.webp',
-          display_order: Number(c.display_order || c.displayOrder || 0),
-          active: c.active !== undefined ? Number(c.active) : 1
-        }));
-        return res.json(formatted);
-      }
-    }
+    // HTTP Cache-Control: Allow browser & CDN to return instantly
+    res.setHeader('Cache-Control', 'public, max-age=60, stale-while-revalidate=300');
 
-    if (!isHydratedFromMongo) await hydrateFromMongo();
     let query = 'SELECT * FROM categories';
     if (active !== 'all') {
       query += ' WHERE active = 1';
     }
     query += ' ORDER BY display_order ASC';
-    const cats = db.prepare(query).all();
-    res.json(cats);
+    let cats = db.prepare(query).all();
+
+    if (cats && cats.length > 0) {
+      return res.json(cats);
+    }
+
+    if (!isHydratedFromMongo) {
+      await hydrateFromMongo();
+      cats = db.prepare(query).all();
+    }
+    res.json(cats || []);
   } catch (err) {
     res.status(500).json({ error: err.message });
   }
@@ -5854,10 +5760,9 @@ const handleTruecallerInit = (req, res) => {
     const expectedPhone = req.body?.phone ? String(req.body.phone).replace(/[^0-9]/g, '').slice(-10) : '';
     const expectedName = req.body?.name ? String(req.body.name).trim() : '';
 
-    const isInstant1Tap = (cfg.truecaller_mode || 'instant_1tap') === 'instant_1tap';
     const nowStr = new Date().toISOString();
     const resolvedName = expectedName || 'Valued Customer';
-    const initialStatus = (isInstant1Tap && expectedPhone.length === 10) ? 'verified' : 'pending';
+    const initialStatus = 'pending'; // Strictly pending until device Truecaller SIM verifies
 
     const sessionObj = {
       requestId,
@@ -5867,8 +5772,8 @@ const handleTruecallerInit = (req, res) => {
       expectedName: resolvedName,
       phone: expectedPhone,
       name: resolvedName,
-      status: initialStatus,
-      verifiedAt: initialStatus === 'verified' ? nowStr : null,
+      status: 'pending',
+      verifiedAt: null,
       createdAt: Date.now()
     };
 
@@ -5878,8 +5783,8 @@ const handleTruecallerInit = (req, res) => {
       db.prepare(`
         INSERT OR REPLACE INTO truecaller_sessions
         (request_id, request_nonce, partner_key, expected_phone, expected_name, phone, name, status, verified_at, created_at)
-        VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?)
-      `).run(requestId, requestNonce, partnerKey, expectedPhone, resolvedName, expectedPhone, resolvedName, initialStatus, initialStatus === 'verified' ? nowStr : null, nowStr);
+        VALUES (?, ?, ?, ?, ?, ?, ?, 'pending', NULL, ?)
+      `).run(requestId, requestNonce, partnerKey, expectedPhone, resolvedName, expectedPhone, resolvedName, nowStr);
     } catch (dbErr) {
       console.warn('[TRUECALLER] Session DB persist error:', dbErr.message);
     }
@@ -6227,6 +6132,131 @@ app.get('/api/truecaller/callback', handleTruecallerCallback);
 app.get('/api/truecaller/status', handleTruecallerStatus);
 app.post('/api/truecaller/verify', handleTruecallerVerify);
 app.post('/api/auth/truecaller', handleTruecallerVerify);
+
+// ==========================================
+// CUSTOMER PROFILE ENDPOINTS (SECURE)
+// ==========================================
+app.get('/api/customer/profile', (req, res) => {
+  try {
+    const rawPhone = req.query.phone || '';
+    const cleanPhone = String(rawPhone).replace(/[^0-9]/g, '').slice(-10);
+    const token = req.headers['x-truecaller-token'] || req.query.token;
+
+    if (!cleanPhone || cleanPhone.length !== 10) {
+      return res.status(400).json({ error: 'Valid 10-digit mobile number required' });
+    }
+
+    const adminToken = req.headers['x-admin-token'] || (req.headers.authorization || '').replace(/^Bearer\s+/i, '');
+    const isAdmin = verifyAdminToken(adminToken);
+
+    let isAuthorized = false;
+    if (isAdmin) {
+      isAuthorized = true;
+    } else if (token) {
+      const tokenPhone = verifyTruecallerToken(token);
+      if (tokenPhone && tokenPhone === cleanPhone) {
+        isAuthorized = true;
+      }
+    }
+
+    let cust = db.prepare("SELECT * FROM customers WHERE REPLACE(phone, ' ', '') = ? OR phone LIKE ?").get(cleanPhone, `%${cleanPhone}`);
+    if (!cust) {
+      const order = db.prepare('SELECT customer_name, corridor, address FROM orders WHERE customer_phone LIKE ? OR login_phone LIKE ? LIMIT 1').get(`%${cleanPhone}%`, `%${cleanPhone}%`);
+      const defaultName = order ? order.customer_name : 'Valued Customer';
+      const defaultCorridor = order ? order.corridor : 'Piprali Road Mandi';
+      const defaultAddress = order ? order.address : 'Sikar Depot Hub';
+      const custId = 'CUST-' + Math.floor(1000 + Math.random() * 9000);
+      const now = new Date().toISOString();
+      db.prepare(`
+        INSERT INTO customers (id, name, phone, corridor, address, verified, verified_by, total_orders, lifetime_spend, outstanding_balance, created_at, last_activity)
+        VALUES (?, ?, ?, ?, ?, 1, 'Truecaller', 0, 0, 0, ?, ?)
+      `).run(custId, defaultName, cleanPhone, defaultCorridor, defaultAddress, now, now);
+      cust = db.prepare('SELECT * FROM customers WHERE id = ?').get(custId);
+    }
+
+    const stats = db.prepare(`
+      SELECT 
+        COUNT(*) as totalOrders,
+        COALESCE(SUM(total), 0) as totalSpent,
+        SUM(CASE WHEN status IN ('pending', 'processing', 'in_transit', 'shipped', 'out_for_delivery') THEN 1 ELSE 0 END) as activeOrders,
+        SUM(CASE WHEN status IN ('delivered', 'completed') THEN 1 ELSE 0 END) as deliveredOrders
+      FROM orders
+      WHERE customer_phone LIKE ? OR login_phone LIKE ? OR delivery_phone LIKE ?
+    `).get(`%${cleanPhone}%`, `%${cleanPhone}%`, `%${cleanPhone}%`);
+
+    res.json({
+      success: true,
+      customer: {
+        id: cust.id,
+        name: cust.name || 'Valued Customer',
+        phone: cust.phone || cleanPhone,
+        rawPhone: cleanPhone,
+        corridor: cust.corridor || 'Piprali Road Mandi',
+        address: cust.address || 'Sikar Depot Hub',
+        verified: true,
+        verifiedBy: 'Truecaller SIM Verified',
+        customerType: cust.customer_type || 'registered',
+        totalOrders: stats ? stats.totalOrders : (cust.total_orders || 0),
+        totalSpent: stats ? stats.totalSpent : (cust.lifetime_spend || 0),
+        activeOrders: stats ? stats.activeOrders : 0,
+        deliveredOrders: stats ? stats.deliveredOrders : 0,
+        outstandingBalance: cust.outstanding_balance || 0,
+        createdAt: cust.created_at || new Date().toISOString()
+      }
+    });
+  } catch (err) {
+    res.status(500).json({ error: err.message });
+  }
+});
+
+app.put('/api/customer/profile', (req, res) => {
+  try {
+    const { phone, name, address, corridor } = req.body || {};
+    const cleanPhone = String(phone || '').replace(/[^0-9]/g, '').slice(-10);
+    const token = req.headers['x-truecaller-token'] || req.body?.token;
+
+    if (!cleanPhone || cleanPhone.length !== 10) {
+      return res.status(400).json({ error: 'Valid 10-digit mobile number required' });
+    }
+
+    const tokenPhone = verifyTruecallerToken(token);
+    const adminToken = req.headers['x-admin-token'] || (req.headers.authorization || '').replace(/^Bearer\s+/i, '');
+    const isAdmin = verifyAdminToken(adminToken);
+
+    if (!isAdmin && (!tokenPhone || tokenPhone !== cleanPhone)) {
+      return res.status(401).json({ error: 'Unauthorized: Valid Truecaller verification required to update profile' });
+    }
+
+    const now = new Date().toISOString();
+    let cust = db.prepare("SELECT * FROM customers WHERE REPLACE(phone, ' ', '') = ? OR phone LIKE ?").get(cleanPhone, `%${cleanPhone}`);
+    if (!cust) {
+      const custId = 'CUST-' + Math.floor(1000 + Math.random() * 9000);
+      db.prepare(`
+        INSERT INTO customers (id, name, phone, corridor, address, verified, verified_by, total_orders, lifetime_spend, outstanding_balance, created_at, last_activity)
+        VALUES (?, ?, ?, ?, ?, 1, 'Truecaller', 0, 0, 0, ?, ?)
+      `).run(custId, name || 'Valued Customer', cleanPhone, corridor || 'Piprali Road Mandi', address || 'Sikar Depot Hub', now, now);
+      cust = db.prepare('SELECT * FROM customers WHERE id = ?').get(custId);
+    } else {
+      db.prepare(`
+        UPDATE customers 
+        SET name = COALESCE(?, name),
+            address = COALESCE(?, address),
+            corridor = COALESCE(?, corridor),
+            last_activity = ?
+        WHERE id = ?
+      `).run(name || null, address || null, corridor || null, now, cust.id);
+      cust = db.prepare('SELECT * FROM customers WHERE id = ?').get(cust.id);
+    }
+
+    res.json({
+      success: true,
+      message: 'Profile updated successfully',
+      customer: cust
+    });
+  } catch (err) {
+    res.status(500).json({ error: err.message });
+  }
+});
 
 app.get('/api/settings/truecaller', requirePermission('*'), (req, res) => {
   try {

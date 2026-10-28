@@ -1056,12 +1056,15 @@
         const requestId = initData.requestId;
         if (/android/i.test(navigator.userAgent) && initData.deepLinkUrl) {
           try {
-            const tcIframe = document.createElement('iframe');
-            tcIframe.style.display = 'none';
-            tcIframe.src = initData.deepLinkUrl;
-            document.body.appendChild(tcIframe);
-            setTimeout(() => { try { tcIframe.remove(); } catch (e) {} }, 3000);
-          } catch (e) {}
+            window.location.href = initData.deepLinkUrl;
+          } catch (e) {
+            console.warn('Truecaller deep link redirect error:', e);
+          }
+        } else if (!/android/i.test(navigator.userAgent)) {
+          if (tcText) {
+            tcText.textContent = 'Truecaller 1-Tap is optimized for Android phones. If on desktop, open on your mobile or confirm prompt on phone.';
+            tcText.style.color = '#0284C7';
+          }
         }
 
         let attempts = 0;

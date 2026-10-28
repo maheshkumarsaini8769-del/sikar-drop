@@ -564,11 +564,7 @@
     let catalogSearchQuery = '';
 
     window.addEventListener('DOMContentLoaded', async () => {
-      await initStorefrontTheme();
-      await loadCatalogFromBackend();
-      updateCartUI();
-
-      // Check URL query parameters (e.g. ?category=water or ?q=bisleri)
+      // 1. Instant Cache-First Paint from memory / local cache
       const params = new URLSearchParams(window.location.search);
       const catParam = params.get('category');
       if (catParam) {
@@ -586,6 +582,15 @@
       renderCatalogCategoryChips();
       updateCategoryPageHeader();
       renderProductsPageGrid();
+      updateCartUI();
+
+      // 2. Fast background revalidation
+      initStorefrontTheme();
+      await loadCatalogFromBackend();
+      renderCatalogCategoryChips();
+      updateCategoryPageHeader();
+      renderProductsPageGrid();
+      updateCartUI();
     });
 
     function getCategoryDisplayName(catId) {

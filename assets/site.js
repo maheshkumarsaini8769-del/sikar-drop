@@ -724,10 +724,9 @@ function initSparklerTrail(accentColor) {
 // 2. LIVE PRODUCTS & CATEGORIES SYNC
 async function loadCatalogFromBackend() {
   try {
-    const t = Date.now();
     const [pRes, cRes] = await Promise.all([
-      fetch(`/api/products?_t=${t}`, { cache: 'no-store' }),
-      fetch(`/api/categories?_t=${t}`, { cache: 'no-store' })
+      fetch('/api/products'),
+      fetch('/api/categories')
     ]);
 
     if (pRes.ok) {
@@ -1176,6 +1175,7 @@ function ensureMobileMenuElements() {
           <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.4"><line x1="18" y1="6" x2="6" y2="18"></line><line x1="6" y1="6" x2="18" y2="18"></line></svg>
         </button>
       </div>
+      <div id="drawer-profile-slot"></div>
       <nav class="mobile-menu-nav">
         <a href="/" class="mobile-menu-link">
           <svg width="18" height="18" style="width: 18px; height: 18px; max-width: 18px; max-height: 18px; flex-shrink: 0;" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2"><path d="m3 9 9-7 9 7v11a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2z"></path><polyline points="9 22 9 12 15 12 15 22"></polyline></svg>
@@ -1232,6 +1232,7 @@ function ensureMobileMenuElements() {
     `;
     document.body.appendChild(drawer);
     if (typeof applySiteTexts === 'function') applySiteTexts();
+    updateDrawerProfile();
   }
 
   // Also ensure hamburger button exists in navbar if not present
@@ -1250,8 +1251,43 @@ function ensureMobileMenuElements() {
   }
 }
 
+function updateDrawerProfile() {
+  const container = document.getElementById('drawer-profile-slot');
+  if (!container) return;
+  const user = getSignedInUser();
+  if (user && user.phone) {
+    const name = user.name || 'Valued Customer';
+    const initials = name.split(' ').map(n => n[0]).join('').slice(0, 2).toUpperCase() || 'C';
+    container.innerHTML = `
+      <div onclick="toggleMobileMenu(false); openCustomerProfileModal();" style="margin: 12px 14px 4px; background: linear-gradient(135deg, #0284C7, #0369A1); color: #fff; padding: 12px 14px; border-radius: 12px; display: flex; align-items: center; justify-content: space-between; cursor: pointer; box-shadow: 0 4px 12px rgba(2, 132, 199, 0.25);">
+        <div style="display: flex; align-items: center; gap: 10px; overflow: hidden;">
+          <div style="width: 38px; height: 38px; border-radius: 50%; background: #fff; color: #0284C7; font-weight: 800; display: flex; align-items: center; justify-content: center; font-size: 1rem; flex-shrink: 0;">${escapeHTML(initials)}</div>
+          <div style="overflow: hidden;">
+            <div style="font-weight: 800; font-size: 0.92rem; color: #fff; white-space: nowrap; overflow: hidden; text-overflow: ellipsis;">${escapeHTML(name)}</div>
+            <div style="font-size: 0.74rem; color: #E0F2FE;">+91 ${formatPhoneNumber(user.phone)} &bull; Profile &amp; Orders</div>
+          </div>
+        </div>
+        <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" style="flex-shrink: 0;"><polyline points="9 18 15 12 9 6"></polyline></svg>
+      </div>
+    `;
+  } else {
+    container.innerHTML = `
+      <div onclick="toggleMobileMenu(false); openLoginModal('nav');" style="margin: 12px 14px 4px; background: #EFF6FF; border: 1.5px solid #BFDBFE; color: #0284C7; padding: 10px 14px; border-radius: 12px; display: flex; align-items: center; justify-content: space-between; cursor: pointer;">
+        <div style="display: flex; align-items: center; gap: 8px;">
+          <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2"><path d="M20 21v-2a4 4 0 0 0-4-4H8a4 4 0 0 0-4 4v2"></path><circle cx="12" cy="7" r="4"></circle></svg>
+          <span style="font-weight: 700; font-size: 0.88rem;">Customer Sign In / Register</span>
+        </div>
+        <span style="background: #0284C7; color: #fff; font-size: 0.72rem; font-weight: 700; padding: 3px 8px; border-radius: 6px;">1-Tap</span>
+      </div>
+    `;
+  }
+}
+
 function toggleMobileMenu(open) {
-  if (open) ensureMobileMenuElements();
+  if (open) {
+    ensureMobileMenuElements();
+    updateDrawerProfile();
+  }
   const drawer = document.getElementById('mobile-menu-drawer');
   const backdrop = document.getElementById('mobile-menu-backdrop');
   if (drawer) {
@@ -1641,6 +1677,100 @@ const SIKAR_ORDER_CONFIRM_MODAL_HTML = `
     </div>
   </div>`;
 
+const SIKAR_CUSTOMER_PROFILE_MODAL_HTML = `
+  <div class="modal-backdrop" id="customer-profile-modal" role="dialog" aria-modal="true" aria-labelledby="customer-profile-title" data-sikar-injected="1" style="display: none; align-items: center; justify-content: center; position: fixed; inset: 0; background: rgba(15, 23, 42, 0.7); z-index: 10000; padding: 16px; backdrop-filter: blur(4px);">
+    <div class="auth-modal-dialog" style="max-width: 480px; width: 100%; border-radius: 16px; overflow: hidden; background: #FFFFFF; box-shadow: 0 25px 50px -12px rgba(0, 0, 0, 0.35); border: 1px solid #CBD5E1; padding: 0; position: relative;">
+      
+      <!-- Profile Header -->
+      <div style="background: linear-gradient(135deg, #0284C7 0%, #0369A1 100%); color: #FFFFFF; padding: 22px 20px 18px; position: relative;">
+        <button type="button" onclick="closeCustomerProfileModal()" aria-label="Close profile modal" style="position: absolute; top: 14px; right: 14px; background: rgba(255,255,255,0.2); border: none; width: 32px; height: 32px; border-radius: 50%; color: #FFFFFF; cursor: pointer; display: flex; align-items: center; justify-content: center;">
+          <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.4" width="18" height="18"><line x1="18" y1="6" x2="6" y2="18"></line><line x1="6" y1="6" x2="18" y2="18"></line></svg>
+        </button>
+        <div style="display: flex; align-items: center; gap: 14px;">
+          <div id="profile-avatar-initials" style="width: 52px; height: 52px; border-radius: 50%; background: #FFFFFF; color: #0284C7; font-size: 1.35rem; font-weight: 800; display: flex; align-items: center; justify-content: center; border: 3px solid rgba(255,255,255,0.4); flex-shrink: 0; box-shadow: 0 4px 10px rgba(0,0,0,0.15);">C</div>
+          <div style="overflow: hidden; flex: 1;">
+            <h3 id="profile-header-name" style="margin: 0; font-size: 1.15rem; font-weight: 800; color: #FFFFFF; white-space: nowrap; overflow: hidden; text-overflow: ellipsis;">Valued Customer</h3>
+            <div style="display: flex; align-items: center; gap: 6px; margin-top: 4px; flex-wrap: wrap;">
+              <span id="profile-header-phone" style="font-size: 0.88rem; font-weight: 700; color: #E0F2FE;">+91 98290 XXXXX</span>
+              <span style="display: inline-flex; align-items: center; gap: 4px; background: #16A34A; color: #FFFFFF; font-size: 0.68rem; font-weight: 700; padding: 2px 7px; border-radius: 20px; letter-spacing: 0.02em;">
+                <svg width="10" height="10" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="3"><polyline points="20 6 9 17 4 12"></polyline></svg>
+                <span>TRUECALLER SIM VERIFIED</span>
+              </span>
+            </div>
+          </div>
+        </div>
+      </div>
+
+      <!-- Live Order Statistics -->
+      <div style="display: grid; grid-template-columns: repeat(4, 1fr); gap: 8px; padding: 14px 16px; background: #F8FAFC; border-bottom: 1px solid #E2E8F0; text-align: center;">
+        <div style="background: #FFFFFF; border: 1px solid #E2E8F0; border-radius: 8px; padding: 8px 4px;">
+          <div id="profile-stat-orders" style="font-size: 1.15rem; font-weight: 800; color: #0F172A;">0</div>
+          <div style="font-size: 0.68rem; font-weight: 700; color: #64748B; text-transform: uppercase;">Total Orders</div>
+        </div>
+        <div style="background: #FFFFFF; border: 1px solid #E2E8F0; border-radius: 8px; padding: 8px 4px;">
+          <div id="profile-stat-active" style="font-size: 1.15rem; font-weight: 800; color: #D97706;">0</div>
+          <div style="font-size: 0.68rem; font-weight: 700; color: #64748B; text-transform: uppercase;">In Transit</div>
+        </div>
+        <div style="background: #FFFFFF; border: 1px solid #E2E8F0; border-radius: 8px; padding: 8px 4px;">
+          <div id="profile-stat-delivered" style="font-size: 1.15rem; font-weight: 800; color: #16A34A;">0</div>
+          <div style="font-size: 0.68rem; font-weight: 700; color: #64748B; text-transform: uppercase;">Delivered</div>
+        </div>
+        <div style="background: #FFFFFF; border: 1px solid #E2E8F0; border-radius: 8px; padding: 8px 4px;">
+          <div id="profile-stat-spend" style="font-size: 1.15rem; font-weight: 800; color: #0284C7;">₹0</div>
+          <div style="font-size: 0.68rem; font-weight: 700; color: #64748B; text-transform: uppercase;">Total Spent</div>
+        </div>
+      </div>
+
+      <!-- Editable Details Form -->
+      <div style="padding: 16px 20px 20px;">
+        <form id="customer-profile-form" onsubmit="event.preventDefault(); handleSaveCustomerProfile();">
+          <div style="margin-bottom: 12px; text-align: left;">
+            <label for="profile-input-name" style="display: block; font-size: 0.78rem; font-weight: 700; color: #475569; margin-bottom: 4px; text-transform: uppercase;">Full Name / Firm Name</label>
+            <input type="text" id="profile-input-name" required style="width: 100%; height: 40px; border-radius: 8px; border: 1.5px solid #CBD5E1; padding: 0 12px; font-weight: 600; font-size: 0.92rem; box-sizing: border-box; background: #FFFFFF; color: #0F172A;" />
+          </div>
+
+          <div style="margin-bottom: 12px; text-align: left;">
+            <label for="profile-input-phone" style="display: block; font-size: 0.78rem; font-weight: 700; color: #475569; margin-bottom: 4px; text-transform: uppercase;">Verified Mobile (SIM Locked)</label>
+            <input type="text" id="profile-input-phone" readonly style="width: 100%; height: 40px; border-radius: 8px; border: 1.5px solid #E2E8F0; background: #F1F5F9; color: #475569; padding: 0 12px; font-weight: 700; font-size: 0.92rem; box-sizing: border-box; cursor: not-allowed;" />
+          </div>
+
+          <div style="margin-bottom: 12px; text-align: left;">
+            <label for="profile-input-corridor" style="display: block; font-size: 0.78rem; font-weight: 700; color: #475569; margin-bottom: 4px; text-transform: uppercase;">Preferred Mandi Delivery Corridor</label>
+            <select id="profile-input-corridor" style="width: 100%; height: 40px; border-radius: 8px; border: 1.5px solid #CBD5E1; padding: 0 12px; font-weight: 600; font-size: 0.9rem; box-sizing: border-box; background: #FFFFFF; color: #0F172A;">
+              <option value="Piprali Road Mandi">Piprali Road Mandi (Coaching &amp; Gardens Hub)</option>
+              <option value="Nawalgarh Road">Nawalgarh Road &amp; Pulia Corridor</option>
+              <option value="Station Road &amp; Krishi Mandi">Station Road &amp; Krishi Mandi Corridor</option>
+              <option value="Fatehpur Road">Fatehpur Road &amp; Sabalpura Corridor</option>
+              <option value="Rani Sati &amp; Silver Jubilee Road">Rani Sati &amp; Silver Jubilee Corridor</option>
+              <option value="Jaipur Road &amp; RIICO">Jaipur Road &amp; RIICO Industrial Corridor</option>
+            </select>
+          </div>
+
+          <div style="margin-bottom: 16px; text-align: left;">
+            <label for="profile-input-address" style="display: block; font-size: 0.78rem; font-weight: 700; color: #475569; margin-bottom: 4px; text-transform: uppercase;">Delivery Address (Shop / Office / Residence)</label>
+            <textarea id="profile-input-address" rows="2" style="width: 100%; border-radius: 8px; border: 1.5px solid #CBD5E1; padding: 8px 12px; font-weight: 600; font-size: 0.9rem; box-sizing: border-box; resize: vertical; background: #FFFFFF; color: #0F172A;" placeholder="Plot / Shop No., Landmark, Street, Sikar"></textarea>
+          </div>
+
+          <div style="display: flex; gap: 10px;">
+            <button type="submit" id="btn-save-customer-profile" style="flex: 1; height: 42px; border-radius: 8px; background: #0284C7; color: #FFFFFF; font-weight: 700; font-size: 0.9rem; border: none; cursor: pointer; display: flex; align-items: center; justify-content: center; gap: 6px; box-shadow: 0 4px 12px rgba(2, 132, 199, 0.3);">
+              <span>Save Changes</span>
+            </button>
+            <a href="/orders" onclick="closeCustomerProfileModal()" style="height: 42px; padding: 0 16px; border-radius: 8px; background: #F1F5F9; color: #0369A1; font-weight: 700; font-size: 0.9rem; border: 1.5px solid #CBD5E1; text-decoration: none; display: flex; align-items: center; justify-content: center; gap: 6px;">
+              <span>View Orders</span>
+            </a>
+          </div>
+        </form>
+
+        <div style="margin-top: 14px; padding-top: 12px; border-top: 1px solid #E2E8F0; display: flex; justify-content: space-between; align-items: center;">
+          <span style="font-size: 0.78rem; color: #64748B;">Customer ID: <strong id="profile-cust-id">CUST-LOAD</strong></span>
+          <button type="button" onclick="closeCustomerProfileModal(); handleLogout();" style="background: none; border: none; color: #DC2626; font-size: 0.82rem; font-weight: 700; cursor: pointer; padding: 4px 6px;">
+            Logout
+          </button>
+        </div>
+      </div>
+    </div>
+  </div>`;
+
 function ensureCheckoutModals() {
   if (!document.body) return;
   if (!document.getElementById('login-modal')) {
@@ -1652,6 +1782,12 @@ function ensureCheckoutModals() {
   if (!document.getElementById('order-confirm-modal')) {
     const wrap = document.createElement('div');
     wrap.innerHTML = SIKAR_ORDER_CONFIRM_MODAL_HTML;
+    const modal = wrap.firstElementChild;
+    if (modal) document.body.appendChild(modal);
+  }
+  if (!document.getElementById('customer-profile-modal')) {
+    const wrap = document.createElement('div');
+    wrap.innerHTML = SIKAR_CUSTOMER_PROFILE_MODAL_HTML;
     const modal = wrap.firstElementChild;
     if (modal) document.body.appendChild(modal);
   }
@@ -1758,6 +1894,143 @@ function closeLoginModal() {
   if (modal) modal.classList.remove('active');
 }
 
+async function openCustomerProfileModal() {
+  dismissCartDrawers();
+  ensureCheckoutModals();
+  const user = getSignedInUser();
+  if (!user || !user.phone) {
+    return openLoginModal('nav');
+  }
+
+  const modal = document.getElementById('customer-profile-modal');
+  if (!modal) return;
+
+  const phone = String(user.phone).replace(/\D/g, '').slice(-10);
+  const name = user.name || 'Valued Customer';
+  const initials = name.split(' ').map(n => n[0]).join('').slice(0, 2).toUpperCase() || 'C';
+
+  const avEl = document.getElementById('profile-avatar-initials');
+  const hnEl = document.getElementById('profile-header-name');
+  const hpEl = document.getElementById('profile-header-phone');
+  const inName = document.getElementById('profile-input-name');
+  const inPhone = document.getElementById('profile-input-phone');
+  const inCorr = document.getElementById('profile-input-corridor');
+  const inAddr = document.getElementById('profile-input-address');
+  const idEl = document.getElementById('profile-cust-id');
+
+  if (avEl) avEl.textContent = initials;
+  if (hnEl) hnEl.textContent = name;
+  if (hpEl) hpEl.textContent = `+91 ${phone}`;
+  if (inName) inName.value = name;
+  if (inPhone) inPhone.value = `+91 ${phone}`;
+  if (inCorr && user.corridor) inCorr.value = user.corridor;
+  if (inAddr && user.address) inAddr.value = user.address;
+  if (idEl) idEl.textContent = user.id || 'CUST-MEM';
+
+  modal.style.display = 'flex';
+  modal.classList.add('active');
+
+  // Fetch real-time live customer profile & stats from server
+  try {
+    const token = user.token || '';
+    const res = await fetch(`/api/customer/profile?phone=${encodeURIComponent(phone)}`, {
+      headers: { 'x-truecaller-token': token }
+    });
+    if (res.ok) {
+      const data = await res.json();
+      if (data && data.customer) {
+        const c = data.customer;
+        if (hnEl && c.name) hnEl.textContent = c.name;
+        if (inName && c.name) inName.value = c.name;
+        if (idEl && c.id) idEl.textContent = c.id;
+        if (inCorr && c.corridor) inCorr.value = c.corridor;
+        if (inAddr && c.address) inAddr.value = c.address;
+
+        const stOrd = document.getElementById('profile-stat-orders');
+        const stAct = document.getElementById('profile-stat-active');
+        const stDel = document.getElementById('profile-stat-delivered');
+        const stSpn = document.getElementById('profile-stat-spend');
+
+        if (stOrd) stOrd.textContent = c.totalOrders || 0;
+        if (stAct) stAct.textContent = c.activeOrders || 0;
+        if (stDel) stDel.textContent = c.deliveredOrders || 0;
+        if (stSpn) stSpn.textContent = `₹${Number(c.totalSpent || 0).toLocaleString('en-IN')}`;
+
+        user.name = c.name || user.name;
+        user.corridor = c.corridor || user.corridor;
+        user.address = c.address || user.address;
+        user.id = c.id || user.id;
+        localStorage.setItem('sikar_user', JSON.stringify(user));
+        window.currentUser = user;
+      }
+    }
+  } catch (e) {
+    console.warn('Customer profile fetch error:', e);
+  }
+}
+
+function closeCustomerProfileModal() {
+  const modal = document.getElementById('customer-profile-modal');
+  if (modal) {
+    modal.style.display = 'none';
+    modal.classList.remove('active');
+  }
+}
+
+async function handleSaveCustomerProfile() {
+  const user = getSignedInUser();
+  if (!user || !user.phone) return;
+
+  const btn = document.getElementById('btn-save-customer-profile');
+  const cleanPhone = String(user.phone).replace(/\D/g, '').slice(-10);
+  const name = document.getElementById('profile-input-name')?.value.trim() || user.name;
+  const corridor = document.getElementById('profile-input-corridor')?.value || 'Piprali Road Mandi';
+  const address = document.getElementById('profile-input-address')?.value.trim() || '';
+
+  if (btn) {
+    btn.disabled = true;
+    btn.textContent = 'Saving...';
+  }
+
+  try {
+    const res = await fetch('/api/customer/profile', {
+      method: 'PUT',
+      headers: {
+        'Content-Type': 'application/json',
+        'x-truecaller-token': user.token || ''
+      },
+      body: JSON.stringify({
+        phone: cleanPhone,
+        name,
+        corridor,
+        address,
+        token: user.token || ''
+      })
+    });
+
+    const data = await res.json();
+    if (!res.ok) throw new Error(data.error || 'Failed to update profile');
+
+    user.name = name;
+    user.corridor = corridor;
+    user.address = address;
+    localStorage.setItem('sikar_user', JSON.stringify(user));
+    window.currentUser = user;
+
+    showToast('Customer profile updated successfully.');
+    closeCustomerProfileModal();
+    if (typeof updateAuthNav === 'function') updateAuthNav();
+    if (typeof renderOrdersState === 'function') renderOrdersState();
+  } catch (err) {
+    alert(err.message || 'Could not save profile');
+  } finally {
+    if (btn) {
+      btn.disabled = false;
+      btn.textContent = 'Save Changes';
+    }
+  }
+}
+
 function setAuthBtnState(btn, text, disabled = false) {
   if (!btn) return;
   btn.disabled = disabled;
@@ -1827,15 +2100,18 @@ async function startTruecaller1TapFlow() {
     const requestId = initData.requestId;
     try { sessionStorage.setItem('tc_pending_req', requestId); } catch (e) {}
 
-    // Trigger Truecaller custom URI scheme deep link safely on Android without disrupting web polling
+    // Trigger Truecaller custom URI scheme deep link safely on Android
     if (/android/i.test(navigator.userAgent) && initData.deepLinkUrl) {
       try {
-        const tcIframe = document.createElement('iframe');
-        tcIframe.style.display = 'none';
-        tcIframe.src = initData.deepLinkUrl;
-        document.body.appendChild(tcIframe);
-        setTimeout(() => { try { tcIframe.remove(); } catch (e) {} }, 3000);
-      } catch (e) {}
+        window.location.href = initData.deepLinkUrl;
+      } catch (e) {
+        console.warn('Truecaller deep link redirect failed:', e);
+      }
+    } else if (!/android/i.test(navigator.userAgent)) {
+      if (tcText) {
+        tcText.textContent = 'Truecaller 1-Tap is optimized for Android phones with Truecaller. If on desktop, open on your mobile or confirm prompt on phone.';
+        tcText.style.color = '#0284C7';
+      }
     }
 
     let attempts = 0;
@@ -1994,10 +2270,10 @@ function updateAuthNav() {
     if (user && user.phone) {
       const displayName = user.name || 'Account';
       slot.innerHTML = `
-        <a href="/orders" class="nav-icon-action-btn" title="Logged in as ${escapeHTML(displayName)} - View My Orders" style="color:#0284C7; text-decoration:none; position:relative; display:inline-flex; align-items:center; justify-content:center;">
+        <button type="button" class="nav-icon-action-btn" onclick="openCustomerProfileModal()" title="Logged in as ${escapeHTML(displayName)} - Click to View Profile &amp; Orders" style="color:#0284C7; position:relative; display:inline-flex; align-items:center; justify-content:center; background:none; border:none; cursor:pointer;">
           <svg viewBox="0 0 24 24" width="22" height="22" fill="currentColor"><path d="M12 2a5 5 0 1 0 5 5 5 5 0 0 0-5-5zm0 14c-5 0-9 2.5-9 5v1h18v-1c0-2.5-4-5-9-5z"/></svg>
           <span style="position: absolute; top: 6px; right: 6px; width: 8px; height: 8px; background: #22C55E; border-radius: 50%; border: 1.5px solid #FFFFFF;"></span>
-        </a>
+        </button>
       `;
     } else {
       slot.innerHTML = `
@@ -2011,8 +2287,8 @@ function updateAuthNav() {
   const accBtn = document.getElementById('nav-btn-account');
   if (accBtn && !slot) {
     if (user && user.phone) {
-      accBtn.onclick = () => { window.location.href = '/orders'; };
-      accBtn.title = `Logged in as ${user.name || 'User'} - My Orders`;
+      accBtn.onclick = () => { openCustomerProfileModal(); };
+      accBtn.title = `Logged in as ${user.name || 'User'} - Customer Profile`;
       accBtn.style.color = '#0284C7';
     } else {
       accBtn.onclick = () => { openLoginModal('nav'); };
@@ -2020,11 +2296,13 @@ function updateAuthNav() {
       accBtn.style.color = '';
     }
   }
+  try { if (typeof updateDrawerProfile === 'function') updateDrawerProfile(); } catch (e) {}
 }
 
 try {
   window.addEventListener('sikar_auth_changed', () => {
     try { updateAuthNav(); } catch (e) {}
+    try { if (typeof updateDrawerProfile === 'function') updateDrawerProfile(); } catch (e) {}
   });
   if (document.readyState === 'loading') {
     document.addEventListener('DOMContentLoaded', () => {

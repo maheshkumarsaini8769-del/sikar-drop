@@ -639,12 +639,19 @@
                 <span style="font-size: 0.88rem; font-weight: 700; color: #E0F2FE;" id="banner-user-phone">+91 98290 XXXXX</span>
                 <span class="orders-verified-pill">
                   <svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="3"><polyline points="20 6 9 17 4 12"></polyline></svg>
-                  <span>Verified Account</span>
+                  <span>Truecaller Verified</span>
                 </span>
+              </div>
+              <div id="banner-user-corridor-address" style="font-size: 0.8rem; color: #BAE6FD; margin-top: 5px; display: flex; align-items: center; gap: 8px; flex-wrap: wrap;">
+                <span id="banner-corridor-badge" style="background: rgba(255,255,255,0.18); padding: 2px 8px; border-radius: 4px; font-weight: 600;">Corridor: Piprali Road Mandi</span>
+                <span id="banner-address-text" style="opacity: 0.9;">Sikar Depot Hub</span>
               </div>
             </div>
           </div>
-          <div>
+          <div style="display: flex; gap: 8px; align-items: center; flex-wrap: wrap;">
+            <button type="button" class="btn-order-outline" onclick="openCustomerProfileModal()" style="background: rgba(255,255,255,0.22); color: #FFFFFF; border-color: rgba(255,255,255,0.45); font-size: 0.78rem; font-weight: 700;">
+              <span>Edit Profile / Address</span>
+            </button>
             <button type="button" class="btn-order-outline" onclick="handleLogout()" style="background: rgba(255,255,255,0.12); color: #FFFFFF; border-color: rgba(255,255,255,0.3); font-size: 0.78rem;">
               <span>Switch Account / Logout</span>
             </button>
@@ -830,7 +837,16 @@
           document.getElementById('banner-user-phone').textContent = `+91 ${formatPhoneNumber(user.phone)}`;
           const initials = (user.name || 'C').split(' ').map(n => n[0]).join('').slice(0, 2).toUpperCase();
           document.getElementById('banner-user-initials').textContent = initials || 'C';
+          if (user.corridor) {
+            const cb = document.getElementById('banner-corridor-badge');
+            if (cb) cb.textContent = `Corridor: ${user.corridor}`;
+          }
+          if (user.address) {
+            const ab = document.getElementById('banner-address-text');
+            if (ab) ab.textContent = user.address;
+          }
         }
+        fetchCustomerProfileData(user.phone);
         await fetchAndRenderOrders(user.phone);
       } else if (lastPhone) {
         // Guest who previously placed an order on this browser
@@ -840,6 +856,10 @@
           document.getElementById('banner-user-name').textContent = 'Recent Customer Consignments';
           document.getElementById('banner-user-phone').textContent = `+91 ${formatPhoneNumber(lastPhone)}`;
           document.getElementById('banner-user-initials').textContent = 'RP';
+          const cb = document.getElementById('banner-corridor-badge');
+          if (cb) cb.textContent = 'Mandi Guest Session';
+          const ab = document.getElementById('banner-address-text');
+          if (ab) ab.textContent = 'Local Browser History';
         }
         await fetchAndRenderOrders(lastPhone);
       } else {
@@ -851,6 +871,31 @@
         if (feed) feed.innerHTML = '';
         const empty = document.getElementById('orders-empty-state');
         if (empty) empty.style.display = 'none';
+      }
+    }
+
+    async function fetchCustomerProfileData(rawPhone) {
+      const cleanPhone = String(rawPhone || '').replace(/\D/g, '').slice(-10);
+      if (!cleanPhone || cleanPhone.length !== 10) return;
+      try {
+        const user = getSignedInUser() || {};
+        const res = await fetch(`/api/customer/profile?phone=${encodeURIComponent(cleanPhone)}`, {
+          headers: { 'x-truecaller-token': user.token || '' }
+        });
+        if (res.ok) {
+          const data = await res.json();
+          if (data && data.customer) {
+            const c = data.customer;
+            const nameEl = document.getElementById('banner-user-name');
+            if (nameEl && c.name) nameEl.textContent = c.name;
+            const cb = document.getElementById('banner-corridor-badge');
+            if (cb && c.corridor) cb.textContent = `Corridor: ${c.corridor}`;
+            const ab = document.getElementById('banner-address-text');
+            if (ab && c.address) ab.textContent = c.address;
+          }
+        }
+      } catch (e) {
+        console.warn('Customer profile sync error:', e);
       }
     }
 
