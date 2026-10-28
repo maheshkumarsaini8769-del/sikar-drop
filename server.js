@@ -3936,101 +3936,110 @@ app.post('/api/purchases', requireAdmin, (req, res) => {
 
     // Multi-item purchase handling
     if (Array.isArray(items) && items.length > 0) {
-      let grandTotalCost = 0;
-      let totalBoxes = 0;
-      const sanitizedItems = [];
+      const createMultiPurchaseTx = db.transaction(() => {
+        let grandTotalCost = 0;
+        let totalBoxes = 0;
+        const sanitizedItems = [];
 
-      for (const it of items) {
-        const pid = it.productId || it.id;
-        const q = parseInt(it.qty || it.quantity, 10) || 0;
-        const cost = parseFloat(it.unitCost || it.cost || it.price) || 0;
-        if (!pid || q <= 0) continue;
+        for (const it of items) {
+          const pid = it.productId || it.id;
+          const q = parseInt(it.qty || it.quantity, 10) || 0;
+          const cost = parseFloat(it.unitCost !== undefined ? it.unitCost : (it.cost !== undefined ? it.cost : it.price)) || 0;
+          if (!pid || q <= 0) continue;
 
-        const prod = db.prepare('SELECT title, stock, cost FROM products WHERE id = ?').get(pid);
-        const pTitle = prod ? prod.title : (it.productTitle || it.title || ('Product ' + pid));
-        const lineTotal = q * cost;
-        grandTotalCost += lineTotal;
-        totalBoxes += q;
+          const prod = db.prepare('SELECT title, stock, cost FROM products WHERE id = ?').get(pid);
+          const pTitle = prod ? prod.title : (it.productTitle || it.title || ('Product ' + pid));
+          const lineTotal = q * cost;
+          grandTotalCost += lineTotal;
+          totalBoxes += q;
 
-        sanitizedItems.push({
-          productId: pid,
-          productTitle: pTitle,
-          qty: q,
-          unitCost: cost,
-          totalCost: lineTotal
-        });
+          sanitizedItems.push({
+            productId: pid,
+            productTitle: pTitle,
+            qty: q,
+            unitCost: cost,
+            totalCost: lineTotal
+          });
 
-        // Inward stock atomically
-        if (autoReceive || status === 'received' || status === undefined) {
-          if (prod) {
-            const beforeStock = prod.stock || 0;
-            const afterStock = beforeStock + q;
-            db.prepare('UPDATE products SET stock = ?, cost = ?, updated_at = ? WHERE id = ?').run(afterStock, cost, now, pid);
-            db.prepare(`
-              INSERT INTO inventory_movements (id, product_id, movement_type, quantity, before_stock, after_stock, reference_id, reason, actor, created_at)
-              VALUES (?, ?, 'purchase_received', ?, ?, ?, ?, ?, ?, ?)
-            `).run('MOV-' + Math.floor(100000 + Math.random() * 900000), pid, q, beforeStock, afterStock, finalBillNo, `Stock Inward: ${finalSupplier}`, finalActor, now);
+          // Inward stock atomically
+          if (autoReceive || status === 'received' || status === undefined) {
+            if (prod) {
+              const beforeStock = prod.stock || 0;
+              const afterStock = beforeStock + q;
+              db.prepare('UPDATE products SET stock = ?, cost = ?, updated_at = ? WHERE id = ?').run(afterStock, cost, now, pid);
+              db.prepare(`
+                INSERT INTO inventory_movements (id, product_id, movement_type, quantity, before_stock, after_stock, reference_id, reason, actor, created_at)
+                VALUES (?, ?, 'purchase_received', ?, ?, ?, ?, ?, ?, ?)
+              `).run('MOV-' + Math.floor(100000 + Math.random() * 900000), pid, q, beforeStock, afterStock, finalBillNo, `Stock Inward: ${finalSupplier}`, finalActor, now);
+            }
           }
         }
-      }
 
-      if (sanitizedItems.length === 0) {
-        return res.status(400).json({ error: 'Please provide at least one product with quantity greater than 0' });
-      }
+        if (sanitizedItems.length === 0) {
+          throw new Error('Please provide at least one product with quantity greater than 0');
+        }
 
-      const id = 'PUR-' + Date.now().toString().slice(-6) + Math.floor(10 + Math.random() * 90);
-      const primaryTitle = sanitizedItems.length === 1
-        ? sanitizedItems[0].productTitle
-        : sanitizedItems.map(i => `${i.qty}x ${i.productTitle}`).join(', ');
-      const primaryPid = sanitizedItems.length === 1 ? sanitizedItems[0].productId : 'MULTI';
-      const avgUnitCost = totalBoxes > 0 ? (grandTotalCost / totalBoxes) : 0;
+        const id = 'PUR-' + Date.now().toString().slice(-6) + Math.floor(10 + Math.random() * 90);
+        const primaryTitle = sanitizedItems.length === 1
+          ? sanitizedItems[0].productTitle
+          : sanitizedItems.map(i => `${i.qty}x ${i.productTitle}`).join(', ');
+        const primaryPid = sanitizedItems.length === 1 ? sanitizedItems[0].productId : 'MULTI';
+        const avgUnitCost = totalBoxes > 0 ? (grandTotalCost / totalBoxes) : 0;
 
-      db.prepare(`
-        INSERT INTO purchases (id, supplier_name, supplier_phone, product_id, product_title, qty, unit_cost, total_cost, bill_no, invoice_date, payment_method, payment_status, status, notes, bill_image, items_json, created_at)
-        VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, 'Paid', 'received', ?, ?, ?, ?)
-      `).run(
-        id,
-        finalSupplier,
-        supplierPhone || '',
-        primaryPid,
-        primaryTitle,
-        totalBoxes,
-        avgUnitCost,
-        grandTotalCost,
-        finalBillNo,
-        finalInvoiceDate,
-        finalPayMethod,
-        notes || '',
-        finalBillImage,
-        JSON.stringify(sanitizedItems),
-        now
-      );
+        db.prepare(`
+          INSERT INTO purchases (id, supplier_name, supplier_phone, product_id, product_title, qty, unit_cost, total_cost, bill_no, invoice_date, payment_method, payment_status, status, notes, bill_image, items_json, created_at)
+          VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, 'Paid', 'received', ?, ?, ?, ?)
+        `).run(
+          id,
+          finalSupplier,
+          supplierPhone || '',
+          primaryPid,
+          primaryTitle,
+          totalBoxes,
+          avgUnitCost,
+          grandTotalCost,
+          finalBillNo,
+          finalInvoiceDate,
+          finalPayMethod,
+          notes || '',
+          finalBillImage,
+          JSON.stringify(sanitizedItems),
+          now
+        );
 
-      db.prepare(`
-        INSERT INTO audit_logs (id, actor, action, module, details, created_at)
-        VALUES (?, ?, 'PURCHASE_STOCK_RECEIVED', 'purchases', ?, ?)
-      `).run('AUD-' + Math.floor(100000 + Math.random() * 900000), finalActor, `Recorded multi-item inward ${id} from ${finalSupplier}: ${totalBoxes} boxes (₹${grandTotalCost})`, now);
+        db.prepare(`
+          INSERT INTO audit_logs (id, actor, action, module, details, created_at)
+          VALUES (?, ?, 'PURCHASE_STOCK_RECEIVED', 'purchases', ?, ?)
+        `).run('AUD-' + Math.floor(100000 + Math.random() * 900000), finalActor, `Recorded multi-item inward ${id} from ${finalSupplier}: ${totalBoxes} boxes (₹${grandTotalCost})`, now);
 
+        return {
+          id,
+          totalCost: grandTotalCost,
+          totalBoxes,
+          itemsCount: sanitizedItems.length,
+          items: sanitizedItems
+        };
+      });
+
+      const txResult = createMultiPurchaseTx();
       return res.status(201).json({
         success: true,
-        id,
-        totalCost: grandTotalCost,
-        totalBoxes,
-        itemsCount: sanitizedItems.length,
-        items: sanitizedItems
+        ...txResult
       });
     }
 
     // Single item fallback
-    if (!productId || !qty || !unitCost) {
-      return res.status(400).json({ error: 'Product, quantity, and unit cost are required' });
+    const numericQty = parseInt(qty, 10);
+    const numericCost = parseFloat(unitCost);
+    if (!productId || isNaN(numericQty) || numericQty <= 0 || isNaN(numericCost) || numericCost < 0) {
+      return res.status(400).json({ error: 'Product, valid quantity (min 1), and unit cost are required' });
     }
 
     const prod = db.prepare('SELECT title FROM products WHERE id = ?').get(productId);
     const prodTitle = prod ? prod.title : (req.body.productTitle || ('Product ' + productId));
     const id = 'PUR-' + Date.now().toString().slice(-6) + Math.floor(10 + Math.random() * 90);
-    const totalCost = Number(qty) * Number(unitCost);
-    const singleItems = [{ productId, productTitle: prodTitle, qty: Number(qty), unitCost: Number(unitCost), totalCost }];
+    const totalCost = numericQty * numericCost;
+    const singleItems = [{ productId, productTitle: prodTitle, qty: numericQty, unitCost: numericCost, totalCost }];
 
     db.prepare(`
       INSERT INTO purchases (id, supplier_name, supplier_phone, product_id, product_title, qty, unit_cost, total_cost, bill_no, invoice_date, payment_method, payment_status, status, notes, bill_image, items_json, created_at)
@@ -4041,8 +4050,8 @@ app.post('/api/purchases', requireAdmin, (req, res) => {
       supplierPhone || '',
       productId,
       prodTitle,
-      qty,
-      unitCost,
+      numericQty,
+      numericCost,
       totalCost,
       finalBillNo,
       finalInvoiceDate,

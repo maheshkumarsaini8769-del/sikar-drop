@@ -2084,24 +2084,50 @@ function receivePurchaseTransaction({ purchaseId, actor = 'Admin' }) {
     if (!purchase) throw new Error('Purchase record not found');
     if (purchase.status === 'received') throw new Error('Purchase is already received and stock is added');
 
-    const product = db.prepare('SELECT stock FROM products WHERE id = ?').get(purchase.product_id);
     const now = new Date().toISOString();
-    let beforeStock = 0;
-    let afterStock = purchase.qty;
+    let parsedItems = [];
+    if (purchase.items_json) {
+      try { parsedItems = JSON.parse(purchase.items_json); } catch (e) { parsedItems = []; }
+    }
 
-    if (product) {
-      beforeStock = product.stock;
-      afterStock = beforeStock + purchase.qty;
+    if (Array.isArray(parsedItems) && parsedItems.length > 0) {
+      for (const it of parsedItems) {
+        const pid = it.productId || it.id;
+        const q = parseInt(it.qty || it.quantity, 10) || 0;
+        const cost = parseFloat(it.unitCost !== undefined ? it.unitCost : (it.cost !== undefined ? it.cost : 0)) || 0;
+        if (!pid || q <= 0) continue;
 
-      // Update product stock and purchase cost
-      db.prepare('UPDATE products SET stock = ?, cost = ?, updated_at = ? WHERE id = ?')
-        .run(afterStock, purchase.unit_cost, now, purchase.product_id);
+        const prod = db.prepare('SELECT stock FROM products WHERE id = ?').get(pid);
+        if (prod) {
+          const beforeStock = prod.stock || 0;
+          const afterStock = beforeStock + q;
+          db.prepare('UPDATE products SET stock = ?, cost = ?, updated_at = ? WHERE id = ?')
+            .run(afterStock, cost, now, pid);
+          db.prepare(`
+            INSERT INTO inventory_movements (id, product_id, movement_type, quantity, before_stock, after_stock, reference_id, reason, actor, created_at)
+            VALUES (?, ?, 'purchase_received', ?, ?, ?, ?, ?, ?, ?)
+          `).run('MOV-' + Math.floor(100000 + Math.random() * 900000), pid, q, beforeStock, afterStock, purchaseId, `Received Inward Stock from ${purchase.supplier_name}`, actor, now);
+        }
+      }
+    } else {
+      const product = db.prepare('SELECT stock FROM products WHERE id = ?').get(purchase.product_id);
+      let beforeStock = 0;
+      let afterStock = purchase.qty;
 
-      // Record movement
-      db.prepare(`
-        INSERT INTO inventory_movements (id, product_id, movement_type, quantity, before_stock, after_stock, reference_id, reason, actor, created_at)
-        VALUES (?, ?, 'purchase_received', ?, ?, ?, ?, ?, ?, ?)
-      `).run('MOV-' + Math.floor(100000 + Math.random() * 900000), purchase.product_id, purchase.qty, beforeStock, afterStock, purchaseId, `Received Inward Stock from ${purchase.supplier_name}`, actor, now);
+      if (product) {
+        beforeStock = product.stock;
+        afterStock = beforeStock + purchase.qty;
+
+        // Update product stock and purchase cost
+        db.prepare('UPDATE products SET stock = ?, cost = ?, updated_at = ? WHERE id = ?')
+          .run(afterStock, purchase.unit_cost, now, purchase.product_id);
+
+        // Record movement
+        db.prepare(`
+          INSERT INTO inventory_movements (id, product_id, movement_type, quantity, before_stock, after_stock, reference_id, reason, actor, created_at)
+          VALUES (?, ?, 'purchase_received', ?, ?, ?, ?, ?, ?, ?)
+        `).run('MOV-' + Math.floor(100000 + Math.random() * 900000), purchase.product_id, purchase.qty, beforeStock, afterStock, purchaseId, `Received Inward Stock from ${purchase.supplier_name}`, actor, now);
+      }
     }
 
     // Update purchase status
@@ -2110,9 +2136,9 @@ function receivePurchaseTransaction({ purchaseId, actor = 'Admin' }) {
     db.prepare(`
       INSERT INTO audit_logs (id, actor, action, module, details, created_at)
       VALUES (?, ?, 'PURCHASE_STOCK_RECEIVED', 'purchases', ?, ?)
-    `).run('AUD-' + Math.floor(100000 + Math.random() * 900000), actor, `Received purchase ${purchaseId}: Added ${purchase.qty} units to product ${purchase.product_title}`, now);
+    `).run('AUD-' + Math.floor(100000 + Math.random() * 900000), actor, `Received purchase ${purchaseId}: Inwarded stock into warehouse`, now);
 
-    return { purchaseId, addedQty: purchase.qty, beforeStock, afterStock };
+    return { purchaseId, addedQty: purchase.qty };
   });
 
   return runTx();

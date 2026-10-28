@@ -7481,9 +7481,18 @@
               items: parsedItems
             };
           });
-          const mergedPurchases = [...customPurchases, ...mappedPurchases];
+          const mergedPurchases = [...mappedPurchases, ...customPurchases];
+          mergedPurchases.sort((a, b) => {
+            const dateA = a.date || '';
+            const dateB = b.date || '';
+            if (dateA !== dateB) return dateB.localeCompare(dateA);
+            return (b.id || '').localeCompare(a.id || '');
+          });
           adminPurchases = mergedPurchases;
           localStorage.setItem('sikar_admin_purchases', JSON.stringify(mergedPurchases));
+          if (currentTab === 'purchases') {
+            renderPurchasesTable();
+          }
         }
         if (coupons && Array.isArray(coupons) && coupons.length > 0) {
           adminCoupons = coupons.map(cp => ({
@@ -12849,9 +12858,11 @@
     }
 
     function openPurchaseModal() {
+      const now = new Date();
+      const localYMD = `${now.getFullYear()}-${String(now.getMonth() + 1).padStart(2, '0')}-${String(now.getDate()).padStart(2, '0')}`;
       const dateEl = document.getElementById('pur-date');
       if (dateEl) {
-        dateEl.value = new Date().toISOString().split('T')[0];
+        dateEl.value = localYMD;
       }
 
       const billNoEl = document.getElementById('pur-billno');
@@ -12884,14 +12895,28 @@
           productId: defaultProd.id,
           productTitle: defaultProd.title,
           qty: 20,
-          unitCost: defaultProd.cost || 14,
-          totalCost: 20 * (defaultProd.cost || 14)
+          unitCost: (defaultProd.cost !== undefined && defaultProd.cost !== null) ? defaultProd.cost : 14,
+          totalCost: 20 * ((defaultProd.cost !== undefined && defaultProd.cost !== null) ? defaultProd.cost : 14)
         }
       ];
 
       renderPurchaseModalItems();
       updatePurchaseModalCalculations();
       openModal('purchase-add-modal');
+    }
+
+    function syncPurchaseModalItemsFromDOM() {
+      if (!Array.isArray(purchaseModalItems)) return;
+      purchaseModalItems.forEach((it, idx) => {
+        const prodEl = document.getElementById(`pur-item-prod-${idx}`);
+        const qtyEl = document.getElementById(`pur-item-qty-${idx}`);
+        const costEl = document.getElementById(`pur-item-cost-${idx}`);
+        if (prodEl) it.productId = prodEl.value;
+        if (qtyEl && qtyEl.value !== '') it.qty = qtyEl.value;
+        if (costEl && costEl.value !== '') it.unitCost = costEl.value;
+        const prod = adminProducts.find(p => p.id === it.productId);
+        if (prod) it.productTitle = prod.title;
+      });
     }
 
     function renderPurchaseModalItems() {
@@ -12904,31 +12929,33 @@
           productId: defaultProd.id,
           productTitle: defaultProd.title,
           qty: 20,
-          unitCost: defaultProd.cost || 14,
-          totalCost: 20 * (defaultProd.cost || 14)
+          unitCost: (defaultProd.cost !== undefined && defaultProd.cost !== null) ? defaultProd.cost : 14,
+          totalCost: 20 * ((defaultProd.cost !== undefined && defaultProd.cost !== null) ? defaultProd.cost : 14)
         }];
       }
 
       container.innerHTML = purchaseModalItems.map((it, idx) => {
-        const lineTotal = (Number(it.qty) || 0) * (Number(it.unitCost) || 0);
+        const q = Math.max(0, parseInt(it.qty, 10) || 0);
+        const c = Math.max(0, parseFloat(it.unitCost) || 0);
+        const lineTotal = q * c;
         return `
           <div style="display: grid; grid-template-columns: 2fr 100px 110px 110px 40px; gap: 8px; align-items: center; background: #FFFFFF; border: 1px solid var(--border-light); border-radius: 6px; padding: 8px 10px;">
             <div>
-              <select class="portal-select" style="padding: 6px 8px; font-size: 0.82rem;" onchange="onPurchaseItemChange(${idx}, 'product', this.value)">
+              <select id="pur-item-prod-${idx}" class="portal-select" style="padding: 6px 8px; font-size: 0.82rem;" onchange="onPurchaseItemChange(${idx}, 'product', this.value)">
                 ${adminProducts.map(p => `
-                  <option value="${p.id}" ${p.id === it.productId ? 'selected' : ''} data-cost="${p.cost || 14}">
+                  <option value="${p.id}" ${p.id === it.productId ? 'selected' : ''} data-cost="${(p.cost !== undefined && p.cost !== null) ? p.cost : 14}">
                     ${escapeHTML(p.title)} (${p.spec || 'Wholesale Box'})
                   </option>
                 `).join('')}
               </select>
             </div>
             <div>
-              <input type="number" class="portal-input tabular" style="padding: 6px 8px; font-size: 0.82rem;" min="1" value="${it.qty}" placeholder="Qty Boxes" oninput="onPurchaseItemChange(${idx}, 'qty', this.value)" title="Quantity in Boxes">
+              <input type="number" id="pur-item-qty-${idx}" class="portal-input tabular" style="padding: 6px 8px; font-size: 0.82rem;" min="1" value="${it.qty !== undefined ? it.qty : 1}" placeholder="Qty Boxes" oninput="onPurchaseItemChange(${idx}, 'qty', this.value)" title="Quantity in Boxes">
             </div>
             <div>
-              <input type="number" class="portal-input tabular" style="padding: 6px 8px; font-size: 0.82rem;" min="0" step="0.5" value="${it.unitCost}" placeholder="Rate ₹" oninput="onPurchaseItemChange(${idx}, 'unitCost', this.value)" title="Purchase Cost per Box">
+              <input type="number" id="pur-item-cost-${idx}" class="portal-input tabular" style="padding: 6px 8px; font-size: 0.82rem;" min="0" step="0.5" value="${it.unitCost !== undefined ? it.unitCost : 0}" placeholder="Rate ₹" oninput="onPurchaseItemChange(${idx}, 'unitCost', this.value)" title="Purchase Cost per Box">
             </div>
-            <div style="font-weight: 800; font-size: 0.88rem; color: #0F172A; text-align: right;" class="tabular">
+            <div id="pur-item-total-${idx}" style="font-weight: 800; font-size: 0.88rem; color: #0F172A; text-align: right;" class="tabular">
               ₹${lineTotal.toLocaleString('en-IN')}
             </div>
             <div style="text-align: center;">
@@ -12942,7 +12969,7 @@
     }
 
     function addPurchaseItemRow() {
-      // Pick next product from adminProducts that is not yet added, or fallback to first
+      syncPurchaseModalItemsFromDOM();
       const usedIds = new Set(purchaseModalItems.map(it => it.productId));
       const nextProd = adminProducts.find(p => !usedIds.has(p.id)) || adminProducts[0] || { id: 'p1', title: 'Water Peti', cost: 14 };
 
@@ -12950,8 +12977,8 @@
         productId: nextProd.id,
         productTitle: nextProd.title,
         qty: 10,
-        unitCost: nextProd.cost || 14,
-        totalCost: 10 * (nextProd.cost || 14)
+        unitCost: (nextProd.cost !== undefined && nextProd.cost !== null) ? nextProd.cost : 14,
+        totalCost: 10 * ((nextProd.cost !== undefined && nextProd.cost !== null) ? nextProd.cost : 14)
       });
 
       renderPurchaseModalItems();
@@ -12959,6 +12986,7 @@
     }
 
     function removePurchaseItemRow(idx) {
+      syncPurchaseModalItemsFromDOM();
       if (purchaseModalItems.length > 1) {
         purchaseModalItems.splice(idx, 1);
         renderPurchaseModalItems();
@@ -12977,16 +13005,25 @@
         if (prod) {
           it.productId = prod.id;
           it.productTitle = prod.title;
-          it.unitCost = prod.cost || 14;
+          it.unitCost = (prod.cost !== undefined && prod.cost !== null) ? prod.cost : 14;
+          const costEl = document.getElementById(`pur-item-cost-${idx}`);
+          if (costEl) costEl.value = it.unitCost;
         }
       } else if (field === 'qty') {
-        it.qty = Math.max(1, parseInt(val, 10) || 1);
+        it.qty = val;
       } else if (field === 'unitCost') {
-        it.unitCost = Math.max(0, parseFloat(val) || 0);
+        it.unitCost = val;
       }
 
-      it.totalCost = (Number(it.qty) || 0) * (Number(it.unitCost) || 0);
-      renderPurchaseModalItems();
+      const q = Math.max(0, parseInt(it.qty, 10) || 0);
+      const c = Math.max(0, parseFloat(it.unitCost) || 0);
+      it.totalCost = q * c;
+
+      const totalEl = document.getElementById(`pur-item-total-${idx}`);
+      if (totalEl) {
+        totalEl.textContent = `₹${it.totalCost.toLocaleString('en-IN')}`;
+      }
+
       updatePurchaseModalCalculations();
     }
 
@@ -12995,8 +13032,8 @@
       let totalBill = 0;
 
       purchaseModalItems.forEach(it => {
-        const q = Number(it.qty) || 0;
-        const c = Number(it.unitCost) || 0;
+        const q = Math.max(0, parseInt(it.qty, 10) || 0);
+        const c = Math.max(0, parseFloat(it.unitCost) || 0);
         totalBoxes += q;
         totalBill += (q * c);
       });
@@ -13119,12 +13156,16 @@
     async function handlePurchaseSubmit(e) {
       e.preventDefault();
 
-      const dateVal = (document.getElementById('pur-date') && document.getElementById('pur-date').value) || new Date().toISOString().split('T')[0];
-      const supplier = document.getElementById('pur-supplier').value.trim() || 'Bisleri Plant Jaipur';
+      const now = new Date();
+      const localYMD = `${now.getFullYear()}-${String(now.getMonth() + 1).padStart(2, '0')}-${String(now.getDate()).padStart(2, '0')}`;
+      const dateVal = (document.getElementById('pur-date') && document.getElementById('pur-date').value) || localYMD;
+      const supplier = (document.getElementById('pur-supplier') && document.getElementById('pur-supplier').value.trim()) || 'Bisleri Plant Jaipur';
       const supplierPhone = document.getElementById('pur-supplier-phone') ? document.getElementById('pur-supplier-phone').value.trim() : '';
-      const billNo = document.getElementById('pur-billno').value.trim() || `BILL-${Date.now().toString().slice(-4)}`;
+      const billNo = (document.getElementById('pur-billno') && document.getElementById('pur-billno').value.trim()) || `BILL-${Date.now().toString().slice(-4)}`;
       const paymentMethod = document.getElementById('pur-payment-method') ? document.getElementById('pur-payment-method').value : 'Bank Transfer';
       const notes = document.getElementById('pur-notes') ? document.getElementById('pur-notes').value.trim() : '';
+
+      syncPurchaseModalItemsFromDOM();
 
       if (!purchaseModalItems || purchaseModalItems.length === 0) {
         showToast('Please add at least one product item.');
@@ -13135,22 +13176,41 @@
       let totalCost = 0;
       const validItems = [];
 
-      for (const it of purchaseModalItems) {
-        const q = Number(it.qty) || 0;
-        const c = Number(it.unitCost) || 0;
-        if (q <= 0 || c < 0) {
-          showToast(`Invalid quantity or cost for ${it.productTitle || 'item'}.`);
+      for (let i = 0; i < purchaseModalItems.length; i++) {
+        const it = purchaseModalItems[i];
+        const q = parseInt(it.qty, 10);
+        const c = parseFloat(it.unitCost);
+
+        if (isNaN(q) || q <= 0) {
+          showToast(`Please enter a valid quantity (1 or more boxes) for item #${i + 1}.`);
+          const qtyInput = document.getElementById(`pur-item-qty-${i}`);
+          if (qtyInput) qtyInput.focus();
           return;
         }
+
+        if (isNaN(c) || c < 0) {
+          showToast(`Please enter a valid rate (₹0 or more) for item #${i + 1}.`);
+          const costInput = document.getElementById(`pur-item-cost-${i}`);
+          if (costInput) costInput.focus();
+          return;
+        }
+
+        const prod = adminProducts.find(p => p.id === it.productId) || { title: it.productTitle || ('Product ' + it.productId) };
+        const lineTotal = q * c;
         totalQty += q;
-        totalCost += (q * c);
+        totalCost += lineTotal;
         validItems.push({
           productId: it.productId,
-          productTitle: it.productTitle,
+          productTitle: prod.title || it.productTitle,
           qty: q,
           unitCost: c,
-          totalCost: q * c
+          totalCost: lineTotal
         });
+      }
+
+      if (validItems.length === 0) {
+        showToast('Please add at least one valid product item.');
+        return;
       }
 
       const submitBtn = document.getElementById('btn-submit-purchase');
@@ -13174,7 +13234,13 @@
 
         const res = await sikarApi.post('/api/purchases', payload);
 
-        if (res && (res.success || res.purchaseId)) {
+        if (res && (res.success || res.id || res.purchaseId)) {
+          const newId = res.id || res.purchaseId;
+          if (newId) expandedSupplierConsignments.add(newId);
+
+          // Reset filters so the new purchase is immediately visible under "All Dates"
+          resetPurchaseFilters();
+
           await syncFromBackend();
           closeModal('purchase-add-modal');
           renderInventoryTable();
