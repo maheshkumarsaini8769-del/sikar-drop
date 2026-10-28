@@ -7115,6 +7115,10 @@ const PAGE_SEO = {
     canonical: '/terms',
     description: 'Wholesale supply terms for Sikar Water Bottle Supply, including delivery, payment, Zero 20L Camper policy and Truecaller verification.'
   },
+  'orders.html': {
+    canonical: '/orders',
+    description: 'Track wholesale beverage orders, view dispatch status, and manage your verified customer profile with Sikar Water Bottle Supply.'
+  },
   'cart.html': { canonical: '/cart', noindex: true },
   'track.html': { canonical: '/track', noindex: true },
   'admin.html': { canonical: '/admin', noindex: true, nofollow: true }
@@ -7124,6 +7128,7 @@ const pageTemplateCache = new Map();
 
 const STATIC_TEMPLATE_LOADERS = {
   'index.html': () => fs.readFileSync(path.join(__dirname, 'index.html'), 'utf8'),
+  'orders.html': () => fs.readFileSync(path.join(__dirname, 'orders.html'), 'utf8'),
   'admin.html': () => fs.readFileSync(path.join(__dirname, 'admin.html'), 'utf8'),
   'products.html': () => fs.readFileSync(path.join(__dirname, 'products.html'), 'utf8'),
   'categories.html': () => fs.readFileSync(path.join(__dirname, 'categories.html'), 'utf8'),
@@ -7158,6 +7163,12 @@ function readPageTemplate(file) {
   const filePath = candidatePaths.find(p => fs.existsSync(p));
   if (!filePath) {
     console.warn(`[Template] Page file not found: ${file}`);
+    if (file === 'orders.html' && STATIC_TEMPLATE_LOADERS['orders.html']) {
+      try { return STATIC_TEMPLATE_LOADERS['orders.html'](); } catch (e) {}
+    }
+    if (STATIC_TEMPLATE_LOADERS['index.html']) {
+      try { return STATIC_TEMPLATE_LOADERS['index.html'](); } catch (e) {}
+    }
     return `<!DOCTYPE html><html lang="en"><head><meta charset="utf-8"><title>Sikar Water Bottle Supply</title></head><body><h1>Sikar Water Bottle Supply</h1></body></html>`;
   }
   const stat = fs.statSync(filePath);
@@ -7389,7 +7400,7 @@ app.get(['/products', '/products.html'], sendSeoPage('products.html'));
 app.get(['/categories', '/categories.html'], sendSeoPage('categories.html'));
 app.get(['/bulk', '/bulk.html', '/corporate', '/corporate.html'], sendSeoPage('bulk.html'));
 app.get(['/track', '/track.html'], sendSeoPage('track.html'));
-app.get(['/orders', '/orders.html', '/my-orders', '/my-orders.html'], sendSeoPage('orders.html'));
+app.get(['/orders', '/orders.html', '/my-orders', '/my-orders.html', '/profile', '/profile.html', '/account', '/account.html', '/my-profile'], sendSeoPage('orders.html'));
 app.get(['/about', '/about.html'], sendSeoPage('about.html'));
 app.get(['/why', '/why.html'], sendSeoPage('why.html'));
 app.get(['/faq', '/faq.html', '/faqs', '/faqs.html'], sendSeoPage('faq.html'));

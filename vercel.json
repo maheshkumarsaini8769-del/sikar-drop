@@ -46,6 +46,14 @@
       "headers": [{ "key": "X-Robots-Tag", "value": "noindex, follow" }]
     },
     {
+      "source": "/profile",
+      "headers": [{ "key": "X-Robots-Tag", "value": "noindex, follow" }]
+    },
+    {
+      "source": "/account",
+      "headers": [{ "key": "X-Robots-Tag", "value": "noindex, follow" }]
+    },
+    {
       "source": "/assets/(.*)\\.(css|js)",
       "headers": [
         { "key": "Cache-Control", "value": "public, max-age=0, must-revalidate" }
@@ -74,12 +82,18 @@
   ],
   "functions": {
     "api/**": {
-      "includeFiles": "data/**"
+      "includeFiles": "{data/**,*.html}"
     }
   },
   "rewrites": [
     { "source": "/api/(.*)", "destination": "/api/[...all].js" },
     { "source": "/api", "destination": "/api/[...all].js" },
-    { "source": "/my-orders", "destination": "/orders.html" }
+    { "source": "/orders", "destination": "/orders.html" },
+    { "source": "/my-orders", "destination": "/orders.html" },
+    { "source": "/profile", "destination": "/orders.html" },
+    { "source": "/profile.html", "destination": "/orders.html" },
+    { "source": "/account", "destination": "/orders.html" },
+    { "source": "/account.html", "destination": "/orders.html" },
+    { "source": "/my-profile", "destination": "/orders.html" }
   ]
 }

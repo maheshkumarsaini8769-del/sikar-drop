@@ -1233,6 +1233,19 @@ function ensureMobileMenuElements() {
     document.body.appendChild(drawer);
     if (typeof applySiteTexts === 'function') applySiteTexts();
     updateDrawerProfile();
+  } else {
+    const existingDrawer = document.getElementById('mobile-menu-drawer');
+    if (existingDrawer && !document.getElementById('drawer-profile-slot')) {
+      const slot = document.createElement('div');
+      slot.id = 'drawer-profile-slot';
+      const header = existingDrawer.querySelector('.mobile-menu-header');
+      if (header && header.nextSibling) {
+        existingDrawer.insertBefore(slot, header.nextSibling);
+      } else {
+        existingDrawer.prepend(slot);
+      }
+    }
+    updateDrawerProfile();
   }
 
   // Also ensure hamburger button exists in navbar if not present
@@ -2304,12 +2317,29 @@ try {
     try { updateAuthNav(); } catch (e) {}
     try { if (typeof updateDrawerProfile === 'function') updateDrawerProfile(); } catch (e) {}
   });
+  const checkProfileUrl = () => {
+    try {
+      const p = (window.location.pathname || '').toLowerCase();
+      const s = (window.location.search || '').toLowerCase();
+      const h = (window.location.hash || '').toLowerCase();
+      if (p.includes('profile') || s.includes('profile') || h.includes('profile')) {
+        setTimeout(() => {
+          if (typeof openCustomerProfileModal === 'function') {
+            openCustomerProfileModal();
+          }
+        }, 350);
+      }
+    } catch (err) {}
+  };
+
   if (document.readyState === 'loading') {
     document.addEventListener('DOMContentLoaded', () => {
       try { updateAuthNav(); } catch (e) {}
+      checkProfileUrl();
     });
   } else {
     try { updateAuthNav(); } catch (e) {}
+    checkProfileUrl();
   }
 } catch (e) {}
 
