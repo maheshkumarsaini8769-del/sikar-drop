@@ -433,149 +433,10 @@ async function hydrateFromMongo() {
 
   mongoHydrationPromise = (async () => {
     try {
-      const mongo = await getMongoDb();
-      if (!mongo) return false;
-
-      // 1. Categories
-      const mongoCats = await mongo.collection('categories').find({}).toArray();
-      if (mongoCats && mongoCats.length > 0) {
-        const insertCat = db.prepare(`
-          INSERT INTO categories (id, name, tagline, image, active, display_order)
-          VALUES (?, ?, ?, ?, ?, ?)
-          ON CONFLICT(id) DO UPDATE SET
-            name = excluded.name,
-            tagline = excluded.tagline,
-            image = excluded.image,
-            active = excluded.active,
-            display_order = excluded.display_order
-        `);
-        for (const c of mongoCats) {
-          const cId = String(c.id || c._id);
-          insertCat.run(
-            cId,
-            c.name || cId,
-            c.tagline || '',
-            c.image || 'assets/cat_water_cases.webp',
-            c.active !== undefined ? Number(c.active) : 1,
-            c.display_order || c.displayOrder || 0
-          );
-        }
-      }
-
-      // 2. Products
-      const mongoProds = await mongo.collection('products').find({}).toArray();
-      if (mongoProds && mongoProds.length > 0) {
-        const insertProd = db.prepare(`
-          INSERT INTO products (id, sku, title, category, price, mrp, cost, stock, low_stock_threshold, spec, volume, image, description, active, display_order, created_at, updated_at)
-          VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)
-          ON CONFLICT(id) DO UPDATE SET
-            sku = excluded.sku,
-            title = excluded.title,
-            category = excluded.category,
-            price = excluded.price,
-            mrp = excluded.mrp,
-            cost = excluded.cost,
-            stock = excluded.stock,
-            low_stock_threshold = excluded.low_stock_threshold,
-            spec = excluded.spec,
-            volume = COALESCE(excluded.volume, products.volume),
-            image = excluded.image,
-            description = excluded.description,
-            active = excluded.active,
-            display_order = excluded.display_order,
-            updated_at = excluded.updated_at
-        `);
-        for (const p of mongoProds) {
-          const pId = String(p.id || p._id);
-          insertProd.run(
-            pId,
-            p.sku || pId,
-            p.title || 'Product',
-            p.category || 'water',
-            Number(p.price || 0),
-            Number(p.mrp || 0),
-            Number(p.cost || 0),
-            Number(p.stock !== undefined ? p.stock : 50),
-            Number(p.low_stock_threshold || p.lowStockThreshold || 10),
-            p.spec || 'Factory Sealed Peti',
-            p.volume || '',
-            p.image || 'assets/prod_bisleri_1l.webp',
-            p.description || '',
-            p.active !== undefined ? Number(p.active) : 1,
-            Number(p.display_order || p.displayOrder || 0),
-            p.created_at || new Date().toISOString(),
-            p.updated_at || new Date().toISOString()
-          );
-        }
-      }
-
-      // 3. Website Settings (including site_texts, whatsapp, phone)
-      const settingsDocs = await mongo.collection('website_settings').find({}).toArray();
-      if (settingsDocs && settingsDocs.length > 0) {
-        const insertSetting = db.prepare(`
-          INSERT INTO website_settings (key, value, updated_at)
-          VALUES (?, ?, ?)
-          ON CONFLICT(key) DO UPDATE SET value = excluded.value, updated_at = excluded.updated_at
-        `);
-        for (const s of settingsDocs) {
-          const sKey = s.key || s._id;
-          if (sKey && s.value !== undefined) {
-            insertSetting.run(
-              String(sKey),
-              typeof s.value === 'string' ? s.value : JSON.stringify(s.value),
-              s.updated_at || new Date().toISOString()
-            );
-          }
-        }
-      }
-
-      // 4. Purchases (Supplier Inward Consignments)
-      const mongoPurchases = await mongo.collection('purchases').find({}).toArray();
-      if (mongoPurchases && mongoPurchases.length > 0) {
-        const insertPur = db.prepare(`
-          INSERT INTO purchases (id, supplier_name, supplier_phone, product_id, product_title, qty, unit_cost, total_cost, bill_no, invoice_date, payment_method, payment_status, status, notes, bill_image, items_json, created_at)
-          VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)
-          ON CONFLICT(id) DO UPDATE SET
-            supplier_name = excluded.supplier_name,
-            supplier_phone = excluded.supplier_phone,
-            product_id = excluded.product_id,
-            product_title = excluded.product_title,
-            qty = excluded.qty,
-            unit_cost = excluded.unit_cost,
-            total_cost = excluded.total_cost,
-            bill_no = excluded.bill_no,
-            invoice_date = excluded.invoice_date,
-            payment_method = excluded.payment_method,
-            payment_status = excluded.payment_status,
-            status = excluded.status,
-            notes = excluded.notes,
-            bill_image = excluded.bill_image,
-            items_json = excluded.items_json,
-            created_at = excluded.created_at
-        `);
-        for (const p of mongoPurchases) {
-          const pId = String(p.id || p._id);
-          insertPur.run(
-            pId,
-            p.supplier_name || p.supplier || 'Plant Depot',
-            p.supplier_phone || p.supplierPhone || '',
-            p.product_id || p.productId || 'MULTI',
-            p.product_title || p.productTitle || '',
-            Number(p.qty || 0),
-            Number(p.unit_cost || p.cost || 0),
-            Number(p.total_cost || p.total || 0),
-            p.bill_no || p.billNo || '',
-            p.invoice_date || p.date || new Date().toISOString().split('T')[0],
-            p.payment_method || 'Bank Transfer',
-            p.payment_status || 'Paid',
-            p.status || 'received',
-            p.notes || '',
-            p.bill_image || p.billImage || '',
-            typeof p.items_json === 'string' ? p.items_json : JSON.stringify(p.items || []),
-            p.created_at || new Date().toISOString()
-          );
-        }
-      }
+      await syncCategoriesFromMongoIfNeeded(true);
+      await syncProductsFromMongoIfNeeded(true);
+      await syncSettingsFromMongoIfNeeded();
+      await syncPurchasesFromMongoIfNeeded(true);
 
       isHydratedFromMongo = true;
       console.log('[MongoDB] Startup cloud hydration complete: synced products, categories, settings, and purchases');
@@ -625,6 +486,204 @@ async function syncSettingsFromMongoIfNeeded() {
     isHydratedFromMongo = true;
   } catch (err) {
     console.warn('[MongoDB] Sync settings error:', err.message);
+  }
+}
+
+let lastProductsSyncTime = 0;
+const PRODUCTS_CACHE_TTL = 2000; // 2 seconds TTL for serverless elasticity across lambda containers
+
+async function syncProductsFromMongoIfNeeded(force = false) {
+  const now = Date.now();
+  if (!force && now - lastProductsSyncTime < PRODUCTS_CACHE_TTL && isHydratedFromMongo) {
+    return;
+  }
+  try {
+    const mongo = await getMongoDb();
+    if (!mongo) return;
+    const mongoProds = await mongo.collection('products').find({}).toArray();
+    if (mongoProds && mongoProds.length > 0) {
+      const insertProd = db.prepare(`
+        INSERT INTO products (id, sku, title, category, price, mrp, cost, stock, low_stock_threshold, spec, volume, image, description, active, display_order, created_at, updated_at)
+        VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)
+        ON CONFLICT(id) DO UPDATE SET
+          sku = excluded.sku,
+          title = excluded.title,
+          category = excluded.category,
+          price = excluded.price,
+          mrp = excluded.mrp,
+          cost = excluded.cost,
+          stock = excluded.stock,
+          low_stock_threshold = excluded.low_stock_threshold,
+          spec = excluded.spec,
+          volume = COALESCE(excluded.volume, products.volume),
+          image = excluded.image,
+          description = excluded.description,
+          active = excluded.active,
+          display_order = excluded.display_order,
+          updated_at = excluded.updated_at
+      `);
+      for (const p of mongoProds) {
+        const pId = String(p.id || p._id);
+        const nowIso = new Date().toISOString();
+        try {
+          insertProd.run(
+            pId,
+            p.sku || pId,
+            p.title || 'Product',
+            p.category || 'water',
+            Number(p.price || 0),
+            Number(p.mrp || 0),
+            Number(p.cost || 0),
+            Number(p.stock !== undefined ? p.stock : 50),
+            Number(p.low_stock_threshold || p.lowStockThreshold || 10),
+            p.spec || 'Factory Sealed Peti',
+            p.volume || '',
+            p.image || 'assets/prod_bisleri_1l.webp',
+            p.description || '',
+            p.active !== undefined ? Number(p.active) : 1,
+            Number(p.display_order || p.displayOrder || 0),
+            p.created_at || nowIso,
+            p.updated_at || nowIso
+          );
+        } catch (itemErr) {
+          try {
+            insertProd.run(
+              pId,
+              pId,
+              p.title || 'Product',
+              p.category || 'water',
+              Number(p.price || 0),
+              Number(p.mrp || 0),
+              Number(p.cost || 0),
+              Number(p.stock !== undefined ? p.stock : 50),
+              Number(p.low_stock_threshold || p.lowStockThreshold || 10),
+              p.spec || 'Factory Sealed Peti',
+              p.volume || '',
+              p.image || 'assets/prod_bisleri_1l.webp',
+              p.description || '',
+              p.active !== undefined ? Number(p.active) : 1,
+              Number(p.display_order || p.displayOrder || 0),
+              p.created_at || nowIso,
+              p.updated_at || nowIso
+            );
+          } catch (e2) {}
+        }
+      }
+    }
+    lastProductsSyncTime = now;
+    isHydratedFromMongo = true;
+  } catch (err) {
+    console.warn('[MongoDB] Sync products error:', err.message);
+  }
+}
+
+let lastCategoriesSyncTime = 0;
+const CATEGORIES_CACHE_TTL = 3000; // 3 seconds TTL
+
+async function syncCategoriesFromMongoIfNeeded(force = false) {
+  const now = Date.now();
+  if (!force && now - lastCategoriesSyncTime < CATEGORIES_CACHE_TTL && isHydratedFromMongo) {
+    return;
+  }
+  try {
+    const mongo = await getMongoDb();
+    if (!mongo) return;
+    const mongoCats = await mongo.collection('categories').find({}).toArray();
+    if (mongoCats && mongoCats.length > 0) {
+      const insertCat = db.prepare(`
+        INSERT INTO categories (id, name, tagline, image, active, display_order)
+        VALUES (?, ?, ?, ?, ?, ?)
+        ON CONFLICT(id) DO UPDATE SET
+          name = excluded.name,
+          tagline = excluded.tagline,
+          image = excluded.image,
+          active = excluded.active,
+          display_order = excluded.display_order
+      `);
+      for (const c of mongoCats) {
+        const cId = String(c.id || c._id);
+        try {
+          insertCat.run(
+            cId,
+            c.name || cId,
+            c.tagline || '',
+            c.image || 'assets/cat_water_cases.webp',
+            c.active !== undefined ? Number(c.active) : 1,
+            c.display_order || c.displayOrder || 0
+          );
+        } catch (itemErr) {}
+      }
+    }
+    lastCategoriesSyncTime = now;
+    isHydratedFromMongo = true;
+  } catch (err) {
+    console.warn('[MongoDB] Sync categories error:', err.message);
+  }
+}
+
+let lastPurchasesSyncTime = 0;
+const PURCHASES_CACHE_TTL = 3000; // 3 seconds TTL
+
+async function syncPurchasesFromMongoIfNeeded(force = false) {
+  const now = Date.now();
+  if (!force && now - lastPurchasesSyncTime < PURCHASES_CACHE_TTL && isHydratedFromMongo) {
+    return;
+  }
+  try {
+    const mongo = await getMongoDb();
+    if (!mongo) return;
+    const mongoPurchases = await mongo.collection('purchases').find({}).toArray();
+    if (mongoPurchases && mongoPurchases.length > 0) {
+      const insertPur = db.prepare(`
+        INSERT INTO purchases (id, supplier_name, supplier_phone, product_id, product_title, qty, unit_cost, total_cost, bill_no, invoice_date, payment_method, payment_status, status, notes, bill_image, items_json, created_at)
+        VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)
+        ON CONFLICT(id) DO UPDATE SET
+          supplier_name = excluded.supplier_name,
+          supplier_phone = excluded.supplier_phone,
+          product_id = excluded.product_id,
+          product_title = excluded.product_title,
+          qty = excluded.qty,
+          unit_cost = excluded.unit_cost,
+          total_cost = excluded.total_cost,
+          bill_no = excluded.bill_no,
+          invoice_date = excluded.invoice_date,
+          payment_method = excluded.payment_method,
+          payment_status = excluded.payment_status,
+          status = excluded.status,
+          notes = excluded.notes,
+          bill_image = excluded.bill_image,
+          items_json = excluded.items_json,
+          created_at = excluded.created_at
+      `);
+      for (const p of mongoPurchases) {
+        const pId = String(p.id || p._id);
+        try {
+          insertPur.run(
+            pId,
+            p.supplier_name || p.supplier || 'Plant Depot',
+            p.supplier_phone || p.supplierPhone || '',
+            p.product_id || p.productId || 'MULTI',
+            p.product_title || p.productTitle || '',
+            Number(p.qty || 0),
+            Number(p.unit_cost || p.cost || 0),
+            Number(p.total_cost || p.total || 0),
+            p.bill_no || p.billNo || '',
+            p.invoice_date || p.date || new Date().toISOString().split('T')[0],
+            p.payment_method || 'Bank Transfer',
+            p.payment_status || 'Paid',
+            p.status || 'received',
+            p.notes || '',
+            p.bill_image || p.billImage || '',
+            typeof p.items_json === 'string' ? p.items_json : JSON.stringify(p.items || []),
+            p.created_at || new Date().toISOString()
+          );
+        } catch (itemErr) {}
+      }
+    }
+    lastPurchasesSyncTime = now;
+    isHydratedFromMongo = true;
+  } catch (err) {
+    console.warn('[MongoDB] Sync purchases error:', err.message);
   }
 }
 
@@ -1353,8 +1412,10 @@ app.get('/api/auth/audit-logs', requireAdmin, (req, res) => {
 // ==========================================
 // 3. DASHBOARD METRICS & SPEEDOMETERS
 // ==========================================
-app.get('/api/dashboard/stats', requireAdmin, (req, res) => {
+app.get('/api/dashboard/stats', requireAdmin, async (req, res) => {
   try {
+    await syncProductsFromMongoIfNeeded();
+    await syncPurchasesFromMongoIfNeeded();
     const period = req.query.period || 'all'; // today, 7days, this_month, all
     let dateFilterOrders = '1=1';
     let dateFilterSales = '1=1';
@@ -3914,9 +3975,7 @@ app.post('/api/inventory/adjust', requireAdmin, async (req, res) => {
 app.get('/api/purchases', requireAdmin, async (req, res) => {
   try {
     res.setHeader('Cache-Control', 'no-cache, no-store, must-revalidate');
-    if (!isHydratedFromMongo) {
-      try { await hydrateFromMongo(); } catch (e) {}
-    }
+    await syncPurchasesFromMongoIfNeeded();
 
     const { date, startDate, endDate, supplier, search } = req.query;
     let query = 'SELECT * FROM purchases WHERE 1=1';
@@ -4286,9 +4345,7 @@ app.get('/api/products', async (req, res) => {
     // HTTP Cache-Control: no-cache to ensure real-time storefront synchronization
     res.setHeader('Cache-Control', 'no-cache, no-store, must-revalidate');
 
-    if (!isHydratedFromMongo) {
-      try { await hydrateFromMongo(); } catch (e) {}
-    }
+    await syncProductsFromMongoIfNeeded();
 
     let query = 'SELECT * FROM products WHERE 1=1';
     const params = [];
@@ -4322,7 +4379,7 @@ app.post('/api/products', requireAdmin, async (req, res) => {
 
     const finalId = id || ('p_' + Date.now());
     const now = new Date().toISOString();
-    const finalSku = sku || ('SKR-' + Math.floor(1000 + Math.random() * 9000));
+    const finalSku = sku || ('SKR-' + Date.now().toString().slice(-4) + Math.floor(100 + Math.random() * 900));
     const finalOrder = displayOrder !== undefined ? Number(displayOrder) : 0;
     const finalActive = (active !== undefined && active !== null) ? Number(active) : 1;
 
@@ -4367,6 +4424,7 @@ app.post('/api/products', requireAdmin, async (req, res) => {
     if (fullProd) {
       try {
         await syncDoc('products', { _id: finalId }, { ...fullProd, _id: finalId });
+        lastProductsSyncTime = Date.now();
       } catch (e) {
         console.warn('[Products] Mongo sync error:', e.message);
       }
@@ -4488,6 +4546,7 @@ app.put('/api/products/:id', requireAdmin, async (req, res) => {
     if (fullProd) {
       try {
         await syncDoc('products', { _id: req.params.id }, { ...fullProd, _id: req.params.id });
+        lastProductsSyncTime = Date.now();
       } catch (e) {
         console.warn('[Products] Mongo sync error:', e.message);
       }
@@ -4520,6 +4579,7 @@ app.delete('/api/products/:id', requireAdmin, async (req, res) => {
       db.prepare('UPDATE products SET active = 0, updated_at = ? WHERE id = ?').run(now, id);
       try {
         await syncDoc('products', { _id: id }, { ...existing, active: 0, updated_at: now, _id: id });
+        lastProductsSyncTime = Date.now();
       } catch (e) {}
 
       db.prepare(`
@@ -4540,6 +4600,7 @@ app.delete('/api/products/:id', requireAdmin, async (req, res) => {
 
     try {
       await deleteDoc('products', { id, _id: id });
+      lastProductsSyncTime = Date.now();
     } catch (e) {}
 
     db.prepare(`
@@ -4624,9 +4685,7 @@ app.post('/api/products/bulk-price', requireAdmin, (req, res) => {
 app.get('/api/categories', async (req, res) => {
   try {
     res.setHeader('Cache-Control', 'no-cache, no-store, must-revalidate');
-    if (!isHydratedFromMongo) {
-      try { await hydrateFromMongo(); } catch (e) {}
-    }
+    await syncCategoriesFromMongoIfNeeded();
 
     const { active } = req.query;
     let query = 'SELECT * FROM categories';
@@ -4671,6 +4730,7 @@ app.post('/api/categories', requireAdmin, async (req, res) => {
     if (fullCat) {
       try {
         await syncDoc('categories', { _id: catId }, { ...fullCat, _id: catId });
+        lastCategoriesSyncTime = Date.now();
       } catch (e) {
         console.warn('[Categories] Mongo syncDoc error:', e.message);
       }
@@ -4727,6 +4787,7 @@ app.put('/api/categories/:id', requireAdmin, async (req, res) => {
     if (fullCat) {
       try {
         await syncDoc('categories', { _id: catId }, { ...fullCat, _id: catId });
+        lastCategoriesSyncTime = Date.now();
       } catch (e) {
         console.warn('[Categories] Mongo syncDoc error:', e.message);
       }
@@ -4754,6 +4815,7 @@ app.delete('/api/categories/:id', requireAdmin, async (req, res) => {
 
     try {
       await deleteDoc('categories', { id: catId, _id: catId });
+      lastCategoriesSyncTime = Date.now();
     } catch (e) {
       console.warn('[Categories] Mongo deleteDoc error:', e.message);
     }

@@ -7431,22 +7431,63 @@
         }
 
         if (prods && Array.isArray(prods)) {
-          prods.sort((a, b) => {
-            const ordA = a.display_order !== undefined ? a.display_order : 50;
-            const ordB = b.display_order !== undefined ? b.display_order : 50;
+          const localMap = new Map((adminProducts || []).map(p => [p.id, p]));
+          const merged = [];
+          const serverIds = new Set();
+
+          for (const sp of prods) {
+            if (!sp || !sp.id) continue;
+            serverIds.add(sp.id);
+            const lp = localMap.get(sp.id);
+            if (lp) {
+              const localTime = lp.updated_at ? new Date(lp.updated_at).getTime() : 0;
+              const serverTime = sp.updated_at ? new Date(sp.updated_at).getTime() : 0;
+              if (localTime > serverTime) {
+                merged.push({ ...sp, ...lp });
+              } else {
+                merged.push({ ...lp, ...sp });
+              }
+            } else {
+              merged.push(sp);
+            }
+          }
+
+          for (const lp of (adminProducts || [])) {
+            if (lp && lp.id && !serverIds.has(lp.id)) {
+              merged.push(lp);
+            }
+          }
+
+          merged.sort((a, b) => {
+            const ordA = a.display_order !== undefined ? Number(a.display_order) : 50;
+            const ordB = b.display_order !== undefined ? Number(b.display_order) : 50;
             if (ordA !== ordB) return ordA - ordB;
             return (b.created_at || '').localeCompare(a.created_at || '');
           });
-          const serverIds = new Set(prods.map(p => p.id));
-          const localOnly = (adminProducts || []).filter(p => p && p.id && !serverIds.has(p.id));
-          adminProducts = [...prods, ...localOnly];
+
+          adminProducts = merged;
           localStorage.setItem('sikar_admin_products', JSON.stringify(adminProducts));
+          if (currentTab === 'products') renderProductsTable();
         }
         if (cats && Array.isArray(cats)) {
-          const serverIds = new Set(cats.map(c => c.id));
-          const localOnly = (adminCategories || []).filter(c => c && c.id && !serverIds.has(c.id));
-          adminCategories = [...cats, ...localOnly];
+          const localMap = new Map((adminCategories || []).map(c => [c.id, c]));
+          const mergedCats = [];
+          const serverCatIds = new Set();
+          for (const sc of cats) {
+            if (!sc || !sc.id) continue;
+            serverCatIds.add(sc.id);
+            const lc = localMap.get(sc.id);
+            mergedCats.push(lc ? { ...lc, ...sc } : sc);
+          }
+          for (const lc of (adminCategories || [])) {
+            if (lc && lc.id && !serverCatIds.has(lc.id)) {
+              mergedCats.push(lc);
+            }
+          }
+          mergedCats.sort((a, b) => (a.display_order || 0) - (b.display_order || 0));
+          adminCategories = mergedCats;
           localStorage.setItem('sikar_admin_categories', JSON.stringify(adminCategories));
+          if (currentTab === 'categories') renderCategoriesTable();
         }
         if (manualSales && Array.isArray(manualSales)) {
           adminManualSales = manualSales;
@@ -14224,6 +14265,13 @@
           if (idx > -1) adminProducts[idx] = Object.assign({}, adminProducts[idx], prodRecord);
           else adminProducts.unshift(prodRecord);
         }
+
+        adminProducts.sort((a, b) => {
+          const ordA = a.display_order !== undefined ? Number(a.display_order) : 50;
+          const ordB = b.display_order !== undefined ? Number(b.display_order) : 50;
+          if (ordA !== ordB) return ordA - ordB;
+          return (b.created_at || '').localeCompare(a.created_at || '');
+        });
 
         localStorage.setItem('sikar_admin_products', JSON.stringify(adminProducts));
         renderProductsTable();
