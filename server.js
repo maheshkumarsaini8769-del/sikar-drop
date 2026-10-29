@@ -4410,6 +4410,37 @@ app.get('/api/products', async (req, res) => {
   }
 });
 
+async function sanitizeImageField(rawImage, fallbackName = 'media') {
+  if (!rawImage || typeof rawImage !== 'string') return 'assets/prod_bisleri_1l.webp';
+  if (!rawImage.startsWith('data:image/')) return rawImage;
+  try {
+    const matches = rawImage.match(/^data:image\/([a-zA-Z0-9+.-]+);base64,(.+)$/);
+    if (!matches) return 'assets/prod_bisleri_1l.webp';
+    let ext = matches[1].toLowerCase();
+    if (ext === 'jpeg') ext = 'jpg';
+    const buf = Buffer.from(matches[2], 'base64');
+    const safeName = fallbackName.toLowerCase().replace(/[^a-z0-9]/g, '_').slice(0, 30);
+    const filename = `${safeName}_${Date.now()}.${ext}`;
+    const targetPath = path.join(UPLOADS_DIR, filename);
+    if (!fs.existsSync(UPLOADS_DIR)) fs.mkdirSync(UPLOADS_DIR, { recursive: true });
+    fs.writeFileSync(targetPath, buf);
+
+    try {
+      await syncDoc('media', { _id: filename }, {
+        _id: filename,
+        filename,
+        contentType: `image/${ext}`,
+        data: rawImage,
+        size: buf.length,
+        created_at: new Date().toISOString()
+      });
+    } catch (e) {}
+    return `assets/uploads/${filename}`;
+  } catch (err) {
+    return 'assets/prod_bisleri_1l.webp';
+  }
+}
+
 app.post('/api/products', requireAdmin, async (req, res) => {
   try {
     const { id, title, sku, category, price, mrp, cost, stock, lowStockThreshold, spec, volume, image, description, displayOrder, active } = req.body;
@@ -4420,6 +4451,7 @@ app.post('/api/products', requireAdmin, async (req, res) => {
     const finalSku = sku || ('SKR-' + Date.now().toString().slice(-4) + Math.floor(100 + Math.random() * 900));
     const finalOrder = displayOrder !== undefined ? Number(displayOrder) : 0;
     const finalActive = (active !== undefined && active !== null) ? Number(active) : 1;
+    const finalImage = await sanitizeImageField(image || 'assets/prod_bisleri_1l.webp', title || finalId);
 
     db.prepare(`
       INSERT INTO products (id, sku, title, category, price, mrp, cost, stock, low_stock_threshold, spec, volume, image, description, active, display_order, created_at, updated_at)
@@ -4450,7 +4482,7 @@ app.post('/api/products', requireAdmin, async (req, res) => {
       parseInt(lowStockThreshold, 10) || 10,
       spec || 'Factory Sealed Peti',
       volume || '',
-      image || 'assets/prod_bisleri_1l.webp',
+      finalImage,
       description || '',
       finalActive,
       finalOrder,
@@ -4520,6 +4552,7 @@ app.put('/api/products/:id', requireAdmin, async (req, res) => {
     await ensureProductHydrated(req.params.id);
     const { title, category, price, mrp, cost, stock, lowStockThreshold, spec, volume, image, description, active } = req.body;
     const now = new Date().toISOString();
+    const finalImage = image !== undefined ? await sanitizeImageField(image, title || req.params.id) : null;
 
     const info = db.prepare(`
       UPDATE products SET
@@ -4547,7 +4580,7 @@ app.put('/api/products/:id', requireAdmin, async (req, res) => {
       lowStockThreshold !== undefined ? parseInt(lowStockThreshold, 10) : null,
       spec,
       volume,
-      image,
+      finalImage,
       description,
       (active !== undefined && active !== null) ? Number(active) : null,
       now,
