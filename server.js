@@ -349,13 +349,19 @@ app.use((req, res, next) => {
 // Middleware
 app.use(cors());
 
-// SECURITY: upload-specific parser MUST be registered before global parser.
-// Otherwise the 2MB global limit rejects legitimate image uploads first.
-app.use('/api/media/upload', bodyParser.json({ limit: '10mb' }));
+// SECURITY: upload and content-specific parser registered before generic parser.
+app.use([
+  '/api/media/upload',
+  '/api/purchases',
+  '/api/purchases/:id/bill',
+  '/api/products',
+  '/api/products/:id',
+  '/api/categories',
+  '/api/categories/:id'
+], bodyParser.json({ limit: '15mb' }));
 
-// SECURITY: reduced body limit (was 25mb - DoS risk)
-app.use(bodyParser.json({ limit: '2mb' }));
-app.use(bodyParser.urlencoded({ extended: true, limit: '2mb' }));
+app.use(bodyParser.json({ limit: '4mb' }));
+app.use(bodyParser.urlencoded({ extended: true, limit: '4mb' }));
 
 // SECURITY: rate limiting - split read vs write budgets
 if (rateLimit) {
@@ -433,13 +439,6 @@ async function hydrateFromMongo() {
       // 1. Categories
       const mongoCats = await mongo.collection('categories').find({}).toArray();
       if (mongoCats && mongoCats.length > 0) {
-        const mongoCatIds = new Set(mongoCats.map(c => String(c.id || c._id)));
-        const localCats = db.prepare('SELECT id FROM categories').all();
-        for (const lc of localCats) {
-          if (!mongoCatIds.has(String(lc.id))) {
-            db.prepare('DELETE FROM categories WHERE id = ?').run(lc.id);
-          }
-        }
         const insertCat = db.prepare(`
           INSERT INTO categories (id, name, tagline, image, active, display_order)
           VALUES (?, ?, ?, ?, ?, ?)
@@ -530,8 +529,56 @@ async function hydrateFromMongo() {
         }
       }
 
+      // 4. Purchases (Supplier Inward Consignments)
+      const mongoPurchases = await mongo.collection('purchases').find({}).toArray();
+      if (mongoPurchases && mongoPurchases.length > 0) {
+        const insertPur = db.prepare(`
+          INSERT INTO purchases (id, supplier_name, supplier_phone, product_id, product_title, qty, unit_cost, total_cost, bill_no, invoice_date, payment_method, payment_status, status, notes, bill_image, items_json, created_at)
+          VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)
+          ON CONFLICT(id) DO UPDATE SET
+            supplier_name = excluded.supplier_name,
+            supplier_phone = excluded.supplier_phone,
+            product_id = excluded.product_id,
+            product_title = excluded.product_title,
+            qty = excluded.qty,
+            unit_cost = excluded.unit_cost,
+            total_cost = excluded.total_cost,
+            bill_no = excluded.bill_no,
+            invoice_date = excluded.invoice_date,
+            payment_method = excluded.payment_method,
+            payment_status = excluded.payment_status,
+            status = excluded.status,
+            notes = excluded.notes,
+            bill_image = excluded.bill_image,
+            items_json = excluded.items_json,
+            created_at = excluded.created_at
+        `);
+        for (const p of mongoPurchases) {
+          const pId = String(p.id || p._id);
+          insertPur.run(
+            pId,
+            p.supplier_name || p.supplier || 'Plant Depot',
+            p.supplier_phone || p.supplierPhone || '',
+            p.product_id || p.productId || 'MULTI',
+            p.product_title || p.productTitle || '',
+            Number(p.qty || 0),
+            Number(p.unit_cost || p.cost || 0),
+            Number(p.total_cost || p.total || 0),
+            p.bill_no || p.billNo || '',
+            p.invoice_date || p.date || new Date().toISOString().split('T')[0],
+            p.payment_method || 'Bank Transfer',
+            p.payment_status || 'Paid',
+            p.status || 'received',
+            p.notes || '',
+            p.bill_image || p.billImage || '',
+            typeof p.items_json === 'string' ? p.items_json : JSON.stringify(p.items || []),
+            p.created_at || new Date().toISOString()
+          );
+        }
+      }
+
       isHydratedFromMongo = true;
-      console.log('[MongoDB] Startup cloud hydration complete: synced products, categories and settings');
+      console.log('[MongoDB] Startup cloud hydration complete: synced products, categories, settings, and purchases');
       return true;
     } catch (err) {
       console.warn('[MongoDB] Cloud hydration warning:', err.message);
@@ -3864,8 +3911,13 @@ app.post('/api/inventory/adjust', requireAdmin, async (req, res) => {
 // ==========================================
 // 9. PURCHASES (SUPPLIER INWARD STOCK)
 // ==========================================
-app.get('/api/purchases', requireAdmin, (req, res) => {
+app.get('/api/purchases', requireAdmin, async (req, res) => {
   try {
+    res.setHeader('Cache-Control', 'no-cache, no-store, must-revalidate');
+    if (!isHydratedFromMongo) {
+      try { await hydrateFromMongo(); } catch (e) {}
+    }
+
     const { date, startDate, endDate, supplier, search } = req.query;
     let query = 'SELECT * FROM purchases WHERE 1=1';
     const params = [];
@@ -3905,7 +3957,7 @@ app.get('/api/purchases', requireAdmin, (req, res) => {
   }
 });
 
-app.post('/api/purchases', requireAdmin, (req, res) => {
+app.post('/api/purchases', requireAdmin, async (req, res) => {
   try {
     const {
       supplierName,
@@ -3939,10 +3991,19 @@ app.post('/api/purchases', requireAdmin, (req, res) => {
 
     // Multi-item purchase handling
     if (Array.isArray(items) && items.length > 0) {
+      // Ensure products are in local SQLite cache
+      for (const it of items) {
+        const pid = it.productId || it.id;
+        if (pid && !db.prepare('SELECT id FROM products WHERE id = ?').get(pid)) {
+          try { await ensureProductHydrated(pid); } catch (e) {}
+        }
+      }
+
       const createMultiPurchaseTx = db.transaction(() => {
         let grandTotalCost = 0;
         let totalBoxes = 0;
         const sanitizedItems = [];
+        const affectedProductIds = [];
 
         for (const it of items) {
           const pid = it.productId || it.id;
@@ -3974,6 +4035,7 @@ app.post('/api/purchases', requireAdmin, (req, res) => {
                 INSERT INTO inventory_movements (id, product_id, movement_type, quantity, before_stock, after_stock, reference_id, reason, actor, created_at)
                 VALUES (?, ?, 'purchase_received', ?, ?, ?, ?, ?, ?, ?)
               `).run('MOV-' + Math.floor(100000 + Math.random() * 900000), pid, q, beforeStock, afterStock, finalBillNo, `Stock Inward: ${finalSupplier}`, finalActor, now);
+              affectedProductIds.push(pid);
             }
           }
         }
@@ -4020,13 +4082,55 @@ app.post('/api/purchases', requireAdmin, (req, res) => {
           totalCost: grandTotalCost,
           totalBoxes,
           itemsCount: sanitizedItems.length,
-          items: sanitizedItems
+          items: sanitizedItems,
+          affectedProductIds,
+          primaryPid,
+          primaryTitle,
+          avgUnitCost
         };
       });
 
       const txResult = createMultiPurchaseTx();
+
+      // Cloud MongoDB synchronization for purchase and updated product stocks
+      try {
+        const purDoc = {
+          _id: txResult.id,
+          id: txResult.id,
+          supplier_name: finalSupplier,
+          supplier_phone: supplierPhone || '',
+          product_id: txResult.primaryPid,
+          product_title: txResult.primaryTitle,
+          qty: txResult.totalBoxes,
+          unit_cost: txResult.avgUnitCost,
+          total_cost: txResult.totalCost,
+          bill_no: finalBillNo,
+          invoice_date: finalInvoiceDate,
+          payment_method: finalPayMethod,
+          payment_status: 'Paid',
+          status: 'received',
+          notes: notes || '',
+          bill_image: finalBillImage,
+          items_json: JSON.stringify(txResult.items),
+          items: txResult.items,
+          created_at: now
+        };
+        await syncDoc('purchases', { _id: txResult.id }, purDoc);
+
+        for (const affPid of txResult.affectedProductIds) {
+          const affProd = db.prepare('SELECT * FROM products WHERE id = ?').get(affPid);
+          if (affProd) {
+            await syncDoc('products', { _id: affPid }, { ...affProd, _id: affPid });
+          }
+        }
+      } catch (cloudErr) {
+        console.warn('[Purchases] Cloud sync warning:', cloudErr.message);
+      }
+
       return res.status(201).json({
         success: true,
+        id: txResult.id,
+        purchaseId: txResult.id,
         ...txResult
       });
     }
@@ -4036,6 +4140,10 @@ app.post('/api/purchases', requireAdmin, (req, res) => {
     const numericCost = parseFloat(unitCost);
     if (!productId || isNaN(numericQty) || numericQty <= 0 || isNaN(numericCost) || numericCost < 0) {
       return res.status(400).json({ error: 'Product, valid quantity (min 1), and unit cost are required' });
+    }
+
+    if (!db.prepare('SELECT id FROM products WHERE id = ?').get(productId)) {
+      try { await ensureProductHydrated(productId); } catch (e) {}
     }
 
     const prod = db.prepare('SELECT title FROM products WHERE id = ?').get(productId);
@@ -4070,13 +4178,46 @@ app.post('/api/purchases', requireAdmin, (req, res) => {
       receivePurchaseTransaction({ purchaseId: id, actor: finalActor });
     }
 
-    res.status(201).json({ success: true, id, totalCost });
+    // Cloud MongoDB sync for single purchase
+    try {
+      const purDoc = {
+        _id: id,
+        id,
+        supplier_name: finalSupplier,
+        supplier_phone: supplierPhone || '',
+        product_id: productId,
+        product_title: prodTitle,
+        qty: numericQty,
+        unit_cost: numericCost,
+        total_cost: totalCost,
+        bill_no: finalBillNo,
+        invoice_date: finalInvoiceDate,
+        payment_method: finalPayMethod,
+        payment_status: 'Paid',
+        status: (autoReceive || status === 'received') ? 'received' : 'draft',
+        notes: notes || '',
+        bill_image: finalBillImage,
+        items_json: JSON.stringify(singleItems),
+        items: singleItems,
+        created_at: now
+      };
+      await syncDoc('purchases', { _id: id }, purDoc);
+
+      const affProd = db.prepare('SELECT * FROM products WHERE id = ?').get(productId);
+      if (affProd) {
+        await syncDoc('products', { _id: productId }, { ...affProd, _id: productId });
+      }
+    } catch (cloudErr) {
+      console.warn('[Purchases] Single purchase cloud sync warning:', cloudErr.message);
+    }
+
+    res.status(201).json({ success: true, id, purchaseId: id, totalCost });
   } catch (err) {
     res.status(400).json({ error: err.message });
   }
 });
 
-app.patch('/api/purchases/:id/bill', requireAdmin, (req, res) => {
+app.patch('/api/purchases/:id/bill', requireAdmin, async (req, res) => {
   try {
     const { billImage, billNo } = req.body;
     if (billNo) {
@@ -4084,15 +4225,29 @@ app.patch('/api/purchases/:id/bill', requireAdmin, (req, res) => {
     } else {
       db.prepare('UPDATE purchases SET bill_image = ? WHERE id = ?').run(billImage || '', req.params.id);
     }
+
+    const fullPur = db.prepare('SELECT * FROM purchases WHERE id = ?').get(req.params.id);
+    if (fullPur) {
+      try {
+        await syncDoc('purchases', { _id: req.params.id }, { ...fullPur, _id: req.params.id });
+      } catch (e) {}
+    }
+
     res.json({ success: true, message: 'Bill receipt updated' });
   } catch (err) {
     res.status(400).json({ error: err.message });
   }
 });
 
-app.post('/api/purchases/:id/receive', requireAdmin, (req, res) => {
+app.post('/api/purchases/:id/receive', requireAdmin, async (req, res) => {
   try {
     const result = receivePurchaseTransaction({ purchaseId: req.params.id, actor: req.body.actor || 'Admin' });
+    const fullPur = db.prepare('SELECT * FROM purchases WHERE id = ?').get(req.params.id);
+    if (fullPur) {
+      try {
+        await syncDoc('purchases', { _id: req.params.id }, { ...fullPur, _id: req.params.id });
+      } catch (e) {}
+    }
     res.json({ success: true, ...result });
   } catch (err) {
     res.status(400).json({ error: err.message });
@@ -4468,26 +4623,18 @@ app.post('/api/products/bulk-price', requireAdmin, (req, res) => {
 // ==========================================
 app.get('/api/categories', async (req, res) => {
   try {
+    res.setHeader('Cache-Control', 'no-cache, no-store, must-revalidate');
+    if (!isHydratedFromMongo) {
+      try { await hydrateFromMongo(); } catch (e) {}
+    }
+
     const { active } = req.query;
-
-    // HTTP Cache-Control: Allow browser & CDN to return instantly
-    res.setHeader('Cache-Control', 'public, max-age=60, stale-while-revalidate=300');
-
     let query = 'SELECT * FROM categories';
     if (active !== 'all') {
       query += ' WHERE active = 1';
     }
     query += ' ORDER BY display_order ASC';
-    let cats = db.prepare(query).all();
-
-    if (cats && cats.length > 0) {
-      return res.json(cats);
-    }
-
-    if (!isHydratedFromMongo) {
-      await hydrateFromMongo();
-      cats = db.prepare(query).all();
-    }
+    const cats = db.prepare(query).all();
     res.json(cats || []);
   } catch (err) {
     res.status(500).json({ error: err.message });
@@ -4539,18 +4686,42 @@ app.put('/api/categories/:id', requireAdmin, async (req, res) => {
   try {
     const catId = req.params.id;
     const { name, tagline, image, active, displayOrder } = req.body;
-    const existing = db.prepare('SELECT * FROM categories WHERE id = ?').get(catId);
-    if (!existing) return res.status(404).json({ error: `Category '${catId}' not found` });
+    let existing = db.prepare('SELECT * FROM categories WHERE id = ?').get(catId);
+    if (!existing && !isHydratedFromMongo) {
+      try { await hydrateFromMongo(); } catch (e) {}
+      existing = db.prepare('SELECT * FROM categories WHERE id = ?').get(catId);
+    }
 
-    db.prepare(`
-      UPDATE categories SET
-        name = COALESCE(?, name),
-        tagline = COALESCE(?, tagline),
-        image = COALESCE(?, image),
-        active = COALESCE(?, active),
-        display_order = COALESCE(?, display_order)
-      WHERE id = ?
-    `).run(name, tagline, image, active !== undefined ? Number(active) : null, displayOrder !== undefined ? Number(displayOrder) : null, catId);
+    if (!existing) {
+      const order = db.prepare('SELECT COUNT(*) AS c FROM categories').get().c + 1;
+      db.prepare(`
+        INSERT INTO categories (id, name, tagline, image, display_order, active)
+        VALUES (?, ?, ?, ?, ?, ?)
+        ON CONFLICT(id) DO UPDATE SET
+          name = excluded.name,
+          tagline = excluded.tagline,
+          image = excluded.image,
+          active = excluded.active,
+          display_order = excluded.display_order
+      `).run(
+        catId,
+        name || catId,
+        tagline || '',
+        image || 'assets/cat_water_cases.webp',
+        displayOrder !== undefined ? Number(displayOrder) : order,
+        active !== undefined ? Number(active) : 1
+      );
+    } else {
+      db.prepare(`
+        UPDATE categories SET
+          name = COALESCE(?, name),
+          tagline = COALESCE(?, tagline),
+          image = COALESCE(?, image),
+          active = COALESCE(?, active),
+          display_order = COALESCE(?, display_order)
+        WHERE id = ?
+      `).run(name, tagline, image, active !== undefined ? Number(active) : null, displayOrder !== undefined ? Number(displayOrder) : null, catId);
+    }
 
     const fullCat = db.prepare('SELECT * FROM categories WHERE id = ?').get(catId);
     if (fullCat) {
@@ -7045,7 +7216,7 @@ app.get('/api/media', (req, res) => {
   }
 });
 
-app.post('/api/media/upload', requirePermission('products:edit'), (req, res) => {
+app.post('/api/media/upload', requirePermission('products:edit'), async (req, res) => {
   try {
     const { filename, dataUrl } = req.body;
     if (!dataUrl || typeof dataUrl !== 'string' || !dataUrl.startsWith('data:image/')) {
@@ -7068,8 +7239,8 @@ app.post('/api/media/upload', requirePermission('products:edit'), (req, res) => 
 
     const base64Data = matches[2];
     const buffer = Buffer.from(base64Data, 'base64');
-    if (buffer.length > 5 * 1024 * 1024) {
-      return res.status(400).json({ error: 'Image exceeds maximum allowed size of 5MB.' });
+    if (buffer.length > 10 * 1024 * 1024) {
+      return res.status(400).json({ error: 'Image exceeds maximum allowed size of 10MB.' });
     }
 
     const rawBase = (filename || 'gallery_photo')
@@ -7082,7 +7253,28 @@ app.post('/api/media/upload', requirePermission('products:edit'), (req, res) => 
 
     const targetPath = path.join(UPLOADS_DIR, finalFilename);
 
-    fs.writeFileSync(targetPath, buffer);
+    try {
+      if (!fs.existsSync(UPLOADS_DIR)) {
+        fs.mkdirSync(UPLOADS_DIR, { recursive: true });
+      }
+      fs.writeFileSync(targetPath, buffer);
+    } catch (fsErr) {
+      console.warn('[Media] Local filesystem write bypassed (read-only):', fsErr.message);
+    }
+
+    // Cloud MongoDB synchronization for persistent media across all lambdas
+    try {
+      await syncDoc('media', { _id: finalFilename }, {
+        _id: finalFilename,
+        filename: finalFilename,
+        contentType: `image/${ext}`,
+        data: dataUrl,
+        size: buffer.length,
+        created_at: new Date().toISOString()
+      });
+    } catch (mErr) {
+      console.warn('[Media] Mongo media sync error:', mErr.message);
+    }
 
     const relativeUrl = `assets/uploads/${finalFilename}`;
     res.status(201).json({
@@ -7416,7 +7608,29 @@ app.get(['/terms', '/terms.html'], sendSeoPage('terms.html'));
 // Route aliases (Explicit endpoints take precedence over static directories)
 app.get(['/admin', '/admin/'], sendSeoPage('admin.html'));
 
-app.get(['/', '/index.html'], sendSeoPage('index.html'));
+// Cloud-persistent uploads server: serve from local disk or MongoDB
+app.get('/assets/uploads/:file', async (req, res, next) => {
+  const localFile = path.join(UPLOADS_DIR, req.params.file);
+  if (fs.existsSync(localFile)) {
+    return res.sendFile(localFile);
+  }
+  try {
+    const mongo = await getMongoDb();
+    if (mongo) {
+      const doc = await mongo.collection('media').findOne({ _id: req.params.file });
+      if (doc && doc.data) {
+        const matches = doc.data.match(/^data:image\/([a-zA-Z0-9+.-]+);base64,(.+)$/);
+        if (matches) {
+          const buf = Buffer.from(matches[2], 'base64');
+          res.setHeader('Content-Type', doc.contentType || `image/${matches[1]}`);
+          res.setHeader('Cache-Control', 'public, max-age=31536000, immutable');
+          return res.send(buf);
+        }
+      }
+    }
+  } catch (e) {}
+  next();
+});
 
 // Static assets
 app.use(express.static(__dirname, {

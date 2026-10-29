@@ -13134,7 +13134,58 @@
       if (totalEl) totalEl.textContent = `₹${totalBill.toLocaleString('en-IN')}`;
     }
 
-    function handlePurchaseBillFileSelect(event) {
+    function compressImageFile(file, maxWidth = 800, maxHeight = 800, quality = 0.82) {
+      return new Promise((resolve, reject) => {
+        if (!file || !file.type.startsWith('image/')) {
+          return reject(new Error('Please select an image file (JPG, PNG, WebP).'));
+        }
+        const reader = new FileReader();
+        reader.onerror = () => reject(new Error('Failed to read image file.'));
+        reader.onload = function(e) {
+          const img = new Image();
+          img.onerror = () => reject(new Error('Failed to load image.'));
+          img.onload = function() {
+            let w = img.width;
+            let h = img.height;
+            if (w > maxWidth || h > maxHeight) {
+              if (w > h) {
+                h = Math.round((h * maxWidth) / w);
+                w = maxWidth;
+              } else {
+                w = Math.round((w * maxHeight) / h);
+                h = maxHeight;
+              }
+            }
+            const canvas = document.createElement('canvas');
+            canvas.width = w;
+            canvas.height = h;
+            const ctx = canvas.getContext('2d');
+            ctx.fillStyle = '#FFFFFF';
+            ctx.fillRect(0, 0, w, h);
+            ctx.drawImage(img, 0, 0, w, h);
+            let outUrl = '';
+            try {
+              outUrl = canvas.toDataURL('image/webp', quality);
+              if (!outUrl || !outUrl.startsWith('data:image/webp')) {
+                outUrl = canvas.toDataURL('image/jpeg', quality);
+              }
+            } catch (err) {
+              outUrl = canvas.toDataURL('image/jpeg', quality);
+            }
+            resolve({
+              dataUrl: outUrl,
+              width: w,
+              height: h,
+              name: file.name
+            });
+          };
+          img.src = e.target.result;
+        };
+        reader.readAsDataURL(file);
+      });
+    }
+
+    async function handlePurchaseBillFileSelect(event) {
       const file = event.target.files && event.target.files[0];
       if (!file) return;
 
@@ -13143,16 +13194,18 @@
         return;
       }
 
-      const reader = new FileReader();
-      reader.onload = function(e) {
-        purchaseModalBillImage = e.target.result;
+      try {
+        showToast('Compressing bill photo...');
+        const compressed = await compressImageFile(file, 1000, 1000, 0.80);
+        purchaseModalBillImage = compressed.dataUrl;
         const previewBox = document.getElementById('pur-bill-preview-box');
         const previewImg = document.getElementById('pur-bill-img-preview');
         if (previewImg) previewImg.src = purchaseModalBillImage;
         if (previewBox) previewBox.style.display = 'flex';
-        showToast('Bill photo attached successfully!');
-      };
-      reader.readAsDataURL(file);
+        showToast('Bill photo compressed & attached successfully!');
+      } catch (err) {
+        showToast('Error attaching bill: ' + err.message);
+      }
     }
 
     function removePurchaseBillPhoto() {
@@ -13217,29 +13270,27 @@
       const file = event.target.files && event.target.files[0];
       if (!file) return;
 
-      const reader = new FileReader();
-      reader.onload = async function(e) {
-        const base64Data = e.target.result;
-        try {
-          const res = await sikarApi.patch(`/api/purchases/${encodeURIComponent(activeBillPurId)}/bill`, {
-            billImage: base64Data
-          });
-          if (res && res.success) {
-            const p = adminPurchases.find(x => x.id === activeBillPurId);
-            if (p) p.billImage = base64Data;
-            localStorage.setItem('sikar_admin_purchases', JSON.stringify(adminPurchases));
+      try {
+        showToast('Compressing bill photo...');
+        const compressed = await compressImageFile(file, 1000, 1000, 0.80);
+        const base64Data = compressed.dataUrl;
+        const res = await sikarApi.patch(`/api/purchases/${encodeURIComponent(activeBillPurId)}/bill`, {
+          billImage: base64Data
+        });
+        if (res && res.success) {
+          const p = adminPurchases.find(x => x.id === activeBillPurId);
+          if (p) p.billImage = base64Data;
+          localStorage.setItem('sikar_admin_purchases', JSON.stringify(adminPurchases));
 
-            openPurchaseBillModal(activeBillPurId);
-            renderPurchasesTable();
-            showToast(`Paper bill photo attached to consignment ${activeBillPurId}!`);
-          } else {
-            showToast('Failed to attach bill photo: ' + ((res && res.error) || 'Server error'));
-          }
-        } catch (err) {
-          showToast('Error attaching bill: ' + err.message);
+          openPurchaseBillModal(activeBillPurId);
+          renderPurchasesTable();
+          showToast(`Paper bill photo attached to consignment ${activeBillPurId}!`);
+        } else {
+          showToast('Failed to attach bill photo: ' + ((res && res.error) || 'Server error'));
         }
-      };
-      reader.readAsDataURL(file);
+      } catch (err) {
+        showToast('Error attaching bill: ' + err.message);
+      }
     }
 
     async function handlePurchaseSubmit(e) {
@@ -13327,15 +13378,59 @@
           const newId = res.id || res.purchaseId;
           if (newId) expandedSupplierConsignments.add(newId);
 
+          const nowIso = new Date().toISOString();
+          const newPurchaseRecord = {
+            id: newId,
+            supplier: supplier,
+            supplier_name: supplier,
+            supplierPhone: supplierPhone,
+            supplier_phone: supplierPhone,
+            billNo: billNo,
+            bill_no: billNo,
+            date: dateVal,
+            invoice_date: dateVal,
+            paymentMethod: paymentMethod,
+            payment_method: paymentMethod,
+            items: validItems,
+            qty: totalQty,
+            cost: totalQty > 0 ? (totalCost / totalQty) : 0,
+            unit_cost: totalQty > 0 ? (totalCost / totalQty) : 0,
+            total: totalCost,
+            total_cost: totalCost,
+            status: 'received',
+            billImage: purchaseModalBillImage || '',
+            bill_image: purchaseModalBillImage || '',
+            created_at: nowIso
+          };
+
+          // Increment product stocks locally immediately
+          validItems.forEach(vIt => {
+            const pObj = adminProducts.find(p => p.id === vIt.productId);
+            if (pObj) {
+              pObj.stock = (parseInt(pObj.stock, 10) || 0) + vIt.qty;
+              if (vIt.unitCost) pObj.cost = vIt.unitCost;
+            }
+          });
+          localStorage.setItem('sikar_admin_products', JSON.stringify(adminProducts));
+
+          if (!Array.isArray(adminPurchases)) adminPurchases = [];
+          adminPurchases.unshift(newPurchaseRecord);
+          localStorage.setItem('sikar_admin_purchases', JSON.stringify(adminPurchases));
+
           // Reset filters so the new purchase is immediately visible under "All Dates"
           resetPurchaseFilters();
-
-          await syncFromBackend();
           closeModal('purchase-add-modal');
           renderInventoryTable();
           renderPurchasesTable();
           renderDashboard();
           showToast(`Inward Consignment recorded! ${totalQty} boxes stocked from ${supplier}.`);
+
+          try {
+            await syncFromBackend();
+            renderInventoryTable();
+            renderPurchasesTable();
+            renderDashboard();
+          } catch (syncErr) {}
         } else {
           throw new Error((res && res.error) || 'Failed to record purchase');
         }
@@ -13838,30 +13933,34 @@
         return;
       }
 
-      const reader = new FileReader();
-      reader.onload = async function(loadEvt) {
-        const dataUrl = loadEvt.target.result;
+      try {
+        showToast('Optimizing & preparing photo...');
+        const compressed = await compressImageFile(file, 800, 800, 0.82);
+        const dataUrl = compressed.dataUrl;
+
+        // Instantly display and attach the optimized photo
+        selectGalleryImage(targetType, dataUrl);
+
         try {
-          showToast('Uploading photo from device gallery...');
           const res = await sikarApi.post('/api/media/upload', {
             filename: file.name,
             dataUrl: dataUrl
           });
           if (res && res.url) {
             cachedGalleryItems = null; // Force refresh gallery
-            await loadMediaGalleryPicker(targetType, res.url);
             selectGalleryImage(targetType, res.url);
-            showToast('Photo uploaded from device gallery and attached successfully.');
+            showToast(targetType === 'cat' ? 'Category photo attached successfully.' : 'Product photo attached successfully.');
           }
-        } catch (err) {
-          console.error('Upload error:', err);
-          // Fallback to dataUrl directly if offline
-          selectGalleryImage(targetType, dataUrl);
-          showToast('Photo attached to product!');
+        } catch (uploadErr) {
+          console.warn('Direct media upload bypassed, saved as optimized photo:', uploadErr);
+          showToast(targetType === 'cat' ? 'Category photo attached.' : 'Product photo attached.');
         }
-      };
-      reader.readAsDataURL(file);
-      event.target.value = '';
+      } catch (err) {
+        console.error('Gallery image processing error:', err);
+        showToast('Error processing image: ' + err.message);
+      } finally {
+        event.target.value = '';
+      }
     }
 
     function renderProductsTable() {
