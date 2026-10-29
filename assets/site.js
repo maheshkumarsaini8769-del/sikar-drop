@@ -8,8 +8,25 @@ window.appliedCoupon = window.appliedCoupon || JSON.parse(sessionStorage.getItem
 window.wishlist = window.wishlist || JSON.parse(localStorage.getItem('sikar_wishlist') || '[]');
 window.currentUser = window.currentUser || JSON.parse(localStorage.getItem('sikar_user') || 'null');
 window.currentTheme = window.currentTheme || localStorage.getItem('sikar_theme') || 'default';
-window.PRODUCTS = window.PRODUCTS || [];
-window.CATEGORIES = window.CATEGORIES || [];
+try {
+  const _cachedProds = JSON.parse(localStorage.getItem('sikar_admin_products') || '[]');
+  const _delProdIds = new Set(JSON.parse(localStorage.getItem('sikar_deleted_product_ids') || '[]'));
+  window.PRODUCTS = (Array.isArray(_cachedProds) && _cachedProds.length > 0)
+    ? _cachedProds.filter(p => p && p.id && !_delProdIds.has(String(p.id)))
+    : (window.PRODUCTS || []);
+} catch(e) {
+  window.PRODUCTS = window.PRODUCTS || [];
+}
+
+try {
+  const _cachedCats = JSON.parse(localStorage.getItem('sikar_admin_categories') || '[]');
+  const _delCatIds = new Set(JSON.parse(localStorage.getItem('sikar_deleted_category_ids') || '[]'));
+  window.CATEGORIES = (Array.isArray(_cachedCats) && _cachedCats.length > 0)
+    ? _cachedCats.filter(c => c && c.id && !_delCatIds.has(String(c.id)))
+    : (window.CATEGORIES || []);
+} catch(e) {
+  window.CATEGORIES = window.CATEGORIES || [];
+}
 
 function escapeHTML(str) {
   if (!str) return '';
@@ -724,9 +741,14 @@ function initSparklerTrail(accentColor) {
 // 2. LIVE PRODUCTS & CATEGORIES SYNC
 async function loadCatalogFromBackend() {
   try {
+    const isAdmin = window.location.pathname.includes('admin');
+    const pUrl = isAdmin ? ('/api/products?_t=' + Date.now()) : '/api/products';
+    const cUrl = isAdmin ? ('/api/categories?_t=' + Date.now()) : '/api/categories';
+    const fetchOpts = isAdmin ? { cache: 'no-store' } : { cache: 'default' };
+
     const [pRes, cRes] = await Promise.all([
-      fetch('/api/products?_t=' + Date.now(), { cache: 'no-store' }),
-      fetch('/api/categories?_t=' + Date.now(), { cache: 'no-store' })
+      fetch(pUrl, fetchOpts),
+      fetch(cUrl, fetchOpts)
     ]);
 
     if (pRes.ok) {

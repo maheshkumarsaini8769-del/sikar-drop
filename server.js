@@ -490,7 +490,7 @@ async function syncSettingsFromMongoIfNeeded() {
 }
 
 let lastProductsSyncTime = 0;
-const PRODUCTS_CACHE_TTL = 2000; // 2 seconds TTL for serverless elasticity across lambda containers
+const PRODUCTS_CACHE_TTL = 15000; // 15 seconds TTL for serverless elasticity across lambda containers
 
 async function syncProductsFromMongoIfNeeded(force = false) {
   const now = Date.now();
@@ -587,7 +587,7 @@ async function syncProductsFromMongoIfNeeded(force = false) {
 }
 
 let lastCategoriesSyncTime = 0;
-const CATEGORIES_CACHE_TTL = 3000; // 3 seconds TTL
+const CATEGORIES_CACHE_TTL = 30000; // 30 seconds TTL
 
 async function syncCategoriesFromMongoIfNeeded(force = false) {
   const now = Date.now();
@@ -4368,11 +4368,22 @@ app.post('/api/suppliers', requireAdmin, (req, res) => {
 app.get('/api/products', async (req, res) => {
   try {
     const { category, active } = req.query;
+    const isAdminReq = Boolean(req.headers['x-admin-token'] || active === 'all');
 
-    // HTTP Cache-Control: no-cache to ensure real-time storefront synchronization
-    res.setHeader('Cache-Control', 'no-cache, no-store, must-revalidate');
-
-    await syncProductsFromMongoIfNeeded();
+    if (isAdminReq) {
+      res.setHeader('Cache-Control', 'no-cache, no-store, must-revalidate');
+      await syncProductsFromMongoIfNeeded();
+    } else {
+      res.setHeader('Cache-Control', 'public, max-age=5, s-maxage=15, stale-while-revalidate=60');
+      if (!isHydratedFromMongo) {
+        await syncProductsFromMongoIfNeeded();
+      } else {
+        const now = Date.now();
+        if (now - lastProductsSyncTime > PRODUCTS_CACHE_TTL) {
+          syncProductsFromMongoIfNeeded().catch(e => console.warn('[Products] Background sync error:', e.message));
+        }
+      }
+    }
 
     let query = 'SELECT * FROM products WHERE 1=1';
     const params = [];
@@ -4688,10 +4699,24 @@ app.post('/api/products/bulk-price', requireAdmin, (req, res) => {
 // ==========================================
 app.get('/api/categories', async (req, res) => {
   try {
-    res.setHeader('Cache-Control', 'no-cache, no-store, must-revalidate');
-    await syncCategoriesFromMongoIfNeeded();
-
     const { active } = req.query;
+    const isAdminReq = Boolean(req.headers['x-admin-token'] || active === 'all');
+
+    if (isAdminReq) {
+      res.setHeader('Cache-Control', 'no-cache, no-store, must-revalidate');
+      await syncCategoriesFromMongoIfNeeded();
+    } else {
+      res.setHeader('Cache-Control', 'public, max-age=10, s-maxage=30, stale-while-revalidate=120');
+      if (!isHydratedFromMongo) {
+        await syncCategoriesFromMongoIfNeeded();
+      } else {
+        const now = Date.now();
+        if (now - lastCategoriesSyncTime > CATEGORIES_CACHE_TTL) {
+          syncCategoriesFromMongoIfNeeded().catch(e => console.warn('[Categories] Background sync error:', e.message));
+        }
+      }
+    }
+
     let query = 'SELECT * FROM categories';
     if (active !== 'all') {
       query += ' WHERE active = 1';
@@ -7707,6 +7732,7 @@ app.get(['/assets/uploads/:file', '/api/media/:file'], async (req, res, next) =>
   const fileKey = path.basename(req.params.file);
   const localFile = path.join(UPLOADS_DIR, fileKey);
   if (fs.existsSync(localFile)) {
+    res.setHeader('Cache-Control', 'public, max-age=31536000, s-maxage=31536000, immutable');
     return res.sendFile(localFile);
   }
   try {
@@ -7718,7 +7744,11 @@ app.get(['/assets/uploads/:file', '/api/media/:file'], async (req, res, next) =>
         if (matches) {
           const buf = Buffer.from(matches[2], 'base64');
           res.setHeader('Content-Type', doc.contentType || `image/${matches[1]}`);
-          res.setHeader('Cache-Control', 'public, max-age=31536000, immutable');
+          res.setHeader('Cache-Control', 'public, max-age=31536000, s-maxage=31536000, immutable');
+          try {
+            if (!fs.existsSync(UPLOADS_DIR)) fs.mkdirSync(UPLOADS_DIR, { recursive: true });
+            fs.writeFileSync(localFile, buf);
+          } catch (e) {}
           return res.send(buf);
         }
       }
