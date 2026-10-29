@@ -86,6 +86,7 @@
     }
   },
   "rewrites": [
+    { "source": "/assets/uploads/(.*)", "destination": "/api/[...all].js" },
     { "source": "/api/(.*)", "destination": "/api/[...all].js" },
     { "source": "/api", "destination": "/api/[...all].js" },
     { "source": "/orders", "destination": "/orders.html" },

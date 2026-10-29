@@ -7240,30 +7240,58 @@ const BUILTIN_MEDIA_LABELS = {
   'delivery_truck.jpg': 'Sikar Drop Express Tempo'
 };
 
-app.get('/api/media', (req, res) => {
+app.get('/api/media', async (req, res) => {
   try {
     const assetsDir = path.join(__dirname, 'assets');
     const items = [];
+    const seen = new Set();
 
-    // 1. Uploaded images first (newest first)
+    // 1. Cloud-persistent uploaded images from MongoDB Atlas
+    try {
+      const mongo = await getMongoDb();
+      if (mongo) {
+        const cloudMedia = await mongo.collection('media').find({}).sort({ created_at: -1 }).limit(100).toArray();
+        for (const m of cloudMedia) {
+          const fn = m.filename || m._id;
+          if (fn && !seen.has(fn)) {
+            seen.add(fn);
+            items.push({
+              filename: fn,
+              url: `assets/uploads/${fn}`,
+              label: fn.replace(/\.[^.]+$/, '').replace(/[-_]/g, ' '),
+              source: 'uploaded',
+              mtime: m.created_at ? new Date(m.created_at).getTime() : Date.now()
+            });
+          }
+        }
+      }
+    } catch (mErr) {
+      console.warn('[Media] Mongo gallery read error:', mErr.message);
+    }
+
+    // 2. Uploaded images from local disk
     if (fs.existsSync(UPLOADS_DIR)) {
       const uploadedFiles = fs.readdirSync(UPLOADS_DIR)
-        .filter(f => /\.(jpe?g|png|webp|gif|svg)$/i.test(f))
-        .map(f => {
+        .filter(f => /\.(jpe?g|png|webp|gif|svg)$/i.test(f));
+      for (const f of uploadedFiles) {
+        if (!seen.has(f)) {
+          seen.add(f);
           const stat = fs.statSync(path.join(UPLOADS_DIR, f));
-          return {
+          items.push({
             filename: f,
             url: `assets/uploads/${f}`,
             label: f.replace(/\.[^.]+$/, '').replace(/[-_]/g, ' '),
             source: 'uploaded',
             mtime: stat.mtimeMs
-          };
-        })
-        .sort((a, b) => b.mtime - a.mtime);
-      items.push(...uploadedFiles);
+          });
+        }
+      }
     }
 
-    // 2. Built-in depot gallery images
+    // Sort uploaded items newest first
+    items.sort((a, b) => (b.mtime || 0) - (a.mtime || 0));
+
+    // 3. Built-in depot gallery images
     if (fs.existsSync(assetsDir)) {
       const builtinFiles = fs.readdirSync(assetsDir)
         .filter(f => /\.(jpe?g|png|webp|gif|svg)$/i.test(f))
@@ -7675,15 +7703,16 @@ app.get(['/terms', '/terms.html'], sendSeoPage('terms.html'));
 app.get(['/admin', '/admin/'], sendSeoPage('admin.html'));
 
 // Cloud-persistent uploads server: serve from local disk or MongoDB
-app.get('/assets/uploads/:file', async (req, res, next) => {
-  const localFile = path.join(UPLOADS_DIR, req.params.file);
+app.get(['/assets/uploads/:file', '/api/media/:file'], async (req, res, next) => {
+  const fileKey = path.basename(req.params.file);
+  const localFile = path.join(UPLOADS_DIR, fileKey);
   if (fs.existsSync(localFile)) {
     return res.sendFile(localFile);
   }
   try {
     const mongo = await getMongoDb();
     if (mongo) {
-      const doc = await mongo.collection('media').findOne({ _id: req.params.file });
+      const doc = await mongo.collection('media').findOne({ _id: fileKey });
       if (doc && doc.data) {
         const matches = doc.data.match(/^data:image\/([a-zA-Z0-9+.-]+);base64,(.+)$/);
         if (matches) {
