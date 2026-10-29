@@ -732,12 +732,15 @@ async function loadCatalogFromBackend() {
     if (pRes.ok) {
       const pData = await pRes.json();
       if (Array.isArray(pData)) {
-        const localMap = new Map((PRODUCTS || []).map(p => [p.id, p]));
+        let deletedIds = new Set();
+        try {
+          deletedIds = new Set(JSON.parse(localStorage.getItem('sikar_deleted_product_ids') || '[]'));
+        } catch(e) {}
+        const cleanProds = pData.filter(sp => sp && sp.id && !deletedIds.has(String(sp.id)));
+
+        const localMap = new Map((PRODUCTS || []).filter(p => p && p.id && !deletedIds.has(String(p.id))).map(p => [p.id, p]));
         const merged = [];
-        const serverIds = new Set();
-        for (const sp of pData) {
-          if (!sp || !sp.id) continue;
-          serverIds.add(sp.id);
+        for (const sp of cleanProds) {
           const lp = localMap.get(sp.id);
           if (lp) {
             const localTime = lp.updated_at ? new Date(lp.updated_at).getTime() : 0;
@@ -747,11 +750,7 @@ async function loadCatalogFromBackend() {
             merged.push(sp);
           }
         }
-        for (const lp of (PRODUCTS || [])) {
-          if (lp && lp.id && !serverIds.has(lp.id)) {
-            merged.push(lp);
-          }
-        }
+
         merged.sort((a, b) => {
           const ordA = a.display_order !== undefined ? Number(a.display_order) : 50;
           const ordB = b.display_order !== undefined ? Number(b.display_order) : 50;
@@ -766,19 +765,17 @@ async function loadCatalogFromBackend() {
     if (cRes.ok) {
       const cData = await cRes.json();
       if (Array.isArray(cData)) {
-        const localMap = new Map((CATEGORIES || []).map(c => [c.id, c]));
+        let deletedCatIds = new Set();
+        try {
+          deletedCatIds = new Set(JSON.parse(localStorage.getItem('sikar_deleted_category_ids') || '[]'));
+        } catch(e) {}
+        const cleanCats = cData.filter(sc => sc && sc.id && !deletedCatIds.has(String(sc.id)));
+
+        const localMap = new Map((CATEGORIES || []).filter(c => c && c.id && !deletedCatIds.has(String(c.id))).map(c => [c.id, c]));
         const mergedCats = [];
-        const serverIds = new Set();
-        for (const sc of cData) {
-          if (!sc || !sc.id) continue;
-          serverIds.add(sc.id);
+        for (const sc of cleanCats) {
           const lc = localMap.get(sc.id);
           mergedCats.push(lc ? { ...lc, ...sc } : sc);
-        }
-        for (const lc of (CATEGORIES || [])) {
-          if (lc && lc.id && !serverIds.has(lc.id)) {
-            mergedCats.push(lc);
-          }
         }
         mergedCats.sort((a, b) => (a.display_order || 0) - (b.display_order || 0));
         CATEGORIES = mergedCats;

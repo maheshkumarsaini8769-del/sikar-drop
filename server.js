@@ -569,6 +569,15 @@ async function syncProductsFromMongoIfNeeded(force = false) {
           } catch (e2) {}
         }
       }
+      const mongoIds = new Set(mongoProds.map(p => String(p.id || p._id)));
+      const currentSqliteIds = db.prepare('SELECT id FROM products').all().map(r => r.id);
+      const toRemove = currentSqliteIds.filter(id => !mongoIds.has(id));
+      if (toRemove.length > 0) {
+        const delStmt = db.prepare('DELETE FROM products WHERE id = ?');
+        for (const remId of toRemove) {
+          delStmt.run(remId);
+        }
+      }
     }
     lastProductsSyncTime = now;
     isHydratedFromMongo = true;
@@ -612,6 +621,15 @@ async function syncCategoriesFromMongoIfNeeded(force = false) {
             c.display_order || c.displayOrder || 0
           );
         } catch (itemErr) {}
+      }
+      const mongoCatIds = new Set(mongoCats.map(c => String(c.id || c._id)));
+      const currentCatIds = db.prepare('SELECT id FROM categories').all().map(r => r.id);
+      const toRemoveCats = currentCatIds.filter(id => !mongoCatIds.has(id));
+      if (toRemoveCats.length > 0) {
+        const delCatStmt = db.prepare('DELETE FROM categories WHERE id = ?');
+        for (const remId of toRemoveCats) {
+          delCatStmt.run(remId);
+        }
       }
     }
     lastCategoriesSyncTime = now;
@@ -678,6 +696,15 @@ async function syncPurchasesFromMongoIfNeeded(force = false) {
             p.created_at || new Date().toISOString()
           );
         } catch (itemErr) {}
+      }
+      const mongoPurIds = new Set(mongoPurchases.map(p => String(p.id || p._id)));
+      const currentPurIds = db.prepare('SELECT id FROM purchases').all().map(r => r.id);
+      const toRemovePurs = currentPurIds.filter(id => !mongoPurIds.has(id));
+      if (toRemovePurs.length > 0) {
+        const delPurStmt = db.prepare('DELETE FROM purchases WHERE id = ?');
+        for (const remId of toRemovePurs) {
+          delPurStmt.run(remId);
+        }
       }
     }
     lastPurchasesSyncTime = now;
@@ -4561,52 +4588,29 @@ app.put('/api/products/:id', requireAdmin, async (req, res) => {
 app.delete('/api/products/:id', requireAdmin, async (req, res) => {
   try {
     const { id } = req.params;
-    const { permanent } = req.query;
     const now = new Date().toISOString();
 
     await ensureProductHydrated(id);
     const existing = db.prepare('SELECT * FROM products WHERE id = ?').get(id);
-    if (!existing) {
-      return res.status(404).json({ error: 'Product not found' });
-    }
 
-    // Check if product is referenced in customer orders or sales
-    const orderRef = db.prepare("SELECT id FROM orders WHERE items_json LIKE ? LIMIT 1").get(`%"id":"${id}"%`);
-    const saleRef = db.prepare("SELECT id FROM manual_sales WHERE items_json LIKE ? LIMIT 1").get(`%"id":"${id}"%`);
+    try {
+      db.prepare('DELETE FROM inventory_movements WHERE product_id = ?').run(id);
+    } catch (e) {}
 
-    if ((orderRef || saleRef) && permanent !== 'true') {
-      // Soft-delete / Archive safely to preserve business records and order history
-      db.prepare('UPDATE products SET active = 0, updated_at = ? WHERE id = ?').run(now, id);
-      try {
-        await syncDoc('products', { _id: id }, { ...existing, active: 0, updated_at: now, _id: id });
-        lastProductsSyncTime = Date.now();
-      } catch (e) {}
-
-      db.prepare(`
-        INSERT INTO audit_logs (id, actor, action, module, details, created_at)
-        VALUES (?, 'Admin', 'PRODUCT_ARCHIVED', 'products', ?, ?)
-      `).run('AUD-' + Math.floor(100000 + Math.random() * 900000), `Archived product ID ${id} due to existing order history`, now);
-
-      return res.json({
-        success: true,
-        archived: true,
-        message: `Product '${existing.title}' has historical orders and was safely archived (hidden from customer store) instead of deleted.`
-      });
-    }
-
-    // Otherwise clean hard deletion (e.g. newly created test products)
-    db.prepare('DELETE FROM inventory_movements WHERE product_id = ?').run(id);
     db.prepare('DELETE FROM products WHERE id = ?').run(id);
 
     try {
       await deleteDoc('products', { id, _id: id });
-      lastProductsSyncTime = Date.now();
     } catch (e) {}
 
-    db.prepare(`
-      INSERT INTO audit_logs (id, actor, action, module, details, created_at)
-      VALUES (?, 'Admin', 'PRODUCT_DELETED', 'products', ?, ?)
-    `).run('AUD-' + Math.floor(100000 + Math.random() * 900000), `Deleted product ID ${id}`, now);
+    lastProductsSyncTime = Date.now();
+
+    try {
+      db.prepare(`
+        INSERT INTO audit_logs (id, actor, action, module, details, created_at)
+        VALUES (?, 'Admin', 'PRODUCT_DELETED', 'products', ?, ?)
+      `).run('AUD-' + Math.floor(100000 + Math.random() * 900000), `Deleted product ID ${id} (${existing ? existing.title : ''})`, now);
+    } catch (e) {}
 
     res.json({ success: true, message: `Product ${id} deleted successfully` });
   } catch (err) {

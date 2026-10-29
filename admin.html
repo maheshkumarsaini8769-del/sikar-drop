@@ -7376,6 +7376,51 @@
       }
     };
 
+    // DELETION TRACKING: Prevents deleted products & categories from being resurrected by background sync
+    function getDeletedProductIds() {
+      try {
+        return new Set(JSON.parse(localStorage.getItem('sikar_deleted_product_ids') || '[]'));
+      } catch (e) { return new Set(); }
+    }
+    function markProductIdDeleted(id) {
+      if (!id) return;
+      try {
+        const s = getDeletedProductIds();
+        s.add(String(id));
+        localStorage.setItem('sikar_deleted_product_ids', JSON.stringify([...s]));
+      } catch (e) {}
+    }
+    function clearDeletedProductId(id) {
+      if (!id) return;
+      try {
+        const s = getDeletedProductIds();
+        s.delete(String(id));
+        localStorage.setItem('sikar_deleted_product_ids', JSON.stringify([...s]));
+      } catch (e) {}
+    }
+
+    function getDeletedCategoryIds() {
+      try {
+        return new Set(JSON.parse(localStorage.getItem('sikar_deleted_category_ids') || '[]'));
+      } catch (e) { return new Set(); }
+    }
+    function markCategoryIdDeleted(id) {
+      if (!id) return;
+      try {
+        const s = getDeletedCategoryIds();
+        s.add(String(id));
+        localStorage.setItem('sikar_deleted_category_ids', JSON.stringify([...s]));
+      } catch (e) {}
+    }
+    function clearDeletedCategoryId(id) {
+      if (!id) return;
+      try {
+        const s = getDeletedCategoryIds();
+        s.delete(String(id));
+        localStorage.setItem('sikar_deleted_category_ids', JSON.stringify([...s]));
+      } catch (e) {}
+    }
+
     // REAL-TIME SYNC FROM SQLITE DATABASE ON PAGE LOAD & EVENTS
     async function syncFromBackend() {
       try {
@@ -7431,13 +7476,13 @@
         }
 
         if (prods && Array.isArray(prods)) {
-          const localMap = new Map((adminProducts || []).map(p => [p.id, p]));
+          const deletedIds = getDeletedProductIds();
+          const cleanServerProds = prods.filter(sp => sp && sp.id && !deletedIds.has(String(sp.id)));
+          const serverIds = new Set(cleanServerProds.map(p => p.id));
+          const localMap = new Map((adminProducts || []).filter(p => p && p.id && !deletedIds.has(String(p.id))).map(p => [p.id, p]));
           const merged = [];
-          const serverIds = new Set();
 
-          for (const sp of prods) {
-            if (!sp || !sp.id) continue;
-            serverIds.add(sp.id);
+          for (const sp of cleanServerProds) {
             const lp = localMap.get(sp.id);
             if (lp) {
               const localTime = lp.updated_at ? new Date(lp.updated_at).getTime() : 0;
@@ -7452,9 +7497,14 @@
             }
           }
 
+          // In-flight locally created products (within last 15 seconds) waiting to sync
+          const nowMs = Date.now();
           for (const lp of (adminProducts || [])) {
-            if (lp && lp.id && !serverIds.has(lp.id)) {
-              merged.push(lp);
+            if (lp && lp.id && !serverIds.has(lp.id) && !deletedIds.has(String(lp.id))) {
+              const lpCreated = lp.created_at ? new Date(lp.created_at).getTime() : 0;
+              if (nowMs - lpCreated < 15000) {
+                merged.push(lp);
+              }
             }
           }
 
@@ -7470,18 +7520,22 @@
           if (currentTab === 'products') renderProductsTable();
         }
         if (cats && Array.isArray(cats)) {
-          const localMap = new Map((adminCategories || []).map(c => [c.id, c]));
+          const deletedCatSet = getDeletedCategoryIds();
+          const cleanCats = cats.filter(sc => sc && sc.id && !deletedCatSet.has(String(sc.id)));
+          const serverCatIds = new Set(cleanCats.map(c => c.id));
+          const localMap = new Map((adminCategories || []).filter(c => c && c.id && !deletedCatSet.has(String(c.id))).map(c => [c.id, c]));
           const mergedCats = [];
-          const serverCatIds = new Set();
-          for (const sc of cats) {
-            if (!sc || !sc.id) continue;
-            serverCatIds.add(sc.id);
+          for (const sc of cleanCats) {
             const lc = localMap.get(sc.id);
             mergedCats.push(lc ? { ...lc, ...sc } : sc);
           }
+          const nowMs = Date.now();
           for (const lc of (adminCategories || [])) {
-            if (lc && lc.id && !serverCatIds.has(lc.id)) {
-              mergedCats.push(lc);
+            if (lc && lc.id && !serverCatIds.has(lc.id) && !deletedCatSet.has(String(lc.id))) {
+              const lcCreated = lc.created_at ? new Date(lc.created_at).getTime() : 0;
+              if (nowMs - lcCreated < 15000) {
+                mergedCats.push(lc);
+              }
             }
           }
           mergedCats.sort((a, b) => (a.display_order || 0) - (b.display_order || 0));
@@ -14252,6 +14306,8 @@
         if (serverRes && serverRes.product) {
           Object.assign(prodRecord, serverRes.product);
         }
+        clearDeletedProductId(finalId);
+        clearDeletedProductId(realId);
 
         if (editId) {
           const idx = adminProducts.findIndex(p => p.id === editId);
@@ -14439,23 +14495,30 @@
     }
 
     async function deleteProduct(id) {
-      if (confirm('Are you sure you want to delete this product from the catalog?')) {
+      const p = adminProducts.find(item => item.id === id);
+      const title = p ? p.title : id;
+      if (!confirm(`Are you sure you want to permanently delete '${title}' from the catalog?`)) return;
+
+      markProductIdDeleted(id);
+      adminProducts = adminProducts.filter(p => p.id !== id);
+      localStorage.setItem('sikar_admin_products', JSON.stringify(adminProducts));
+      renderProductsTable();
+
+      try {
+        await sikarApi.delete(`/api/products/${encodeURIComponent(id)}?permanent=true`);
+        adminProducts = adminProducts.filter(p => p.id !== id);
+        localStorage.setItem('sikar_admin_products', JSON.stringify(adminProducts));
+        await syncFromBackend();
         adminProducts = adminProducts.filter(p => p.id !== id);
         localStorage.setItem('sikar_admin_products', JSON.stringify(adminProducts));
         renderProductsTable();
-
-        try {
-          await sikarApi.delete(`/api/products/${encodeURIComponent(id)}`);
-          await syncFromBackend();
-          adminProducts = adminProducts.filter(p => p.id !== id);
-          localStorage.setItem('sikar_admin_products', JSON.stringify(adminProducts));
-          renderProductsTable();
-          notifyStorefrontSync('CATALOG_UPDATED');
-          showToast('Product permanently removed.');
-        } catch (err) {
-          console.error('Backend product delete error:', err);
-          showToast('Product delete failed: ' + (err.message || 'Server error'));
-        }
+        notifyStorefrontSync('CATALOG_UPDATED');
+        showToast(`Product '${title}' permanently removed.`);
+      } catch (err) {
+        console.error('Backend product delete error:', err);
+        showToast('Product delete failed: ' + (err.message || 'Server error'));
+        await syncFromBackend();
+        renderProductsTable();
       }
     }
 
@@ -14604,6 +14667,7 @@
 
     async function deleteCategory(id) {
       if (confirm(`Aap category '${id}' ko delete karna chahte hain? Iske products default category me shift ho jayenge.`)) {
+        markCategoryIdDeleted(id);
         adminCategories = adminCategories.filter(c => c.id !== id);
         localStorage.setItem('sikar_admin_categories', JSON.stringify(adminCategories));
         renderCategoriesTable();
@@ -14612,6 +14676,8 @@
         try {
           await sikarApi.delete(`/api/categories/${encodeURIComponent(id)}?reassignTo=water`);
           await syncFromBackend();
+          adminCategories = adminCategories.filter(c => c.id !== id);
+          localStorage.setItem('sikar_admin_categories', JSON.stringify(adminCategories));
           renderCategoriesTable();
           populateCategorySelectDropdown();
           notifyStorefrontSync('CATALOG_UPDATED');
