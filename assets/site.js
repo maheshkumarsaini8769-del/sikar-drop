@@ -1450,6 +1450,17 @@ function updateCart(id, delta, event) {
   const next = cur + delta;
 
   if (delta > 0) {
+    const prod = getCatalogOrBundleItem(id);
+    const availableStock = prod && prod.stock !== undefined && prod.stock !== null ? Number(prod.stock) : 0;
+    if (availableStock <= 0) {
+      showToast('This item is currently not available in stock.');
+      return;
+    }
+    if (next > availableStock) {
+      showToast(`Only ${availableStock} boxes available in stock.`);
+      return;
+    }
+
     const srcEl = (event && event.currentTarget) ? event.currentTarget : document.getElementById(`prod-img-${id}`);
     flyProductToCart(srcEl);
     if (window.SikarAnalytics && typeof window.SikarAnalytics.trackAddToCart === 'function') {

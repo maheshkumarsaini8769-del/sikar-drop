@@ -6637,7 +6637,7 @@
         price: 20,
         mrp: 20,
         costPrice: 15,
-        stock: 85,
+        stock: 0,
         spec: 'Single Bottle • 1000ml Pack',
         image: 'assets/prod_bisleri_1l.webp'
       },
@@ -6648,7 +6648,7 @@
         price: 18,
         mrp: 20,
         costPrice: 14,
-        stock: 60,
+        stock: 0,
         spec: 'Single Bottle • 1000ml Pack',
         image: 'assets/prod_kinley_1l.webp'
       },
@@ -6659,7 +6659,7 @@
         price: 180,
         mrp: 216,
         costPrice: 145,
-        stock: 45,
+        stock: 0,
         spec: '12 Bottles Shrink Pack • ₹15/pc',
         image: 'assets/prod_water_case.webp'
       },
@@ -6670,7 +6670,7 @@
         price: 240,
         mrp: 288,
         costPrice: 195,
-        stock: 32,
+        stock: 0,
         spec: '24 Bottles Peti • ₹10/pc',
         image: 'assets/prod_aquafina_500ml.webp'
       },
@@ -6681,7 +6681,7 @@
         price: 890,
         mrp: 960,
         costPrice: 750,
-        stock: 24,
+        stock: 0,
         spec: '24 Chilled Bottles Crate • ₹37/pc',
         image: 'assets/prod_coca_cola.webp'
       },
@@ -6692,7 +6692,7 @@
         price: 1180,
         mrp: 1320,
         costPrice: 980,
-        stock: 18,
+        stock: 0,
         spec: '12 Tetra Packs Carton • ₹98/L',
         image: 'assets/prod_fruit_juice.webp'
       },
@@ -6703,7 +6703,7 @@
         price: 290,
         mrp: 340,
         costPrice: 235,
-        stock: 50,
+        stock: 0,
         spec: '48 Mini Sealed Bottles • ₹6/pc',
         image: 'assets/cat_wedding_supply.webp'
       },
@@ -6714,7 +6714,7 @@
         price: 380,
         mrp: 432,
         costPrice: 310,
-        stock: 28,
+        stock: 0,
         spec: '24 Bottles Crate • ₹15.8/pc',
         image: 'assets/cat_soft_drinks.webp'
       },
@@ -6725,7 +6725,7 @@
         price: 280,
         mrp: 330,
         costPrice: 225,
-        stock: 22,
+        stock: 0,
         spec: '30 Tetra Packs with Straw • ₹9.3/pc',
         image: 'assets/prod_fruit_juice.webp'
       },
@@ -6736,7 +6736,7 @@
         price: 2750,
         mrp: 3000,
         costPrice: 2350,
-        stock: 12,
+        stock: 0,
         spec: '24 Aluminum Cans Tray • ₹114/can',
         image: 'assets/prod_chilled_can.webp'
       },
@@ -6747,7 +6747,7 @@
         price: 790,
         mrp: 912,
         costPrice: 640,
-        stock: 19,
+        stock: 0,
         spec: '24 Cans Tray Assorted • ₹32.9/can',
         image: 'assets/cat_chilled_cans.webp'
       },
@@ -6758,7 +6758,7 @@
         price: 5400,
         mrp: 6100,
         costPrice: 4500,
-        stock: 8,
+        stock: 0,
         spec: '15 Total Cases Load • Free Sikar Delivery',
         image: 'assets/cat_wedding_supply.webp'
       }
@@ -6897,44 +6897,7 @@
       { code: 'SHAADI15', pct: 15, minOrder: 3000, maxDiscount: 1000, active: true, desc: '15% Marriage Garden Bulk Combo' }
     ];
 
-    const DEFAULT_REVIEWS = [
-      {
-        id: 'REV-1',
-        name: 'Rajendra Shekhawat',
-        role: 'Manager, Royal Green Marriage Garden',
-        location: 'Piprali Road',
-        type: 'Verified Event Client',
-        quote: 'We ordered 80 cases of factory-sealed water bottles and 25 cold drink crates for a wedding function. Unloading by tempo happened right on time at the venue. Every bottle had a genuine factory seal with zero camper hassle.',
-        reply: 'Thank you Rajendra! Sikar Drop always supplies 100% factory-sealed bottles.'
-      },
-      {
-        id: 'REV-2',
-        name: 'Ashok Sharma',
-        role: 'Warden, Matrix Coaching Hostel',
-        location: 'Piprali Road Corridor',
-        type: 'Hostel Partner',
-        quote: 'For our students\' health, we stopped using camper water and scheduled weekly orders of 1L sealed mineral water cases from Sikar Drop. Weekly tempo delivery is always punctual.',
-        reply: 'Thank you Ashok! Factory-sealed water is always the safest choice for student health.'
-      },
-      {
-        id: 'REV-3',
-        name: 'Suresh Kumar Pareek',
-        role: 'Owner, Pareek Kirana Store',
-        location: 'Station Road Mandi',
-        type: 'Wholesale Buyer',
-        quote: 'Wholesale case rates for our shop are the most competitive in Sikar Mandi. We get direct depot rates with convenient cash or UPI on delivery.',
-        reply: 'Thank you Suresh! Providing wholesale rates better than the mandi to retail shopkeepers is our top priority.'
-      },
-      {
-        id: 'REV-4',
-        name: 'Anita Choudhary',
-        role: 'Resident & Family Head',
-        location: 'Radhakishanpura Colony',
-        type: 'Direct Customer',
-        quote: 'We ordered mini water bottles and juice boxes for a birthday function at home. They were delivered right to our doorstep within 40 minutes. Excellent service!',
-        reply: ''
-      }
-    ];
+    const DEFAULT_REVIEWS = [];
 
     const DEFAULT_SEO = {
       brandName: 'Sikar Drop Wholesale Hub',
@@ -7300,14 +7263,16 @@
       }
 
       let cardsHtml = toShow.map(p => {
+        const inStock = p.stock !== undefined && p.stock !== null && Number(p.stock) > 0;
         const qty = cart[p.id] || 0;
         const isWish = wishlist.includes(p.id);
 
         return `
-          <article class="clean-product-card" id="card-${p.id}">
+          <article class="clean-product-card" id="card-${p.id}" style="${!inStock ? 'opacity: 0.8;' : ''}">
             <div>
               <div class="card-photo-box" onclick="openQuickView('${p.id}')" style="cursor: pointer;" title="Click to view details">
                 <img src="${p.image}" alt="${escapeHTML(p.title)}" id="prod-img-${p.id}" loading="lazy">
+                ${!inStock ? `<span class="badge-not-available" style="position: absolute; top: 8px; right: 8px; background: #475569; color: #FFFFFF; font-size: 0.68rem; font-weight: 800; padding: 2px 7px; border-radius: 4px; z-index: 2; pointer-events: none; letter-spacing: 0.02em;">Not Available</span>` : ''}
                 <button type="button" class="btn-card-heart ${isWish ? 'active' : ''}" onclick="event.stopPropagation(); toggleWishlist('${p.id}')" aria-label="Save to Wishlist">
                   <svg viewBox="0 0 24 24" fill="${isWish ? '#E11D48' : 'none'}" stroke="currentColor" stroke-width="2">
                     <path d="M20.84 4.61a5.5 5.5 0 0 0-7.78 0L12 5.67l-1.06-1.06a5.5 5.5 0 0 0-7.78 7.78l1.06 1.06L12 21.23l7.78-7.78 1.06-1.06a5.5 5.5 0 0 0 0-7.78z"></path>
@@ -7329,7 +7294,11 @@
                 ${p.mrp > p.price ? `<span class="mrp-cross">₹${p.mrp}</span>` : ''}
               </div>
 
-              ${qty > 0 ? `
+              ${!inStock ? `
+                <button type="button" class="btn-out-of-stock" disabled style="background: #F1F5F9; color: #94A3B8; border: 1px solid #CBD5E1; padding: 6px 12px; font-size: 0.78rem; font-weight: 700; border-radius: var(--radius-pill); cursor: not-allowed; display: inline-flex; align-items: center; gap: 4px;" title="This item is currently not available in stock">
+                  <span>Not Available</span>
+                </button>
+              ` : (qty > 0 ? `
                 <div class="card-stepper-control tabular" title="${qty} Boxes in Cart">
                   <button type="button" class="stepper-btn-pill" onclick="updateCart('${p.id}', -1, event)" aria-label="Decrease quantity">-</button>
                   <span class="stepper-qty-num">${qty}</span>
@@ -7340,7 +7309,7 @@
                   <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.4"><circle cx="9" cy="21" r="1"></circle><circle cx="20" cy="21" r="1"></circle><path d="M1 1h4l2.68 13.39a2 2 0 0 0 2 1.61h9.72a2 2 0 0 0 2-1.61L23 6H6"></path></svg>
                   <span>Add Box</span>
                 </button>
-              `}
+              `)}
             </div>
           </article>
         `;
@@ -7550,6 +7519,22 @@
       const badgeText = prod.category === 'cases' ? 'Wholesale Case / Peti' : (prod.category === 'cola' ? 'Cold Drink Crate' : (prod.category === 'juice' ? 'Pure Juice Tray' : 'Factory Sealed Bottle'));
       document.getElementById('qv-spec-pill').textContent = badgeText;
 
+      const inStock = prod.stock !== undefined && prod.stock !== null && Number(prod.stock) > 0;
+      const addBtn = document.getElementById('qv-add-btn');
+      if (addBtn) {
+        if (inStock) {
+          addBtn.disabled = false;
+          addBtn.style.opacity = '1';
+          addBtn.style.cursor = 'pointer';
+          addBtn.innerHTML = '<span>Add to Cart</span>';
+        } else {
+          addBtn.disabled = true;
+          addBtn.style.opacity = '0.6';
+          addBtn.style.cursor = 'not-allowed';
+          addBtn.innerHTML = '<span>Not Available</span>';
+        }
+      }
+
       const heartBtn = document.getElementById('qv-heart-btn');
       const isWish = wishlist.includes(id);
       heartBtn.classList.toggle('active', isWish);
@@ -7566,6 +7551,12 @@
 
     function addQuickViewToCart() {
       if (currentQvProductId) {
+        const prod = PRODUCTS.find(p => p.id === currentQvProductId);
+        const inStock = prod && prod.stock !== undefined && prod.stock !== null ? Number(prod.stock) > 0 : false;
+        if (!inStock) {
+          showToast('This item is currently not available in stock.');
+          return;
+        }
         const img = document.getElementById('qv-img');
         updateCart(currentQvProductId, 1);
         if (img) flyProductToCart(img);
@@ -7589,6 +7580,19 @@
       const next = cur + delta;
 
       if (delta > 0) {
+        const prod = (typeof getCatalogOrBundleItem === 'function')
+          ? getCatalogOrBundleItem(id)
+          : (PRODUCTS.find(p => String(p.id) === String(id)));
+        const availableStock = prod && prod.stock !== undefined && prod.stock !== null ? Number(prod.stock) : 0;
+        if (availableStock <= 0) {
+          showToast('This item is currently not available in stock.');
+          return;
+        }
+        if (next > availableStock) {
+          showToast(`Only ${availableStock} boxes available in stock.`);
+          return;
+        }
+
         const srcEl = (event && event.currentTarget) ? event.currentTarget : document.getElementById(`prod-img-${id}`);
         flyProductToCart(srcEl);
       }

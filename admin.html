@@ -6090,8 +6090,8 @@
       <button type="button" class="modal-close-x" onclick="closeModal('purchase-add-modal')">
         <svg style="width:14px;height:14px;display:block;" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5"><line x1="18" y1="6" x2="6" y2="18"></line><line x1="6" y1="6" x2="18" y2="18"></line></svg>
       </button>
-      <h3 style="font-family: var(--font-heading); font-size: 1.3rem; font-weight: 900; margin-bottom: 4px;">Record Stock Inward (Multi-Product Consignment)</h3>
-      <p style="font-size: 0.82rem; color: var(--text-muted); margin-bottom: 18px;">Inward multiple wholesale products from bottling plants under a single bill. Stock increments atomically in warehouse inventory.</p>
+      <h3 id="purchase-modal-title" style="font-family: var(--font-heading); font-size: 1.3rem; font-weight: 900; margin-bottom: 4px;">Record Stock Inward (Multi-Product Consignment)</h3>
+      <p id="purchase-modal-desc" style="font-size: 0.82rem; color: var(--text-muted); margin-bottom: 18px;">Inward multiple wholesale products from bottling plants under a single bill. Stock increments atomically in warehouse inventory.</p>
 
       <form onsubmit="handlePurchaseSubmit(event)">
         <!-- INVOICE & SUPPLIER DETAILS -->
@@ -7046,18 +7046,18 @@
   <script>
     // SHARED DEFAULT DATA CONSTANTS
     const DEFAULT_PRODUCTS = [
-      { id: 'p1', title: 'Bisleri 1L Mineral Water Bottle', category: 'water', price: 18, mrp: 20, cost: 14, stock: 120, spec: 'Single Bottle • 1000ml Pack', image: 'assets/prod_bisleri_1l.webp' },
-      { id: 'p2', title: 'Kinley 1L Drinking Water Bottle', category: 'water', price: 18, mrp: 20, cost: 14, stock: 95, spec: 'Single Bottle • 1000ml Pack', image: 'assets/prod_kinley_1l.webp' },
-      { id: 'p3', title: 'Bailey 1L Packaged Water (12 pcs Case)', category: 'cases', price: 180, mrp: 240, cost: 145, stock: 45, spec: '12 Bottles Shrink Pack • ₹15/pc', image: 'assets/prod_water_case.webp' },
-      { id: 'p4', title: 'Aquafina 500ml Compact Water (24 pcs Case)', category: 'cases', price: 240, mrp: 290, cost: 190, stock: 30, spec: '24 Bottles Peti • ₹10/pc', image: 'assets/prod_aquafina_500ml.webp' },
-      { id: 'p5', title: 'Coca-Cola 750ml Party Crate (24 bottles)', category: 'cola', price: 890, mrp: 960, cost: 720, stock: 18, spec: '24 Chilled Bottles Crate • ₹37/pc', image: 'assets/prod_coca_cola.webp' },
-      { id: 'p6', title: 'Real Fruit Power Mixed Juice (12x 1L)', category: 'juice', price: 1180, mrp: 1320, cost: 950, stock: 12, spec: '12 Tetra Packs Carton • ₹98/L', image: 'assets/prod_fruit_juice.webp' },
-      { id: 'p7', title: 'Red Bull & Sting Energy Cans Tray (24 pcs)', category: 'can', price: 1440, mrp: 1680, cost: 1160, stock: 8, spec: '24 Cans Chilled Tray • Energy Pack', image: 'assets/prod_chilled_can.webp' },
-      { id: 'p8', title: '250ml Shaadi Water Peti (48 pcs Mini Pack)', category: 'cases', price: 290, mrp: 350, cost: 230, stock: 65, spec: '48 Mini Sealed Bottles • Wedding Special', image: 'assets/cat_water_bottles.webp' },
-      { id: 'p9', title: 'Thums Up 2L Jumbo Bottle Case (9 pcs)', category: 'cola', price: 780, mrp: 855, cost: 640, stock: 15, spec: '9 Jumbo Bottles Case • High Fizz', image: 'assets/cat_soft_drinks.webp' },
-      { id: 'p10', title: 'Sprite 750ml Lime Chilled Crate (24 pcs)', category: 'cola', price: 890, mrp: 960, cost: 720, stock: 14, spec: '24 Chilled Glass Bottles', image: 'assets/cat_soft_drinks.webp' },
-      { id: 'p11', title: 'Frooti & Maaza Mango Juice Tray (30 pcs)', category: 'juice', price: 290, mrp: 330, cost: 220, stock: 25, spec: '30 Tetra Packs Tray • ₹9.6/pc', image: 'assets/cat_fruit_juices.webp' },
-      { id: 'p12', title: 'Shaadi & Function Drinks Mega Combo Load', category: 'cases', price: 8800, mrp: 9900, cost: 7100, stock: 8, spec: '15 Total Cases Load • Free Sikar Delivery', image: 'assets/cat_wedding_supply.webp' }
+      { id: 'p1', title: 'Bisleri 1L Mineral Water Bottle', category: 'water', price: 18, mrp: 20, cost: 14, stock: 0, spec: 'Single Bottle • 1000ml Pack', image: 'assets/prod_bisleri_1l.webp' },
+      { id: 'p2', title: 'Kinley 1L Drinking Water Bottle', category: 'water', price: 18, mrp: 20, cost: 14, stock: 0, spec: 'Single Bottle • 1000ml Pack', image: 'assets/prod_kinley_1l.webp' },
+      { id: 'p3', title: 'Bailey 1L Packaged Water (12 pcs Case)', category: 'cases', price: 180, mrp: 240, cost: 145, stock: 0, spec: '12 Bottles Shrink Pack • ₹15/pc', image: 'assets/prod_water_case.webp' },
+      { id: 'p4', title: 'Aquafina 500ml Compact Water (24 pcs Case)', category: 'cases', price: 240, mrp: 290, cost: 190, stock: 0, spec: '24 Bottles Peti • ₹10/pc', image: 'assets/prod_aquafina_500ml.webp' },
+      { id: 'p5', title: 'Coca-Cola 750ml Party Crate (24 bottles)', category: 'cola', price: 890, mrp: 960, cost: 720, stock: 0, spec: '24 Chilled Bottles Crate • ₹37/pc', image: 'assets/prod_coca_cola.webp' },
+      { id: 'p6', title: 'Real Fruit Power Mixed Juice (12x 1L)', category: 'juice', price: 1180, mrp: 1320, cost: 950, stock: 0, spec: '12 Tetra Packs Carton • ₹98/L', image: 'assets/prod_fruit_juice.webp' },
+      { id: 'p7', title: 'Red Bull & Sting Energy Cans Tray (24 pcs)', category: 'can', price: 1440, mrp: 1680, cost: 1160, stock: 0, spec: '24 Cans Chilled Tray • Energy Pack', image: 'assets/prod_chilled_can.webp' },
+      { id: 'p8', title: '250ml Shaadi Water Peti (48 pcs Mini Pack)', category: 'cases', price: 290, mrp: 350, cost: 230, stock: 0, spec: '48 Mini Sealed Bottles • Wedding Special', image: 'assets/cat_water_bottles.webp' },
+      { id: 'p9', title: 'Thums Up 2L Jumbo Bottle Case (9 pcs)', category: 'cola', price: 780, mrp: 855, cost: 640, stock: 0, spec: '9 Jumbo Bottles Case • High Fizz', image: 'assets/cat_soft_drinks.webp' },
+      { id: 'p10', title: 'Sprite 750ml Lime Chilled Crate (24 pcs)', category: 'cola', price: 890, mrp: 960, cost: 720, stock: 0, spec: '24 Chilled Glass Bottles', image: 'assets/cat_soft_drinks.webp' },
+      { id: 'p11', title: 'Frooti & Maaza Mango Juice Tray (30 pcs)', category: 'juice', price: 290, mrp: 330, cost: 220, stock: 0, spec: '30 Tetra Packs Tray • ₹9.6/pc', image: 'assets/cat_fruit_juices.webp' },
+      { id: 'p12', title: 'Shaadi & Function Drinks Mega Combo Load', category: 'cases', price: 8800, mrp: 9900, cost: 7100, stock: 0, spec: '15 Total Cases Load • Free Sikar Delivery', image: 'assets/cat_wedding_supply.webp' }
     ];
 
     const DEFAULT_CATEGORIES = [
@@ -7123,66 +7123,16 @@
       disc20: 10
     };
 
-    const DEFAULT_ORDERS = [
-      { id: 'SKR-8421', customer: 'Rajendra Shekhawat', phone: '98290 12345', login_phone: '98290 12345', delivery_phone: '94140 88990', corridor: 'Piprali Road', itemsCount: 80, itemsDesc: '80 Petis (Water + Cold Drinks)', total: 23200, status: 'confirmed', vehicle: 'RJ-23-GA-4821', time: '10:45 AM' },
-      { id: 'SKR-7612', customer: 'Ashok Sharma', phone: '98290 67890', login_phone: '98290 67890', delivery_phone: '98290 67890', corridor: 'Piprali Road Corridor', itemsCount: 20, itemsDesc: '20 Petis Kinley 1L Cases', total: 3600, status: 'completed', vehicle: 'RJ-23-GB-1104', time: '09:15 AM' },
-      { id: 'SKR-5539', customer: 'Suresh Kumar Pareek', phone: '98290 44556', login_phone: '98290 44556', delivery_phone: '98290 77112', corridor: 'Station Road Mandi', itemsCount: 15, itemsDesc: '15 Crates Soft Drinks & Juice', total: 8900, status: 'pending', vehicle: 'RJ-23-GA-9922', time: '11:20 AM' },
-      { id: 'SKR-3204', customer: 'Vikram Singh', phone: '98290 99887', login_phone: '98290 99887', delivery_phone: '98290 99887', corridor: 'Fatehpur Road Corridor', itemsCount: 35, itemsDesc: '35 Petis Wedding Water Cases', total: 10150, status: 'confirmed', vehicle: 'RJ-23-GA-4821', time: '11:55 AM' },
-      { id: 'SKR-1940', customer: 'Mahesh Sharma', phone: '98290 11223', login_phone: '98290 11223', delivery_phone: '98290 11223', corridor: 'Piprali Road Mandi', itemsCount: 12, itemsDesc: '12 Petis Bisleri 1L Cases', total: 3480, status: 'completed', vehicle: 'RJ-23-GA-4821', time: '02:30 PM' }
-    ];
-
-    const DEFAULT_CUSTOMERS = [
-      { name: 'Rajendra Shekhawat', phone: '98290 12345', corridor: 'Piprali Road', ordersCount: 4, lifetimeSpend: 46400, lastOrder: '2026-10-10' },
-      { name: 'Mahesh Sharma', phone: '98290 11223', corridor: 'Piprali Road Mandi', ordersCount: 3, lifetimeSpend: 18400, lastOrder: '2026-10-09' },
-      { name: 'Ashok Sharma', phone: '98290 67890', corridor: 'Piprali Road Corridor', ordersCount: 2, lifetimeSpend: 7200, lastOrder: '2026-10-08' },
-      { name: 'Suresh Kumar Pareek', phone: '98290 44556', corridor: 'Station Road Mandi', ordersCount: 2, lifetimeSpend: 17800, lastOrder: '2026-10-07' },
-      { name: 'Vikram Singh', phone: '98290 99887', corridor: 'Fatehpur Road Corridor', ordersCount: 1, lifetimeSpend: 10150, lastOrder: '2026-10-06' }
-    ];
-
-    const DEFAULT_KHATA = [
-      { id: 'k1', customer: 'Mahesh Sharma (Garden)', phone: '98290 11223', amount: 1500, dueDate: '2026-10-11', note: 'Shaadi Water Case Balance', paid: false },
-      { id: 'k2', customer: 'Royal Green Canteen', phone: '98290 55443', amount: 3200, dueDate: '2026-10-15', note: 'Cold Drink Crates Balance', paid: false },
-      { id: 'k3', customer: 'Pareek Kirana Store', phone: '98290 44556', amount: 800, dueDate: '2026-10-05', note: 'Bailey 1L Cases (Overdue)', paid: false }
-    ];
-
-    const DEFAULT_PURCHASES = [
-      { id: 'PUR-101', supplier: 'Bisleri Plant Jaipur', productTitle: 'Bisleri 1L Mineral Water Bottle', qty: 100, cost: 14, total: 1400, date: '2026-10-08', billNo: 'INV-BIS-8821' },
-      { id: 'PUR-102', supplier: 'Moon Beverages Coke Depot', productTitle: 'Coca-Cola 750ml Party Crate', qty: 40, cost: 720, total: 28800, date: '2026-10-09', billNo: 'INV-COK-4412' },
-      { id: 'PUR-103', supplier: 'Parle Agro Jaipur', productTitle: 'Frooti & Maaza Mango Juice Tray', qty: 50, cost: 220, total: 11000, date: '2026-10-09', billNo: 'INV-PAR-3312' }
-    ];
-
+    const DEFAULT_ORDERS = [];
+    const DEFAULT_CUSTOMERS = [];
+    const DEFAULT_KHATA = [];
+    const DEFAULT_PURCHASES = [];
     const DEFAULT_COUPONS = [
       { code: 'DIWALI10', pct: 10, minOrder: 1000, maxDiscount: 500, active: true, desc: '10% Off Festival Special' },
       { code: 'SIKAR5', pct: 5, minOrder: 500, maxDiscount: 200, active: true, desc: '5% Mandi Wholesale Discount' },
       { code: 'SHAADI15', pct: 15, minOrder: 3000, maxDiscount: 1000, active: true, desc: '15% Marriage Garden Bulk Combo' }
     ];
-
-    const DEFAULT_REVIEWS = [
-      {
-        id: 'REV-1',
-        name: 'Rajendra Shekhawat',
-        role: 'Manager, Royal Green Marriage Garden',
-        location: 'Piprali Road',
-        quote: 'Ordered 80 cases of factory-sealed water bottles and 25 cold drink crates for a wedding function. Prompt tempo delivery right at the venue. Pure factory seal, zero camper hassle.',
-        reply: 'Thank you Rajendra! Sikar Drop strictly supplies 100% factory-sealed bottles and boxes.'
-      },
-      {
-        id: 'REV-2',
-        name: 'Ashok Sharma',
-        role: 'Warden, Matrix Coaching Hostel',
-        location: 'Piprali Road Corridor',
-        quote: 'To protect student health, we stopped unhygienic camper jars and scheduled weekly deliveries of 1L factory-sealed water cases from Sikar Drop. Punctual tempo unloading.',
-        reply: 'Thank you Ashok! Safe, factory-sealed hydration is our highest priority for hostel students.'
-      },
-      {
-        id: 'REV-3',
-        name: 'Suresh Kumar Pareek',
-        role: 'Owner, Pareek Kirana Store',
-        location: 'Station Road Mandi',
-        quote: 'The wholesale case rates are the most competitive across Sikar mandi. Direct depot prices and instant delivery receipt.',
-        reply: 'Thank you Suresh! Supporting local retail merchants with wholesale margins is our mission.'
-      }
-    ];
+    const DEFAULT_REVIEWS = [];
 
     const DEFAULT_SUBADMINS = [
       { id: 'ADM-01', name: 'Mahesh Kumar Saini', email: 'maheshkumarsaini8769@gmail.com', username: 'maheshkumarsaini8769@gmail.com', pass: '', pin: '', role: 'Super Admin', perms: ['all'], permissions: ['all'] },
@@ -7551,7 +7501,7 @@
           adminDeliveryZones = deliveryZones;
           localStorage.setItem('sikar_delivery_zones', JSON.stringify(adminDeliveryZones));
         }
-        if (orders && Array.isArray(orders) && orders.length > 0) {
+        if (orders && Array.isArray(orders)) {
           adminOrders = orders.map(o => ({
             id: o.id,
             customer: o.customer_name || o.customer,
@@ -7579,7 +7529,7 @@
           localStorage.setItem('sikar_admin_orders', JSON.stringify(adminOrders));
           if (currentTab === 'orders') renderOrdersTable();
         }
-        if (customers && Array.isArray(customers) && customers.length > 0) {
+        if (customers && Array.isArray(customers)) {
           adminCustomers = customers.map(c => ({
             id: c.id,
             name: c.name,
@@ -7603,44 +7553,40 @@
         }
         if (khata) {
           const khataList = Array.isArray(khata) ? khata : (khata.entries || []);
-          if (khataList.length > 0) {
-            adminKhata = khataList.map(k => ({
-              id: k.id,
-              customer_id: k.customer_id || '',
-              customer: k.customer_name || k.customer,
-              customer_name: k.customer_name || k.customer,
-              phone: k.customer_phone || k.phone,
-              customer_phone: k.customer_phone || k.phone,
-              amount: k.remaining_amount !== undefined ? k.remaining_amount : k.amount,
-              original_amount: k.amount,
-              paid_amount: k.paid_amount || 0,
-              remaining_amount: k.remaining_amount !== undefined ? k.remaining_amount : k.amount,
-              dueDate: k.due_date || k.dueDate || '',
-              due_date: k.due_date || k.dueDate || '',
-              note: k.reason || k.note || 'Credit Beverage Supply',
-              reason: k.reason || k.note || 'Credit Beverage Supply',
-              status: k.status,
-              order_id: k.order_id || '',
-              origin_type: k.origin_type || 'manual',
-              adjustment_amount: k.adjustment_amount || 0,
-              adjustment_reason: k.adjustment_reason || '',
-              isOverdue: k.isOverdue,
-              isDueToday: k.isDueToday,
-              daysOverdue: k.daysOverdue || 0,
-              lastPayment: k.lastPayment || null,
-              paid: k.status === 'settled' || (k.remaining_amount !== undefined ? k.remaining_amount <= 0 : false),
-              created_at: k.created_at || ''
-            }));
-            localStorage.setItem('sikar_admin_khata', JSON.stringify(adminKhata));
-            if (currentTab === 'khata') renderKhataTable();
-          }
+          adminKhata = khataList.map(k => ({
+            id: k.id,
+            customer_id: k.customer_id || '',
+            customer: k.customer_name || k.customer,
+            customer_name: k.customer_name || k.customer,
+            phone: k.customer_phone || k.phone,
+            customer_phone: k.customer_phone || k.phone,
+            amount: k.remaining_amount !== undefined ? k.remaining_amount : k.amount,
+            original_amount: k.amount,
+            paid_amount: k.paid_amount || 0,
+            remaining_amount: k.remaining_amount !== undefined ? k.remaining_amount : k.amount,
+            dueDate: k.due_date || k.dueDate || '',
+            due_date: k.due_date || k.dueDate || '',
+            note: k.reason || k.note || 'Credit Beverage Supply',
+            reason: k.reason || k.note || 'Credit Beverage Supply',
+            status: k.status,
+            order_id: k.order_id || '',
+            origin_type: k.origin_type || 'manual',
+            adjustment_amount: k.adjustment_amount || 0,
+            adjustment_reason: k.adjustment_reason || '',
+            isOverdue: k.isOverdue,
+            isDueToday: k.isDueToday,
+            daysOverdue: k.daysOverdue || 0,
+            lastPayment: k.lastPayment || null,
+            paid: k.status === 'settled' || (k.remaining_amount !== undefined ? k.remaining_amount <= 0 : false),
+            created_at: k.created_at || ''
+          }));
+          localStorage.setItem('sikar_admin_khata', JSON.stringify(adminKhata));
+          if (currentTab === 'khata') renderKhataTable();
           if (khata.summary) {
             adminKhataSummary = khata.summary;
           }
         }
-        if (purchases && Array.isArray(purchases) && purchases.length > 0) {
-          const localPurchases = JSON.parse(localStorage.getItem('sikar_admin_purchases') || '[]');
-          const customPurchases = localPurchases.filter(lp => lp && lp.id && !purchases.some(sp => sp.id === lp.id));
+        if (purchases && Array.isArray(purchases)) {
           const mappedPurchases = purchases.map(p => {
             let parsedItems = [];
             if (Array.isArray(p.items) && p.items.length > 0) {
@@ -7651,28 +7597,36 @@
             return {
               id: p.id,
               supplier: p.supplier_name || p.supplier || 'Plant Depot',
+              supplier_name: p.supplier_name || p.supplier || 'Plant Depot',
               supplierPhone: p.supplier_phone || p.supplierPhone || '',
+              supplier_phone: p.supplier_phone || p.supplierPhone || '',
               productTitle: p.product_title || p.productTitle || '',
               productId: p.product_id || p.productId || '',
               qty: Number(p.qty || 0),
               cost: Number(p.unit_cost || p.cost || 0),
+              unit_cost: Number(p.unit_cost || p.cost || 0),
               total: Number(p.total_cost || p.total || (Number(p.qty || 0) * Number(p.unit_cost || 0))),
+              total_cost: Number(p.total_cost || p.total || (Number(p.qty || 0) * Number(p.unit_cost || 0))),
               date: p.invoice_date || (p.created_at ? p.created_at.split('T')[0] : (p.date || '')),
+              invoice_date: p.invoice_date || (p.created_at ? p.created_at.split('T')[0] : (p.date || '')),
               billNo: p.bill_no || p.billNo || '',
+              bill_no: p.bill_no || p.billNo || '',
+              payment_method: p.payment_method || 'Bank Transfer',
+              notes: p.notes || '',
               status: p.status || 'received',
               billImage: p.bill_image || p.billImage || '',
+              bill_image: p.bill_image || p.billImage || '',
               items: parsedItems
             };
           });
-          const mergedPurchases = [...mappedPurchases, ...customPurchases];
-          mergedPurchases.sort((a, b) => {
+          mappedPurchases.sort((a, b) => {
             const dateA = a.date || '';
             const dateB = b.date || '';
             if (dateA !== dateB) return dateB.localeCompare(dateA);
             return (b.id || '').localeCompare(a.id || '');
           });
-          adminPurchases = mergedPurchases;
-          localStorage.setItem('sikar_admin_purchases', JSON.stringify(mergedPurchases));
+          adminPurchases = mappedPurchases;
+          localStorage.setItem('sikar_admin_purchases', JSON.stringify(mappedPurchases));
           if (currentTab === 'purchases') {
             renderPurchasesTable();
           }
@@ -7688,11 +7642,9 @@
           }));
           localStorage.setItem('sikar_admin_coupons', JSON.stringify(adminCoupons));
         }
-        if (reviews && Array.isArray(reviews) && reviews.length > 0) {
-          const localReviews = JSON.parse(localStorage.getItem('sikar_admin_reviews') || '[]');
+        if (reviews && Array.isArray(reviews)) {
           adminReviews = reviews.map((r, idx) => {
             const targetId = r.id || ('REV-' + (idx + 1));
-            const localMatch = localReviews.find(lr => lr && (lr.id === targetId || lr.name === (r.customer_name || r.name)));
             return {
               id: targetId,
               name: r.customer_name || r.reviewer_name || r.name || 'Customer',
@@ -7700,10 +7652,13 @@
               location: r.location || '',
               rating: r.rating !== undefined ? r.rating : 5,
               quote: r.quote || r.review_text || '',
-              reply: (localMatch && localMatch.reply !== undefined && localMatch.reply !== '') ? localMatch.reply : (r.reply || r.reply_text || '')
+              reply: r.reply || r.reply_text || ''
             };
           });
           localStorage.setItem('sikar_admin_reviews', JSON.stringify(adminReviews));
+          if (currentTab === 'reviews' && typeof renderReviewsTable === 'function') {
+            renderReviewsTable();
+          }
         }
         if (soc && soc.clicks) {
           adminSocialClicks = soc.clicks;
@@ -13021,6 +12976,7 @@
     let purchaseModalBillImage = '';
     let activeBillPurId = null;
     let expandedSupplierConsignments = new Set();
+    let editingPurchaseId = null;
 
     function setPurchasesViewMode(mode, btn) {
       currentPurchasesViewMode = mode;
@@ -13042,6 +12998,15 @@
     }
 
     function openPurchaseModal() {
+      editingPurchaseId = null;
+
+      const titleEl = document.getElementById('purchase-modal-title');
+      if (titleEl) titleEl.textContent = 'Record Stock Inward (Multi-Product Consignment)';
+      const descEl = document.getElementById('purchase-modal-desc');
+      if (descEl) descEl.textContent = 'Inward multiple wholesale products from bottling plants under a single bill. Stock increments atomically in warehouse inventory.';
+      const submitText = document.getElementById('pur-submit-btn-text');
+      if (submitText) submitText.textContent = 'Record Stock Inward & Increment Inventory';
+
       const now = new Date();
       const localYMD = `${now.getFullYear()}-${String(now.getMonth() + 1).padStart(2, '0')}-${String(now.getDate()).padStart(2, '0')}`;
       const dateEl = document.getElementById('pur-date');
@@ -13087,6 +13052,108 @@
       renderPurchaseModalItems();
       updatePurchaseModalCalculations();
       openModal('purchase-add-modal');
+    }
+
+    function editPurchase(purId) {
+      const p = (adminPurchases || []).find(x => x.id === purId);
+      if (!p) {
+        showToast('Purchase record not found');
+        return;
+      }
+      editingPurchaseId = purId;
+
+      const titleEl = document.getElementById('purchase-modal-title');
+      if (titleEl) titleEl.textContent = `Edit Stock Inward (${p.billNo || purId})`;
+      const descEl = document.getElementById('purchase-modal-desc');
+      if (descEl) descEl.textContent = 'Update products, quantities, rates, or bill details. Warehouse inventory stock will be adjusted automatically.';
+      const submitText = document.getElementById('pur-submit-btn-text');
+      if (submitText) submitText.textContent = 'Update Consignment & Adjust Stock';
+
+      const dateEl = document.getElementById('pur-date');
+      if (dateEl) dateEl.value = getPurchaseDateYMD(p) || new Date().toISOString().split('T')[0];
+
+      const billNoEl = document.getElementById('pur-billno');
+      if (billNoEl) billNoEl.value = p.billNo || p.bill_no || '';
+
+      const supplierEl = document.getElementById('pur-supplier');
+      if (supplierEl) supplierEl.value = p.supplier || p.supplier_name || '';
+
+      const phoneEl = document.getElementById('pur-supplier-phone');
+      if (phoneEl) phoneEl.value = p.supplierPhone || p.supplier_phone || '';
+
+      const payEl = document.getElementById('pur-payment-method');
+      if (payEl) payEl.value = p.payment_method || p.paymentMethod || 'Bank Transfer';
+
+      const notesEl = document.getElementById('pur-notes');
+      if (notesEl) notesEl.value = p.notes || '';
+
+      purchaseModalBillImage = p.billImage || p.bill_image || '';
+      if (purchaseModalBillImage) {
+        const previewBox = document.getElementById('pur-bill-preview-box');
+        const previewImg = document.getElementById('pur-bill-img-preview');
+        if (previewBox && previewImg) {
+          previewImg.src = purchaseModalBillImage;
+          previewBox.style.display = 'flex';
+        }
+      } else {
+        removePurchaseBillPhoto();
+      }
+
+      let itemsList = [];
+      if (Array.isArray(p.items) && p.items.length > 0) {
+        itemsList = p.items;
+      } else if (p.items_json) {
+        try { itemsList = JSON.parse(p.items_json); } catch(e) {}
+      }
+      if (!itemsList || itemsList.length === 0) {
+        itemsList = [{
+          productId: p.productId || p.product_id || (adminProducts[0] ? adminProducts[0].id : 'p1'),
+          productTitle: p.productTitle || p.product_title || 'Beverage Cases',
+          qty: p.qty || 1,
+          unitCost: p.cost || p.unit_cost || 0,
+          totalCost: (p.qty || 1) * (p.cost || p.unit_cost || 0)
+        }];
+      }
+
+      purchaseModalItems = itemsList.map(it => ({
+        productId: it.productId || it.id,
+        productTitle: it.productTitle || it.title || '',
+        qty: it.qty || it.quantity || 1,
+        unitCost: it.unitCost !== undefined ? it.unitCost : (it.cost !== undefined ? it.cost : 0),
+        totalCost: (it.qty || it.quantity || 1) * (it.unitCost !== undefined ? it.unitCost : (it.cost !== undefined ? it.cost : 0))
+      }));
+
+      renderPurchaseModalItems();
+      updatePurchaseModalCalculations();
+      openModal('purchase-add-modal');
+    }
+
+    async function deletePurchase(purId) {
+      const p = (adminPurchases || []).find(x => x.id === purId);
+      const name = p ? (p.supplier || p.supplier_name || 'Plant Consignment') : purId;
+      const bill = p && (p.billNo || p.bill_no) ? ` (Bill: ${p.billNo || p.bill_no})` : '';
+
+      if (!confirm(`Are you sure you want to delete purchase ${purId}${bill} from ${name}?\n\nThis will reverse the inwarded quantity from inventory stock.`)) {
+        return;
+      }
+
+      try {
+        const res = await sikarApi.delete(`/api/purchases/${purId}`);
+        if (res && (res.success || res.message)) {
+          showToast(`Purchase ${purId} deleted and inward stock reversed`);
+          adminPurchases = (adminPurchases || []).filter(x => x.id !== purId);
+          localStorage.setItem('sikar_admin_purchases', JSON.stringify(adminPurchases));
+          await syncFromBackend();
+          renderPurchasesTable();
+          renderInventoryTable();
+          renderDashboard();
+        } else {
+          throw new Error((res && res.error) || 'Failed to delete purchase');
+        }
+      } catch (err) {
+        console.error('Delete purchase error:', err);
+        showToast('Error deleting purchase: ' + err.message);
+      }
     }
 
     function syncPurchaseModalItemsFromDOM() {
@@ -13467,6 +13534,22 @@
           actor: currentOperator ? currentOperator.name : 'Admin'
         };
 
+        if (editingPurchaseId) {
+          const res = await sikarApi.put(`/api/purchases/${editingPurchaseId}`, payload);
+          if (res && (res.success || res.id || res.purchaseId)) {
+            closeModal('purchase-add-modal');
+            showToast(`Purchase consignment ${editingPurchaseId} updated & inventory stock adjusted.`);
+            editingPurchaseId = null;
+            await syncFromBackend();
+            renderInventoryTable();
+            renderPurchasesTable();
+            renderDashboard();
+            return;
+          } else {
+            throw new Error((res && res.error) || 'Failed to update purchase');
+          }
+        }
+
         const res = await sikarApi.post('/api/purchases', payload);
 
         if (res && (res.success || res.id || res.purchaseId)) {
@@ -13534,7 +13617,7 @@
         showToast('Error recording stock inward: ' + err.message);
       } finally {
         if (submitBtn) submitBtn.disabled = false;
-        if (submitText) submitText.textContent = 'Record Stock Inward & Increment Inventory';
+        if (submitText) submitText.textContent = editingPurchaseId ? 'Update Consignment & Adjust Stock' : 'Record Stock Inward & Increment Inventory';
       }
     }
 
@@ -13703,10 +13786,14 @@
                 </button>
               </td>
               <td>
-                ${isReceived ?
-                  '<span class="badge-status completed">Stock Inwarded</span>' :
-                  `<button type="button" class="btn-tbl-action success" onclick="receivePurchaseStock('${p.id}')">Receive &amp; Inward Stock</button>`
-                }
+                <div style="display: flex; gap: 5px; align-items: center;">
+                  ${isReceived ?
+                    '<span class="badge-status completed" style="font-size:0.72rem; padding:2px 6px;">Inwarded</span>' :
+                    `<button type="button" class="btn-tbl-action success" onclick="receivePurchaseStock('${p.id}')">Receive</button>`
+                  }
+                  <button type="button" class="btn-tbl-action" style="font-size:0.75rem; padding:3px 7px;" onclick="editPurchase('${p.id}')" title="Edit purchase entry">Edit</button>
+                  <button type="button" class="btn-tbl-action danger" style="font-size:0.75rem; padding:3px 7px;" onclick="deletePurchase('${p.id}')" title="Delete purchase entry and reverse inward stock">Delete</button>
+                </div>
               </td>
             </tr>
           `;
@@ -13812,6 +13899,18 @@
                         <button type="button" class="btn-tbl-action ${hasBill ? 'success' : ''}" style="display: inline-flex; align-items: center; gap: 5px; padding: 6px 11px; font-size: 0.8rem; font-weight: 700;" onclick="openPurchaseBillModal('${p.id}')" title="Inspect paper bill photo">
                           <svg width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2"><path d="M23 19a2 2 0 0 1-2 2H3a2 2 0 0 1-2-2V8a2 2 0 0 1 2-2h4l2-3h6l2 3h4a2 2 0 0 1 2 2z"></path><circle cx="12" cy="13" r="4"></circle></svg>
                           <span>${hasBill ? 'View Bill Photo' : 'Attach Bill Photo'}</span>
+                        </button>
+
+                        <!-- EDIT BUTTON -->
+                        <button type="button" class="btn-tbl-action" style="display: inline-flex; align-items: center; gap: 4px; padding: 6px 11px; font-size: 0.8rem; font-weight: 700;" onclick="editPurchase('${p.id}')" title="Edit purchase consignment">
+                          <svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2"><path d="M12 20h9"></path><path d="M16.5 3.5a2.121 2.121 0 0 1 3 3L7 19l-4 1 1-4L16.5 3.5z"></path></svg>
+                          <span>Edit</span>
+                        </button>
+
+                        <!-- DELETE BUTTON -->
+                        <button type="button" class="btn-tbl-action danger" style="display: inline-flex; align-items: center; gap: 4px; padding: 6px 11px; font-size: 0.8rem; font-weight: 700;" onclick="deletePurchase('${p.id}')" title="Delete purchase consignment and reverse inward stock">
+                          <svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2"><polyline points="3 6 5 6 21 6"></polyline><path d="M19 6v14a2 2 0 0 1-2 2H7a2 2 0 0 1-2-2V6m3 0V4a2 2 0 0 1 2-2h4a2 2 0 0 1 2 2v2"></path></svg>
+                          <span>Delete</span>
                         </button>
 
                         <!-- TOGGLE PRODUCTS BUTTON -->

@@ -69,6 +69,20 @@ async function runAuditTests() {
   let adminToken = '';
   let subAdminToken = '';
 
+  // Wait for initial cloud hydration if running
+  try {
+    const { getMongoDb } = require('./mongo.js');
+    await getMongoDb();
+    if (typeof app.hydrateFromMongo === 'function') {
+      await app.hydrateFromMongo();
+    } else {
+      await new Promise(r => setTimeout(r, 1000));
+    }
+  } catch (e) {}
+
+  // Provide temporary stock for test products so synthetic orders can be tested
+  db.prepare("UPDATE products SET stock = 100 WHERE id IN ('p1', 'p2', 'p4')").run();
+
   try {
     // ----------------------------------------------------
     // TEST 1: Anonymous users cannot perform administrator operations
@@ -373,6 +387,8 @@ async function runAuditTests() {
   // Clean up synthetic test data from SQLite and MongoDB Atlas
   try {
     db.prepare("DELETE FROM orders WHERE customer_phone LIKE '98290%' AND (customer_name LIKE 'Customer %' OR customer_name LIKE '%Tester%' OR customer_name LIKE 'Audit%' OR customer_name LIKE '%Test%')").run();
+    db.prepare("DELETE FROM customers WHERE phone LIKE '98290%' OR name LIKE 'Customer %' OR name LIKE '%Tester%'").run();
+    db.prepare("DELETE FROM purchases WHERE bill_no LIKE 'BILL-TEST%'").run();
     db.prepare("DELETE FROM admin_users WHERE id = 'ADM-TEST-STAFF'").run();
     db.prepare("DELETE FROM reviews WHERE id LIKE 'REV-%' AND customer_name LIKE '%Test User%'").run();
 
@@ -387,8 +403,17 @@ async function runAuditTests() {
           { customerPhone: { $in: ['9999999999', '9829011111', '9829022222', '9829033333', '9829044444', '9829055555', '9829066666', '9829077777', '9829088888', '9829099999', '9829099887'] } }
         ]
       });
+      await m.collection('customers').deleteMany({
+        $or: [
+          { name: { $regex: /Customer|Tester|Audit|Test/i } },
+          { phone: { $in: ['9999999999', '9829011111', '9829022222', '9829033333', '9829044444', '9829055555', '9829066666', '9829077777', '9829088888', '9829099999', '9829099887'] } }
+        ]
+      });
+      await m.collection('purchases').deleteMany({ bill_no: { $regex: /^BILL-TEST/ } });
       await m.collection('admin_users').deleteOne({ id: 'ADM-TEST-STAFF' });
       await m.collection('reviews').deleteMany({ id: { $regex: /^REV-/ }, customer_name: { $regex: /Test User/i } });
+      await m.collection('products').updateMany({ id: { $in: ['p1', 'p2', 'p3', 'p4'] } }, { $set: { stock: 0 } });
+      db.prepare("UPDATE products SET stock = 0 WHERE id IN ('p1', 'p2', 'p3', 'p4')").run();
     }
   } catch (e) {}
 

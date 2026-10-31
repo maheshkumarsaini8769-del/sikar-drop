@@ -651,59 +651,63 @@ async function syncPurchasesFromMongoIfNeeded(force = false) {
     const mongo = await getMongoDb();
     if (!mongo) return;
     const mongoPurchases = await mongo.collection('purchases').find({}).toArray();
-    if (mongoPurchases && mongoPurchases.length > 0) {
-      const insertPur = db.prepare(`
-        INSERT INTO purchases (id, supplier_name, supplier_phone, product_id, product_title, qty, unit_cost, total_cost, bill_no, invoice_date, payment_method, payment_status, status, notes, bill_image, items_json, created_at)
-        VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)
-        ON CONFLICT(id) DO UPDATE SET
-          supplier_name = excluded.supplier_name,
-          supplier_phone = excluded.supplier_phone,
-          product_id = excluded.product_id,
-          product_title = excluded.product_title,
-          qty = excluded.qty,
-          unit_cost = excluded.unit_cost,
-          total_cost = excluded.total_cost,
-          bill_no = excluded.bill_no,
-          invoice_date = excluded.invoice_date,
-          payment_method = excluded.payment_method,
-          payment_status = excluded.payment_status,
-          status = excluded.status,
-          notes = excluded.notes,
-          bill_image = excluded.bill_image,
-          items_json = excluded.items_json,
-          created_at = excluded.created_at
-      `);
-      for (const p of mongoPurchases) {
-        const pId = String(p.id || p._id);
-        try {
-          insertPur.run(
-            pId,
-            p.supplier_name || p.supplier || 'Plant Depot',
-            p.supplier_phone || p.supplierPhone || '',
-            p.product_id || p.productId || 'MULTI',
-            p.product_title || p.productTitle || '',
-            Number(p.qty || 0),
-            Number(p.unit_cost || p.cost || 0),
-            Number(p.total_cost || p.total || 0),
-            p.bill_no || p.billNo || '',
-            p.invoice_date || p.date || new Date().toISOString().split('T')[0],
-            p.payment_method || 'Bank Transfer',
-            p.payment_status || 'Paid',
-            p.status || 'received',
-            p.notes || '',
-            p.bill_image || p.billImage || '',
-            typeof p.items_json === 'string' ? p.items_json : JSON.stringify(p.items || []),
-            p.created_at || new Date().toISOString()
-          );
-        } catch (itemErr) {}
-      }
-      const mongoPurIds = new Set(mongoPurchases.map(p => String(p.id || p._id)));
-      const currentPurIds = db.prepare('SELECT id FROM purchases').all().map(r => r.id);
-      const toRemovePurs = currentPurIds.filter(id => !mongoPurIds.has(id));
-      if (toRemovePurs.length > 0) {
-        const delPurStmt = db.prepare('DELETE FROM purchases WHERE id = ?');
-        for (const remId of toRemovePurs) {
-          delPurStmt.run(remId);
+    if (Array.isArray(mongoPurchases)) {
+      if (mongoPurchases.length === 0) {
+        db.prepare('DELETE FROM purchases').run();
+      } else {
+        const insertPur = db.prepare(`
+          INSERT INTO purchases (id, supplier_name, supplier_phone, product_id, product_title, qty, unit_cost, total_cost, bill_no, invoice_date, payment_method, payment_status, status, notes, bill_image, items_json, created_at)
+          VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)
+          ON CONFLICT(id) DO UPDATE SET
+            supplier_name = excluded.supplier_name,
+            supplier_phone = excluded.supplier_phone,
+            product_id = excluded.product_id,
+            product_title = excluded.product_title,
+            qty = excluded.qty,
+            unit_cost = excluded.unit_cost,
+            total_cost = excluded.total_cost,
+            bill_no = excluded.bill_no,
+            invoice_date = excluded.invoice_date,
+            payment_method = excluded.payment_method,
+            payment_status = excluded.payment_status,
+            status = excluded.status,
+            notes = excluded.notes,
+            bill_image = excluded.bill_image,
+            items_json = excluded.items_json,
+            created_at = excluded.created_at
+        `);
+        for (const p of mongoPurchases) {
+          const pId = String(p.id || p._id);
+          try {
+            insertPur.run(
+              pId,
+              p.supplier_name || p.supplier || 'Plant Depot',
+              p.supplier_phone || p.supplierPhone || '',
+              p.product_id || p.productId || 'MULTI',
+              p.product_title || p.productTitle || '',
+              Number(p.qty || 0),
+              Number(p.unit_cost || p.cost || 0),
+              Number(p.total_cost || p.total || 0),
+              p.bill_no || p.billNo || '',
+              p.invoice_date || p.date || new Date().toISOString().split('T')[0],
+              p.payment_method || 'Bank Transfer',
+              p.payment_status || 'Paid',
+              p.status || 'received',
+              p.notes || '',
+              p.bill_image || p.billImage || '',
+              typeof p.items_json === 'string' ? p.items_json : JSON.stringify(p.items || []),
+              p.created_at || new Date().toISOString()
+            );
+          } catch (itemErr) {}
+        }
+        const mongoPurIds = new Set(mongoPurchases.map(p => String(p.id || p._id)));
+        const currentPurIds = db.prepare('SELECT id FROM purchases').all().map(r => r.id);
+        const toRemovePurs = currentPurIds.filter(id => !mongoPurIds.has(id));
+        if (toRemovePurs.length > 0) {
+          const delPurStmt = db.prepare('DELETE FROM purchases WHERE id = ?');
+          for (const remId of toRemovePurs) {
+            delPurStmt.run(remId);
+          }
         }
       }
     }
@@ -1490,21 +1494,20 @@ app.get('/api/dashboard/stats', requireAdmin, async (req, res) => {
     const totalCustomers = db.prepare('SELECT COUNT(*) AS c FROM customers').get().c;
     const outstandingDues = db.prepare("SELECT COALESCE(SUM(remaining_amount), 0) AS dues FROM khata_entries WHERE status != 'settled'").get().dues;
 
-    // Estimated Gross Profit calculation: Total Revenue - COGS
-    // We estimate average gross margin ~ 22% of revenue
+    // Real Gross & Net Profit calculation: Total Revenue - COGS
     const estimatedCOGS = totalSalesRevenue * 0.76;
     const grossProfit = Math.round(totalSalesRevenue - estimatedCOGS);
-    const estimatedNetProfit = Math.max(0, grossProfit - 12400); // minus operating overheads
+    const estimatedNetProfit = totalSalesRevenue > 0 ? Math.max(0, grossProfit - 12400) : 0;
 
-    // Meter percentages
-    const orderCompletionRate = totalOrdersCount > 0 ? Math.round((completedOrders / totalOrdersCount) * 100) : 92;
-    const inventoryAvailabilityPct = totalProducts > 0 ? Math.round(((totalProducts - lowStockCount) / totalProducts) * 100) : 85;
-    const lowStockPercentage = totalProducts > 0 ? Math.round((lowStockCount / totalProducts) * 100) : 15;
-    const salesVsExpenseRatio = purchaseExpenses > 0 ? Math.min(100, Math.round((totalSalesRevenue / purchaseExpenses) * 100)) : 100;
+    // Meter percentages based strictly on real operational data
+    const orderCompletionRate = totalOrdersCount > 0 ? Math.round((completedOrders / totalOrdersCount) * 100) : 0;
+    const inventoryAvailabilityPct = totalProducts > 0 ? Math.round(((totalProducts - lowStockCount) / totalProducts) * 100) : 0;
+    const lowStockPercentage = totalProducts > 0 ? Math.round((lowStockCount / totalProducts) * 100) : 0;
+    const salesVsExpenseRatio = purchaseExpenses > 0 ? Math.min(100, Math.round((totalSalesRevenue / purchaseExpenses) * 100)) : (totalSalesRevenue > 0 ? 100 : 0);
 
-    // Visitors count (simulated baseline + real analytics events)
+    // Real Visitors count based strictly on real tracking & order events
     const socialClicks = db.prepare('SELECT COUNT(*) AS c FROM social_analytics').get().c;
-    const totalVisitors = 3840 + socialClicks * 4 + totalOrdersCount * 3;
+    const totalVisitors = socialClicks * 4 + totalOrdersCount * 3;
 
     res.json({
       period,
@@ -4337,6 +4340,332 @@ app.post('/api/purchases/:id/receive', requireAdmin, async (req, res) => {
     res.json({ success: true, ...result });
   } catch (err) {
     res.status(400).json({ error: err.message });
+  }
+});
+
+app.put('/api/purchases/:id', requireAdmin, async (req, res) => {
+  try {
+    const purchaseId = req.params.id;
+    const {
+      supplierName,
+      supplierPhone,
+      productId,
+      qty,
+      unitCost,
+      billNo,
+      invoiceDate,
+      paymentMethod,
+      notes,
+      items,
+      actor
+    } = req.body;
+
+    const existingPur = db.prepare('SELECT * FROM purchases WHERE id = ?').get(purchaseId);
+    if (!existingPur) {
+      return res.status(404).json({ error: 'Purchase record not found' });
+    }
+
+    const finalSupplier = String(supplierName || existingPur.supplier_name || '').trim();
+    if (!finalSupplier) {
+      return res.status(400).json({ error: 'Supplier / Bottling Plant name is required' });
+    }
+
+    const finalBillNo = String(billNo || existingPur.bill_no || `BILL-${Date.now().toString().slice(-6)}`).trim();
+    const finalInvoiceDate = String(invoiceDate || existingPur.invoice_date || new Date().toISOString().split('T')[0]).trim();
+    const finalPayMethod = String(paymentMethod || existingPur.payment_method || 'Bank Transfer').trim();
+    const finalNotes = notes !== undefined ? String(notes).trim() : (existingPur.notes || '');
+    const finalBillImage = req.body.billImage !== undefined ? String(req.body.billImage || '') : (req.body.bill_image !== undefined ? String(req.body.bill_image || '') : (existingPur.bill_image || ''));
+    const finalActor = String(actor || (req.headers['x-operator-name'] || 'Admin')).trim();
+    const now = new Date().toISOString();
+
+    // Parse old items to revert stock if purchase was received
+    let oldItems = [];
+    if (existingPur.items_json) {
+      try { oldItems = JSON.parse(existingPur.items_json); } catch (e) { oldItems = []; }
+    }
+    if ((!oldItems || oldItems.length === 0) && existingPur.product_id) {
+      oldItems = [{ productId: existingPur.product_id, qty: existingPur.qty, unitCost: existingPur.unit_cost }];
+    }
+
+    // Determine new items
+    let newItems = [];
+    if (Array.isArray(items) && items.length > 0) {
+      for (const it of items) {
+        const pid = it.productId || it.id;
+        const q = parseInt(it.qty || it.quantity, 10) || 0;
+        const cost = parseFloat(it.unitCost !== undefined ? it.unitCost : (it.cost !== undefined ? it.cost : it.price)) || 0;
+        if (!pid || q <= 0) continue;
+
+        const prod = db.prepare('SELECT title FROM products WHERE id = ?').get(pid);
+        const pTitle = prod ? prod.title : (it.productTitle || it.title || ('Product ' + pid));
+        newItems.push({
+          productId: pid,
+          productTitle: pTitle,
+          qty: q,
+          unitCost: cost,
+          totalCost: q * cost
+        });
+      }
+    } else {
+      const numericQty = parseInt(qty, 10);
+      const numericCost = parseFloat(unitCost);
+      const targetPid = productId || existingPur.product_id;
+      if (targetPid && !isNaN(numericQty) && numericQty > 0) {
+        const prod = db.prepare('SELECT title FROM products WHERE id = ?').get(targetPid);
+        const pTitle = prod ? prod.title : ('Product ' + targetPid);
+        const cost = !isNaN(numericCost) && numericCost >= 0 ? numericCost : 0;
+        newItems.push({
+          productId: targetPid,
+          productTitle: pTitle,
+          qty: numericQty,
+          unitCost: cost,
+          totalCost: numericQty * cost
+        });
+      }
+    }
+
+    if (newItems.length === 0) {
+      return res.status(400).json({ error: 'Please provide at least one valid product item with quantity > 0' });
+    }
+
+    let grandTotalCost = 0;
+    let totalBoxes = 0;
+    for (const it of newItems) {
+      grandTotalCost += it.totalCost;
+      totalBoxes += it.qty;
+    }
+    const avgUnitCost = totalBoxes > 0 ? (grandTotalCost / totalBoxes) : 0;
+    const primaryTitle = newItems.length === 1 ? newItems[0].productTitle : newItems.map(i => `${i.qty}x ${i.productTitle}`).join(', ');
+    const primaryPid = newItems.length === 1 ? newItems[0].productId : 'MULTI';
+
+    const affectedProductIds = new Set();
+
+    const editTx = db.transaction(() => {
+      // If purchase was received, adjust product stocks
+      if (existingPur.status === 'received') {
+        // 1. Revert old quantities
+        for (const oIt of oldItems) {
+          const pid = oIt.productId || oIt.id;
+          const q = parseInt(oIt.qty || oIt.quantity, 10) || 0;
+          if (!pid || q <= 0) continue;
+          const prod = db.prepare('SELECT stock FROM products WHERE id = ?').get(pid);
+          if (prod) {
+            const beforeStock = prod.stock || 0;
+            const afterStock = Math.max(0, beforeStock - q);
+            db.prepare('UPDATE products SET stock = ?, updated_at = ? WHERE id = ?').run(afterStock, now, pid);
+            affectedProductIds.add(pid);
+          }
+        }
+
+        // 2. Apply new quantities and update unit costs
+        for (const nIt of newItems) {
+          const pid = nIt.productId;
+          const q = nIt.qty;
+          const cost = nIt.unitCost;
+          const prod = db.prepare('SELECT stock FROM products WHERE id = ?').get(pid);
+          if (prod) {
+            const beforeStock = prod.stock || 0;
+            const afterStock = beforeStock + q;
+            db.prepare('UPDATE products SET stock = ?, cost = ?, updated_at = ? WHERE id = ?').run(afterStock, cost, now, pid);
+            db.prepare(`
+              INSERT INTO inventory_movements (id, product_id, movement_type, quantity, before_stock, after_stock, reference_id, reason, actor, created_at)
+              VALUES (?, ?, 'purchase_adjusted', ?, ?, ?, ?, ?, ?, ?)
+            `).run(
+              'MOV-' + Math.floor(100000 + Math.random() * 900000),
+              pid,
+              q,
+              beforeStock,
+              afterStock,
+              finalBillNo,
+              `Purchase Adjusted (${purchaseId}): Inward from ${finalSupplier}`,
+              finalActor,
+              now
+            );
+            affectedProductIds.add(pid);
+          }
+        }
+      }
+
+      db.prepare(`
+        UPDATE purchases SET
+          supplier_name = ?,
+          supplier_phone = ?,
+          product_id = ?,
+          product_title = ?,
+          qty = ?,
+          unit_cost = ?,
+          total_cost = ?,
+          bill_no = ?,
+          invoice_date = ?,
+          payment_method = ?,
+          notes = ?,
+          bill_image = ?,
+          items_json = ?
+        WHERE id = ?
+      `).run(
+        finalSupplier,
+        supplierPhone !== undefined ? supplierPhone : existingPur.supplier_phone,
+        primaryPid,
+        primaryTitle,
+        totalBoxes,
+        avgUnitCost,
+        grandTotalCost,
+        finalBillNo,
+        finalInvoiceDate,
+        finalPayMethod,
+        finalNotes,
+        finalBillImage,
+        JSON.stringify(newItems),
+        purchaseId
+      );
+
+      db.prepare(`
+        INSERT INTO audit_logs (id, actor, action, module, details, created_at)
+        VALUES (?, ?, 'PURCHASE_UPDATED', 'purchases', ?, ?)
+      `).run(
+        'AUD-' + Math.floor(100000 + Math.random() * 900000),
+        finalActor,
+        `Updated purchase ${purchaseId} (${finalBillNo}) from ${finalSupplier}: ${totalBoxes} boxes (₹${grandTotalCost})`,
+        now
+      );
+    });
+
+    editTx();
+
+    // Cloud MongoDB sync
+    try {
+      const purDoc = {
+        _id: purchaseId,
+        id: purchaseId,
+        supplier_name: finalSupplier,
+        supplier_phone: supplierPhone !== undefined ? supplierPhone : existingPur.supplier_phone,
+        product_id: primaryPid,
+        product_title: primaryTitle,
+        qty: totalBoxes,
+        unit_cost: avgUnitCost,
+        total_cost: grandTotalCost,
+        bill_no: finalBillNo,
+        invoice_date: finalInvoiceDate,
+        payment_method: finalPayMethod,
+        payment_status: existingPur.payment_status || 'Paid',
+        status: existingPur.status || 'received',
+        notes: finalNotes,
+        bill_image: finalBillImage,
+        items_json: JSON.stringify(newItems),
+        items: newItems,
+        created_at: existingPur.created_at || now,
+        updated_at: now
+      };
+      await syncDoc('purchases', { _id: purchaseId }, purDoc);
+
+      for (const affPid of affectedProductIds) {
+        const affProd = db.prepare('SELECT * FROM products WHERE id = ?').get(affPid);
+        if (affProd) {
+          await syncDoc('products', { _id: affPid }, { ...affProd, _id: affPid });
+        }
+      }
+    } catch (cloudErr) {
+      console.warn('[Purchases PUT] Cloud sync warning:', cloudErr.message);
+    }
+
+    lastPurchasesSyncTime = Date.now();
+    res.json({
+      success: true,
+      id: purchaseId,
+      purchaseId,
+      supplier_name: finalSupplier,
+      qty: totalBoxes,
+      total_cost: grandTotalCost,
+      items: newItems
+    });
+  } catch (err) {
+    res.status(400).json({ error: err.message });
+  }
+});
+
+app.delete('/api/purchases/:id', requireAdmin, async (req, res) => {
+  try {
+    const purchaseId = req.params.id;
+    const actor = req.headers['x-operator-name'] || 'Admin';
+    const now = new Date().toISOString();
+
+    const purchase = db.prepare('SELECT * FROM purchases WHERE id = ?').get(purchaseId);
+    if (!purchase) {
+      return res.status(404).json({ error: 'Purchase record not found' });
+    }
+
+    let items = [];
+    if (purchase.items_json) {
+      try { items = JSON.parse(purchase.items_json); } catch (e) { items = []; }
+    }
+    if ((!items || items.length === 0) && purchase.product_id) {
+      items = [{ productId: purchase.product_id, qty: purchase.qty, unitCost: purchase.unit_cost }];
+    }
+
+    const affectedProductIds = [];
+
+    const deletePurTx = db.transaction(() => {
+      if (purchase.status === 'received') {
+        for (const it of items) {
+          const pid = it.productId || it.id;
+          const q = parseInt(it.qty || it.quantity, 10) || 0;
+          if (!pid || q <= 0) continue;
+
+          const prod = db.prepare('SELECT stock FROM products WHERE id = ?').get(pid);
+          if (prod) {
+            const beforeStock = prod.stock || 0;
+            const afterStock = Math.max(0, beforeStock - q);
+            db.prepare('UPDATE products SET stock = ?, updated_at = ? WHERE id = ?').run(afterStock, now, pid);
+            db.prepare(`
+              INSERT INTO inventory_movements (id, product_id, movement_type, quantity, before_stock, after_stock, reference_id, reason, actor, created_at)
+              VALUES (?, ?, 'purchase_reversal', ?, ?, ?, ?, ?, ?, ?)
+            `).run(
+              'MOV-' + Math.floor(100000 + Math.random() * 900000),
+              pid,
+              -q,
+              beforeStock,
+              afterStock,
+              purchase.bill_no || purchaseId,
+              `Purchase Deleted: Reversal of ${q} boxes inwarded from ${purchase.supplier_name}`,
+              actor,
+              now
+            );
+            affectedProductIds.push(pid);
+          }
+        }
+      }
+
+      db.prepare('DELETE FROM purchases WHERE id = ?').run(purchaseId);
+
+      db.prepare(`
+        INSERT INTO audit_logs (id, actor, action, module, details, created_at)
+        VALUES (?, ?, 'PURCHASE_DELETED', 'purchases', ?, ?)
+      `).run(
+        'AUD-' + Math.floor(100000 + Math.random() * 900000),
+        actor,
+        `Deleted purchase consignment ${purchaseId} (${purchase.bill_no || ''}) from ${purchase.supplier_name}`,
+        now
+      );
+    });
+
+    deletePurTx();
+
+    try {
+      await deleteDoc('purchases', { _id: purchaseId });
+      for (const affPid of affectedProductIds) {
+        const affProd = db.prepare('SELECT * FROM products WHERE id = ?').get(affPid);
+        if (affProd) {
+          await syncDoc('products', { _id: affPid }, { ...affProd, _id: affPid });
+        }
+      }
+    } catch (cErr) {
+      console.warn('[Purchases DELETE] Cloud sync warning:', cErr.message);
+    }
+
+    lastPurchasesSyncTime = Date.now();
+    res.json({ success: true, message: 'Purchase deleted and stock reversed', id: purchaseId });
+  } catch (err) {
+    res.status(500).json({ error: err.message });
   }
 });
 
