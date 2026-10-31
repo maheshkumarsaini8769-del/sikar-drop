@@ -1520,6 +1520,7 @@ app.get('/api/dashboard/stats', requireAdmin, async (req, res) => {
       completedOrders,
       cancelledOrders,
       totalSalesRevenue,
+      totalRevenue: totalSalesRevenue,
       onlineRevenue,
       manualSalesRevenue,
       purchaseExpenses,
@@ -4048,30 +4049,28 @@ app.get('/api/purchases', requireAdmin, async (req, res) => {
 
 app.post('/api/purchases', requireAdmin, async (req, res) => {
   try {
-    const {
-      supplierName,
-      supplierPhone,
-      productId,
-      qty,
-      unitCost,
-      billNo,
-      invoiceDate,
-      paymentMethod,
-      notes,
-      status,
-      autoReceive,
-      billImage,
-      bill_image,
-      items,
-      actor
-    } = req.body;
+    const b = req.body || {};
+    const supplierName = b.supplierName || b.supplier_name;
+    const supplierPhone = b.supplierPhone || b.supplier_phone;
+    const productId = b.productId || b.product_id;
+    const qty = b.qty !== undefined ? b.qty : b.quantity;
+    const unitCost = b.unitCost !== undefined ? b.unitCost : (b.unit_cost !== undefined ? b.unit_cost : b.cost);
+    const billNo = b.billNo || b.bill_no;
+    const invoiceDate = b.invoiceDate || b.invoice_date;
+    const paymentMethod = b.paymentMethod || b.payment_method;
+    const notes = b.notes;
+    const status = b.status;
+    const autoReceive = b.autoReceive;
+    const billImage = b.billImage || b.bill_image;
+    const items = b.items;
+    const actor = b.actor;
 
     const finalSupplier = String(supplierName || '').trim();
     if (!finalSupplier) {
       return res.status(400).json({ error: 'Supplier / Bottling Plant name is required' });
     }
 
-    const finalBillImage = String(billImage || bill_image || '').trim();
+    const finalBillImage = String(billImage || '').trim();
     const finalInvoiceDate = String(invoiceDate || new Date().toISOString().split('T')[0]).trim();
     const finalBillNo = String(billNo || `BILL-${Date.now().toString().slice(-6)}`).trim();
     const finalPayMethod = String(paymentMethod || 'Bank Transfer').trim();
@@ -4346,19 +4345,18 @@ app.post('/api/purchases/:id/receive', requireAdmin, async (req, res) => {
 app.put('/api/purchases/:id', requireAdmin, async (req, res) => {
   try {
     const purchaseId = req.params.id;
-    const {
-      supplierName,
-      supplierPhone,
-      productId,
-      qty,
-      unitCost,
-      billNo,
-      invoiceDate,
-      paymentMethod,
-      notes,
-      items,
-      actor
-    } = req.body;
+    const b = req.body || {};
+    const supplierName = b.supplierName || b.supplier_name;
+    const supplierPhone = b.supplierPhone || b.supplier_phone;
+    const productId = b.productId || b.product_id;
+    const qty = b.qty !== undefined ? b.qty : b.quantity;
+    const unitCost = b.unitCost !== undefined ? b.unitCost : (b.unit_cost !== undefined ? b.unit_cost : b.cost);
+    const billNo = b.billNo || b.bill_no;
+    const invoiceDate = b.invoiceDate || b.invoice_date;
+    const paymentMethod = b.paymentMethod || b.payment_method;
+    const notes = b.notes;
+    const items = b.items;
+    const actor = b.actor;
 
     const existingPur = db.prepare('SELECT * FROM purchases WHERE id = ?').get(purchaseId);
     if (!existingPur) {
