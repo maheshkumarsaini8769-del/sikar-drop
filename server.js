@@ -4215,6 +4215,8 @@ app.post('/api/purchases', requireAdmin, async (req, res) => {
         console.warn('[Purchases] Cloud sync warning:', cloudErr.message);
       }
 
+      lastProductsSyncTime = 0;
+      lastPurchasesSyncTime = Date.now();
       return res.status(201).json({
         success: true,
         id: txResult.id,
@@ -4566,6 +4568,7 @@ app.put('/api/purchases/:id', requireAdmin, async (req, res) => {
       console.warn('[Purchases PUT] Cloud sync warning:', cloudErr.message);
     }
 
+    lastProductsSyncTime = 0;
     lastPurchasesSyncTime = Date.now();
     res.json({
       success: true,
@@ -4660,6 +4663,7 @@ app.delete('/api/purchases/:id', requireAdmin, async (req, res) => {
       console.warn('[Purchases DELETE] Cloud sync warning:', cErr.message);
     }
 
+    lastProductsSyncTime = 0;
     lastPurchasesSyncTime = Date.now();
     res.json({ success: true, message: 'Purchase deleted and stock reversed', id: purchaseId });
   } catch (err) {
@@ -4695,11 +4699,12 @@ app.post('/api/suppliers', requireAdmin, (req, res) => {
 app.get('/api/products', async (req, res) => {
   try {
     const { category, active } = req.query;
-    const isAdminReq = Boolean(req.headers['x-admin-token'] || active === 'all');
+    const hasAuth = Boolean(req.headers['authorization'] || req.headers['x-admin-token']);
+    const isAdminReq = Boolean(hasAuth || active === 'all');
 
     if (isAdminReq) {
       res.setHeader('Cache-Control', 'no-cache, no-store, must-revalidate');
-      await syncProductsFromMongoIfNeeded();
+      await syncProductsFromMongoIfNeeded(true);
     } else {
       res.setHeader('Cache-Control', 'public, max-age=5, s-maxage=15, stale-while-revalidate=60');
       if (!isHydratedFromMongo) {
