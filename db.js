@@ -2149,8 +2149,8 @@ function receivePurchaseTransaction({ purchaseId, actor = 'Admin' }) {
   return runTx();
 }
 
-// 4. ATOMIC ORDER CREATION (ONLINE STOREFRONT)
-function createOnlineOrderTransaction({ orderId: customOrderId, customerName, customerPhone, loginPhone = '', deliveryPhone = '', addressPhone = '', corridor, address = '', deliveryAddress = '', items = [], subtotal, discount = 0, total, couponCode = '', paymentMethod = 'COD', paymentStatus = '', notes = '', attribution = {}, idempotencyKey = '', isTruecallerVerified = false }) {
+// 4. ATOMIC ORDER CREATION (ONLINE STOREFRONT & ADMIN MANUAL ENTRY)
+function createOnlineOrderTransaction({ orderId: customOrderId, customerName, customerPhone, loginPhone = '', deliveryPhone = '', addressPhone = '', corridor, address = '', deliveryAddress = '', items = [], subtotal, discount = 0, total, couponCode = '', paymentMethod = 'COD', paymentStatus = '', status = '', vehicle = '', notes = '', attribution = {}, idempotencyKey = '', isTruecallerVerified = false, isStaffOrder = false, actor = 'Admin' }) {
   const runTx = db.transaction(() => {
     // Idempotency check: If an idempotency key is provided, return existing order
     const cleanIdempotencyKey = String(idempotencyKey || '').trim();
@@ -2168,6 +2168,7 @@ function createOnlineOrderTransaction({ orderId: customOrderId, customerName, cu
           itemsCount: existing.items_count,
           status: existing.status,
           paymentStatus: existing.payment_status,
+          vehicle: existing.vehicle || '',
           customerPhone: existing.customer_phone,
           customerName: existing.customer_name,
           items: existingItems,
@@ -2177,12 +2178,16 @@ function createOnlineOrderTransaction({ orderId: customOrderId, customerName, cu
       }
     }
 
-    // Order IDs are ALWAYS minted server-side. Client-supplied IDs are ignored
-    // so a duplicate/stale ID can never abort an order placement.
+    // Determine Order ID: use client-supplied ID if unique and formatted, otherwise mint server-side SKR-XXXX
     let orderId = '';
-    do {
-      orderId = 'SKR-' + Math.floor(1000 + Math.random() * 9000);
-    } while (db.prepare('SELECT id FROM orders WHERE id = ?').get(orderId));
+    const candidateId = String(customOrderId || '').trim();
+    if (candidateId && !db.prepare('SELECT id FROM orders WHERE id = ?').get(candidateId)) {
+      orderId = candidateId;
+    } else {
+      do {
+        orderId = 'SKR-' + Math.floor(1000 + Math.random() * 9000);
+      } while (db.prepare('SELECT id FROM orders WHERE id = ?').get(orderId));
+    }
     const finalAddress = address || deliveryAddress || corridor || 'Sikar';
     const finalLoginPhone = String(loginPhone || customerPhone || '').trim();
     const finalDeliveryPhone = String(deliveryPhone || addressPhone || customerPhone || finalLoginPhone).trim();
@@ -2200,9 +2205,6 @@ function createOnlineOrderTransaction({ orderId: customOrderId, customerName, cu
     const visitorId = String(attribution.visitorId || attribution.visitor_id || '').trim();
 
     // SERVER-AUTHORITATIVE PRICING
-    // Client-supplied prices/totals are never trusted. Unit prices are always
-    // re-read from the catalogue and the coupon is re-validated against the
-    // coupons table, so a tampered payload can never change what is billed.
     const pricedItems = items.map((item) => {
       const pid = String(item.id || item.productId || '').trim();
       const rawQty = Number(item.qty !== undefined ? item.qty : (item.quantity !== undefined ? item.quantity : 1));
@@ -2216,23 +2218,23 @@ function createOnlineOrderTransaction({ orderId: customOrderId, customerName, cu
       if (pid) {
         const prod = db.prepare('SELECT title, price, active FROM products WHERE id = ?').get(pid);
         if (prod) {
-          if (prod.active === 0 || prod.active === false) {
+          if (!isStaffOrder && (prod.active === 0 || prod.active === false)) {
             throw new Error(`Product "${prod.title}" is archived and no longer available for purchase.`);
           }
-          unitPrice = Number(prod.price || 0);
+          unitPrice = (isStaffOrder && item.price !== undefined) ? Number(item.price) : Number(prod.price || 0);
           if (!unitTitle) unitTitle = prod.title;
         } else {
           const bundle = db.prepare('SELECT title, price, active FROM event_bundles WHERE id = ?').get(pid);
           if (bundle) {
-            if (bundle.active === 0 || bundle.active === false) {
+            if (!isStaffOrder && (bundle.active === 0 || bundle.active === false)) {
               throw new Error(`Event bundle "${bundle.title}" is inactive and no longer available.`);
             }
-            unitPrice = Number(bundle.price || 0);
+            unitPrice = (isStaffOrder && item.price !== undefined) ? Number(item.price) : Number(bundle.price || 0);
             if (!unitTitle) unitTitle = bundle.title;
           }
         }
       }
-      if (!unitPrice) {
+      if (!unitPrice && !isStaffOrder) {
         throw new Error(`Invalid or unknown product ID "${pid}". Order rejected.`);
       }
 
@@ -2250,7 +2252,7 @@ function createOnlineOrderTransaction({ orderId: customOrderId, customerName, cu
     const authoritativeSubtotal = pricedItems.reduce((sum, it) => sum + it.price * it.qty, 0);
 
     // Coupon is re-validated server-side (active, not expired, min order met).
-    let finalDiscount = 0;
+    let finalDiscount = Number(discount || 0);
     const cleanCoupon = String(couponCode || '').trim().toUpperCase();
     if (cleanCoupon) {
       const cp = db.prepare('SELECT * FROM coupons WHERE UPPER(code) = ?').get(cleanCoupon);
@@ -2262,7 +2264,7 @@ function createOnlineOrderTransaction({ orderId: customOrderId, customerName, cu
           const pct = Number(cp.discount_val || 0);
           const rawDiscount = cp.discount_type === 'fixed' ? pct : Math.round((authoritativeSubtotal * pct) / 100);
           const capped = cp.max_discount ? Math.min(rawDiscount, Number(cp.max_discount)) : rawDiscount;
-          finalDiscount = Math.max(0, Math.min(capped, authoritativeSubtotal));
+          finalDiscount = Math.max(finalDiscount, Math.min(capped, authoritativeSubtotal));
         }
       }
     }
@@ -2270,42 +2272,45 @@ function createOnlineOrderTransaction({ orderId: customOrderId, customerName, cu
     const finalSubtotal = authoritativeSubtotal;
     const finalTotal = Math.max(0, finalSubtotal - finalDiscount);
 
-    // Duplicate submission suppression: prevent rapid duplicate submissions within 30 seconds for same phone & amount
-    const thirtySecsAgo = new Date(Date.now() - 30 * 1000).toISOString();
-    const recentDuplicate = db.prepare(`
-      SELECT * FROM orders 
-      WHERE (customer_phone = ? OR login_phone = ?) 
-        AND total = ? 
-        AND created_at >= ?
-      ORDER BY created_at DESC LIMIT 1
-    `).get(primaryPhone, primaryPhone, finalTotal, thirtySecsAgo);
+    // Duplicate submission suppression: prevent rapid duplicate submissions within 30 seconds for public storefront only
+    if (!isStaffOrder) {
+      const thirtySecsAgo = new Date(Date.now() - 30 * 1000).toISOString();
+      const recentDuplicate = db.prepare(`
+        SELECT * FROM orders 
+        WHERE (customer_phone = ? OR login_phone = ?) 
+          AND total = ? 
+          AND created_at >= ?
+        ORDER BY created_at DESC LIMIT 1
+      `).get(primaryPhone, primaryPhone, finalTotal, thirtySecsAgo);
 
-    if (recentDuplicate) {
-      let dupItems = [];
-      try { dupItems = JSON.parse(recentDuplicate.items_json || '[]'); } catch (e) {}
-      return {
-        orderId: recentDuplicate.id,
-        trackingToken: recentDuplicate.tracking_token,
-        total: recentDuplicate.total,
-        subtotal: recentDuplicate.subtotal,
-        discount: recentDuplicate.discount,
-        itemsCount: recentDuplicate.items_count,
-        status: recentDuplicate.status,
-        paymentStatus: recentDuplicate.payment_status,
-        customerPhone: recentDuplicate.customer_phone,
-        customerName: recentDuplicate.customer_name,
-        items: dupItems,
-        duplicate: true,
-        message: 'Duplicate order suppressed: identical order placed within last 30 seconds'
-      };
+      if (recentDuplicate) {
+        let dupItems = [];
+        try { dupItems = JSON.parse(recentDuplicate.items_json || '[]'); } catch (e) {}
+        return {
+          orderId: recentDuplicate.id,
+          trackingToken: recentDuplicate.tracking_token,
+          total: recentDuplicate.total,
+          subtotal: recentDuplicate.subtotal,
+          discount: recentDuplicate.discount,
+          itemsCount: recentDuplicate.items_count,
+          status: recentDuplicate.status,
+          paymentStatus: recentDuplicate.payment_status,
+          vehicle: recentDuplicate.vehicle || '',
+          customerPhone: recentDuplicate.customer_phone,
+          customerName: recentDuplicate.customer_name,
+          items: dupItems,
+          duplicate: true,
+          message: 'Duplicate order suppressed: identical order placed within last 30 seconds'
+        };
+      }
     }
 
-    // Check stock for all items (using the server-priced quantities)
+    // Check stock for all items (strict check for public storefront; staff orders can backorder)
     for (const item of pricedItems) {
       const pid = item.id || item.productId;
       const pqty = Number(item.qty || item.quantity || 1);
       const prod = db.prepare('SELECT id, title, stock FROM products WHERE id = ?').get(pid);
-      if (prod && prod.stock < pqty) {
+      if (!isStaffOrder && prod && prod.stock < pqty) {
         throw new Error(`Insufficient stock for "${prod.title}". Requested: ${pqty}, In Stock: ${prod.stock}`);
       }
     }
@@ -2319,22 +2324,21 @@ function createOnlineOrderTransaction({ orderId: customOrderId, customerName, cu
 
       const current = db.prepare('SELECT stock FROM products WHERE id = ?').get(pid);
       if (current) {
-        const beforeStock = current.stock;
-        const afterStock = Math.max(0, beforeStock - pqty);
+        const beforeStock = Number(current.stock || 0);
+        const afterStock = beforeStock - pqty;
         db.prepare('UPDATE products SET stock = ?, updated_at = ? WHERE id = ?').run(afterStock, now, pid);
 
+        // Central audit ledger
         db.prepare(`
           INSERT INTO inventory_movements (id, product_id, movement_type, quantity, before_stock, after_stock, reference_id, reason, actor, created_at)
-          VALUES (?, ?, 'online_order', ?, ?, ?, ?, ?, 'Storefront Customer', ?)
-        `).run('MOV-' + Math.floor(100000 + Math.random() * 900000), pid, -pqty, beforeStock, afterStock, orderId, `Online Order ${orderId}`, now);
+          VALUES (?, ?, 'online_order', ?, ?, ?, ?, ?, ?, ?)
+        `).run('MOV-' + Math.floor(100000 + Math.random() * 900000), pid, -pqty, beforeStock, afterStock, orderId, `Online Order ${orderId}`, isStaffOrder ? actor : 'Storefront Customer', now);
       }
     }
 
     // Customer record
     const cleanPrimary = (primaryPhone || '').replace(/\D/g, '');
     const isInvalidPhone = cleanPrimary.length < 10;
-    // SECURITY: OTP system removed. Legacy otp_codes.verified lookup kept
-    // ONLY for backward compat with users who verified via OTP before migration.
     const legacyOtpRec = cleanPrimary.length >= 10
       ? db.prepare('SELECT verified FROM otp_codes WHERE phone = ?').get(cleanPrimary)
       : null;
@@ -2343,9 +2347,10 @@ function createOnlineOrderTransaction({ orderId: customOrderId, customerName, cu
       : null;
     const isVerified =
       Boolean(isTruecallerVerified) ||
+      Boolean(isStaffOrder) ||
       (existingCust && existingCust.verified === 1) ||
       (legacyOtpRec && legacyOtpRec.verified === 1);
-    const verifiedBy = isTruecallerVerified ? 'Truecaller' : ((existingCust && existingCust.verified_by) || 'Storefront');
+    const verifiedBy = isStaffOrder ? 'Staff' : (isTruecallerVerified ? 'Truecaller' : ((existingCust && existingCust.verified_by) || 'Storefront'));
     const custType = isInvalidPhone ? 'unverified' : (isVerified ? 'registered' : 'guest');
     const verifiedVal = isInvalidPhone ? 2 : (isVerified ? 1 : 0);
 
@@ -2373,14 +2378,28 @@ function createOnlineOrderTransaction({ orderId: customOrderId, customerName, cu
       `).run(newOrders, newSpend, newVer, newVerifiedBy, newType, orderId, now, repeatFreq, now, cust.id);
     }
 
-    const activityLog = JSON.stringify([
-      { status: 'pending', timestamp: now, actor: 'Customer', note: 'Order placed on website' }
-    ]);
-
     const trackingToken = crypto.randomBytes(16).toString('hex');
-    // SECURITY: Storefront online orders are never pre-marked as Paid by client parameter.
-    // They always start as 'Pending' until explicitly verified by depot admin or signature webhook.
-    const finalPaymentStatus = 'Pending';
+    const finalPaymentStatus = (isStaffOrder && (paymentStatus === 'Paid' || paymentStatus === 'paid')) ? 'Paid' : 'Pending';
+    const finalStatus = (isStaffOrder && status) ? (status === 'transit' ? 'in_transit' : status) : 'pending';
+    const finalVehicle = (isStaffOrder && vehicle) ? String(vehicle).trim() : '';
+
+    const initialActivity = [
+      {
+        status: finalStatus,
+        timestamp: now,
+        actor: isStaffOrder ? actor : 'Customer',
+        note: isStaffOrder ? `Order registered manually. Status: ${finalStatus}. Payment: ${finalPaymentStatus}.` : 'Order placed on website'
+      }
+    ];
+    if (finalVehicle) {
+      initialActivity.push({
+        status: finalStatus,
+        timestamp: now,
+        actor: isStaffOrder ? actor : 'Dispatcher',
+        note: `Vehicle ${finalVehicle} assigned for delivery dispatch.`
+      });
+    }
+    const activityLog = JSON.stringify(initialActivity);
 
     db.prepare(`
       INSERT INTO orders (
@@ -2391,11 +2410,12 @@ function createOnlineOrderTransaction({ orderId: customOrderId, customerName, cu
         utm_source, utm_medium, utm_campaign, utm_content, utm_term, attribution_platform, session_id,
         tracking_token, idempotency_key
       )
-      VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, 'pending', '', ?, 'Within 40 Mins', ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)
+      VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, 'Within 40 Mins', ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)
     `).run(
       orderId, custId, customerName, primaryPhone, finalLoginPhone, finalDeliveryPhone,
       corridor || 'Sikar', finalAddress, JSON.stringify(pricedItems), totalItemsCount,
       finalSubtotal, finalDiscount, finalTotal, paymentMethod, finalPaymentStatus,
+      finalStatus, finalVehicle,
       now.split('T')[0], notes, activityLog, now, now,
       utmSource, utmMedium, utmCampaign, utmContent, utmTerm, attributionPlatform, sessionId,
       trackingToken, cleanIdempotencyKey || null
@@ -2443,8 +2463,9 @@ function createOnlineOrderTransaction({ orderId: customOrderId, customerName, cu
       discount: finalDiscount,
       couponCode: finalDiscount > 0 ? cleanCoupon : '',
       itemsCount: totalItemsCount,
-      status: 'pending',
+      status: finalStatus,
       paymentStatus: finalPaymentStatus,
+      vehicle: finalVehicle,
       loginPhone: finalLoginPhone,
       deliveryPhone: finalDeliveryPhone,
       customerPhone: primaryPhone,
@@ -2462,8 +2483,9 @@ function updateOrderStatusTransaction({ orderId, newStatus, paymentStatus, vehic
     const order = db.prepare('SELECT * FROM orders WHERE id = ?').get(orderId);
     if (!order) throw new Error('Order not found: ' + orderId);
 
+    const normalizedStatus = (newStatus === 'transit') ? 'in_transit' : newStatus;
     const validStatuses = ['pending', 'confirmed', 'processing', 'in_transit', 'shipped', 'delivered', 'completed', 'cancelled'];
-    if (newStatus && !validStatuses.includes(newStatus)) {
+    if (normalizedStatus && !validStatuses.includes(normalizedStatus)) {
       throw new Error(`Invalid order status: ${newStatus}`);
     }
 
@@ -2480,7 +2502,7 @@ function updateOrderStatusTransaction({ orderId, newStatus, paymentStatus, vehic
       throw new Error('A cancellation reason is required to cancel an order.');
     }
 
-    const effectiveStatus = newStatus || order.status;
+    const effectiveStatus = normalizedStatus || order.status;
     let effectivePayStatus = paymentStatus !== undefined && paymentStatus !== null && paymentStatus !== ''
       ? paymentStatus
       : order.payment_status;

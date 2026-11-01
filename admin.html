@@ -6931,7 +6931,7 @@
                 <option value="pending">Pending (New)</option>
                 <option value="confirmed" selected>Confirmed (Accepted)</option>
                 <option value="processing">Processing (Packing)</option>
-                <option value="transit">Out for Delivery (Transit)</option>
+                <option value="in_transit">Out for Delivery (Transit)</option>
                 <option value="completed">Completed (Delivered)</option>
               </select>
             </div>
@@ -9705,7 +9705,7 @@
             <select class="portal-select" style="padding: 6px; font-size: 0.82rem;" onchange="onManualOrderItemChange(${idx}, 'productId', this.value)">
               ${adminProducts.map(p => `
                 <option value="${p.id}" ${p.id === item.productId ? 'selected' : ''}>
-                  ${escapeHTML(p.title)} (₹${p.price})
+                  ${escapeHTML(p.title)} (₹${p.price} | Stock: ${p.stock !== undefined ? p.stock : 0})
                 </option>
               `).join('')}
             </select>
@@ -9790,7 +9790,8 @@
       const address = document.getElementById('manual-order-address').value.trim();
       const paymentMethod = document.getElementById('manual-order-payment-method').value;
       const paymentStatus = document.getElementById('manual-order-payment-status').value;
-      const initStatus = document.getElementById('manual-order-init-status').value;
+      const initStatusRaw = document.getElementById('manual-order-init-status').value;
+      const initStatus = (initStatusRaw === 'transit') ? 'in_transit' : initStatusRaw;
       const vehicle = document.getElementById('manual-order-vehicle').value.trim();
       const notes = document.getElementById('manual-order-notes').value.trim();
       const discount = parseFloat(document.getElementById('manual-order-discount').value) || 0;
@@ -9818,11 +9819,9 @@
       let subtotal = 0;
       items.forEach(it => { subtotal += it.price * it.qty; });
       const total = Math.max(0, subtotal - discount);
-      const orderId = 'ORD-' + Math.floor(100000 + Math.random() * 900000);
 
       try {
-        await sikarApi.post('/api/orders', {
-          orderId,
+        const createRes = await sikarApi.post('/api/orders', {
           customerName,
           customerPhone,
           loginPhone: customerPhone,
@@ -9835,25 +9834,36 @@
           discount,
           total,
           paymentMethod,
+          paymentStatus,
+          status: initStatus,
+          vehicle,
           notes: notes ? `${notes} (Manual Online Order)` : 'Manual Online Order'
         });
 
-        if (initStatus !== 'pending' || vehicle || paymentStatus === 'Paid') {
-          await sikarApi.patch(`/api/orders/${orderId}/status`, {
-            status: initStatus,
-            vehicle: vehicle,
-            note: `Order registered manually. Status: ${initStatus}. Payment: ${paymentStatus}.`
-          });
+        const createdOrderId = (createRes && (createRes.orderId || createRes.id)) || '';
+
+        // If for any reason status or vehicle was not set during creation, sync via patch
+        if (createdOrderId && (initStatus !== (createRes.status || 'pending') || vehicle !== (createRes.vehicle || '') || paymentStatus !== (createRes.paymentStatus || 'Pending'))) {
+          try {
+            await sikarApi.patch(`/api/orders/${createdOrderId}/status`, {
+              status: initStatus,
+              paymentStatus: paymentStatus,
+              vehicle: vehicle,
+              note: `Order registered manually. Status: ${initStatus}. Payment: ${paymentStatus}.`
+            });
+          } catch (patchErr) {
+            console.warn('Status patch notice:', patchErr);
+          }
         }
 
         closeModal('manual-online-order-modal');
         await syncFromBackend();
         renderOrdersTable();
-        showToast(`Online Order ${orderId} created successfully. Live tracking active.`);
+        showToast(`Online Order ${createdOrderId || ''} created successfully. Live tracking active.`);
         switchTab('orders');
       } catch (err) {
         console.error(err);
-        showToast('Order creation error: ' + err.message);
+        showToast('Order creation error: ' + (err.message || 'Failed to create order'));
       }
     }
 
