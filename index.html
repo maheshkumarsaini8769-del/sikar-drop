@@ -6223,7 +6223,7 @@
 
             <div class="form-group-field">
               <label for="contact-phone">Contact Phone Number (+91 Sikar)</label>
-              <input type="tel" id="contact-phone" placeholder="e.g. 98290 12345" class="admin-input">
+              <input type="tel" id="contact-phone" inputmode="numeric" pattern="[0-9]*" maxlength="10" placeholder="e.g. 9829012345" class="admin-input" oninput="this.value = this.value.replace(/[^0-9]/g, '').slice(0, 10)">
             </div>
 
             <div class="form-group-field">
@@ -6432,7 +6432,7 @@
         </label>
         <div style="position: relative; display: flex; align-items: center;">
           <span style="position: absolute; left: 14px; font-weight: 800; color: #64748B; font-size: 1rem;">+91</span>
-          <input type="tel" id="login-phone-input" placeholder="77427 35762" maxlength="10" value="" style="padding-left: 52px; font-weight: 800; letter-spacing: 0.05em; font-size: 1.05rem; width: 100%; border: 1.5px solid #CBD5E1; border-radius: 10px; height: 46px; background: #FFFFFF;">
+          <input type="tel" id="login-phone-input" inputmode="numeric" pattern="[0-9]*" placeholder="7742735762" maxlength="10" value="" style="padding-left: 52px; font-weight: 800; letter-spacing: 0.05em; font-size: 1.05rem; width: 100%; border: 1.5px solid #CBD5E1; border-radius: 10px; height: 46px; background: #FFFFFF;" oninput="this.value = this.value.replace(/[^0-9]/g, '').slice(0, 10)">
         </div>
       </div>
 
@@ -6526,7 +6526,7 @@
           </label>
           <div style="position: relative; display: flex; align-items: center;">
             <span style="position: absolute; left: 12px; font-weight: 700; color: #64748B; font-size: 0.88rem;">+91</span>
-            <input type="tel" id="delivery-phone-input" placeholder="98290 12345" maxlength="10" style="padding-left: 48px; width: 100%; height: 40px; border: 1.5px solid #CBD5E1; border-radius: 8px; font-size: 15px; font-weight: 700; color: #0F172A; box-sizing: border-box; outline: none; background: #FFFFFF;">
+            <input type="tel" id="delivery-phone-input" inputmode="numeric" pattern="[0-9]*" placeholder="9829012345" maxlength="10" style="padding-left: 48px; width: 100%; height: 40px; border: 1.5px solid #CBD5E1; border-radius: 8px; font-size: 15px; font-weight: 700; color: #0F172A; box-sizing: border-box; outline: none; background: #FFFFFF;" oninput="this.value = this.value.replace(/[^0-9]/g, '').slice(0, 10)">
           </div>
         </div>
 
@@ -10549,6 +10549,33 @@
       }
       requestAnimationFrame(anim);
     }
+
+    // GLOBAL NUMERIC-ONLY ENFORCEMENT FOR PHONE / DIALER INPUTS
+    document.addEventListener('input', function(e) {
+      const t = e.target;
+      if (!t) return;
+      const isPhone = t.type === 'tel' ||
+        (t.id && (t.id.toLowerCase().includes('phone') || t.id.toLowerCase().includes('mobile'))) ||
+        (t.name && (t.name.toLowerCase().includes('phone') || t.name.toLowerCase().includes('mobile')));
+      if (isPhone && t.type !== 'number') {
+        const cleaned = t.value.replace(/\D/g, '');
+        const max = t.maxLength && t.maxLength > 0 ? t.maxLength : 10;
+        t.value = cleaned.slice(0, max);
+      }
+    }, true);
+
+    document.addEventListener('keypress', function(e) {
+      const t = e.target;
+      if (!t) return;
+      const isPhone = t.type === 'tel' ||
+        (t.id && (t.id.toLowerCase().includes('phone') || t.id.toLowerCase().includes('mobile'))) ||
+        (t.name && (t.name.toLowerCase().includes('phone') || t.name.toLowerCase().includes('mobile')));
+      if (isPhone && t.type !== 'number') {
+        if (!/[0-9]/.test(e.key) && !e.ctrlKey && !e.metaKey && e.key !== 'Enter') {
+          e.preventDefault();
+        }
+      }
+    }, true);
 
     // INITIALIZATION ON DOM READY
     window.addEventListener('DOMContentLoaded', () => {

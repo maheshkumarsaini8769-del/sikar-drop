@@ -2618,8 +2618,7 @@ app.post('/api/orders', async (req, res) => {
       return res.status(400).json({ error: 'Invalid mobile number. Please enter a valid 10-digit Indian mobile number.' });
     }
 
-    // TRUECALLER IDENTITY VERIFICATION
-    // Allow staff/admin orders if authorized, otherwise require valid Truecaller verification
+    // TRUECALLER / MOBILE IDENTITY VERIFICATION
     const adminToken = req.headers['x-admin-token'] || (req.headers.authorization || '').replace(/^Bearer\s+/i, '');
     const adminData = verifyAdminTokenWithData(adminToken);
     let isStaffOrder = false;
@@ -2630,39 +2629,30 @@ app.post('/api/orders', async (req, res) => {
       }
     }
 
-    if (!isStaffOrder) {
-      const clientTcToken = String(req.headers['x-truecaller-token'] || b.truecallerToken || b.tcToken || '').trim();
-      let isVerified = false;
+    let isTruecallerVerified = false;
+    const clientTcToken = String(req.headers['x-truecaller-token'] || b.truecallerToken || b.tcToken || '').trim();
 
-      // 1. Verify cryptographic Truecaller HMAC token
-      if (clientTcToken) {
-        const verifiedPhone = verifyTruecallerToken(clientTcToken);
-        if (verifiedPhone && verifiedPhone === cleanPhone) {
-          isVerified = true;
-        }
+    // 1. Verify cryptographic Truecaller HMAC token
+    if (clientTcToken) {
+      const verifiedPhone = verifyTruecallerToken(clientTcToken);
+      if (verifiedPhone && verifiedPhone === cleanPhone) {
+        isTruecallerVerified = true;
       }
+    }
 
-      // 2. Check if customer record exists and is Truecaller verified
-      if (!isVerified) {
-        const custRec = db.prepare('SELECT verified, verified_by FROM customers WHERE phone = ?').get(cleanPhone);
-        if (custRec && Number(custRec.verified) === 1 && custRec.verified_by === 'Truecaller') {
-          isVerified = true;
-        }
+    // 2. Check if customer record exists and is Truecaller verified
+    if (!isTruecallerVerified) {
+      const custRec = db.prepare('SELECT verified, verified_by FROM customers WHERE phone = ?').get(cleanPhone);
+      if (custRec && Number(custRec.verified) === 1 && custRec.verified_by === 'Truecaller') {
+        isTruecallerVerified = true;
       }
+    }
 
-      // 3. Check active Truecaller session from database or memory
-      if (!isVerified) {
-        const tcSession = truecallerSessions.get(cleanPhone) || db.prepare("SELECT status FROM truecaller_sessions WHERE (phone = ? OR expected_phone = ?) AND status = 'verified'").get(cleanPhone, cleanPhone);
-        if (tcSession && (tcSession.status === 'verified')) {
-          isVerified = true;
-        }
-      }
-
-      if (!isVerified) {
-        return res.status(401).json({
-          error: `Truecaller Verification Required: Mobile number +91 ${cleanPhone} has not been verified via Truecaller. Please complete 1-Tap verification to confirm this consignment.`,
-          requiresTruecaller: true
-        });
+    // 3. Check active Truecaller session from database or memory
+    if (!isTruecallerVerified) {
+      const tcSession = truecallerSessions.get(cleanPhone) || db.prepare("SELECT status FROM truecaller_sessions WHERE (phone = ? OR expected_phone = ?) AND status = 'verified'").get(cleanPhone, cleanPhone);
+      if (tcSession && (tcSession.status === 'verified')) {
+        isTruecallerVerified = true;
       }
     }
 
@@ -2758,7 +2748,8 @@ app.post('/api/orders', async (req, res) => {
       paymentStatus,
       notes,
       attribution,
-      idempotencyKey
+      idempotencyKey,
+      isTruecallerVerified
     });
 
     // Synchronize order to MongoDB Atlas cloud in the background

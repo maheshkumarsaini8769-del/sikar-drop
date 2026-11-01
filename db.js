@@ -2150,7 +2150,7 @@ function receivePurchaseTransaction({ purchaseId, actor = 'Admin' }) {
 }
 
 // 4. ATOMIC ORDER CREATION (ONLINE STOREFRONT)
-function createOnlineOrderTransaction({ orderId: customOrderId, customerName, customerPhone, loginPhone = '', deliveryPhone = '', addressPhone = '', corridor, address = '', deliveryAddress = '', items = [], subtotal, discount = 0, total, couponCode = '', paymentMethod = 'COD', paymentStatus = '', notes = '', attribution = {}, idempotencyKey = '' }) {
+function createOnlineOrderTransaction({ orderId: customOrderId, customerName, customerPhone, loginPhone = '', deliveryPhone = '', addressPhone = '', corridor, address = '', deliveryAddress = '', items = [], subtotal, discount = 0, total, couponCode = '', paymentMethod = 'COD', paymentStatus = '', notes = '', attribution = {}, idempotencyKey = '', isTruecallerVerified = false }) {
   const runTx = db.transaction(() => {
     // Idempotency check: If an idempotency key is provided, return existing order
     const cleanIdempotencyKey = String(idempotencyKey || '').trim();
@@ -2342,8 +2342,10 @@ function createOnlineOrderTransaction({ orderId: customOrderId, customerName, cu
       ? db.prepare("SELECT id, verified, customer_type FROM customers WHERE REPLACE(phone, ' ', '') = ?").get(cleanPrimary)
       : null;
     const isVerified =
+      Boolean(isTruecallerVerified) ||
       (existingCust && existingCust.verified === 1) ||
       (legacyOtpRec && legacyOtpRec.verified === 1);
+    const verifiedBy = isTruecallerVerified ? 'Truecaller' : ((existingCust && existingCust.verified_by) || 'Storefront');
     const custType = isInvalidPhone ? 'unverified' : (isVerified ? 'registered' : 'guest');
     const verifiedVal = isInvalidPhone ? 2 : (isVerified ? 1 : 0);
 
@@ -2354,20 +2356,21 @@ function createOnlineOrderTransaction({ orderId: customOrderId, customerName, cu
     let custId = cust ? cust.id : ('CUST-' + Math.floor(1000 + Math.random() * 9000));
     if (!cust) {
       db.prepare(`
-        INSERT INTO customers (id, name, phone, address, corridor, verified, customer_type, total_orders, lifetime_spend, outstanding_balance, last_order_id, last_order_date, repeat_frequency, created_at, last_activity)
-        VALUES (?, ?, ?, ?, ?, ?, ?, 1, ?, 0, ?, ?, '1st Order', ?, ?)
-      `).run(custId, customerName, primaryPhone, finalAddress, corridor || 'Sikar', verifiedVal, custType, finalTotal, orderId, now, now, now);
+        INSERT INTO customers (id, name, phone, address, corridor, verified, verified_by, customer_type, total_orders, lifetime_spend, outstanding_balance, last_order_id, last_order_date, repeat_frequency, created_at, last_activity)
+        VALUES (?, ?, ?, ?, ?, ?, ?, ?, 1, ?, 0, ?, ?, '1st Order', ?, ?)
+      `).run(custId, customerName, primaryPhone, finalAddress, corridor || 'Sikar', verifiedVal, verifiedBy, custType, finalTotal, orderId, now, now, now);
     } else {
       const newOrders = (cust.total_orders || 0) + 1;
       const newSpend = (cust.lifetime_spend || 0) + finalTotal;
       const newType = (cust.verified === 1 || isVerified) ? 'registered' : (cust.customer_type || custType);
       const newVer = (cust.verified === 1 || isVerified) ? 1 : cust.verified;
+      const newVerifiedBy = (cust.verified === 1 && cust.verified_by) ? cust.verified_by : verifiedBy;
       const repeatFreq = `Repeat Buyer: ${newOrders} Orders`;
       db.prepare(`
         UPDATE customers
-        SET total_orders = ?, lifetime_spend = ?, verified = ?, customer_type = ?, last_order_id = ?, last_order_date = ?, repeat_frequency = ?, last_activity = ?
+        SET total_orders = ?, lifetime_spend = ?, verified = ?, verified_by = ?, customer_type = ?, last_order_id = ?, last_order_date = ?, repeat_frequency = ?, last_activity = ?
         WHERE id = ?
-      `).run(newOrders, newSpend, newVer, newType, orderId, now, repeatFreq, now, cust.id);
+      `).run(newOrders, newSpend, newVer, newVerifiedBy, newType, orderId, now, repeatFreq, now, cust.id);
     }
 
     const activityLog = JSON.stringify([

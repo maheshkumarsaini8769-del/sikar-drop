@@ -278,7 +278,7 @@ async function runAuditTests() {
     record(14, 'Duplicate order submissions do not double-bill or double-deduct inventory', pass10);
 
     // ----------------------------------------------------
-    // TRUECALLER ENFORCEMENT & BYPASS PREVENTION TESTS
+    // STOREFRONT MOBILE ORDER CREATION & DUMMY PHONE REJECTION TESTS
     // ----------------------------------------------------
     // A: Dummy phone number 9999999999 is rejected
     const resDummyPhone = await request('POST', '/api/orders', {
@@ -288,23 +288,15 @@ async function runAuditTests() {
     });
     const passDummy = resDummyPhone.status === 400;
 
-    // B: Unverified customer request without token is rejected
-    const resUnverified = await request('POST', '/api/orders', {
-      customerName: 'Unverified User',
+    // B: Storefront mobile checkout with valid Indian phone number succeeds
+    const resMobileOrder = await request('POST', '/api/orders', {
+      customerName: 'Valid Mobile User',
       customerPhone: '9829088888',
       items: [{ id: 'p1', qty: 1 }]
     });
-    const passUnverified = resUnverified.status === 401 && resUnverified.body.requiresTruecaller === true;
+    const passMobileOrder = resMobileOrder.status === 201 && resMobileOrder.body.success === true;
 
-    // C: Forged / tampered Truecaller token is rejected
-    const resForgedToken = await request('POST', '/api/orders', {
-      customerName: 'Forged User',
-      customerPhone: '9829088888',
-      items: [{ id: 'p1', qty: 1 }]
-    }, { 'x-truecaller-token': 'forged.fake.token' });
-    const passForged = resForgedToken.status === 401;
-
-    record(14.5, 'Truecaller verification enforced; dummy phones and unverified orders rejected', passDummy && passUnverified && passForged);
+    record(14.5, 'Valid storefront mobile orders accepted; dummy phones rejected', passDummy && passMobileOrder);
 
     // ----------------------------------------------------
     // TEST 15: Unauthorized staff cannot access owner-only settings or exports

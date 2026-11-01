@@ -2197,7 +2197,7 @@
         <form id="form-admin-2fa" onsubmit="handleAdmin2FaVerify(event)">
           <div class="portal-field-group" style="text-align: left; margin-bottom: 16px;">
             <label for="login-2fa-input" style="color: #cbd5e1; font-size: 0.82rem; font-weight: 600;">6-Digit Security Code</label>
-            <input type="text" id="login-2fa-input" class="portal-input" placeholder="••••••" maxlength="32" autocomplete="one-time-code" style="background: #1e293b; border-color: #334155; color: #ffffff; font-size: 1.25rem; font-family: monospace; letter-spacing: 4px; text-align: center;" required>
+            <input type="text" id="login-2fa-input" inputmode="numeric" pattern="[0-9]*" class="portal-input" placeholder="••••••" maxlength="32" autocomplete="one-time-code" style="background: #1e293b; border-color: #334155; color: #ffffff; font-size: 1.25rem; font-family: monospace; letter-spacing: 4px; text-align: center;" required oninput="this.value = this.value.replace(/[^0-9]/g, '')">
             <span style="font-size: 0.72rem; color: #94a3b8; margin-top: 4px; display: block;">Enter code from Google Authenticator, Depot PIN, or Recovery Key</span>
           </div>
 
@@ -3311,7 +3311,7 @@
               </div>
               <div class="portal-field-group">
                 <label for="pos-cust-phone">Mobile Phone (WhatsApp) *</label>
-                <input type="tel" id="pos-cust-phone" class="portal-input tabular" placeholder="e.g. 98290 11223" required onblur="lookupPosCustomerKhata(this.value)" autocomplete="off">
+                <input type="tel" id="pos-cust-phone" inputmode="numeric" pattern="[0-9]*" maxlength="10" class="portal-input tabular" placeholder="e.g. 9829011223" required oninput="this.value = this.value.replace(/[^0-9]/g, '').slice(0, 10)" onblur="lookupPosCustomerKhata(this.value)" autocomplete="off">
                 <div id="pos-cust-khata-hint" style="font-size: 0.76rem; color: #DC2626; margin-top: 3px; display: none;"></div>
               </div>
               <div class="portal-field-group">
@@ -5644,7 +5644,7 @@
           </div>
           <div class="portal-field-group">
             <label for="k-add-phone">Mobile Phone (WhatsApp) *</label>
-            <input type="tel" id="k-add-phone" class="portal-input" placeholder="e.g. 9829011223" required>
+            <input type="tel" id="k-add-phone" inputmode="numeric" pattern="[0-9]*" maxlength="10" class="portal-input" placeholder="e.g. 9829011223" required oninput="this.value = this.value.replace(/[^0-9]/g, '').slice(0, 10)">
           </div>
         </div>
         <div class="portal-form-grid-2">
@@ -6118,7 +6118,7 @@
           <div class="portal-form-grid-2" style="margin-top: 8px;">
             <div class="portal-field-group">
               <label for="pur-supplier-phone">Supplier Contact Phone (Optional)</label>
-              <input type="tel" id="pur-supplier-phone" class="portal-input tabular" placeholder="e.g. 9829011223">
+              <input type="tel" id="pur-supplier-phone" inputmode="numeric" pattern="[0-9]*" maxlength="10" class="portal-input tabular" placeholder="e.g. 9829011223" oninput="this.value = this.value.replace(/[^0-9]/g, '').slice(0, 10)">
             </div>
             <div class="portal-field-group">
               <label for="pur-payment-method">Payment Mode</label>
@@ -6847,11 +6847,11 @@
             </div>
             <div class="portal-field-group">
               <label for="manual-order-cust-phone">Login Mobile Phone (10 digits) *</label>
-              <input type="tel" id="manual-order-cust-phone" class="portal-input tabular" placeholder="e.g. 9829012345" maxlength="10" required>
+              <input type="tel" id="manual-order-cust-phone" inputmode="numeric" pattern="[0-9]*" class="portal-input tabular" placeholder="e.g. 9829012345" maxlength="10" required oninput="this.value = this.value.replace(/[^0-9]/g, '').slice(0, 10)">
             </div>
             <div class="portal-field-group">
               <label for="manual-order-delivery-phone">Address / Delivery Mobile No. (Optional)</label>
-              <input type="tel" id="manual-order-delivery-phone" class="portal-input tabular" placeholder="Same as login if blank" maxlength="10">
+              <input type="tel" id="manual-order-delivery-phone" inputmode="numeric" pattern="[0-9]*" class="portal-input tabular" placeholder="Same as login if blank" maxlength="10" oninput="this.value = this.value.replace(/[^0-9]/g, '').slice(0, 10)">
             </div>
           </div>
           <div class="portal-form-grid-2" style="margin-top: 8px;">
@@ -12969,6 +12969,7 @@
     let purchaseModalBillImage = '';
     let activeBillPurId = null;
     let expandedSupplierConsignments = new Set();
+    let collapsedSupplierConsignments = new Set();
     let editingPurchaseId = null;
 
     function setPurchasesViewMode(mode, btn) {
@@ -12981,10 +12982,14 @@
       renderPurchasesTable();
     }
 
-    function toggleSupplierConsignment(purId) {
-      if (expandedSupplierConsignments.has(purId)) {
+    function toggleSupplierConsignment(purId, evt) {
+      if (evt && typeof evt.stopPropagation === 'function') evt.stopPropagation();
+      const isCurrentlyExpanded = Boolean(document.getElementById(`pur-consignment-items-${purId}`));
+      if (isCurrentlyExpanded) {
         expandedSupplierConsignments.delete(purId);
+        collapsedSupplierConsignments.add(purId);
       } else {
+        collapsedSupplierConsignments.delete(purId);
         expandedSupplierConsignments.add(purId);
       }
       renderPurchasesTable();
@@ -13561,7 +13566,10 @@
 
         if (res && (res.success || res.id || res.purchaseId)) {
           const newId = res.id || res.purchaseId;
-          if (newId) expandedSupplierConsignments.add(newId);
+          if (newId) {
+            expandedSupplierConsignments.add(newId);
+            collapsedSupplierConsignments.delete(newId);
+          }
 
           const nowIso = new Date().toISOString();
           const newPurchaseRecord = {
@@ -13870,7 +13878,7 @@
             <!-- SUPPLIERS PURCHASED ON THIS DATE -->
             <div style="padding: 14px; display: flex; flex-direction: column; gap: 12px;">
               ${list.map(p => {
-                const isExpanded = shouldAutoExpand || expandedSupplierConsignments.has(p.id);
+                const isExpanded = collapsedSupplierConsignments.has(p.id) ? false : (shouldAutoExpand || expandedSupplierConsignments.has(p.id));
                 const hasBill = Boolean(p.billImage);
                 const itemsList = Array.isArray(p.items) && p.items.length > 0 ? p.items : [
                   { productTitle: p.productTitle || 'Packaged Water Boxes', qty: p.qty, unitCost: p.cost, totalCost: p.total }
@@ -13880,7 +13888,7 @@
                 return `
                   <div style="border: 1px solid var(--border-light); border-radius: 8px; background: #FFFFFF; box-shadow: 0 1px 3px rgba(0,0,0,0.02); overflow: hidden;">
                     <!-- SUPPLIER CONSIGNMENT HEADER (CLICKABLE TO EXPAND) -->
-                    <div style="padding: 12px 16px; background: ${isExpanded ? '#F0F9FF' : '#FFFFFF'}; display: flex; justify-content: space-between; align-items: center; flex-wrap: wrap; gap: 12px; cursor: pointer; transition: background 0.15s ease;" onclick="toggleSupplierConsignment('${p.id}')">
+                    <div style="padding: 12px 16px; background: ${isExpanded ? '#F0F9FF' : '#FFFFFF'}; display: flex; justify-content: space-between; align-items: center; flex-wrap: wrap; gap: 12px; cursor: pointer; transition: background 0.15s ease;" onclick="toggleSupplierConsignment('${p.id}', event)">
                       <div>
                         <div style="display: flex; align-items: center; gap: 10px; flex-wrap: wrap;">
                           <strong style="font-size: 1rem; color: #0F172A; font-weight: 800;">${escapeHTML(p.supplier || 'Plant Depot')}</strong>
@@ -13921,7 +13929,7 @@
                         </button>
 
                         <!-- TOGGLE PRODUCTS BUTTON -->
-                        <button type="button" class="btn-portal-outline" style="padding: 5px 12px; font-size: 0.8rem; font-weight: 700;" onclick="toggleSupplierConsignment('${p.id}')">
+                        <button type="button" class="btn-portal-outline" style="padding: 5px 12px; font-size: 0.8rem; font-weight: 700;" onclick="toggleSupplierConsignment('${p.id}', event)">
                           ${isExpanded ? 'Hide Products ▲' : `View Products (${itemsList.length}) ▼`}
                         </button>
                       </div>
@@ -13929,7 +13937,7 @@
 
                     <!-- EXPANDABLE ITEMIZED PRODUCTS INWARD TABLE -->
                     ${isExpanded ? `
-                      <div style="padding: 12px 16px; border-top: 1px solid var(--border-light); background: #FAFBFD;">
+                      <div id="pur-consignment-items-${p.id}" style="padding: 12px 16px; border-top: 1px solid var(--border-light); background: #FAFBFD;">
                         <span style="font-size: 0.74rem; font-weight: 800; text-transform: uppercase; letter-spacing: 0.04em; color: var(--text-muted); display: block; margin-bottom: 8px;">
                           Products Purchased from ${escapeHTML(p.supplier || 'Plant')} on ${ymd}:
                         </span>
@@ -17409,6 +17417,33 @@
         if (currentTab === 'delivery') renderDeliveryZonesTable();
       }
     });
+
+    // GLOBAL NUMERIC-ONLY ENFORCEMENT FOR PHONE / DIALER INPUTS
+    document.addEventListener('input', function(e) {
+      const t = e.target;
+      if (!t) return;
+      const isPhone = t.type === 'tel' ||
+        (t.id && (t.id.toLowerCase().includes('phone') || t.id.toLowerCase().includes('mobile') || t.id.toLowerCase().includes('dial'))) ||
+        (t.name && (t.name.toLowerCase().includes('phone') || t.name.toLowerCase().includes('mobile')));
+      if (isPhone && t.type !== 'number') {
+        const cleaned = t.value.replace(/\D/g, '');
+        const max = t.maxLength && t.maxLength > 0 ? t.maxLength : 10;
+        t.value = cleaned.slice(0, max);
+      }
+    }, true);
+
+    document.addEventListener('keypress', function(e) {
+      const t = e.target;
+      if (!t) return;
+      const isPhone = t.type === 'tel' ||
+        (t.id && (t.id.toLowerCase().includes('phone') || t.id.toLowerCase().includes('mobile') || t.id.toLowerCase().includes('dial'))) ||
+        (t.name && (t.name.toLowerCase().includes('phone') || t.name.toLowerCase().includes('mobile')));
+      if (isPhone && t.type !== 'number') {
+        if (!/[0-9]/.test(e.key) && !e.ctrlKey && !e.metaKey && e.key !== 'Enter') {
+          e.preventDefault();
+        }
+      }
+    }, true);
 
     // INITIALIZATION ON DOM READY
     window.addEventListener('DOMContentLoaded', () => {
