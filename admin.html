@@ -7205,6 +7205,8 @@
     } catch (e) {}
     let currentOrdersFilter = 'all';
     let currentPosHistoryFilter = 'all';
+    let currentDashboardPeriod = 'all';
+    let currentReportsPeriod = '30days';
     // GOOGLE CLOUD SECURITY GLOBAL FETCH INTERCEPTOR
     let activeTemp2faToken = null;
     let autoLockTimer = null;
@@ -7434,17 +7436,7 @@
 
           for (const sp of cleanServerProds) {
             const lp = localMap.get(sp.id);
-            if (lp) {
-              const localTime = lp.updated_at ? new Date(lp.updated_at).getTime() : 0;
-              const serverTime = sp.updated_at ? new Date(sp.updated_at).getTime() : 0;
-              if (localTime > serverTime) {
-                merged.push({ ...sp, ...lp });
-              } else {
-                merged.push({ ...lp, ...sp });
-              }
-            } else {
-              merged.push(sp);
-            }
+            merged.push(lp ? { ...lp, ...sp } : sp);
           }
 
           // In-flight locally created products (within last 15 seconds) waiting to sync
@@ -7901,6 +7893,7 @@
           resetAutoLockTimer();
           restoreAdminActiveTab();
           showToast(`Welcome back, ${currentOperator.name || 'Admin'}!`);
+          syncFromBackend().catch(e => console.warn('Post-login sync error:', e));
         }
       } catch (err) {
         if (errBox) {
@@ -7974,6 +7967,7 @@
         resetAutoLockTimer();
         restoreAdminActiveTab();
         showToast(`Google 2-Step Verification Verified! Welcome, ${currentOperator.name}!`);
+        syncFromBackend().catch(e => console.warn('Post-login sync error:', e));
       } catch (err) {
         if (errBox) {
           errBox.textContent = err.message || 'Invalid 2FA code. Access denied.';
@@ -8468,7 +8462,6 @@
     // =========================================================
     // 1.5 PROFIT & LOSS (P&L) & WHOLESALE SALES REPORTS
     // =========================================================
-    let currentReportsPeriod = '30days';
     let reportsCustomStartDate = '';
     let reportsCustomEndDate = '';
     let activeReportsData = null;
@@ -13054,10 +13047,15 @@
       openModal('purchase-add-modal');
     }
 
-    function editPurchase(purId) {
-      const p = (adminPurchases || []).find(x => x.id === purId);
+    async function editPurchase(purId) {
+      let p = (adminPurchases || []).find(x => x.id === purId);
       if (!p) {
-        showToast('Purchase record not found');
+        try { await syncFromBackend(); } catch(e) {}
+        p = (adminPurchases || []).find(x => x.id === purId);
+      }
+      if (!p) {
+        showToast('Purchase record not found. Synchronizing ledger...');
+        renderPurchasesTable();
         return;
       }
       editingPurchaseId = purId;
@@ -13143,7 +13141,7 @@
           showToast(`Purchase ${purId} deleted and inward stock reversed`);
           adminPurchases = (adminPurchases || []).filter(x => x.id !== purId);
           localStorage.setItem('sikar_admin_purchases', JSON.stringify(adminPurchases));
-          await syncFromBackend();
+          try { await syncFromBackend(); } catch(e) {}
           renderPurchasesTable();
           renderInventoryTable();
           renderDashboard();
@@ -13152,6 +13150,15 @@
         }
       } catch (err) {
         console.error('Delete purchase error:', err);
+        if (err.message && (err.message.includes('404') || err.message.toLowerCase().includes('not found'))) {
+          adminPurchases = (adminPurchases || []).filter(x => x.id !== purId);
+          localStorage.setItem('sikar_admin_purchases', JSON.stringify(adminPurchases));
+          renderPurchasesTable();
+          renderInventoryTable();
+          renderDashboard();
+          showToast(`Purchase record ${purId} cleaned up from ledger`);
+          return;
+        }
         showToast('Error deleting purchase: ' + err.message);
       }
     }
@@ -13890,8 +13897,8 @@
                         </div>
                       </div>
 
-                      <div style="display: flex; align-items: center; gap: 12px;" onclick="event.stopPropagation()">
-                        <div class="tabular" style="font-size: 1.1rem; font-weight: 900; color: #15803D; text-align: right;">
+                      <div style="display: flex; align-items: center; gap: 8px; flex-wrap: wrap;" onclick="event.stopPropagation()">
+                        <div class="tabular" style="font-size: 1.1rem; font-weight: 900; color: #15803D; text-align: right; margin-right: 4px;">
                           ₹${totalCost.toLocaleString('en-IN')}
                         </div>
 
