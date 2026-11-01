@@ -1,10 +1,11 @@
 // Load environment variables if not already loaded
+const path = require('path');
 if (!process.env.MONGODB_URI && typeof process.loadEnvFile === 'function') {
   try {
-    process.loadEnvFile('.env.local');
+    process.loadEnvFile(path.join(__dirname, '.env.local'));
   } catch (e) {
     try {
-      process.loadEnvFile('.env');
+      process.loadEnvFile(path.join(__dirname, '.env'));
     } catch (e2) {}
   }
 }
