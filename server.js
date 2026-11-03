@@ -39,6 +39,8 @@ try {
 const {
   db,
   recordManualSaleTransaction,
+  updateManualSaleTransaction,
+  deleteManualSaleTransaction,
   refundManualSaleTransaction,
   recordKhataPaymentTransaction,
   reversePaymentTransaction,
@@ -2942,9 +2944,9 @@ app.get('/api/manual-sales/:id', requireAdmin, (req, res) => {
   }
 });
 
-app.post('/api/manual-sales', requireAdmin, (req, res) => {
+app.post('/api/manual-sales', requireAdmin, async (req, res) => {
   try {
-    const { idempotencyToken, customerId, customerName, customerPhone, corridor, items, subtotal, discount, totalAmount, amountReceived, outstandingAmount, paymentMethod, saleDate, notes, actor } = req.body;
+    const { idempotencyToken, customerId, customerName, customerPhone, corridor, items, subtotal, discount, totalAmount, amountReceived, outstandingAmount, paymentMethod, cashAmount, onlineAmount, cash_amount, online_amount, saleDate, notes, actor } = req.body;
 
     if (!customerName || !customerPhone || !items || !Array.isArray(items) || items.length === 0) {
       return res.status(400).json({ error: 'Customer name, phone, and at least one item are required' });
@@ -2968,6 +2970,8 @@ app.post('/api/manual-sales', requireAdmin, (req, res) => {
           amountReceived: existing.amount_received,
           balanceDue: existing.outstanding_amount,
           outstandingAmount: existing.outstanding_amount,
+          cashAmount: existing.cash_amount,
+          onlineAmount: existing.online_amount,
           isDuplicate: true
         });
       }
@@ -2986,12 +2990,83 @@ app.post('/api/manual-sales', requireAdmin, (req, res) => {
       amountReceived,
       outstandingAmount,
       paymentMethod: paymentMethod || 'Cash',
+      cashAmount: cashAmount !== undefined ? cashAmount : cash_amount,
+      onlineAmount: onlineAmount !== undefined ? onlineAmount : online_amount,
       saleDate,
       notes,
-      actor: actor || 'Admin'
+      actor: actor || (req.headers['x-operator-name'] || 'Admin')
     });
 
+    try {
+      const fullSale = db.prepare('SELECT * FROM manual_sales WHERE id = ?').get(result.saleId);
+      if (fullSale) {
+        await syncDoc('manual_sales', { _id: result.saleId }, { ...fullSale, _id: result.saleId });
+      }
+    } catch (cloudErr) {}
+
     res.status(201).json({ success: true, ...result });
+  } catch (err) {
+    res.status(400).json({ error: err.message });
+  }
+});
+
+app.put('/api/manual-sales/:id', requireAdmin, async (req, res) => {
+  try {
+    const saleId = req.params.id;
+    const b = req.body || {};
+    const { customerName, customerPhone, corridor, items, subtotal, discount, totalAmount, amountReceived, outstandingAmount, paymentMethod, cashAmount, onlineAmount, cash_amount, online_amount, saleDate, notes, actor } = b;
+
+    if (!items || !Array.isArray(items) || items.length === 0) {
+      return res.status(400).json({ error: 'At least one item is required' });
+    }
+
+    const result = updateManualSaleTransaction({
+      saleId,
+      customerName: (customerName || '').trim(),
+      customerPhone: (customerPhone || '').trim(),
+      corridor: (corridor || '').trim(),
+      items,
+      subtotal,
+      discount: discount || 0,
+      totalAmount,
+      amountReceived,
+      outstandingAmount,
+      paymentMethod: paymentMethod || 'Cash',
+      cashAmount: cashAmount !== undefined ? cashAmount : cash_amount,
+      onlineAmount: onlineAmount !== undefined ? onlineAmount : online_amount,
+      saleDate,
+      notes,
+      actor: actor || (req.headers['x-operator-name'] || 'Admin')
+    });
+
+    try {
+      const fullSale = db.prepare('SELECT * FROM manual_sales WHERE id = ?').get(saleId);
+      if (fullSale) {
+        await syncDoc('manual_sales', { _id: saleId }, { ...fullSale, _id: saleId });
+      }
+    } catch (cloudErr) {}
+
+    res.json({ success: true, ...result });
+  } catch (err) {
+    res.status(400).json({ error: err.message });
+  }
+});
+
+app.delete('/api/manual-sales/:id', requireAdmin, async (req, res) => {
+  try {
+    const saleId = req.params.id;
+    const actor = req.headers['x-operator-name'] || (req.body && req.body.actor) || 'Admin';
+
+    const result = deleteManualSaleTransaction({
+      saleId,
+      actor
+    });
+
+    try {
+      await deleteDoc('manual_sales', { _id: saleId });
+    } catch (cloudErr) {}
+
+    res.json({ success: true, message: `Manual sale ${saleId} deleted successfully`, saleId });
   } catch (err) {
     res.status(400).json({ error: err.message });
   }
@@ -4141,9 +4216,26 @@ app.post('/api/purchases', requireAdmin, async (req, res) => {
         const primaryPid = sanitizedItems.length === 1 ? sanitizedItems[0].productId : 'MULTI';
         const avgUnitCost = totalBoxes > 0 ? (grandTotalCost / totalBoxes) : 0;
 
+        const rawCash = b.cashAmount !== undefined ? b.cashAmount : (b.cash_amount !== undefined ? b.cash_amount : undefined);
+        const rawOnline = b.onlineAmount !== undefined ? b.onlineAmount : (b.online_amount !== undefined ? b.online_amount : undefined);
+        let finalCash = rawCash !== undefined ? Number(rawCash) : 0;
+        let finalOnline = rawOnline !== undefined ? Number(rawOnline) : 0;
+        if (rawCash === undefined && rawOnline === undefined) {
+          if (finalPayMethod === 'Cash') {
+            finalCash = grandTotalCost;
+            finalOnline = 0;
+          } else if (finalPayMethod === 'Bank Transfer' || finalPayMethod === 'UPI') {
+            finalCash = 0;
+            finalOnline = grandTotalCost;
+          } else {
+            finalCash = 0;
+            finalOnline = 0;
+          }
+        }
+
         db.prepare(`
-          INSERT INTO purchases (id, supplier_name, supplier_phone, product_id, product_title, qty, unit_cost, total_cost, bill_no, invoice_date, payment_method, payment_status, status, notes, bill_image, items_json, created_at)
-          VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, 'Paid', 'received', ?, ?, ?, ?)
+          INSERT INTO purchases (id, supplier_name, supplier_phone, product_id, product_title, qty, unit_cost, total_cost, bill_no, invoice_date, payment_method, payment_status, cash_amount, online_amount, status, notes, bill_image, items_json, created_at)
+          VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, 'Paid', ?, ?, 'received', ?, ?, ?, ?)
         `).run(
           id,
           finalSupplier,
@@ -4156,6 +4248,8 @@ app.post('/api/purchases', requireAdmin, async (req, res) => {
           finalBillNo,
           finalInvoiceDate,
           finalPayMethod,
+          finalCash,
+          finalOnline,
           notes || '',
           finalBillImage,
           JSON.stringify(sanitizedItems),
@@ -4165,12 +4259,14 @@ app.post('/api/purchases', requireAdmin, async (req, res) => {
         db.prepare(`
           INSERT INTO audit_logs (id, actor, action, module, details, created_at)
           VALUES (?, ?, 'PURCHASE_STOCK_RECEIVED', 'purchases', ?, ?)
-        `).run('AUD-' + Math.floor(100000 + Math.random() * 900000), finalActor, `Recorded multi-item inward ${id} from ${finalSupplier}: ${totalBoxes} boxes (₹${grandTotalCost})`, now);
+        `).run('AUD-' + Math.floor(100000 + Math.random() * 900000), finalActor, `Recorded multi-item inward ${id} from ${finalSupplier}: ${totalBoxes} boxes (₹${grandTotalCost}, Cash: ₹${finalCash}, Online: ₹${finalOnline})`, now);
 
         return {
           id,
           totalCost: grandTotalCost,
           totalBoxes,
+          cashAmount: finalCash,
+          onlineAmount: finalOnline,
           itemsCount: sanitizedItems.length,
           items: sanitizedItems,
           affectedProductIds,
@@ -4194,6 +4290,8 @@ app.post('/api/purchases', requireAdmin, async (req, res) => {
           qty: txResult.totalBoxes,
           unit_cost: txResult.avgUnitCost,
           total_cost: txResult.totalCost,
+          cash_amount: txResult.cashAmount,
+          online_amount: txResult.onlineAmount,
           bill_no: finalBillNo,
           invoice_date: finalInvoiceDate,
           payment_method: finalPayMethod,
@@ -4244,9 +4342,26 @@ app.post('/api/purchases', requireAdmin, async (req, res) => {
     const totalCost = numericQty * numericCost;
     const singleItems = [{ productId, productTitle: prodTitle, qty: numericQty, unitCost: numericCost, totalCost }];
 
+    const singleRawCash = b.cashAmount !== undefined ? b.cashAmount : (b.cash_amount !== undefined ? b.cash_amount : undefined);
+    const singleRawOnline = b.onlineAmount !== undefined ? b.onlineAmount : (b.online_amount !== undefined ? b.online_amount : undefined);
+    let singleFinalCash = singleRawCash !== undefined ? Number(singleRawCash) : 0;
+    let singleFinalOnline = singleRawOnline !== undefined ? Number(singleRawOnline) : 0;
+    if (singleRawCash === undefined && singleRawOnline === undefined) {
+      if (finalPayMethod === 'Cash') {
+        singleFinalCash = totalCost;
+        singleFinalOnline = 0;
+      } else if (finalPayMethod === 'Bank Transfer' || finalPayMethod === 'UPI') {
+        singleFinalCash = 0;
+        singleFinalOnline = totalCost;
+      } else {
+        singleFinalCash = 0;
+        singleFinalOnline = 0;
+      }
+    }
+
     db.prepare(`
-      INSERT INTO purchases (id, supplier_name, supplier_phone, product_id, product_title, qty, unit_cost, total_cost, bill_no, invoice_date, payment_method, payment_status, status, notes, bill_image, items_json, created_at)
-      VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, 'Paid', ?, ?, ?, ?, ?)
+      INSERT INTO purchases (id, supplier_name, supplier_phone, product_id, product_title, qty, unit_cost, total_cost, bill_no, invoice_date, payment_method, payment_status, cash_amount, online_amount, status, notes, bill_image, items_json, created_at)
+      VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, 'Paid', ?, ?, ?, ?, ?, ?, ?)
     `).run(
       id,
       finalSupplier,
@@ -4259,6 +4374,8 @@ app.post('/api/purchases', requireAdmin, async (req, res) => {
       finalBillNo,
       finalInvoiceDate,
       finalPayMethod,
+      singleFinalCash,
+      singleFinalOnline,
       (autoReceive || status === 'received') ? 'draft' : (status || 'draft'),
       notes || '',
       finalBillImage,
@@ -4282,6 +4399,8 @@ app.post('/api/purchases', requireAdmin, async (req, res) => {
         qty: numericQty,
         unit_cost: numericCost,
         total_cost: totalCost,
+        cash_amount: singleFinalCash,
+        online_amount: singleFinalOnline,
         bill_no: finalBillNo,
         invoice_date: finalInvoiceDate,
         payment_method: finalPayMethod,
@@ -4303,7 +4422,7 @@ app.post('/api/purchases', requireAdmin, async (req, res) => {
       console.warn('[Purchases] Single purchase cloud sync warning:', cloudErr.message);
     }
 
-    res.status(201).json({ success: true, id, purchaseId: id, totalCost });
+    res.status(201).json({ success: true, id, purchaseId: id, totalCost, cashAmount: singleFinalCash, onlineAmount: singleFinalOnline });
   } catch (err) {
     res.status(400).json({ error: err.message });
   }
@@ -4442,6 +4561,20 @@ app.put('/api/purchases/:id', requireAdmin, async (req, res) => {
 
     const affectedProductIds = new Set();
 
+    const rawEditCash = b.cashAmount !== undefined ? b.cashAmount : (b.cash_amount !== undefined ? b.cash_amount : undefined);
+    const rawEditOnline = b.onlineAmount !== undefined ? b.onlineAmount : (b.online_amount !== undefined ? b.online_amount : undefined);
+    let finalEditCash = rawEditCash !== undefined ? Number(rawEditCash) : Number(existingPur.cash_amount || 0);
+    let finalEditOnline = rawEditOnline !== undefined ? Number(rawEditOnline) : Number(existingPur.online_amount || 0);
+    if (rawEditCash === undefined && rawEditOnline === undefined) {
+      if (finalPayMethod === 'Cash') {
+        finalEditCash = grandTotalCost;
+        finalEditOnline = 0;
+      } else if (finalPayMethod === 'Bank Transfer' || finalPayMethod === 'UPI') {
+        finalEditCash = 0;
+        finalEditOnline = grandTotalCost;
+      }
+    }
+
     const editTx = db.transaction(() => {
       // If purchase was received, adjust product stocks
       if (existingPur.status === 'received') {
@@ -4500,6 +4633,8 @@ app.put('/api/purchases/:id', requireAdmin, async (req, res) => {
           bill_no = ?,
           invoice_date = ?,
           payment_method = ?,
+          cash_amount = ?,
+          online_amount = ?,
           notes = ?,
           bill_image = ?,
           items_json = ?
@@ -4515,6 +4650,8 @@ app.put('/api/purchases/:id', requireAdmin, async (req, res) => {
         finalBillNo,
         finalInvoiceDate,
         finalPayMethod,
+        finalEditCash,
+        finalEditOnline,
         finalNotes,
         finalBillImage,
         JSON.stringify(newItems),
@@ -4527,7 +4664,7 @@ app.put('/api/purchases/:id', requireAdmin, async (req, res) => {
       `).run(
         'AUD-' + Math.floor(100000 + Math.random() * 900000),
         finalActor,
-        `Updated purchase ${purchaseId} (${finalBillNo}) from ${finalSupplier}: ${totalBoxes} boxes (₹${grandTotalCost})`,
+        `Updated purchase ${purchaseId} (${finalBillNo}) from ${finalSupplier}: ${totalBoxes} boxes (₹${grandTotalCost}, Cash: ₹${finalEditCash}, Online: ₹${finalEditOnline})`,
         now
       );
     });
@@ -4546,6 +4683,8 @@ app.put('/api/purchases/:id', requireAdmin, async (req, res) => {
         qty: totalBoxes,
         unit_cost: avgUnitCost,
         total_cost: grandTotalCost,
+        cash_amount: finalEditCash,
+        online_amount: finalEditOnline,
         bill_no: finalBillNo,
         invoice_date: finalInvoiceDate,
         payment_method: finalPayMethod,

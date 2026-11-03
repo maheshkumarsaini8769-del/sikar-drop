@@ -6122,13 +6122,26 @@
             </div>
             <div class="portal-field-group">
               <label for="pur-payment-method">Payment Mode</label>
-              <select id="pur-payment-method" class="portal-select">
+              <select id="pur-payment-method" class="portal-select" onchange="handlePurchasePaymentMethodChange(this.value)">
                 <option value="Bank Transfer">Bank Transfer / NEFT</option>
                 <option value="Cash">Cash Depot Payment</option>
-                <option value="Cheque">Plant Cheque</option>
                 <option value="UPI">UPI / Net Banking</option>
+                <option value="Split">Split (Cash + Online)</option>
+                <option value="Cheque">Plant Cheque</option>
                 <option value="Credit">Credit / Due Inward</option>
               </select>
+            </div>
+          </div>
+
+          <!-- SPLIT PAYMENT ROW FOR PURCHASES -->
+          <div id="pur-split-payment-row" style="display: none; grid-template-columns: 1fr 1fr; gap: 12px; margin-top: 12px; background: #FFFFFF; border: 1.5px dashed #CBD5E1; padding: 12px; border-radius: 8px;">
+            <div class="portal-field-group" style="margin-bottom: 0;">
+              <label for="pur-cash-amount" style="font-size: 0.8rem; font-weight: 700; color: #15803D;">Cash Amount (Nagad ₹)</label>
+              <input type="number" id="pur-cash-amount" min="0" step="any" class="portal-input tabular" value="0" placeholder="0" oninput="updatePurchaseSplitCalculations('cash')">
+            </div>
+            <div class="portal-field-group" style="margin-bottom: 0;">
+              <label for="pur-online-amount" style="font-size: 0.8rem; font-weight: 700; color: #0284C7;">Online / Bank Amount (NEFT/UPI ₹)</label>
+              <input type="number" id="pur-online-amount" min="0" step="any" class="portal-input tabular" value="0" placeholder="0" oninput="updatePurchaseSplitCalculations('online')">
             </div>
           </div>
         </div>
@@ -7034,6 +7047,124 @@
     </div>
   </div>
 
+  <!-- 10G. POS SALE EDIT MODAL -->
+  <div class="portal-modal-overlay" id="pos-edit-modal">
+    <div class="portal-modal-card" style="max-width: 760px; width: 95%; max-height: 92vh; overflow-y: auto;">
+      <button type="button" class="modal-close-x" onclick="closeModal('pos-edit-modal')">
+        <svg style="width:14px;height:14px;display:block;" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5"><line x1="18" y1="6" x2="6" y2="18"></line><line x1="6" y1="6" x2="18" y2="18"></line></svg>
+      </button>
+
+      <div style="margin-bottom: 16px;">
+        <h3 style="font-family: var(--font-heading); font-size: 1.3rem; font-weight: 900; color: #0F172A; margin-bottom: 4px;">Edit Manual Counter Sale</h3>
+        <p style="font-size: 0.84rem; color: var(--text-muted);" id="pos-edit-modal-subtitle">Sale #--</p>
+      </div>
+
+      <form id="pos-edit-form" onsubmit="handlePosEditSubmit(event)">
+        <input type="hidden" id="pos-edit-sale-id">
+
+        <div style="background: #F8FAFC; border: 1px solid var(--border-light); border-radius: var(--radius-sm); padding: 14px; margin-bottom: 16px;">
+          <div class="portal-form-grid-2">
+            <div class="portal-field-group">
+              <label for="pos-edit-cust-name">Customer / Party Name *</label>
+              <input type="text" id="pos-edit-cust-name" class="portal-input" required>
+            </div>
+            <div class="portal-field-group">
+              <label for="pos-edit-cust-phone">Party Mobile Number *</label>
+              <input type="tel" id="pos-edit-cust-phone" inputmode="numeric" pattern="[0-9]*" maxlength="10" class="portal-input tabular" required oninput="this.value = this.value.replace(/[^0-9]/g, '').slice(0, 10)">
+            </div>
+          </div>
+        </div>
+
+        <!-- ITEMS TABLE -->
+        <div style="margin-bottom: 16px;">
+          <div style="display: flex; justify-content: space-between; align-items: center; margin-bottom: 8px;">
+            <strong style="font-size: 0.9rem; color: #0F172A;">Products &amp; Quantities</strong>
+            <button type="button" class="btn-portal-outline" style="padding: 4px 10px; font-size: 0.78rem;" onclick="addPosEditLineItem()">+ Add Product</button>
+          </div>
+          <div class="portal-table-wrapper" style="box-shadow: none; border: 1px solid var(--border-light);">
+            <table class="portal-table" style="background: #FFFFFF;">
+              <thead>
+                <tr style="background: #F1F5F9;">
+                  <th>Product</th>
+                  <th style="width: 110px;">Qty (Boxes)</th>
+                  <th style="width: 120px;">Rate / Box ₹</th>
+                  <th style="width: 110px; text-align: right;">Total ₹</th>
+                  <th style="width: 40px;"></th>
+                </tr>
+              </thead>
+              <tbody id="pos-edit-items-tbody">
+              </tbody>
+            </table>
+          </div>
+        </div>
+
+        <!-- TOTALS & PAYMENT SECTION -->
+        <div style="background: #F8FAFC; border: 1px solid var(--border-light); border-radius: var(--radius-sm); padding: 14px; margin-bottom: 16px;">
+          <div class="portal-form-grid-3">
+            <div class="portal-field-group">
+              <label>Subtotal ₹</label>
+              <input type="text" id="pos-edit-subtotal-display" class="portal-input tabular" readonly style="background: #FFFFFF;">
+            </div>
+            <div class="portal-field-group">
+              <label for="pos-edit-discount-input">Discount / Chhoot ₹</label>
+              <input type="number" id="pos-edit-discount-input" min="0" step="any" class="portal-input tabular" value="0" oninput="updatePosEditCalculations()">
+            </div>
+            <div class="portal-field-group">
+              <label>Final Net Total ₹</label>
+              <input type="text" id="pos-edit-total-display" class="portal-input tabular" readonly style="background: #EFF6FF; font-weight: 900; font-size: 1.15rem; color: #0284C7; border-color: #BAE6FD;">
+            </div>
+          </div>
+
+          <div class="portal-form-grid-2" style="margin-top: 12px;">
+            <div class="portal-field-group">
+              <label for="pos-edit-payment-method">Payment Mode</label>
+              <select id="pos-edit-payment-method" class="portal-select" onchange="handlePosEditPaymentMethodChange(this.value)">
+                <option value="Cash">Cash Payment (Nagad)</option>
+                <option value="UPI">UPI / QR Code</option>
+                <option value="Split">Split (Cash + UPI)</option>
+                <option value="Khata Credit">Full Khata Credit (Udhar)</option>
+              </select>
+            </div>
+            <div class="portal-field-group">
+              <label for="pos-edit-paid-input">Amount Received ₹</label>
+              <input type="number" id="pos-edit-paid-input" min="0" step="any" class="portal-input tabular" value="0" oninput="handlePosEditPaidInputChange()">
+            </div>
+          </div>
+
+          <!-- SPLIT PAYMENT ROW -->
+          <div id="pos-edit-split-row" class="portal-form-grid-2" style="display: none; margin-top: 10px; background: #FFFFFF; border: 1px dashed #CBD5E1; padding: 10px; border-radius: 6px;">
+            <div class="portal-field-group" style="margin-bottom: 0;">
+              <label for="pos-edit-split-cash" style="font-size: 0.78rem; font-weight: 700; color: #15803D;">Cash Amount ₹</label>
+              <input type="number" id="pos-edit-split-cash" min="0" step="any" class="portal-input tabular" value="0" oninput="updatePosEditSplitCalculations('cash')">
+            </div>
+            <div class="portal-field-group" style="margin-bottom: 0;">
+              <label for="pos-edit-split-online" style="font-size: 0.78rem; font-weight: 700; color: #0284C7;">UPI / Online Amount ₹</label>
+              <input type="number" id="pos-edit-split-online" min="0" step="any" class="portal-input tabular" value="0" oninput="updatePosEditSplitCalculations('online')">
+            </div>
+          </div>
+
+          <div class="portal-form-grid-2" style="margin-top: 12px;">
+            <div class="portal-field-group">
+              <label>Khata Balance (Remaining Udhar) ₹</label>
+              <input type="text" id="pos-edit-balance-display" class="portal-input tabular" readonly style="background: #FEF2F2; font-weight: 800; color: #DC2626;">
+            </div>
+            <div class="portal-field-group">
+              <label for="pos-edit-notes">Sale Notes / Remarks</label>
+              <input type="text" id="pos-edit-notes" class="portal-input" placeholder="e.g. Counter wholesale bill">
+            </div>
+          </div>
+        </div>
+
+        <div style="display: flex; justify-content: flex-end; gap: 10px;">
+          <button type="button" class="btn-portal-outline" onclick="closeModal('pos-edit-modal')">Cancel</button>
+          <button type="submit" class="btn-portal-primary" id="pos-edit-submit-btn" style="padding: 10px 24px; font-weight: 800;">
+            Save Changes &amp; Adjust Inventory
+          </button>
+        </div>
+      </form>
+    </div>
+  </div>
+
   <!-- TOAST NOTIFICATION -->
   <div class="portal-toast" id="portal-toast" onclick="this.classList.remove('show')" title="Tap to dismiss">
     <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" width="18" height="18"><polyline points="20 6 9 17 4 12"></polyline></svg>
@@ -7604,6 +7735,10 @@
               billNo: p.bill_no || p.billNo || '',
               bill_no: p.bill_no || p.billNo || '',
               payment_method: p.payment_method || 'Bank Transfer',
+              cash_amount: Number(p.cash_amount !== undefined ? p.cash_amount : (p.cashAmount || 0)),
+              online_amount: Number(p.online_amount !== undefined ? p.online_amount : (p.onlineAmount || 0)),
+              cashAmount: Number(p.cash_amount !== undefined ? p.cash_amount : (p.cashAmount || 0)),
+              onlineAmount: Number(p.online_amount !== undefined ? p.online_amount : (p.onlineAmount || 0)),
               notes: p.notes || '',
               status: p.status || 'received',
               billImage: p.bill_image || p.billImage || '',
@@ -9999,14 +10134,25 @@
       } else if (field === 'price') {
         posLineItems[idx].price = Math.max(0, parseFloat(value) || 0);
       }
-      renderPosLineItems();
+      // Update row line total in DOM directly without re-rendering tbody to preserve input focus
+      const lineTotal = (posLineItems[idx].qty || 1) * (posLineItems[idx].price || 0);
+      const totalCell = document.getElementById(`pos-line-total-${idx}`);
+      if (totalCell) {
+        totalCell.textContent = `₹${lineTotal.toLocaleString('en-IN')}`;
+      }
       updatePosCalculations();
     }
 
     function stepPosLineItemQty(idx, delta) {
       if (!posLineItems[idx]) return;
       posLineItems[idx].qty = Math.max(1, (posLineItems[idx].qty || 1) + delta);
-      renderPosLineItems();
+      const qtyInput = document.getElementById(`pos-item-qty-${idx}`);
+      if (qtyInput) qtyInput.value = posLineItems[idx].qty;
+      const lineTotal = (posLineItems[idx].qty || 1) * (posLineItems[idx].price || 0);
+      const totalCell = document.getElementById(`pos-line-total-${idx}`);
+      if (totalCell) {
+        totalCell.textContent = `₹${lineTotal.toLocaleString('en-IN')}`;
+      }
       updatePosCalculations();
     }
 
@@ -10044,16 +10190,16 @@
             </td>
             <td>${stockBadge}</td>
             <td>
-              <input type="number" class="portal-input tabular" style="padding: 6px 8px; font-size: 0.84rem;" value="${item.price}" min="0" oninput="onPosLineItemChange(${idx}, 'price', this.value)">
+              <input type="number" id="pos-item-price-${idx}" class="portal-input tabular" style="padding: 6px 8px; font-size: 0.84rem;" value="${item.price}" min="0" oninput="onPosLineItemChange(${idx}, 'price', this.value)">
             </td>
             <td>
               <div style="display: flex; align-items: center; gap: 4px;">
                 <button type="button" class="btn-portal-outline" style="padding: 3px 8px; font-size: 0.8rem;" onclick="stepPosLineItemQty(${idx}, -1)">-</button>
-                <input type="number" class="portal-input tabular" style="padding: 6px 8px; font-size: 0.84rem; text-align: center; width: 64px;" value="${item.qty}" min="1" oninput="onPosLineItemChange(${idx}, 'qty', this.value)">
+                <input type="number" id="pos-item-qty-${idx}" class="portal-input tabular" style="padding: 6px 8px; font-size: 0.84rem; text-align: center; width: 64px;" value="${item.qty}" min="1" oninput="onPosLineItemChange(${idx}, 'qty', this.value)">
                 <button type="button" class="btn-portal-outline" style="padding: 3px 8px; font-size: 0.8rem;" onclick="stepPosLineItemQty(${idx}, 1)">+</button>
               </div>
             </td>
-            <td style="text-align: right; font-weight: 800; font-size: 0.95rem; color: #0284C7;" class="tabular">
+            <td id="pos-line-total-${idx}" style="text-align: right; font-weight: 800; font-size: 0.95rem; color: #0284C7;" class="tabular">
               ₹${lineTotal.toLocaleString('en-IN')}
             </td>
             <td style="text-align: center;">
@@ -10084,7 +10230,7 @@
 
         if (remaining < 0) {
           hasInsufficientStock = true;
-          previewLines.push(`<span style="color: #DC2626; font-weight: 800;">"${it.title}": Only ${currentStock} in stock (Short by ${Math.abs(remaining)} boxes)</span>`);
+          previewLines.push(`<span style="color: #B45309; font-weight: 700;">"${it.title}": Depot Stock ${currentStock} (Backorder: ${Math.abs(remaining)} boxes)</span>`);
         } else {
           previewLines.push(`"${it.title}": ${currentStock} &rarr; <strong style="color: #15803D;">${remaining}</strong> remaining`);
         }
@@ -10140,7 +10286,7 @@
         }
       }
 
-      // Live Inventory Preview & Prevention
+      // Live Inventory Preview & Non-blocking Alert
       const alertBox = document.getElementById('pos-inventory-alert-box');
       const previewText = document.getElementById('pos-stock-preview-text');
       const submitBtn = document.getElementById('pos-submit-btn');
@@ -10152,16 +10298,18 @@
 
       if (hasInsufficientStock) {
         if (alertBox) {
-          alertBox.style.background = '#FEF2F2';
-          alertBox.style.borderColor = '#FECACA';
-          alertBox.style.color = '#991B1B';
+          alertBox.style.background = '#FFFBEB';
+          alertBox.style.borderColor = '#FDE68A';
+          alertBox.style.color = '#92400E';
         }
-        if (submitBtn) {
-          submitBtn.disabled = true;
-          submitBtn.style.opacity = '0.6';
-          submitBtn.style.cursor = 'not-allowed';
+        if (submitBtn && submitBtn.dataset.submitting !== '1') {
+          submitBtn.disabled = false;
+          submitBtn.style.opacity = '1';
+          submitBtn.style.cursor = 'pointer';
         }
-        if (submitText) submitText.textContent = 'Cannot Submit: Insufficient Stock';
+        if (submitText && submitBtn.dataset.submitting !== '1') {
+          submitText.textContent = `Submit POS Sale (Counter Stock Inward / Deduct ${totalBoxes} Boxes)`;
+        }
       } else {
         if (alertBox) {
           alertBox.style.background = '#F0FDF4';
@@ -10319,16 +10467,11 @@
         return;
       }
 
-      // Check stock availability
+      // Check positive quantities
       for (const it of posLineItems) {
-        const prod = adminProducts.find(p => p.id === it.productId);
         const qty = Number(it.qty || 1);
         if (qty <= 0) {
           showToast(`Invalid quantity for ${it.title}. Must be greater than 0.`);
-          return;
-        }
-        if (prod && prod.stock < qty) {
-          showToast(`Insufficient stock for "${prod.title}". Requested: ${qty}, In Stock: ${prod.stock}.`);
           return;
         }
       }
@@ -10364,6 +10507,22 @@
       const balance = Math.max(0, netTotal - paidAmount);
       const dueDate = document.getElementById('pos-due-date-input').value || '';
 
+      let cashAmount = 0;
+      let onlineAmount = 0;
+      if (payMethod === 'Split') {
+        cashAmount = parseFloat(document.getElementById('pos-split-cash-input').value) || 0;
+        onlineAmount = parseFloat(document.getElementById('pos-split-upi-input').value) || 0;
+      } else if (payMethod === 'Cash') {
+        cashAmount = paidAmount;
+        onlineAmount = 0;
+      } else if (payMethod === 'UPI' || payMethod === 'Online' || payMethod === 'Bank Transfer') {
+        cashAmount = 0;
+        onlineAmount = paidAmount;
+      } else {
+        cashAmount = paidAmount;
+        onlineAmount = 0;
+      }
+
       const submitBtn = document.getElementById('pos-submit-btn');
       const submitText = document.getElementById('pos-submit-btn-text');
 
@@ -10388,6 +10547,8 @@
           amountReceived: paidAmount,
           outstandingAmount: balance,
           paymentMethod: payMethod,
+          cashAmount,
+          onlineAmount,
           saleDate: new Date().toISOString().split('T')[0],
           dueDate: balance > 0 ? dueDate : null,
           notes: notes ? `${notes} (Counter POS: ${totalBoxes} Boxes)` : `Counter POS: ${totalBoxes} Boxes (${corridor})`,
@@ -10655,6 +10816,12 @@
             <td class="tabular">
               <strong style="color: #15803D;">₹${paidAmt.toLocaleString('en-IN')}</strong>
               <div style="font-size: 0.72rem; color: var(--text-muted); font-weight: 700;">Via ${escapeHTML(payMethod)}</div>
+              ${(Number(s.cash_amount || 0) > 0 || Number(s.online_amount || 0) > 0) ? `
+                <div style="display: flex; flex-direction: column; gap: 2px; margin-top: 3px; font-size: 0.7rem;">
+                  ${Number(s.cash_amount || 0) > 0 ? `<span style="background: #DCFCE7; color: #166534; padding: 1px 5px; border-radius: 4px; font-weight: 700;">Cash: ₹${Number(s.cash_amount).toLocaleString('en-IN')}</span>` : ''}
+                  ${Number(s.online_amount || 0) > 0 ? `<span style="background: #E0F2FE; color: #0369A1; padding: 1px 5px; border-radius: 4px; font-weight: 700;">Online: ₹${Number(s.online_amount).toLocaleString('en-IN')}</span>` : ''}
+                </div>
+              ` : ''}
             </td>
             <td class="tabular">${dueBadge}</td>
             <td>${statusBadge}</td>
@@ -10664,8 +10831,10 @@
                 <button type="button" class="btn-tbl-action success" onclick="sendPosSaleWhatsApp('${escapeHTML(s.id)}')" title="Share Receipt on WhatsApp">WhatsApp</button>
                 <button type="button" class="btn-tbl-action" onclick="openCustomerHistory('${escapeHTML(s.customer_id || s.customer_phone)}')" title="Open Customer Ledger">Ledger</button>
                 ${!isRefunded ? `
+                  <button type="button" class="btn-tbl-action" onclick="openPosEditModal('${escapeHTML(s.id)}')" title="Edit POS Sale">Edit</button>
                   <button type="button" class="btn-tbl-action danger" onclick="openPosRefundModal('${escapeHTML(s.id)}')" title="Refund sale and restore boxes to inventory">Refund</button>
                 ` : ''}
+                <button type="button" class="btn-tbl-action danger" onclick="deletePosSale('${escapeHTML(s.id)}')" title="Delete POS Sale and restore stock">Delete</button>
               </div>
             </td>
           </tr>
@@ -10781,6 +10950,16 @@
                 <span>Amount Paid (${escapeHTML(String(s.payment_method || 'Cash').toUpperCase())}):</span>
                 <strong>₹${paidAmt.toLocaleString('en-IN')}</strong>
               </div>
+              ${(Number(s.cash_amount || 0) > 0 && Number(s.online_amount || 0) > 0) ? `
+                <div style="display: flex; justify-content: space-between; font-size: 0.8rem; color: #166534; padding-left: 10px;">
+                  <span>- Cash Received:</span>
+                  <strong>₹${Number(s.cash_amount).toLocaleString('en-IN')}</strong>
+                </div>
+                <div style="display: flex; justify-content: space-between; font-size: 0.8rem; color: #0369A1; padding-left: 10px;">
+                  <span>- UPI / Online Received:</span>
+                  <strong>₹${Number(s.online_amount).toLocaleString('en-IN')}</strong>
+                </div>
+              ` : ''}
               <div style="display: flex; justify-content: space-between; color: ${dueAmt > 0 ? '#DC2626' : '#15803D'}; font-weight: 800;">
                 <span>${dueAmt > 0 ? 'Pending Udhar Balance:' : 'Payment Balance Due:'}</span>
                 <span>₹${dueAmt.toLocaleString('en-IN')}</span>
@@ -10837,10 +11016,11 @@
         `--------------------------------`,
         `*Total Bill:* Rs.${billAmt.toLocaleString('en-IN')}`,
         `*Paid (${String(s.payment_method || 'Cash').toUpperCase()}):* Rs.${paidAmt.toLocaleString('en-IN')}`,
+        (Number(s.cash_amount || 0) > 0 && Number(s.online_amount || 0) > 0) ? `*Payment Breakdown:* Cash: Rs.${Number(s.cash_amount).toLocaleString('en-IN')} + UPI/Online: Rs.${Number(s.online_amount).toLocaleString('en-IN')}` : '',
         dueAmt > 0 ? `*Pending Balance (Udhar Khata):* Rs.${dueAmt.toLocaleString('en-IN')}` : `*Payment Status:* FULL PAID (Rs.0 Due)`,
         `--------------------------------`,
         `Thank you for purchasing from Sikar Drop Wholesale Depot!`
-      ].join('\n');
+      ].filter(Boolean).join('\n');
 
       window.open(`https://wa.me/${targetPhone}?text=${encodeURIComponent(msg)}`, '_blank', 'noopener');
     }
@@ -10929,6 +11109,11 @@
             ${discountAmt > 0 ? `<div style="color: #15803D;">Discount: <strong>-₹${discountAmt.toLocaleString('en-IN')}</strong></div>` : ''}
             <div style="font-size: 16px;">Net Bill Amount: <strong>₹${billAmt.toLocaleString('en-IN')}</strong></div>
             <div style="color: #15803D;">Amount Paid: <strong>₹${paidAmt.toLocaleString('en-IN')}</strong></div>
+            ${(Number(s.cash_amount || 0) > 0 && Number(s.online_amount || 0) > 0) ? `
+              <div style="font-size: 12px; color: #475569;">
+                (Cash: ₹${Number(s.cash_amount).toLocaleString('en-IN')} | UPI: ₹${Number(s.online_amount).toLocaleString('en-IN')})
+              </div>
+            ` : ''}
             <div style="color: ${dueAmt > 0 ? '#DC2626' : '#15803D'}; font-weight: bold;">
               ${dueAmt > 0 ? 'Pending Udhar Balance: ' : 'Balance Due: '}
               <strong>₹${dueAmt.toLocaleString('en-IN')}</strong>
@@ -11031,6 +11216,417 @@
           submitBtn.disabled = false;
           submitBtn.textContent = 'Confirm Refund & Restore Stock';
         }
+      }
+    }
+
+    // =========================================================
+    // POS SALE EDIT & ATOMIC INVENTORY RECONCILIATION
+    // =========================================================
+    let activePosEditSale = null;
+    let posEditLineItems = [];
+
+    function openPosEditModal(saleId) {
+      const s = (adminManualSales || []).find(x => x.id === saleId);
+      if (!s) {
+        showToast('Sale record not found.');
+        return;
+      }
+      activePosEditSale = s;
+
+      const idEl = document.getElementById('pos-edit-sale-id');
+      const subEl = document.getElementById('pos-edit-modal-subtitle');
+      const nameEl = document.getElementById('pos-edit-cust-name');
+      const phoneEl = document.getElementById('pos-edit-cust-phone');
+      const notesEl = document.getElementById('pos-edit-notes');
+      const discEl = document.getElementById('pos-edit-discount-input');
+      const methodEl = document.getElementById('pos-edit-payment-method');
+      const paidInput = document.getElementById('pos-edit-paid-input');
+      const splitRow = document.getElementById('pos-edit-split-row');
+      const cashEl = document.getElementById('pos-edit-split-cash');
+      const onlineEl = document.getElementById('pos-edit-split-online');
+
+      if (idEl) idEl.value = s.id;
+      if (subEl) subEl.textContent = `Sale #${s.id} • ${s.sale_date || ''} • Created by ${s.actor || 'Admin'}`;
+      if (nameEl) nameEl.value = s.customer_name || '';
+      if (phoneEl) phoneEl.value = s.customer_phone || '';
+      if (notesEl) notesEl.value = s.notes || '';
+      if (discEl) discEl.value = s.discount || 0;
+
+      const pCash = Number(s.cash_amount || 0);
+      const pOnline = Number(s.online_amount || 0);
+      if (cashEl) cashEl.value = pCash;
+      if (onlineEl) onlineEl.value = pOnline;
+
+      if (s.payment_method === 'Split' || (pCash > 0 && pOnline > 0)) {
+        if (methodEl) methodEl.value = 'Split';
+        if (splitRow) splitRow.style.display = 'grid';
+      } else {
+        if (methodEl) methodEl.value = s.payment_method || 'Cash';
+        if (splitRow) splitRow.style.display = 'none';
+      }
+
+      if (paidInput) {
+        paidInput.value = s.amount_received !== undefined ? s.amount_received : (s.total_amount || 0);
+        paidInput.dataset.manual = '1';
+      }
+
+      const rawItems = Array.isArray(s.items) ? s.items : [];
+      posEditLineItems = rawItems.map(it => ({
+        productId: it.productId || it.id || (adminProducts[0] ? adminProducts[0].id : 'p1'),
+        title: it.title || it.productTitle || 'Product',
+        qty: Number(it.quantity || it.qty || 1),
+        price: Number(it.price || it.rate || 0)
+      }));
+
+      if (posEditLineItems.length === 0) {
+        const defaultP = (adminProducts && adminProducts[0]) || { id: 'p1', title: 'Product 1', price: 100 };
+        posEditLineItems.push({
+          productId: defaultP.id,
+          title: defaultP.title,
+          qty: 1,
+          price: defaultP.price
+        });
+      }
+
+      renderPosEditLineItems();
+      updatePosEditCalculations();
+      openModal('pos-edit-modal');
+    }
+
+    function renderPosEditLineItems() {
+      const tbody = document.getElementById('pos-edit-items-tbody');
+      if (!tbody) return;
+
+      tbody.innerHTML = posEditLineItems.map((it, idx) => {
+        const prodOptions = (adminProducts || []).map(p => {
+          const isSelected = p.id === it.productId || p.title === it.title;
+          return `<option value="${escapeHTML(p.id)}" ${isSelected ? 'selected' : ''}>${escapeHTML(p.title)} (₹${p.price})</option>`;
+        }).join('');
+
+        const lineTotal = Number(it.qty || 1) * Number(it.price || 0);
+
+        return `
+          <tr>
+            <td>
+              <select class="portal-select" style="padding: 6px 8px; font-size: 0.82rem;" onchange="onPosEditLineItemChange(${idx}, 'productId', this.value)">
+                ${prodOptions}
+              </select>
+            </td>
+            <td>
+              <input type="number" min="1" step="1" class="portal-input tabular" style="padding: 6px 8px; font-size: 0.85rem;" value="${it.qty || 1}" oninput="onPosEditLineItemChange(${idx}, 'qty', this.value)">
+            </td>
+            <td>
+              <input type="number" min="0" step="any" id="pos-edit-item-price-${idx}" class="portal-input tabular" style="padding: 6px 8px; font-size: 0.85rem;" value="${it.price || 0}" oninput="onPosEditLineItemChange(${idx}, 'price', this.value)">
+            </td>
+            <td style="text-align: right; font-weight: 800;" class="tabular">
+              <span id="pos-edit-line-total-${idx}">₹${lineTotal.toLocaleString('en-IN')}</span>
+            </td>
+            <td style="text-align: center;">
+              <button type="button" class="btn-tbl-action danger" style="padding: 4px 8px;" onclick="removePosEditLineItem(${idx})" title="Remove item">&times;</button>
+            </td>
+          </tr>
+        `;
+      }).join('');
+    }
+
+    function onPosEditLineItemChange(idx, field, val) {
+      if (!posEditLineItems[idx]) return;
+      if (field === 'qty') {
+        posEditLineItems[idx].qty = Math.max(1, parseInt(val, 10) || 0);
+      } else if (field === 'price') {
+        posEditLineItems[idx].price = Math.max(0, parseFloat(val) || 0);
+      } else if (field === 'productId') {
+        posEditLineItems[idx].productId = val;
+        const prod = (adminProducts || []).find(p => p.id === val);
+        if (prod) {
+          posEditLineItems[idx].title = prod.title;
+          posEditLineItems[idx].price = Number(prod.price || 0);
+          const priceInp = document.getElementById(`pos-edit-item-price-${idx}`);
+          if (priceInp) priceInp.value = posEditLineItems[idx].price;
+        }
+      }
+
+      const item = posEditLineItems[idx];
+      const lineTotal = (item.qty || 1) * (item.price || 0);
+      const totalEl = document.getElementById(`pos-edit-line-total-${idx}`);
+      if (totalEl) totalEl.textContent = `₹${lineTotal.toLocaleString('en-IN')}`;
+
+      updatePosEditCalculations();
+    }
+
+    function addPosEditLineItem() {
+      const defaultP = (adminProducts && adminProducts[0]) || { id: 'p1', title: 'Product 1', price: 100 };
+      posEditLineItems.push({
+        productId: defaultP.id,
+        title: defaultP.title,
+        qty: 1,
+        price: defaultP.price
+      });
+      renderPosEditLineItems();
+      updatePosEditCalculations();
+    }
+
+    function removePosEditLineItem(idx) {
+      if (posEditLineItems.length <= 1) {
+        showToast('Sale must have at least one product item.');
+        return;
+      }
+      posEditLineItems.splice(idx, 1);
+      renderPosEditLineItems();
+      updatePosEditCalculations();
+    }
+
+    function updatePosEditCalculations() {
+      let subtotal = 0;
+      posEditLineItems.forEach(it => {
+        subtotal += (Number(it.qty || 1) * Number(it.price || 0));
+      });
+      const discInput = document.getElementById('pos-edit-discount-input');
+      const discount = discInput ? (parseFloat(discInput.value) || 0) : 0;
+      const netTotal = Math.max(0, subtotal - discount);
+
+      const subEl = document.getElementById('pos-edit-subtotal-display');
+      if (subEl) subEl.value = `₹${subtotal.toLocaleString('en-IN')}`;
+
+      const totEl = document.getElementById('pos-edit-total-display');
+      if (totEl) totEl.value = `₹${netTotal.toLocaleString('en-IN')}`;
+
+      const methodEl = document.getElementById('pos-edit-payment-method');
+      const method = methodEl ? methodEl.value : 'Cash';
+      const paidInput = document.getElementById('pos-edit-paid-input');
+      const cashEl = document.getElementById('pos-edit-split-cash');
+      const onlineEl = document.getElementById('pos-edit-split-online');
+
+      if (method === 'Cash') {
+        if (paidInput && paidInput.dataset.manual !== '1') paidInput.value = netTotal;
+        if (cashEl) cashEl.value = paidInput ? paidInput.value : netTotal;
+        if (onlineEl) onlineEl.value = 0;
+      } else if (method === 'UPI') {
+        if (paidInput && paidInput.dataset.manual !== '1') paidInput.value = netTotal;
+        if (cashEl) cashEl.value = 0;
+        if (onlineEl) onlineEl.value = paidInput ? paidInput.value : netTotal;
+      } else if (method === 'Khata Credit') {
+        if (paidInput && paidInput.dataset.manual !== '1') paidInput.value = 0;
+        if (cashEl) cashEl.value = 0;
+        if (onlineEl) onlineEl.value = 0;
+      } else if (method === 'Split') {
+        const cash = parseFloat(cashEl ? cashEl.value : 0) || 0;
+        const upi = parseFloat(onlineEl ? onlineEl.value : 0) || 0;
+        if (paidInput) paidInput.value = cash + upi;
+      }
+
+      const paidAmount = paidInput ? (parseFloat(paidInput.value) || 0) : 0;
+      const bal = Math.max(0, netTotal - paidAmount);
+      const balEl = document.getElementById('pos-edit-balance-display');
+      if (balEl) balEl.value = `₹${bal.toLocaleString('en-IN')}`;
+    }
+
+    function handlePosEditPaymentMethodChange(val) {
+      const splitRow = document.getElementById('pos-edit-split-row');
+      const paidInput = document.getElementById('pos-edit-paid-input');
+      const totEl = document.getElementById('pos-edit-total-display');
+      const netTotal = parseFloat((totEl ? totEl.value : '0').replace(/[^\d.]/g, '')) || 0;
+
+      const cashEl = document.getElementById('pos-edit-split-cash');
+      const onlineEl = document.getElementById('pos-edit-split-online');
+
+      if (val === 'Split') {
+        if (splitRow) splitRow.style.display = 'grid';
+        const half = Math.round(netTotal / 2);
+        if (cashEl) cashEl.value = half;
+        if (onlineEl) onlineEl.value = netTotal - half;
+        if (paidInput) paidInput.value = netTotal;
+      } else {
+        if (splitRow) splitRow.style.display = 'none';
+        if (val === 'Cash') {
+          if (paidInput) paidInput.value = netTotal;
+          if (cashEl) cashEl.value = netTotal;
+          if (onlineEl) onlineEl.value = 0;
+        } else if (val === 'UPI') {
+          if (paidInput) paidInput.value = netTotal;
+          if (cashEl) cashEl.value = 0;
+          if (onlineEl) onlineEl.value = netTotal;
+        } else if (val === 'Khata Credit') {
+          if (paidInput) paidInput.value = 0;
+          if (cashEl) cashEl.value = 0;
+          if (onlineEl) onlineEl.value = 0;
+        }
+      }
+      updatePosEditCalculations();
+    }
+
+    function handlePosEditPaidInputChange() {
+      const paidInput = document.getElementById('pos-edit-paid-input');
+      if (paidInput) paidInput.dataset.manual = '1';
+      updatePosEditCalculations();
+    }
+
+    function updatePosEditSplitCalculations(changedField) {
+      const totEl = document.getElementById('pos-edit-total-display');
+      const netTotal = parseFloat((totEl ? totEl.value : '0').replace(/[^\d.]/g, '')) || 0;
+      const cashEl = document.getElementById('pos-edit-split-cash');
+      const onlineEl = document.getElementById('pos-edit-split-online');
+      const paidInput = document.getElementById('pos-edit-paid-input');
+
+      let cash = parseFloat(cashEl ? cashEl.value : 0) || 0;
+      let online = parseFloat(onlineEl ? onlineEl.value : 0) || 0;
+
+      if (changedField === 'cash') {
+        if (cash <= netTotal) {
+          online = Math.max(0, netTotal - cash);
+          if (onlineEl) onlineEl.value = online;
+        }
+      } else if (changedField === 'online') {
+        if (online <= netTotal) {
+          cash = Math.max(0, netTotal - online);
+          if (cashEl) cashEl.value = cash;
+        }
+      }
+
+      if (paidInput) {
+        paidInput.value = cash + online;
+        paidInput.dataset.manual = '1';
+      }
+      updatePosEditCalculations();
+    }
+
+    async function handlePosEditSubmit(e) {
+      e.preventDefault();
+      const saleId = document.getElementById('pos-edit-sale-id').value;
+      if (!saleId) return;
+
+      const custName = document.getElementById('pos-edit-cust-name').value.trim();
+      const custPhone = document.getElementById('pos-edit-cust-phone').value.trim();
+      const notes = document.getElementById('pos-edit-notes').value.trim();
+      const discInput = document.getElementById('pos-edit-discount-input');
+      const discount = discInput ? (parseFloat(discInput.value) || 0) : 0;
+      const methodEl = document.getElementById('pos-edit-payment-method');
+      const payMethod = methodEl ? methodEl.value : 'Cash';
+      const paidInput = document.getElementById('pos-edit-paid-input');
+      const paidAmount = paidInput ? (parseFloat(paidInput.value) || 0) : 0;
+
+      if (!custName || !custPhone) {
+        showToast('Please enter Customer Name and Phone number.');
+        return;
+      }
+
+      if (!posEditLineItems || posEditLineItems.length === 0) {
+        showToast('Please add at least one product item.');
+        return;
+      }
+
+      let subtotal = 0;
+      let totalBoxes = 0;
+      const items = posEditLineItems.map(it => {
+        const q = Math.max(1, parseInt(it.qty, 10) || 1);
+        const p = Math.max(0, parseFloat(it.price) || 0);
+        const lineTot = q * p;
+        subtotal += lineTot;
+        totalBoxes += q;
+        return {
+          productId: it.productId,
+          id: it.productId,
+          title: it.title,
+          quantity: q,
+          qty: q,
+          price: p,
+          rate: p,
+          total: lineTot
+        };
+      });
+
+      const netTotal = Math.max(0, subtotal - discount);
+      const balance = Math.max(0, netTotal - paidAmount);
+
+      let cashAmount = 0;
+      let onlineAmount = 0;
+      if (payMethod === 'Split') {
+        cashAmount = parseFloat(document.getElementById('pos-edit-split-cash').value) || 0;
+        onlineAmount = parseFloat(document.getElementById('pos-edit-split-online').value) || 0;
+      } else if (payMethod === 'Cash') {
+        cashAmount = paidAmount;
+        onlineAmount = 0;
+      } else if (payMethod === 'UPI' || payMethod === 'Online' || payMethod === 'Bank Transfer') {
+        cashAmount = 0;
+        onlineAmount = paidAmount;
+      } else {
+        cashAmount = paidAmount;
+        onlineAmount = 0;
+      }
+
+      const submitBtn = document.getElementById('pos-edit-submit-btn');
+      if (submitBtn) {
+        submitBtn.disabled = true;
+        submitBtn.textContent = 'Saving Changes...';
+      }
+
+      const actorName = currentOperator ? currentOperator.name : 'Admin';
+
+      try {
+        const payload = {
+          customerName: custName,
+          customerPhone: custPhone,
+          items,
+          subtotal,
+          discount,
+          totalAmount: netTotal,
+          amountReceived: paidAmount,
+          outstandingAmount: balance,
+          paymentMethod: payMethod,
+          cashAmount,
+          onlineAmount,
+          notes,
+          actor: actorName
+        };
+
+        const res = await sikarApi.put(`/api/manual-sales/${encodeURIComponent(saleId)}`, payload);
+        if (res && res.success) {
+          closeModal('pos-edit-modal');
+          await syncFromBackend();
+          renderPosHistoryTable();
+          renderInventoryTable();
+          renderProductsTable();
+          renderDashboard();
+          showToast(`Sale #${saleId} updated successfully & stock reconciled.`);
+        } else {
+          throw new Error((res && res.error) || 'Failed to update sale');
+        }
+      } catch (err) {
+        console.error('handlePosEditSubmit error:', err);
+        showToast('Error updating sale: ' + err.message);
+      } finally {
+        if (submitBtn) {
+          submitBtn.disabled = false;
+          submitBtn.textContent = 'Save Changes & Adjust Inventory';
+        }
+      }
+    }
+
+    async function deletePosSale(saleId) {
+      const s = (adminManualSales || []).find(x => x.id === saleId);
+      const name = s ? (s.customer_name || s.id) : saleId;
+      if (!confirm(`Are you sure you want to delete Sale #${saleId} (${name})?\n\nThis will restore deducted inventory boxes back to stock and revert khata balances.`)) {
+        return;
+      }
+
+      try {
+        const actorName = currentOperator ? currentOperator.name : 'Admin';
+        const res = await sikarApi.delete(`/api/manual-sales/${encodeURIComponent(saleId)}?actor=${encodeURIComponent(actorName)}`);
+        if (res && res.success) {
+          adminManualSales = (adminManualSales || []).filter(x => x.id !== saleId);
+          localStorage.setItem('sikar_admin_manual_sales', JSON.stringify(adminManualSales));
+          await syncFromBackend();
+          renderPosHistoryTable();
+          renderInventoryTable();
+          renderProductsTable();
+          renderDashboard();
+          showToast(`Sale #${saleId} deleted successfully and inventory restored.`);
+        } else {
+          throw new Error((res && res.error) || 'Failed to delete manual sale');
+        }
+      } catch (err) {
+        console.error('deletePosSale error:', err);
+        showToast('Error deleting sale: ' + err.message);
       }
     }
 
@@ -13045,6 +13641,16 @@
       // Reset bill photo upload
       removePurchaseBillPhoto();
 
+      // Reset payment mode & split inputs
+      const payElInit = document.getElementById('pur-payment-method');
+      if (payElInit) payElInit.value = 'Bank Transfer';
+      const purSplitRowInit = document.getElementById('pur-split-payment-row');
+      if (purSplitRowInit) purSplitRowInit.style.display = 'none';
+      const purCashInit = document.getElementById('pur-cash-amount');
+      const purOnlineInit = document.getElementById('pur-online-amount');
+      if (purCashInit) purCashInit.value = '0';
+      if (purOnlineInit) purOnlineInit.value = '0';
+
       // Initialize with at least 1 product row
       const defaultProd = (adminProducts && adminProducts[0]) || { id: 'p1', title: 'Bisleri 1L Mineral Water Peti', cost: 14 };
       purchaseModalItems = [
@@ -13096,6 +13702,21 @@
 
       const payEl = document.getElementById('pur-payment-method');
       if (payEl) payEl.value = p.payment_method || p.paymentMethod || 'Bank Transfer';
+
+      const pCash = Number(p.cash_amount || p.cashAmount || 0);
+      const pOnline = Number(p.online_amount || p.onlineAmount || 0);
+      const purSplitRow = document.getElementById('pur-split-payment-row');
+      const purCashEl = document.getElementById('pur-cash-amount');
+      const purOnlineEl = document.getElementById('pur-online-amount');
+      if (purCashEl) purCashEl.value = pCash;
+      if (purOnlineEl) purOnlineEl.value = pOnline;
+
+      if (p.payment_method === 'Split' || (pCash > 0 && pOnline > 0)) {
+        if (payEl) payEl.value = 'Split';
+        if (purSplitRow) purSplitRow.style.display = 'grid';
+      } else {
+        if (purSplitRow) purSplitRow.style.display = 'none';
+      }
 
       const notesEl = document.getElementById('pur-notes');
       if (notesEl) notesEl.value = p.notes || '';
@@ -13316,6 +13937,72 @@
 
       const totalEl = document.getElementById('pur-modal-total-bill');
       if (totalEl) totalEl.textContent = `₹${totalBill.toLocaleString('en-IN')}`;
+
+      // Update split / payment fields if not in manual Split mode
+      const methodEl = document.getElementById('pur-payment-method');
+      const method = methodEl ? methodEl.value : 'Bank Transfer';
+      const cashEl = document.getElementById('pur-cash-amount');
+      const onlineEl = document.getElementById('pur-online-amount');
+      if (method === 'Cash') {
+        if (cashEl) cashEl.value = totalBill;
+        if (onlineEl) onlineEl.value = 0;
+      } else if (method === 'Bank Transfer' || method === 'UPI') {
+        if (cashEl) cashEl.value = 0;
+        if (onlineEl) onlineEl.value = totalBill;
+      }
+    }
+
+    function handlePurchasePaymentMethodChange(val) {
+      const method = val || (document.getElementById('pur-payment-method') ? document.getElementById('pur-payment-method').value : 'Bank Transfer');
+      const splitRow = document.getElementById('pur-split-payment-row');
+      let totalBill = 0;
+      purchaseModalItems.forEach(it => {
+        totalBill += (Math.max(0, parseInt(it.qty, 10) || 0) * Math.max(0, parseFloat(it.unitCost) || 0));
+      });
+
+      const cashEl = document.getElementById('pur-cash-amount');
+      const onlineEl = document.getElementById('pur-online-amount');
+
+      if (method === 'Split') {
+        if (splitRow) splitRow.style.display = 'grid';
+        if (cashEl && onlineEl && (parseFloat(cashEl.value || 0) === 0 && parseFloat(onlineEl.value || 0) === 0)) {
+          const half = Math.round(totalBill / 2);
+          cashEl.value = half;
+          onlineEl.value = totalBill - half;
+        }
+      } else {
+        if (splitRow) splitRow.style.display = 'none';
+        if (method === 'Cash') {
+          if (cashEl) cashEl.value = totalBill;
+          if (onlineEl) onlineEl.value = 0;
+        } else if (method === 'Bank Transfer' || method === 'UPI') {
+          if (cashEl) cashEl.value = 0;
+          if (onlineEl) onlineEl.value = totalBill;
+        }
+      }
+    }
+
+    function updatePurchaseSplitCalculations(changedField) {
+      let totalBill = 0;
+      purchaseModalItems.forEach(it => {
+        totalBill += (Math.max(0, parseInt(it.qty, 10) || 0) * Math.max(0, parseFloat(it.unitCost) || 0));
+      });
+      const cashEl = document.getElementById('pur-cash-amount');
+      const onlineEl = document.getElementById('pur-online-amount');
+      if (!cashEl || !onlineEl) return;
+
+      const cash = parseFloat(cashEl.value) || 0;
+      const online = parseFloat(onlineEl.value) || 0;
+
+      if (changedField === 'cash') {
+        if (cash <= totalBill) {
+          onlineEl.value = Math.max(0, totalBill - cash);
+        }
+      } else if (changedField === 'online') {
+        if (online <= totalBill) {
+          cashEl.value = Math.max(0, totalBill - online);
+        }
+      }
     }
 
     function compressImageFile(file, maxWidth = 800, maxHeight = 800, quality = 0.82) {
@@ -13542,6 +14229,22 @@
       if (submitBtn) submitBtn.disabled = true;
       if (submitText) submitText.textContent = 'Saving Stock Inward & Updating Inventory...';
 
+      let cashAmt = 0;
+      let onlineAmt = 0;
+      if (paymentMethod === 'Split') {
+        cashAmt = parseFloat(document.getElementById('pur-cash-amount') ? document.getElementById('pur-cash-amount').value : 0) || 0;
+        onlineAmt = parseFloat(document.getElementById('pur-online-amount') ? document.getElementById('pur-online-amount').value : 0) || 0;
+      } else if (paymentMethod === 'Cash') {
+        cashAmt = totalCost;
+        onlineAmt = 0;
+      } else if (paymentMethod === 'Bank Transfer' || paymentMethod === 'UPI') {
+        cashAmt = 0;
+        onlineAmt = totalCost;
+      } else {
+        cashAmt = parseFloat(document.getElementById('pur-cash-amount') ? document.getElementById('pur-cash-amount').value : 0) || 0;
+        onlineAmt = parseFloat(document.getElementById('pur-online-amount') ? document.getElementById('pur-online-amount').value : 0) || 0;
+      }
+
       try {
         const payload = {
           supplierName: supplier,
@@ -13549,6 +14252,8 @@
           billNo: billNo,
           invoiceDate: dateVal,
           paymentMethod: paymentMethod,
+          cashAmount: cashAmt,
+          onlineAmount: onlineAmt,
           items: validItems,
           billImage: purchaseModalBillImage || '',
           notes: notes,
@@ -13594,6 +14299,8 @@
             invoice_date: dateVal,
             paymentMethod: paymentMethod,
             payment_method: paymentMethod,
+            cash_amount: cashAmt,
+            online_amount: onlineAmt,
             items: validItems,
             qty: totalQty,
             cost: totalQty > 0 ? (totalCost / totalQty) : 0,
@@ -13804,7 +14511,15 @@
               <td style="max-width: 240px; font-size: 0.82rem;">${escapeHTML(p.productTitle || 'Water Petis')}</td>
               <td><strong>${p.qty} Boxes</strong></td>
               <td class="tabular">₹${p.cost}</td>
-              <td class="tabular" style="font-weight:800; color:#0F172A;">₹${total.toLocaleString('en-IN')}</td>
+              <td class="tabular" style="font-weight:800; color:#0F172A;">
+                ₹${total.toLocaleString('en-IN')}
+                ${(Number(p.cash_amount || 0) > 0 || Number(p.online_amount || 0) > 0) ? `
+                  <div style="font-size: 0.7rem; font-weight: 700; color: #64748B; margin-top: 2px; display: flex; flex-direction: column; gap: 2px;">
+                    ${Number(p.cash_amount || 0) > 0 ? `<span style="background: #DCFCE7; color: #166534; padding: 1px 4px; border-radius: 3px;">Cash: ₹${Number(p.cash_amount).toLocaleString('en-IN')}</span>` : ''}
+                    ${Number(p.online_amount || 0) > 0 ? `<span style="background: #E0F2FE; color: #0369A1; padding: 1px 4px; border-radius: 3px;">Online: ₹${Number(p.online_amount).toLocaleString('en-IN')}</span>` : ''}
+                  </div>
+                ` : ''}
+              </td>
               <td>
                 <button type="button" class="btn-tbl-action ${hasBill ? 'success' : ''}" style="font-size:0.76rem; padding:3px 8px;" onclick="openPurchaseBillModal('${p.id}')">
                   ${hasBill ? 'View Bill' : 'Attach Bill'}
@@ -13900,7 +14615,7 @@
                     <!-- SUPPLIER CONSIGNMENT HEADER (CLICKABLE TO EXPAND) -->
                     <div style="padding: 12px 16px; background: ${isExpanded ? '#F0F9FF' : '#FFFFFF'}; display: flex; justify-content: space-between; align-items: center; flex-wrap: wrap; gap: 12px; cursor: pointer; transition: background 0.15s ease;" onclick="toggleSupplierConsignment('${p.id}', event)">
                       <div>
-                        <div style="display: flex; align-items: center; gap: 10px; flex-wrap: wrap;">
+                        <div style="display: flex; align-items: center; gap: 8px; flex-wrap: wrap;">
                           <strong style="font-size: 1rem; color: #0F172A; font-weight: 800;">${escapeHTML(p.supplier || 'Plant Depot')}</strong>
                           ${p.supplierPhone ? `<span style="font-size: 0.78rem; color: var(--text-muted); font-family: monospace;">+91 ${escapeHTML(p.supplierPhone)}</span>` : ''}
                           <span style="font-size: 0.74rem; font-weight: 800; background: #F1F5F9; color: #334155; padding: 2px 8px; border-radius: 4px; font-family: monospace;">
@@ -13909,6 +14624,10 @@
                           <span class="badge-status completed" style="font-size: 0.72rem; padding: 2px 7px;">
                             ${escapeHTML(p.payment_method || 'Bank Transfer')} &bull; Stock Inwarded
                           </span>
+                          ${(Number(p.cash_amount || 0) > 0 || Number(p.online_amount || 0) > 0) ? `
+                            <span style="font-size: 0.72rem; font-weight: 700; background: #DCFCE7; color: #166534; padding: 2px 6px; border-radius: 4px;">Cash: ₹${Number(p.cash_amount || 0).toLocaleString('en-IN')}</span>
+                            <span style="font-size: 0.72rem; font-weight: 700; background: #E0F2FE; color: #0369A1; padding: 2px 6px; border-radius: 4px;">Online: ₹${Number(p.online_amount || 0).toLocaleString('en-IN')}</span>
+                          ` : ''}
                         </div>
                         <div style="font-size: 0.8rem; color: var(--text-muted); margin-top: 4px;">
                           ${itemsList.length} Product${itemsList.length > 1 ? 's' : ''} &bull; Total: <strong>${p.qty} Boxes</strong>

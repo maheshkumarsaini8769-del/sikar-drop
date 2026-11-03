@@ -744,14 +744,16 @@ function initDatabase() {
     console.warn('Social analytics columns migration notice:', err.message);
   }
 
-  // Ensure status, refund_reason, refunded_at, and actor columns exist on manual_sales table
+  // Ensure status, refund_reason, refunded_at, actor, cash_amount, and online_amount columns exist on manual_sales table
   try {
     const saleCols = db.prepare("PRAGMA table_info(manual_sales)").all().map(c => c.name);
     const neededSaleCols = [
       ['status', "TEXT DEFAULT 'completed'"],
       ['refund_reason', "TEXT DEFAULT ''"],
       ['refunded_at', "TEXT DEFAULT ''"],
-      ['actor', "TEXT DEFAULT 'Admin'"]
+      ['actor', "TEXT DEFAULT 'Admin'"],
+      ['cash_amount', "REAL DEFAULT 0.0"],
+      ['online_amount', "REAL DEFAULT 0.0"]
     ];
     for (const [col, colType] of neededSaleCols) {
       if (!saleCols.includes(col)) {
@@ -826,7 +828,9 @@ function initDatabase() {
     const purCols = db.prepare('PRAGMA table_info(purchases)').all().map(c => c.name);
     const neededPurCols = [
       ['bill_image', "TEXT DEFAULT ''"],
-      ['items_json', "TEXT DEFAULT '[]'"]
+      ['items_json', "TEXT DEFAULT '[]'"],
+      ['cash_amount', "REAL DEFAULT 0.0"],
+      ['online_amount', "REAL DEFAULT 0.0"]
     ];
     for (const [col, colType] of neededPurCols) {
       if (!purCols.includes(col)) {
@@ -1256,7 +1260,7 @@ function seedDefaultData() {
 // TRANSACTIONAL HELPERS
 
 // 1. ATOMIC MANUAL CASH SALE
-function recordManualSaleTransaction({ idempotencyToken, customerId, customerName, customerPhone, corridor = '', items = [], subtotal, discount = 0, totalAmount, amountReceived, outstandingAmount, paymentMethod = 'Cash', saleDate, dueDate = '', notes = '', actor = 'Admin' }) {
+function recordManualSaleTransaction({ idempotencyToken, customerId, customerName, customerPhone, corridor = '', items = [], subtotal, discount = 0, totalAmount, amountReceived, outstandingAmount, paymentMethod = 'Cash', cashAmount, onlineAmount, saleDate, dueDate = '', notes = '', actor = 'Admin' }) {
   const runTx = db.transaction(() => {
     // Check idempotency token to strictly prevent double submission
     if (idempotencyToken) {
@@ -1268,6 +1272,8 @@ function recordManualSaleTransaction({ idempotencyToken, customerId, customerNam
           amountReceived: existing.amount_received,
           balanceDue: existing.outstanding_amount,
           outstandingAmount: existing.outstanding_amount,
+          cashAmount: existing.cash_amount,
+          onlineAmount: existing.online_amount,
           isDuplicate: true
         };
       }
@@ -1286,19 +1292,30 @@ function recordManualSaleTransaction({ idempotencyToken, customerId, customerNam
     const finalReceived = amountReceived !== undefined ? Number(amountReceived) : finalTotal;
     const finalOutstanding = outstandingAmount !== undefined ? Number(outstandingAmount) : Math.max(0, finalTotal - finalReceived);
 
-    // Verify stock availability for each item
+    let finalCash = cashAmount !== undefined ? Number(cashAmount) : 0;
+    let finalOnline = onlineAmount !== undefined ? Number(onlineAmount) : 0;
+    if (cashAmount === undefined && onlineAmount === undefined) {
+      if (paymentMethod === 'Cash') {
+        finalCash = finalReceived;
+        finalOnline = 0;
+      } else if (paymentMethod === 'UPI' || paymentMethod === 'Online' || paymentMethod === 'Bank Transfer') {
+        finalCash = 0;
+        finalOnline = finalReceived;
+      } else {
+        finalCash = finalReceived;
+        finalOnline = 0;
+      }
+    }
+
+    // Verify products existence and active status (Counter sale allows stock decrement without blocking)
     for (const item of items) {
       const pid = item.id || item.productId;
-      const pqty = Number(item.qty || item.quantity || 1);
       const product = db.prepare('SELECT id, title, stock, active FROM products WHERE id = ?').get(pid);
       if (!product) {
         throw new Error(`Product not found: ${pid}`);
       }
       if (product.active === 0 || product.active === false) {
         throw new Error(`Product "${product.title}" is archived and cannot be sold.`);
-      }
-      if (product.stock < pqty) {
-        throw new Error(`Insufficient stock for "${product.title}". Requested: ${pqty}, Available: ${product.stock}`);
       }
     }
 
@@ -1349,18 +1366,21 @@ function recordManualSaleTransaction({ idempotencyToken, customerId, customerNam
       `).run(custId, customerName, customerPhone, assignedCorridor, finalTotal, finalOutstanding, now, now);
     }
 
-    // Insert Manual Sale record with customer_id explicitly set
+    // Insert Manual Sale record with customer_id, cash_amount, and online_amount explicitly set
     db.prepare(`
-      INSERT INTO manual_sales (id, idempotency_token, customer_id, customer_name, customer_phone, items_json, subtotal, discount, total_amount, amount_received, outstanding_amount, payment_method, sale_date, notes, created_at, status, actor)
-      VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, 'completed', ?)
-    `).run(saleId, idempotencyToken || null, custId, customerName, customerPhone, JSON.stringify(items), finalSubtotal, finalDiscount, finalTotal, finalReceived, finalOutstanding, paymentMethod, saleDate || now.split('T')[0], notes || '', now, actor);
+      INSERT INTO manual_sales (id, idempotency_token, customer_id, customer_name, customer_phone, items_json, subtotal, discount, total_amount, amount_received, outstanding_amount, payment_method, cash_amount, online_amount, sale_date, notes, created_at, status, actor)
+      VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, 'completed', ?)
+    `).run(saleId, idempotencyToken || null, custId, customerName, customerPhone, JSON.stringify(items), finalSubtotal, finalDiscount, finalTotal, finalReceived, finalOutstanding, paymentMethod, finalCash, finalOnline, saleDate || now.split('T')[0], notes || '', now, actor);
 
     // Record Payment transaction if amount received > 0
     if (finalReceived > 0) {
+      const payNotes = (finalCash > 0 && finalOnline > 0)
+        ? `Payment for ${saleId} (Cash: Rs.${finalCash}, Online: Rs.${finalOnline})`
+        : `Payment for ${saleId}`;
       db.prepare(`
         INSERT INTO payments (id, customer_id, customer_name, customer_phone, reference_type, reference_id, amount, previous_balance, new_balance, payment_method, notes, created_at)
         VALUES (?, ?, ?, ?, 'manual_sale', ?, ?, ?, ?, ?, ?, ?)
-      `).run('PAY-' + Math.floor(100000 + Math.random() * 900000), custId, customerName, customerPhone, saleId, finalReceived, cust ? cust.outstanding_balance : 0, (cust ? cust.outstanding_balance : 0) + finalOutstanding, paymentMethod, `Payment for ${saleId}`, now);
+      `).run('PAY-' + Math.floor(100000 + Math.random() * 900000), custId, customerName, customerPhone, saleId, finalReceived, cust ? cust.outstanding_balance : 0, (cust ? cust.outstanding_balance : 0) + finalOutstanding, paymentMethod, payNotes, now);
     }
 
     // If outstanding balance > 0, record in Khata Ledger
@@ -1376,9 +1396,9 @@ function recordManualSaleTransaction({ idempotencyToken, customerId, customerNam
     db.prepare(`
       INSERT INTO audit_logs (id, actor, action, module, details, created_at)
       VALUES (?, ?, 'MANUAL_SALE_CREATED', 'pos', ?, ?)
-    `).run('AUD-' + Math.floor(100000 + Math.random() * 900000), actor, `Recorded manual sale ${saleId} for Rs.${finalTotal} (Received: Rs.${finalReceived}, Due: Rs.${finalOutstanding}) to ${customerName}`, now);
+    `).run('AUD-' + Math.floor(100000 + Math.random() * 900000), actor, `Recorded manual sale ${saleId} for Rs.${finalTotal} (Received: Rs.${finalReceived} [Cash: Rs.${finalCash}, Online: Rs.${finalOnline}], Due: Rs.${finalOutstanding}) to ${customerName}`, now);
 
-    return { saleId, totalAmount: finalTotal, amountReceived: finalReceived, balanceDue: finalOutstanding, outstandingAmount: finalOutstanding, actor, status: 'completed' };
+    return { saleId, totalAmount: finalTotal, amountReceived: finalReceived, balanceDue: finalOutstanding, outstandingAmount: finalOutstanding, cashAmount: finalCash, onlineAmount: finalOnline, actor, status: 'completed' };
   });
 
   return runTx();
@@ -1508,6 +1528,275 @@ function refundManualSaleTransaction({ saleId, reason = 'Operator refunded', act
       restockedBoxes: totalRestockedBoxes,
       actor
     };
+  });
+
+  return runTx();
+}
+
+// 1C. ATOMIC EDIT / UPDATE FOR MANUAL POS SALE
+function updateManualSaleTransaction({
+  saleId,
+  customerName,
+  customerPhone,
+  corridor = '',
+  items = [],
+  subtotal,
+  discount = 0,
+  totalAmount,
+  amountReceived,
+  outstandingAmount,
+  paymentMethod = 'Cash',
+  cashAmount,
+  onlineAmount,
+  saleDate,
+  dueDate = '',
+  notes = '',
+  actor = 'Admin'
+}) {
+  const runTx = db.transaction(() => {
+    const existing = db.prepare('SELECT * FROM manual_sales WHERE id = ?').get(saleId);
+    if (!existing) {
+      throw new Error(`POS Manual Sale not found: ${saleId}`);
+    }
+    if (existing.status === 'refunded' || existing.status === 'cancelled') {
+      throw new Error(`Cannot edit refunded or cancelled sale ${saleId}`);
+    }
+
+    const now = new Date().toISOString();
+    let oldItems = [];
+    try {
+      oldItems = JSON.parse(existing.items_json || '[]');
+    } catch (e) {
+      oldItems = [];
+    }
+
+    // 1. Calculate and reconcile inventory changes between old and new items
+    // Revert old items stock
+    for (const it of oldItems) {
+      const pid = it.id || it.productId;
+      const pqty = Number(it.qty || it.quantity || 0);
+      if (pid && pqty > 0) {
+        const prod = db.prepare('SELECT stock FROM products WHERE id = ?').get(pid);
+        if (prod) {
+          const beforeStock = prod.stock;
+          const afterStock = beforeStock + pqty;
+          db.prepare('UPDATE products SET stock = ?, updated_at = ? WHERE id = ?').run(afterStock, now, pid);
+        }
+      }
+    }
+
+    // Deduct new items stock
+    for (const it of items) {
+      const pid = it.id || it.productId;
+      const pqty = Number(it.qty || it.quantity || 0);
+      if (pid && pqty > 0) {
+        const prod = db.prepare('SELECT stock FROM products WHERE id = ?').get(pid);
+        if (prod) {
+          const beforeStock = prod.stock;
+          const afterStock = beforeStock - pqty;
+          db.prepare('UPDATE products SET stock = ?, updated_at = ? WHERE id = ?').run(afterStock, now, pid);
+          db.prepare(`
+            INSERT INTO inventory_movements (id, product_id, movement_type, quantity, before_stock, after_stock, reference_id, reason, actor, created_at)
+            VALUES (?, ?, 'manual_sale_adjustment', ?, ?, ?, ?, ?, ?, ?)
+          `).run('MOV-' + Math.floor(100000 + Math.random() * 900000), pid, -pqty, beforeStock, afterStock, saleId, `Manual Sale Edit ${saleId}`, actor, now);
+        }
+      }
+    }
+
+    // 2. Re-compute totals
+    let computedTotal = 0;
+    for (const it of items) {
+      const pqty = Number(it.quantity || it.qty || 1);
+      const prate = Number(it.price || it.rate || 0);
+      computedTotal += (it.total !== undefined ? Number(it.total) : (prate * pqty));
+    }
+    const finalTotal = totalAmount !== undefined ? Number(totalAmount) : computedTotal;
+    const finalSubtotal = subtotal !== undefined ? Number(subtotal) : finalTotal;
+    const finalDiscount = Number(discount || 0);
+    const finalReceived = amountReceived !== undefined ? Number(amountReceived) : finalTotal;
+    const finalOutstanding = outstandingAmount !== undefined ? Number(outstandingAmount) : Math.max(0, finalTotal - finalReceived);
+
+    let finalCash = cashAmount !== undefined ? Number(cashAmount) : 0;
+    let finalOnline = onlineAmount !== undefined ? Number(onlineAmount) : 0;
+    if (cashAmount === undefined && onlineAmount === undefined) {
+      if (paymentMethod === 'Cash') {
+        finalCash = finalReceived;
+        finalOnline = 0;
+      } else if (paymentMethod === 'UPI' || paymentMethod === 'Online' || paymentMethod === 'Bank Transfer') {
+        finalCash = 0;
+        finalOnline = finalReceived;
+      } else {
+        finalCash = finalReceived;
+        finalOnline = 0;
+      }
+    }
+
+    // 3. Reconcile Customer lifetime_spend and outstanding_balance
+    const deltaTotal = finalTotal - Number(existing.total_amount || 0);
+    const deltaOutstanding = finalOutstanding - Number(existing.outstanding_amount || 0);
+    const custId = existing.customer_id;
+    if (custId) {
+      const cust = db.prepare('SELECT * FROM customers WHERE id = ?').get(custId);
+      if (cust) {
+        const newSpend = Math.max(0, Number(cust.lifetime_spend || 0) + deltaTotal);
+        const newBalance = Math.max(0, Number(cust.outstanding_balance || 0) + deltaOutstanding);
+        db.prepare('UPDATE customers SET name = ?, phone = ?, lifetime_spend = ?, outstanding_balance = ?, last_activity = ? WHERE id = ?')
+          .run(customerName || cust.name, customerPhone || cust.phone, newSpend, newBalance, now, custId);
+      }
+    }
+
+    // 4. Update manual_sales
+    db.prepare(`
+      UPDATE manual_sales SET
+        customer_name = ?,
+        customer_phone = ?,
+        items_json = ?,
+        subtotal = ?,
+        discount = ?,
+        total_amount = ?,
+        amount_received = ?,
+        outstanding_amount = ?,
+        payment_method = ?,
+        cash_amount = ?,
+        online_amount = ?,
+        notes = ?,
+        sale_date = ?
+      WHERE id = ?
+    `).run(
+      customerName || existing.customer_name,
+      customerPhone || existing.customer_phone,
+      JSON.stringify(items),
+      finalSubtotal,
+      finalDiscount,
+      finalTotal,
+      finalReceived,
+      finalOutstanding,
+      paymentMethod,
+      finalCash,
+      finalOnline,
+      notes || existing.notes,
+      saleDate || existing.sale_date,
+      saleId
+    );
+
+    // 5. Update or reconcile payments table for this manual_sale
+    const existingPayment = db.prepare("SELECT id FROM payments WHERE reference_type = 'manual_sale' AND reference_id = ?").get(saleId);
+    if (existingPayment) {
+      if (finalReceived > 0) {
+        db.prepare("UPDATE payments SET amount = ?, payment_method = ?, notes = ? WHERE id = ?")
+          .run(finalReceived, paymentMethod, `Payment for ${saleId} (Cash: Rs.${finalCash}, Online: Rs.${finalOnline})`, existingPayment.id);
+      } else {
+        db.prepare("DELETE FROM payments WHERE id = ?").run(existingPayment.id);
+      }
+    } else if (finalReceived > 0) {
+      db.prepare(`
+        INSERT INTO payments (id, customer_id, customer_name, customer_phone, reference_type, reference_id, amount, previous_balance, new_balance, payment_method, notes, created_at)
+        VALUES (?, ?, ?, ?, 'manual_sale', ?, ?, 0, ?, ?, ?, ?)
+      `).run('PAY-' + Math.floor(100000 + Math.random() * 900000), custId || '', customerName || existing.customer_name, customerPhone || existing.customer_phone, saleId, finalReceived, finalOutstanding, paymentMethod, `Payment for ${saleId} (Cash: Rs.${finalCash}, Online: Rs.${finalOnline})`, now);
+    }
+
+    // 6. Update Khata entry if outstanding changed
+    const existingKhata = db.prepare("SELECT id FROM khata_entries WHERE reason LIKE ?").get(`%${saleId}%`);
+    if (existingKhata) {
+      if (finalOutstanding > 0) {
+        db.prepare("UPDATE khata_entries SET amount = ?, remaining_amount = ?, updated_at = ? WHERE id = ?")
+          .run(finalOutstanding, finalOutstanding, now, existingKhata.id);
+      } else {
+        db.prepare("DELETE FROM khata_entries WHERE id = ?").run(existingKhata.id);
+      }
+    } else if (finalOutstanding > 0) {
+      const khataId = 'KH-' + Math.floor(100000 + Math.random() * 900000);
+      db.prepare(`
+        INSERT INTO khata_entries (id, customer_id, customer_name, customer_phone, amount, paid_amount, remaining_amount, reason, due_date, status, notes, created_at, updated_at)
+        VALUES (?, ?, ?, ?, ?, 0, ?, ?, ?, 'pending', ?, ?, ?)
+      `).run(khataId, custId || '', customerName || existing.customer_name, customerPhone || existing.customer_phone, finalOutstanding, finalOutstanding, `Manual Sale Balance: ${saleId}`, dueDate || '', notes || 'Credit sale balance', now, now);
+    }
+
+    // 7. Audit log
+    db.prepare(`
+      INSERT INTO audit_logs (id, actor, action, module, details, created_at)
+      VALUES (?, ?, 'MANUAL_SALE_UPDATED', 'pos', ?, ?)
+    `).run('AUD-' + Math.floor(100000 + Math.random() * 900000), actor, `Updated manual sale ${saleId} (Total: Rs.${finalTotal}, Received: Rs.${finalReceived}, Cash: Rs.${finalCash}, Online: Rs.${finalOnline})`, now);
+
+    return {
+      saleId,
+      totalAmount: finalTotal,
+      amountReceived: finalReceived,
+      outstandingAmount: finalOutstanding,
+      cashAmount: finalCash,
+      onlineAmount: finalOnline,
+      status: 'completed'
+    };
+  });
+
+  return runTx();
+}
+
+// 1D. ATOMIC DELETION FOR MANUAL POS SALE
+function deleteManualSaleTransaction({ saleId, actor = 'Admin' }) {
+  const runTx = db.transaction(() => {
+    const existing = db.prepare('SELECT * FROM manual_sales WHERE id = ?').get(saleId);
+    if (!existing) {
+      throw new Error(`POS Manual Sale not found: ${saleId}`);
+    }
+
+    const now = new Date().toISOString();
+    let items = [];
+    try {
+      items = JSON.parse(existing.items_json || '[]');
+    } catch (e) {
+      items = [];
+    }
+
+    // 1. If not already refunded, restore inventory stock
+    if (existing.status !== 'refunded' && existing.status !== 'cancelled') {
+      for (const it of items) {
+        const pid = it.id || it.productId;
+        const pqty = Number(it.qty || it.quantity || 0);
+        if (pid && pqty > 0) {
+          const prod = db.prepare('SELECT stock FROM products WHERE id = ?').get(pid);
+          if (prod) {
+            const beforeStock = prod.stock;
+            const afterStock = beforeStock + pqty;
+            db.prepare('UPDATE products SET stock = ?, updated_at = ? WHERE id = ?').run(afterStock, now, pid);
+            db.prepare(`
+              INSERT INTO inventory_movements (id, product_id, movement_type, quantity, before_stock, after_stock, reference_id, reason, actor, created_at)
+              VALUES (?, ?, 'manual_sale_deletion', ?, ?, ?, ?, ?, ?, ?)
+            `).run('MOV-' + Math.floor(100000 + Math.random() * 900000), pid, pqty, beforeStock, afterStock, saleId, `Manual Sale Deletion ${saleId}`, actor, now);
+          }
+        }
+      }
+    }
+
+    // 2. Adjust customer lifetime spend and outstanding balance
+    const custId = existing.customer_id;
+    if (custId) {
+      const cust = db.prepare('SELECT * FROM customers WHERE id = ?').get(custId);
+      if (cust) {
+        const newOrders = Math.max(0, Number(cust.total_orders || 1) - 1);
+        const newSpend = Math.max(0, Number(cust.lifetime_spend || 0) - Number(existing.total_amount || 0));
+        const newBalance = Math.max(0, Number(cust.outstanding_balance || 0) - Number(existing.outstanding_amount || 0));
+        db.prepare('UPDATE customers SET total_orders = ?, lifetime_spend = ?, outstanding_balance = ?, last_activity = ? WHERE id = ?')
+          .run(newOrders, newSpend, newBalance, now, custId);
+      }
+    }
+
+    // 3. Delete payments linked to this sale
+    db.prepare("DELETE FROM payments WHERE reference_type = 'manual_sale' AND reference_id = ?").run(saleId);
+
+    // 4. Delete khata entries linked to this sale
+    db.prepare("DELETE FROM khata_entries WHERE reason LIKE ?").run(`%${saleId}%`);
+
+    // 5. Delete from manual_sales
+    db.prepare('DELETE FROM manual_sales WHERE id = ?').run(saleId);
+
+    // 6. Audit log
+    db.prepare(`
+      INSERT INTO audit_logs (id, actor, action, module, details, created_at)
+      VALUES (?, ?, 'MANUAL_SALE_DELETED', 'pos', ?, ?)
+    `).run('AUD-' + Math.floor(100000 + Math.random() * 900000), actor, `Deleted manual sale ${saleId} and restored stock`, now);
+
+    return { success: true, saleId };
   });
 
   return runTx();
@@ -2773,6 +3062,8 @@ initDatabase();
 module.exports = {
   db,
   recordManualSaleTransaction,
+  updateManualSaleTransaction,
+  deleteManualSaleTransaction,
   refundManualSaleTransaction,
   recordKhataPaymentTransaction,
   reversePaymentTransaction,
