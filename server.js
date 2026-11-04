@@ -2948,8 +2948,11 @@ app.post('/api/manual-sales', requireAdmin, async (req, res) => {
   try {
     const { idempotencyToken, customerId, customerName, customerPhone, corridor, items, subtotal, discount, totalAmount, amountReceived, outstandingAmount, paymentMethod, cashAmount, onlineAmount, cash_amount, online_amount, saleDate, notes, actor } = req.body;
 
-    if (!customerName || !customerPhone || !items || !Array.isArray(items) || items.length === 0) {
-      return res.status(400).json({ error: 'Customer name, phone, and at least one item are required' });
+    const finalCustName = String(customerName || '').trim() || 'Counter Cash Customer';
+    const finalCustPhone = String(customerPhone || '').replace(/\D/g, '').trim() || '9999999999';
+
+    if (!items || !Array.isArray(items) || items.length === 0) {
+      return res.status(400).json({ error: 'At least one item is required' });
     }
 
     // Verify valid positive quantities
@@ -2980,8 +2983,8 @@ app.post('/api/manual-sales', requireAdmin, async (req, res) => {
     const result = recordManualSaleTransaction({
       idempotencyToken,
       customerId,
-      customerName,
-      customerPhone,
+      customerName: finalCustName,
+      customerPhone: finalCustPhone,
       corridor: (corridor || '').trim(),
       items,
       subtotal,

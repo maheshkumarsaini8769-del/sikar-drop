@@ -3306,12 +3306,12 @@
             </div>
             <div class="portal-form-grid-3">
               <div class="portal-field-group">
-                <label for="pos-cust-name">Customer / Party Name *</label>
-                <input type="text" id="pos-cust-name" class="portal-input" placeholder="e.g. Ramesh Shekhawat" required autocomplete="off">
+                <label for="pos-cust-name">Customer / Party Name</label>
+                <input type="text" id="pos-cust-name" class="portal-input" placeholder="e.g. Ramesh Shekhawat (Blank for Counter Cash)" autocomplete="off">
               </div>
               <div class="portal-field-group">
-                <label for="pos-cust-phone">Mobile Phone (WhatsApp) *</label>
-                <input type="tel" id="pos-cust-phone" inputmode="numeric" pattern="[0-9]*" maxlength="10" class="portal-input tabular" placeholder="e.g. 9829011223" required oninput="this.value = this.value.replace(/[^0-9]/g, '').slice(0, 10)" onblur="lookupPosCustomerKhata(this.value)" autocomplete="off">
+                <label for="pos-cust-phone">Mobile Phone (WhatsApp)</label>
+                <input type="tel" id="pos-cust-phone" inputmode="numeric" pattern="[0-9]*" maxlength="10" class="portal-input tabular" placeholder="e.g. 9829011223 (Optional for Cash)" oninput="this.value = this.value.replace(/[^0-9]/g, '').slice(0, 10)" onblur="lookupPosCustomerKhata(this.value)" autocomplete="off">
                 <div id="pos-cust-khata-hint" style="font-size: 0.76rem; color: #DC2626; margin-top: 3px; display: none;"></div>
               </div>
               <div class="portal-field-group">
@@ -7591,6 +7591,10 @@
           adminProducts = merged;
           localStorage.setItem('sikar_admin_products', JSON.stringify(adminProducts));
           if (currentTab === 'products') renderProductsTable();
+          if (currentTab === 'pos') {
+            renderPosForm();
+            renderPosHistoryTable();
+          }
         }
         if (cats && Array.isArray(cats)) {
           const deletedCatSet = getDeletedCategoryIds();
@@ -7619,6 +7623,7 @@
         if (manualSales && Array.isArray(manualSales)) {
           adminManualSales = manualSales;
           localStorage.setItem('sikar_admin_manual_sales', JSON.stringify(adminManualSales));
+          if (currentTab === 'pos') renderPosHistoryTable();
         }
         if (deliveryZones && Array.isArray(deliveryZones)) {
           adminDeliveryZones = deliveryZones;
@@ -10449,16 +10454,18 @@
     async function handlePosSaleSubmit(e) {
       e.preventDefault();
 
-      const custName = document.getElementById('pos-cust-name').value.trim();
-      const custPhone = document.getElementById('pos-cust-phone').value.trim();
+      const custNameRaw = document.getElementById('pos-cust-name').value.trim();
+      const custPhoneRaw = document.getElementById('pos-cust-phone').value.trim();
+      const custName = custNameRaw || 'Counter Cash Customer';
+      const custPhone = custPhoneRaw || '9999999999';
       const corridor = document.getElementById('pos-cust-corridor').value.trim() || 'Piprali Road Mandi';
       const notes = document.getElementById('pos-notes-input').value.trim();
       const payMethod = document.getElementById('pos-payment-method').value;
       const tokenInput = document.getElementById('pos-idempotency-token');
       const idempotencyToken = (tokenInput && tokenInput.value) ? tokenInput.value : ('pos_' + Date.now() + '_' + Math.random().toString(36).substr(2, 9));
 
-      if (!custName || !custPhone) {
-        showToast('Please enter Customer Name and Phone number.');
+      if (payMethod === 'Khata Credit' && (!custPhoneRaw || custPhoneRaw.replace(/\D/g, '').length < 10)) {
+        showToast('Please enter a valid 10-digit Customer Mobile Number to record Khata Credit (Udhar).');
         return;
       }
 

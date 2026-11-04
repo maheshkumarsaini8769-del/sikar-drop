@@ -1308,26 +1308,43 @@ function recordManualSaleTransaction({ idempotencyToken, customerId, customerNam
     }
 
     // Verify products existence and active status (Counter sale allows stock decrement without blocking)
+    const resolvedItems = [];
     for (const item of items) {
       const pid = item.id || item.productId;
-      const product = db.prepare('SELECT id, title, stock, active FROM products WHERE id = ?').get(pid);
+      let product = db.prepare('SELECT id, title, stock, active FROM products WHERE id = ?').get(pid);
+      if (!product && item.title) {
+        product = db.prepare('SELECT id, title, stock, active FROM products WHERE LOWER(TRIM(title)) = LOWER(TRIM(?))').get(String(item.title).trim());
+      }
       if (!product) {
-        throw new Error(`Product not found: ${pid}`);
+        const autoTitle = String(item.title || ('Wholesale Peti ' + pid)).trim();
+        const autoPrice = Number(item.price || item.rate || 100);
+        const autoNow = new Date().toISOString();
+        db.prepare(`
+          INSERT INTO products (id, title, category, price, mrp, cost, stock, active, created_at, updated_at)
+          VALUES (?, ?, 'cases', ?, ?, ?, 0, 1, ?, ?)
+        `).run(pid, autoTitle, autoPrice, autoPrice, Math.round(autoPrice * 0.8), autoNow, autoNow);
+        product = { id: pid, title: autoTitle, stock: 0, active: 1 };
       }
       if (product.active === 0 || product.active === false) {
-        throw new Error(`Product "${product.title}" is archived and cannot be sold.`);
+        db.prepare('UPDATE products SET active = 1 WHERE id = ?').run(product.id);
       }
+      resolvedItems.push({
+        ...item,
+        productId: product.id,
+        id: product.id,
+        title: product.title
+      });
     }
 
     const saleId = 'CS-' + Math.floor(100000 + Math.random() * 900000);
     const now = new Date().toISOString();
 
     // Deduct stock and record inventory movement for each item
-    for (const item of items) {
+    for (const item of resolvedItems) {
       const pid = item.id || item.productId;
       const pqty = Number(item.qty || item.quantity || 1);
       const currentProd = db.prepare('SELECT stock FROM products WHERE id = ?').get(pid);
-      const beforeStock = currentProd.stock;
+      const beforeStock = currentProd ? Number(currentProd.stock || 0) : 0;
       const afterStock = beforeStock - pqty;
 
       db.prepare('UPDATE products SET stock = ?, updated_at = ? WHERE id = ?').run(afterStock, now, pid);
@@ -2505,7 +2522,10 @@ function createOnlineOrderTransaction({ orderId: customOrderId, customerName, cu
       let unitTitle = String(item.title || '').trim();
 
       if (pid) {
-        const prod = db.prepare('SELECT title, price, active FROM products WHERE id = ?').get(pid);
+        let prod = db.prepare('SELECT title, price, active FROM products WHERE id = ?').get(pid);
+        if (!prod && item.title) {
+          prod = db.prepare('SELECT title, price, active FROM products WHERE LOWER(TRIM(title)) = LOWER(TRIM(?))').get(String(item.title).trim());
+        }
         if (prod) {
           if (!isStaffOrder && (prod.active === 0 || prod.active === false)) {
             throw new Error(`Product "${prod.title}" is archived and no longer available for purchase.`);
@@ -2520,6 +2540,16 @@ function createOnlineOrderTransaction({ orderId: customOrderId, customerName, cu
             }
             unitPrice = (isStaffOrder && item.price !== undefined) ? Number(item.price) : Number(bundle.price || 0);
             if (!unitTitle) unitTitle = bundle.title;
+          } else if (isStaffOrder) {
+            const autoTitle = String(item.title || ('Wholesale Peti ' + pid)).trim();
+            const autoPrice = Number(item.price || 100);
+            const autoNow = new Date().toISOString();
+            db.prepare(`
+              INSERT INTO products (id, title, category, price, mrp, cost, stock, active, created_at, updated_at)
+              VALUES (?, ?, 'cases', ?, ?, ?, 0, 1, ?, ?)
+            `).run(pid, autoTitle, autoPrice, autoPrice, Math.round(autoPrice * 0.8), autoNow, autoNow);
+            unitPrice = autoPrice;
+            if (!unitTitle) unitTitle = autoTitle;
           }
         }
       }
